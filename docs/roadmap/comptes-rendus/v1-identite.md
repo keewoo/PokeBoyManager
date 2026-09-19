@@ -110,6 +110,33 @@ mise en PROD.
 Aucune des décisions D2 à D8 n'est directement engagée par ce lot (D2/D8 hors périmètre — aucun
 déploiement depuis ici, cf. contexte d'exécution).
 
+## Rebase avant fusion — collision de migration avec `v5-rgpd`
+
+`origin/main` a reçu `v5-rgpd` (export/suppression RGPD) pendant la session. Rebase propre à un
+conflit textuel près (`CLAUDE.md` : les deux lots ajoutent chacun une section juste avant
+« Règles de la flotte » — les deux sections gardées, concaténées). Plus significatif : les deux
+lots avaient posé une migration Alembic sur la **même tête** (`7fc6cd5efc72`, « card insight
+reports ») — `v5-rgpd` avec `2e56ba32d5ed` (data exports), ce lot avec `328aef94ea58`. Deux têtes
+de migration auraient cassé `alembic upgrade head` dès la fusion. Rechaîné manuellement :
+`328aef94ea58.down_revision` pointe désormais sur `2e56ba32d5ed` — une seule tête (`uv run
+alembic heads` confirme), bases dev/test recréées et migrées de zéro pour vérifier l'ordre complet
+(voir Preuves).
+
+Corrigé au passage, repéré en relisant le nouveau code de `v5-rgpd` pendant la résolution :
+`pbm_api/export/service.py` construisait `profil.json` avec seulement `email`/`pseudo`/
+`compte_cree_le` — sans `first_name`/`last_name`/`birth_date` que ce lot vient d'ajouter à
+`users`. La mission de ce lot demande explicitement que « l'export RGPD les inclut » (§2) : plutôt
+que de le noter comme un simple écart, corrigé directement (`prenom`/`nom`/`date_de_naissance`
+ajoutés au dictionnaire `profile`) — aucun test de `v5-rgpd` ne dépend des clés exactes de
+`profil.json` (vérifié : `tests/test_export.py` ne fait pas d'assertion sur son contenu), donc
+aucune régression introduite.
+
+`test_export.py::_register_verify_login` (un appel à `/auth/register`, comme dans sept autres
+fichiers de tests) a aussi eu besoin des trois nouveaux champs obligatoires — repéré seulement
+après rebase puisque ce fichier n'existait pas encore quand ce lot a démarré.
+
+Suites complètes (back 331, front 61) et client TypeScript régénérés après rebase — voir Preuves.
+
 ## Preuves — commandes lancées, résultats chiffrés
 
 ```
@@ -122,11 +149,12 @@ $ TZ=Europe/Paris TEST_DATABASE_URL=postgresql+asyncpg://pbm:pbm@localhost:55432
 ........................................................................ [ 45%]
 ........................................................................ [ 68%]
 ........................................................................ [ 90%]
-.............................                                            [100%]
-317 passed, 14 warnings in 38.79s
+...........................................                              [100%]
+331 passed, 23 warnings in 40.57s
 ```
-(299 tests déjà présents après fusion de `v1-profil`/`v3-detection`/`v4-anecdotes`/`v4-ranking` +
-18 nouveaux dans `test_identity.py`.)
+(313 tests déjà présents après le rebase avec `v5-rgpd` (export/suppression RGPD) + 18 nouveaux
+dans `test_identity.py`. Rejoué une seconde fois après rebase, bases dev/test recréées de zéro —
+voir § Rebase avant fusion.)
 
 **Preuve ciblée « un test qui échoue sans le changement, passe avec » (§6)** — `POST
 /auth/register` sans les nouveaux champs (comportement avant ce lot) :
@@ -174,12 +202,13 @@ $ pnpm --filter @pbm/web lint       → (rien, 0 erreur)
 $ pnpm --filter @pbm/web type-check → (rien, 0 erreur)
 $ pnpm --filter @pbm/web test
 Test Files  20 passed (20)
-     Tests  60 passed (60)
+     Tests  61 passed (61)
 $ pnpm --filter @pbm/web build
 ✓ Generating static pages (17/17)
 ```
-(55 tests déjà présents + 1 nouveau dans `connexion.test.tsx` — les autres tests touchés dans ce
-lot remplacent des assertions existantes plutôt que d'en ajouter.)
+(59 tests déjà présents après rebase (dont le nouveau cas d'export de `v5-rgpd` dans
+`profil.test.tsx`) + 1 nouveau dans `connexion.test.tsx` posé par ce lot — les autres tests
+touchés remplacent des assertions existantes plutôt que d'en ajouter.)
 
 **HTML réellement servi** (`curl` sur le serveur `next dev` de test) confirmant la présence des
 nouveaux champs sur `/inscription` : `Prénom`, `Nom`, `Date de naissance`, `Créer mon espace`.
@@ -201,18 +230,13 @@ champs).
   libellés et cette structure s'affichent, avec les mêmes composants `Input`/`Label` que le reste
   du formulaire (« même style de champ », mission §3). **Reste à faire** : capture réelle, à
   produire depuis une machine/session avec les paquets système Playwright installés.
-- **Aucun export RGPD à mettre à jour** — la mission §2 demande « l'export RGPD les inclut », mais
-  aucune route d'export n'existe encore dans le dépôt (`v5-rgpd` est un lot séparé, encore
-  `launched` et non fusionné au moment de cette session d'après `~/dev/pbm-state/`). Rien à
-  modifier ici ; **reste à faire** : quand `v5-rgpd` posera l'export, s'assurer qu'il lit bien
-  `first_name`/`last_name`/`birth_date` sur `User` (déjà disponibles, aucune dépendance
-  supplémentaire requise de leur côté).
 - Aucun autre écart sur la mission §3 (migration, API, front, commande d'administration,
-  redirection de changement de mot de passe forcé).
+  redirection de changement de mot de passe forcé). L'export RGPD (mission §2, « l'export RGPD
+  les inclut ») a fusionné dans `main` pendant cette session (`v5-rgpd`) ; corrigé pendant le
+  rebase pour qu'il inclue `first_name`/`last_name`/`birth_date` (voir § Rebase avant fusion) —
+  ce n'est donc plus un écart.
 
 ## Reste à faire
 
 - Capture d'écran de la maquette (voir Écarts au plan).
-- Vérifier, lors de la fusion du lot `v5-rgpd`, que son export inclut les champs d'identité
-  ajoutés ici (voir Écarts au plan).
 - Aucune autre dette identifiée dans le périmètre de ce lot.
