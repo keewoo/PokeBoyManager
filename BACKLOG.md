@@ -31,6 +31,7 @@ _L'espace est privé : inscription, connexion, profil, et le coffre où l'utilis
 | `v1-byok` | P0 | Coffre de clés IA : Claude, Gemini ou OpenAI par utilisateur | DA1 (devAI) | 5 oct. → 7 oct. | v1-auth | D4 | À faire | [prompt](prompts/v1-byok.md) |
 | `v1-uat` | P1 | Environnement UAT continu (images construites sur chimera, déployées par devAI) | DA2 (devAI) | 5 oct. → 9 oct. | v0-schema | D2 | À faire | [prompt](prompts/v1-uat.md) |
 | `v1-profil` | P1 | Page profil : photo, pseudo, e-mail, mot de passe, clés IA | CH1 (chimera) | 8 oct. → 12 oct. | v1-pages-auth, v1-byok | — | À faire | [prompt](prompts/v1-profil.md) |
+| `v1-identite` | P0 | Identité du compte : prénom, nom, date de naissance, acceptation des conditions, création de compte par l'administrateur | CH1 (chimera) | 13 oct. → 14 oct. | v1-profil | — | À faire | [prompt](prompts/v1-identite.md) |
 
 ## V2 — Toutes les cartes, tous les prix (28 sept. → 9 oct.)
 
