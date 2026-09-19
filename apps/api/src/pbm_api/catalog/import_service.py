@@ -154,7 +154,11 @@ async def import_catalogue(
     languages: tuple[str, ...] = ("fr", "en"),
     set_ids: list[str] | None = None,
     mode: str = "full",
+    progress_callback: Any = None,
 ) -> dict[str, Any]:
+    """`progress_callback(tcgdex_set_id, report)` optionnel, appelé après chaque extension
+    (succès ou échec) : observabilité d'un import complet (~200 extensions), sans changer le
+    comportement si omis."""
     primary_lang, *secondary_langs = languages
     report: dict[str, Any] = {
         "mode": mode,
@@ -257,5 +261,8 @@ async def import_catalogue(
             await session.rollback()
             logger.exception("Échec import extension %s", tcgdex_set_id)
             report["errors"].append(f"extension {tcgdex_set_id} : {exc}")
+
+        if progress_callback is not None:
+            progress_callback(tcgdex_set_id, report)
 
     return report
