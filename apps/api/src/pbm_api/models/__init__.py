@@ -1,3 +1,4 @@
+from pbm_api.models.ai_usage import AiUsageMonthly
 from pbm_api.models.base import Base
 from pbm_api.models.catalog import (
     Card,
@@ -27,6 +28,7 @@ __all__ = [
     "EmailTokenKind",
     "AiCredential",
     "AiProvider",
+    "AiUsageMonthly",
     "Set",
     "Card",
     "CardName",

@@ -9,6 +9,12 @@ from sqlalchemy.orm import Mapped, mapped_column
 from pbm_api.models.base import Base, TimestampMixin
 
 
+class AiProvider(enum.StrEnum):
+    anthropic = "anthropic"
+    gemini = "gemini"
+    openai = "openai"
+
+
 class User(Base, TimestampMixin):
     """Compte utilisateur. Le mot de passe est un hash (jamais le mot de passe en clair)."""
 
@@ -23,6 +29,10 @@ class User(Base, TimestampMixin):
     # Devise d'affichage de la valeur de collection (lot v2-prix) — code ISO 4217, converti
     # depuis la référence EUR via `exchange_rates_daily` (pbm_api.pricing.exchange_rates).
     preferred_currency: Mapped[str] = mapped_column(String(3), nullable=False, server_default="EUR")
+    ai_default_provider: Mapped[AiProvider | None] = mapped_column(
+        Enum(AiProvider, name="ai_provider"), nullable=True
+    )
+    ai_default_model: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
 
 class Session(Base):
@@ -66,12 +76,6 @@ class EmailToken(Base):
     created_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
     expires_at: Mapped[datetime] = mapped_column(nullable=False)
     used_at: Mapped[datetime | None] = mapped_column(nullable=True)
-
-
-class AiProvider(enum.StrEnum):
-    anthropic = "anthropic"
-    gemini = "gemini"
-    openai = "openai"
 
 
 class AiCredential(Base, TimestampMixin):

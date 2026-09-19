@@ -36,5 +36,12 @@ class Settings(BaseSettings):
     login_rate_limit_max_attempts: int = 5
     login_rate_limit_window_seconds: int = 900
 
+    # --- Coffre de clés IA (lot v1-byok) ---
+    # Clé maître AES-256 (32 octets, base64), jamais en base : chiffre/déchiffre les clés IA
+    # des utilisateurs. Valeur de dev uniquement — à définir par variable d'environnement hors
+    # dépôt pour tout déploiement. Rotation : déchiffrer chaque `ai_credentials` avec l'ancienne
+    # clé puis rechiffrer avec la nouvelle (aucune clé en clair journalisée pendant l'opération).
+    ai_key_encryption_key: str = "bo8a8UxneCy51yL6Mhan73p0Yxh+tKGlj4cIAbrfRvo="
+
 
 settings = Settings()

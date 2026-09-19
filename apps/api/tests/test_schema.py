@@ -20,6 +20,7 @@ EXPECTED_TABLES = {
     "sessions",
     "email_tokens",
     "ai_credentials",
+    "ai_usage_monthly",
     "sets",
     "cards",
     "card_names",
@@ -111,6 +112,7 @@ async def test_user_id_columns_are_foreign_keys_with_index(db_session):
         "sessions",
         "email_tokens",
         "ai_credentials",
+        "ai_usage_monthly",
         "uploads",
         "collection_items",
     ]

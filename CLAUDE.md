@@ -68,9 +68,26 @@ optionnel) : `DATABASE_URL`, `REDIS_URL`, `S3_ENDPOINT_URL`/`S3_ACCESS_KEY`/`S3_
 `SECRET_KEY`/`APP_PUBLIC_URL`/`SESSION_COOKIE_NAME`/`CSRF_COOKIE_NAME`/`SESSION_TTL_DAYS`/
 `EMAIL_TOKEN_TTL_MINUTES`/`LOGIN_RATE_LIMIT_MAX_ATTEMPTS`/`LOGIN_RATE_LIMIT_WINDOW_SECONDS`
 (comptes, lot `v1-auth` — `SECRET_KEY` signe les jetons CSRF, à définir par variable
-d'environnement en dehors du dépôt pour tout déploiement). Chaque lot pointe sa propre
-base/bucket/préfixe — ne jamais réutiliser ceux d'un autre lot sur l'infra partagée
-(`pbm-shared`). `apps/web` lit `NEXT_PUBLIC_API_URL` (défaut `http://localhost:8000`).
+d'environnement en dehors du dépôt pour tout déploiement), `AI_KEY_ENCRYPTION_KEY` (coffre de
+clés IA, lot `v1-byok` — clé maître AES-256 en base64, 32 octets ; chiffre/déchiffre les clés
+des utilisateurs, à définir par variable d'environnement hors dépôt pour tout déploiement).
+Chaque lot pointe sa propre base/bucket/préfixe — ne jamais réutiliser ceux d'un autre lot sur
+l'infra partagée (`pbm-shared`). `apps/web` lit `NEXT_PUBLIC_API_URL` (défaut
+`http://localhost:8000`).
+
+## Coffre de clés IA (lot `v1-byok`)
+
+Routes (`apps/api/src/pbm_api/routers/ai_keys.py`) : `GET/PUT/DELETE /me/ai-keys[/{provider}]`,
+`POST /me/ai-keys/{provider}/test`, `GET/PATCH /me/ai-settings`, `GET /me/ai-usage`. Chiffrement
+AES-256-GCM (`pbm_api.security.crypto`, `user_id` en données associées) ; filtre anti-fuite de
+clé dans les journaux (`pbm_api.security.log_filter`, installé au démarrage) et dans les
+réponses 422 de validation (`pbm_api.security.validation_errors` — le comportement par défaut
+de FastAPI renverrait sinon la valeur soumise en clair sur une clé trop courte/longue). Le test
+d'une clé
+appelle réellement le fournisseur (liste de modèles, coût nul) via `pbm_api.ai.providers.
+ProviderKeyTester`, injecté par dépendance FastAPI — remplacé par un double dans les tests
+(aucune clé IA réelle disponible sur chimera) ; essai manuel avec une vraie clé :
+`uv run python scripts/test_ai_key_manual.py <provider> <clé>` depuis `apps/api`.
 
 ## Règles de la flotte applicables ici (résumé de `~/.claude/CLAUDE.md`)
 

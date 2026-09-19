@@ -104,6 +104,13 @@ logout,verify-email,forgot,reset}` (`apps/api/src/pbm_api/routers/auth.py`).
 - La clé n'est déchiffrée que dans le worker, au moment de l'appel. L'API ne renvoie qu'un masque
   (`sk-ant-…4f2a`). Un filtre de journalisation masque tout motif de clé ; un test échoue si une clé
   apparaît dans les logs.
+- Lot `v1-byok` : routes `GET/PUT/DELETE /me/ai-keys[/{provider}]`, `POST
+  /me/ai-keys/{provider}/test` (appel minimal réel au fournisseur — liste de modèles, coût nul),
+  `GET/PATCH /me/ai-settings` (fournisseur/modèle par défaut, colonnes `users.ai_default_provider`/
+  `ai_default_model`), `GET /me/ai-usage` (table `ai_usage_monthly` : appels, jetons, coût estimé
+  par fournisseur et par mois — alimentée plus tard par le worker de reconnaissance, D4 : sans clé
+  personnelle la reconnaissance reste désactivée, l'ajout manuel au catalogue reste toujours
+  possible). Migration : `apps/api/migrations/versions/d42b0620077e_ai_settings_and_usage.py`.
 
 ## Reconnaissance
 
