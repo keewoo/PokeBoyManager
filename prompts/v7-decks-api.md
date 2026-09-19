@@ -59,7 +59,7 @@ Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_va
 
 **Gain.** Un joueur construit ses decks à partir de sa collection réelle — c'est ce qui rend le jeu personnel.
 
-**Fonctionnalités.** Plusieurs decks par joueur, nom, duplication, suppression ; contrôle de légalité (60 cartes, maximum 4 exemplaires d'une même carte par son nom, Énergies de base selon D10) ; un deck ne peut contenir que des exemplaires possédés, et signale ce qui manque.
+**Fonctionnalités.** Plusieurs decks par joueur, nom, duplication, suppression ; contrôle de légalité (60 cartes, maximum 4 exemplaires d'une même carte par son nom) ; **Énergies de base fournies en quantité illimitée**, **Énergies spéciales traitées comme des cartes ordinaires** (il faut les posséder et la règle des 4 s'applique) ; un deck ne peut contenir que des exemplaires possédés, et signale ce qui manque.
 
 **Tenants — ce qu'il faut avant.** Collection, moteur de règles ; D10.
 
@@ -73,7 +73,7 @@ Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_va
 ## 3. Mission
 
 1. Tables `decks` et `deck_cards` (référence à l'exemplaire possédé), routes CRUD filtrées par `user_id`.
-2. Service de légalité : 60 cartes, règle des 4 exemplaires, Énergies de base, cartes non possédées, et un rapport lisible de ce qui bloque.
+2. Service de légalité : 60 cartes, règle des 4 exemplaires, Énergies de base illimitées et non décomptées de la collection, Énergies spéciales soumises à possession et à la règle des 4, cartes non possédées, et un rapport lisible de ce qui bloque.
 3. Revalidation d'un deck quand la collection change ; tests d'accès croisé.
 
 ## 4. Risques & pièges

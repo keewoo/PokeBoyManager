@@ -59,7 +59,7 @@ Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_va
 
 **Gain.** Le point d'entrée du jeu : on choisit son deck, on entre dans la file, et la partie démarre dès qu'un adversaire est prêt.
 
-**Fonctionnalités.** Entrer dans la file avec un deck légal, voir l'attente, annuler ; appariement dès que deux joueurs sont prêts ; création de la partie et redirection des deux joueurs ; partie privée par invitation (selon D11).
+**Fonctionnalités.** Entrer dans la file avec un deck légal, voir l'attente, annuler ; appariement dès que deux joueurs sont prêts ; création de la partie et redirection des deux joueurs ; **file réservée aux comptes invités** (D11 : espace privé).
 
 **Tenants — ce qu'il faut avant.** Moteur de règles, decks ; D11.
 

@@ -3531,6 +3531,16 @@
       "prise": "JF le 19/09 : PROD sur le même serveur que kailo.life (UpCloud « sites-and-crons », 5.22.213.226). **Pas d'UAT** (19/09, 23h15) : la recette se fait en local sur chimera, on déploie directement en PROD. Images construites sur chimera, serveur en pull + up -d (2 cœurs / 4 Go partagés avec kailo.life et ACX).",
       "par": "JF",
       "quand": "2026-09-19T23:15+0200"
+    },
+    "D10": {
+      "prise": "JF le 19/09 : les Énergies de BASE sont illimitées et fournies (comme sur un deck papier), sans être décomptées de la collection. Les Énergies SPÉCIALES sont des cartes comme les autres : il faut les posséder, et la règle des 4 exemplaires s'applique.",
+      "par": "JF",
+      "quand": "2026-09-19T23:41+0200"
+    },
+    "D11": {
+      "prise": "JF le 19/09 (« clairement ») : jeu en ligne PRIVÉ — file d'attente réservée aux comptes invités, pas d'ouverture publique, aucun revenu ni publicité. Les cartes jouables restent celles que le joueur possède.",
+      "par": "JF",
+      "quand": "2026-09-19T23:41+0200"
     }
   }
 }

@@ -1826,7 +1826,7 @@
       "difficulte": 2,
       "titre": "Decks : création, légalité et sauvegarde, uniquement avec ses cartes",
       "gain": "Un joueur construit ses decks à partir de sa collection réelle — c'est ce qui rend le jeu personnel.",
-      "fonctionnalites": "Plusieurs decks par joueur, nom, duplication, suppression ; contrôle de légalité (60 cartes, maximum 4 exemplaires d'une même carte par son nom, Énergies de base selon D10) ; un deck ne peut contenir que des exemplaires possédés, et signale ce qui manque.",
+      "fonctionnalites": "Plusieurs decks par joueur, nom, duplication, suppression ; contrôle de légalité (60 cartes, maximum 4 exemplaires d'une même carte par son nom) ; **Énergies de base fournies en quantité illimitée**, **Énergies spéciales traitées comme des cartes ordinaires** (il faut les posséder et la règle des 4 s'applique) ; un deck ne peut contenir que des exemplaires possédés, et signale ce qui manque.",
       "risques": "Une carte vendue ou supprimée de la collection casse un deck existant : le deck reste lisible mais devient injouable, avec la raison affichée.",
       "tenants": "Collection, moteur de règles ; D10.",
       "aboutissants": "Constructeur de deck, proposition par l'IA, file d'attente.",
@@ -1837,7 +1837,7 @@
       "refs": [],
       "mission": [
         "Tables `decks` et `deck_cards` (référence à l'exemplaire possédé), routes CRUD filtrées par `user_id`.",
-        "Service de légalité : 60 cartes, règle des 4 exemplaires, Énergies de base, cartes non possédées, et un rapport lisible de ce qui bloque.",
+        "Service de légalité : 60 cartes, règle des 4 exemplaires, Énergies de base illimitées et non décomptées de la collection, Énergies spéciales soumises à possession et à la règle des 4, cartes non possédées, et un rapport lisible de ce qui bloque.",
         "Revalidation d'un deck quand la collection change ; tests d'accès croisé."
       ],
       "livrables": [
@@ -1960,7 +1960,7 @@
       "difficulte": 3,
       "titre": "File d'attente et appariement de deux joueurs",
       "gain": "Le point d'entrée du jeu : on choisit son deck, on entre dans la file, et la partie démarre dès qu'un adversaire est prêt.",
-      "fonctionnalites": "Entrer dans la file avec un deck légal, voir l'attente, annuler ; appariement dès que deux joueurs sont prêts ; création de la partie et redirection des deux joueurs ; partie privée par invitation (selon D11).",
+      "fonctionnalites": "Entrer dans la file avec un deck légal, voir l'attente, annuler ; appariement dès que deux joueurs sont prêts ; création de la partie et redirection des deux joueurs ; **file réservée aux comptes invités** (D11 : espace privé).",
       "risques": "Deux appariements simultanés pour le même joueur : l'entrée en partie est atomique (verrou en base). Un joueur qui ferme l'onglet dans la file en sort automatiquement.",
       "tenants": "Moteur de règles, decks ; D11.",
       "aboutissants": "Partie en temps réel.",
