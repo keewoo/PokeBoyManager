@@ -2698,21 +2698,21 @@
       "attente": null
     },
     "v2-catalogue-complet": {
-      "statut": "en_cours",
+      "statut": "integre",
       "machine": "chimera",
       "branche": "roadmap/v2-catalogue-complet",
       "debut_reel": "2026-09-19",
-      "fin_reelle": null,
+      "fin_reelle": "2026-09-20",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit b5cbce819 intégré dans main — voir docs/roadmap/comptes-rendus/v2-catalogue-complet.md",
+          "maj": "2026-09-20T00:01+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit b5cbce819 intégré dans main — voir docs/roadmap/comptes-rendus/v2-catalogue-complet.md",
+          "maj": "2026-09-20T00:01+0200"
         },
         "securite": {
           "etat": "na",
@@ -2740,14 +2740,14 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit b5cbce819 intégré dans main — voir docs/roadmap/comptes-rendus/v2-catalogue-complet.md",
+          "maj": "2026-09-20T00:01+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit b5cbce819 intégré dans main — voir docs/roadmap/comptes-rendus/v2-catalogue-complet.md",
+          "maj": "2026-09-20T00:01+0200"
         }
       },
       "journal": [
@@ -2762,9 +2762,28 @@
           "machine": "chimera",
           "evenement": "démarré",
           "detail": "roadmap/v2-catalogue-complet"
+        },
+        {
+          "quand": "2026-09-20T00:01+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit b5cbce819"
         }
       ],
-      "compte_rendu": {},
+      "compte_rendu": {
+        "resume": "- Import complet (hors session, journal ci-dessus) : **202 extensions**, **22 169 cartes** (FR + EN), en **1369 s** (~22,8 min). - Relevé de prix complet (hors session, même journal) : **22 169 cartes** couvertes, **34 241** prix Cardmarket + **25 582** prix TCGplayer écrits, en **1205 s** (~20 min). - Cette session : reprise ciblée des extensions et prix restés en échec transitoire (API tierces instables — 500/502, comme prévu par la mission), diagnostic en direct sur `api.tcgdex.net` pour distinguer panne transitoire de trou de données définitif côté source, graine réutilisable exportée et vérifiée par restauration dans une base vide, rapport de complétude régénéré, tests (218 passés, dont un nouveau), fusion sous verrou.",
+        "livrables": [],
+        "preuves": [],
+        "ecarts": [
+          "Le rapprochement Pokémon TCG API plafonne à 85,7 % **par construction** : ~12 % des cartes",
+          "13 extensions restent incomplètes par rapport au total que TCGdex annonce lui-même — confirmé"
+        ],
+        "reste": [
+          "Rien de bloquant pour ce lot. Les trous documentés ci-dessus sont des limites de la source de",
+          "Si un futur lot ajoute un **second fournisseur de prix ou de rapprochement** pour les cartes",
+          "Déploiement (D2/D8) explicitement hors périmètre — `release_uat`/`release_prod` sans objet."
+        ]
+      },
       "attente": null
     },
     "v4-insights-batch": {
@@ -2824,10 +2843,10 @@
       "compte_rendu": {}
     },
     "v3-identification-visuelle": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
+      "statut": "en_cours",
+      "machine": "chimera",
+      "branche": "roadmap/v3-identification-visuelle",
+      "debut_reel": "2026-09-20",
       "fin_reelle": null,
       "taches": {
         "dev": {
@@ -2876,8 +2895,16 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-20T00:02+0200",
+          "machine": "chimera",
+          "evenement": "démarré",
+          "detail": "roadmap/v3-identification-visuelle"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": null
     },
     "v7-regles-moteur": {
       "statut": "a_faire",

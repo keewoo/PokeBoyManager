@@ -42,7 +42,7 @@ _Reconnaître une carte suppose de connaître toutes les cartes ; tracer sa vale
 | `v2-catalogue` | P0 | Import du catalogue complet FR + EN avec images officielles | CH3 (chimera) | 28 sept. → 2 oct. | v0-schema | — | Intégré (main) | [prompt](prompts/v2-catalogue.md) |
 | `v2-prix` | P0 | Relevé quotidien des prix et historique de valeur | CH3 (chimera) | 5 oct. → 8 oct. | v2-catalogue | D3 | Intégré (main) | [prompt](prompts/v2-prix.md) |
 | `v2-recherche` | P1 | Recherche dans le catalogue (nom, numéro, extension) | DA1 (devAI) | 8 oct. → 9 oct. | v2-catalogue | — | Intégré (main) | [prompt](prompts/v2-recherche.md) |
-| `v2-catalogue-complet` | P0 | Base de référence complète : toutes les cartes, toutes leurs infos, tous les prix — avant la première photo | CH3 (chimera) | 12 oct. → 14 oct. | v2-prix, v2-recherche | — | En cours | [prompt](prompts/v2-catalogue-complet.md) |
+| `v2-catalogue-complet` | P0 | Base de référence complète : toutes les cartes, toutes leurs infos, tous les prix — avant la première photo | CH3 (chimera) | 12 oct. → 14 oct. | v2-prix, v2-recherche | — | Intégré (main) | [prompt](prompts/v2-catalogue-complet.md) |
 
 ## V3 — Des photos aux cartes (8 oct. → 27 oct.)
 
@@ -54,7 +54,7 @@ _Le cœur du produit : une photo (une carte ou un classeur de neuf) devient une 
 | `v3-ia-providers` | P0 | Couche fournisseurs IA unique (Anthropic, Google, OpenAI) | CH2 (chimera) | 8 oct. → 9 oct. | v1-byok | — | Intégré (main) | [prompt](prompts/v3-ia-providers.md) |
 | `v3-detection` | P0 | Détecter et découper chaque carte d'une photo (1 à N, classeur 3×3) | CH2 (chimera) | 12 oct. → 15 oct. | v3-ia-providers | — | Intégré (main) | [prompt](prompts/v3-detection.md) |
 | `v3-identification` | P0 | Identifier chaque carte et la rapprocher du catalogue (top 3 avec confiance) | CH2 (chimera) | 16 oct. → 22 oct. | v3-detection, v2-recherche | — | Intégré (main) | [prompt](prompts/v3-identification.md) |
-| `v3-identification-visuelle` | P1 | Identifier sans IA : comparer chaque carte détectée aux images officielles de la base | CH3 (chimera) | 23 oct. → 29 oct. | v3-identification, v2-catalogue-complet | — | À faire | [prompt](prompts/v3-identification-visuelle.md) |
+| `v3-identification-visuelle` | P1 | Identifier sans IA : comparer chaque carte détectée aux images officielles de la base | CH3 (chimera) | 23 oct. → 29 oct. | v3-identification, v2-catalogue-complet | — | En cours | [prompt](prompts/v3-identification-visuelle.md) |
 | `v3-validation` | P0 | Écran de validation : vérifier, corriger et ajouter les cartes reconnues | CH4 (chimera) | 23 oct. → 27 oct. | v3-identification, v3-upload | — | En cours | [prompt](prompts/v3-validation.md) |
 | `v3-etat` | P1 | Estimation de l'état de la carte (centrage, coins, bords, surface) | CH2 (chimera) | 23 oct. → 27 oct. | v3-identification | — | Intégré (main) | [prompt](prompts/v3-etat.md) |
 
