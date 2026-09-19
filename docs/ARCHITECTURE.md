@@ -123,6 +123,23 @@ logout,verify-email,forgot,reset}` (`apps/api/src/pbm_api/routers/auth.py`).
   l'image officielle, mise en cache dans le stockage objet (`ObjectStorage`,
   `apps/api/src/pbm_api/s3.py`) au premier accès.
 
+## Recherche catalogue (lot `v2-recherche`)
+
+- `GET /catalog/search?q=&set=&lang=` (`apps/api/src/pbm_api/routers/catalog.py`) : `q` est
+  analysé (`pbm_api.catalog.search.parse_query`) pour distinguer un numéro (`25`, `006`,
+  `236/217`, formats promo/galerie `TG05`/`GG10`/`SV107`/`XY121`) d'un nom de carte ; `set`
+  (code ou nom exact d'extension) et `lang` (`fr`/`en`) filtrent strictement.
+- `match_candidates` (`pbm_api.catalog.search`) est la fonction de rapprochement réutilisée par
+  la reconnaissance (lot futur) : donné un nom et/ou un numéro déjà extraits, plus des indices
+  optionnels d'extension (`set_hint`, bruité — pondère le score sans jamais filtrer) et de total
+  de l'extension, elle renvoie les cartes candidates classées par score. Recherche de nom :
+  trigram + `unaccent` sur `card_names` (extension `pg_trgm`/`unaccent`, posée par la migration
+  initiale), casse et accents ignorés.
+- La route essaie plusieurs découpages `<nom> <indice d'extension>` d'une requête libre (ex :
+  "Pikachu VMAX Voltage Éclatant" -> nom="Pikachu VMAX", indice="Voltage Éclatant") et garde le
+  meilleur score par carte — coût : jusqu'à `len(q.split())` requêtes SQL par recherche,
+  acceptable au volume actuel, à revoir si la latence devient sensible.
+
 ## Coffre de clés IA
 
 - AES-256-GCM, nonce aléatoire, `user_id` en données associées ; clé maître dans l'environnement du
