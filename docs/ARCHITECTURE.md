@@ -138,12 +138,50 @@ logout,verify-email,forgot,reset}` (`apps/api/src/pbm_api/routers/auth.py`).
   personnelle la reconnaissance reste désactivée, l'ajout manuel au catalogue reste toujours
   possible). Migration : `apps/api/migrations/versions/d42b0620077e_ai_settings_and_usage.py`.
 
+## Fournisseurs IA (lot `v3-ia-providers`)
+
+Interface unique `AIProvider.extract(images, schema, prompt) -> (objet validé, usage)`
+(`apps/api/src/pbm_api/ai/base.py`) : changer de fournisseur ne touche aucune fonctionnalité en
+aval — la reconnaissance (§ suivant) n'appelle jamais directement Anthropic/Gemini/OpenAI, elle
+passe par `pbm_api.ai.factory.create_provider(provider, api_key)`.
+
+- **Implémentations** (une par fournisseur, `apps/api/src/pbm_api/ai/`) : `AnthropicProvider`
+  (`/v1/messages`, défaut `claude-sonnet-5`, économique `claude-haiku-4-5`), `OpenAiProvider`
+  (`/v1/chat/completions`, défaut `gpt-4o`), `GeminiProvider` (`generateContent`, défaut
+  `gemini-2.5-flash`) — modèle configurable par utilisateur (`users.ai_default_model`, lot
+  `v1-byok`), en dur uniquement si l'utilisateur n'a rien choisi. Appels en HTTP direct
+  (`httpx`), comme `ProviderKeyTester` (`v1-byok`) : mêmes trois fournisseurs, même raison
+  (clé transmise en en-tête, jamais un SDK de plus à auditer/mettre à jour sur un lien à
+  ~250 ko/s).
+- **Sortie structurée native** : chaque fournisseur reçoit le schéma Pydantic de l'appelant
+  traduit en JSON Schema (`pbm_api.ai.json_schema`) — `$ref`/`$defs` repliés et
+  `additionalProperties: false` partout pour Anthropic/OpenAI (`output_config.format` /
+  `response_format` strict) ; variante OpenAPI restreinte pour Gemini
+  (`generationConfig.responseSchema`, sans `$ref`, `Optional[X]` → `{"type": "X", "nullable":
+  true}`). La réponse est ensuite validée par Pydantic ; si elle ne valide pas, une seule
+  nouvelle tentative est faite en expliquant l'erreur au modèle avant d'abandonner
+  (`InvalidExtractionResponseError`).
+- **Erreurs normalisées** (`pbm_api.ai.errors`) : `InvalidApiKeyError`, `QuotaExceededError`,
+  `ProviderOverloadedError`, `ProviderUnreachableError`, `ContentRefusedError` — chacune porte un
+  `user_message` prêt à afficher et à consigner sur le `Job` (mission point 3). La
+  correspondance code HTTP → erreur est commune à Anthropic/OpenAI
+  (`pbm_api.ai.http_errors`) ; Gemini a la sienne (`gemini_provider._raise_for_gemini_error`) car
+  un 400 y couvre aussi bien une clé invalide qu'une requête malformée — distingués par
+  `error.status` du corps JSON, pas par le seul code HTTP.
+- **Photos** : `pbm_api.ai.images.detect_media_type` sniffe le type MIME depuis les octets
+  (JPEG/PNG/WebP), jamais supposé depuis l'extension du fichier.
+- **Sans clé réelle sur chimera** : suite automatisée sur réponses enregistrées
+  (`apps/api/tests/test_ai_providers.py`, `httpx.MockTransport`) ; essai manuel avec une vraie
+  clé : `uv run python scripts/test_ai_extraction_manual.py <provider> <clé>` depuis
+  `apps/api`.
+
 ## Reconnaissance
 
 1. **Détection** : contours OpenCV + ratio 63×88 mm, redressement perspective ; repli par boîtes
    englobantes demandées au LLM quand la photo est difficile (pochettes, reflets, fond clair).
 2. **Extraction** par carte : nom, numéro (`236/217`, `XY121`, `TG05`), code d'extension, langue, PV,
-   variante — sortie structurée validée par schéma.
+   variante — sortie structurée validée par schéma, via `AIProvider.extract` (§ précédent, lot
+   `v3-ia-providers`) avec la clé de l'utilisateur.
 3. **Rapprochement** avec le catalogue : numéro + extension, puis numéro + nom, puis recherche floue ;
    top 3 avec score.
 4. **Validation humaine** obligatoire ; chaque correction alimente le jeu de régression.

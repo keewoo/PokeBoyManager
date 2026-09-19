@@ -100,6 +100,21 @@ ProviderKeyTester`, injecté par dépendance FastAPI — remplacé par un double
 (aucune clé IA réelle disponible sur chimera) ; essai manuel avec une vraie clé :
 `uv run python scripts/test_ai_key_manual.py <provider> <clé>` depuis `apps/api`.
 
+## Fournisseurs IA (lot `v3-ia-providers`)
+
+Interface unique `AIProvider.extract(images, schema, prompt) -> (objet validé, usage)`
+(`apps/api/src/pbm_api/ai/base.py`) — implémentations `AnthropicProvider`/`OpenAiProvider`/
+`GeminiProvider` (`apps/api/src/pbm_api/ai/`), fabriquées par `pbm_api.ai.factory.
+create_provider(provider, api_key)`. Sortie structurée native par fournisseur + validation
+Pydantic (schéma traduit par `pbm_api.ai.json_schema`, `$ref` repliés) ; une nouvelle tentative
+guidée si le JSON ne valide pas. Erreurs normalisées (`pbm_api.ai.errors` :
+`InvalidApiKeyError`/`QuotaExceededError`/`ProviderOverloadedError`/`ProviderUnreachableError`/
+`ContentRefusedError`), chacune avec un `user_message` prêt à consigner sur un `Job`. Détail :
+`docs/ARCHITECTURE.md` § « Fournisseurs IA ». Tests sur réponses enregistrées
+(`apps/api/tests/test_ai_providers.py`, `httpx.MockTransport`, aucune clé réelle sur chimera) ;
+essai manuel avec une vraie clé : `uv run python scripts/test_ai_extraction_manual.py <provider>
+<clé>` depuis `apps/api`.
+
 ## Règles de la flotte applicables ici (résumé de `~/.claude/CLAUDE.md`)
 
 - On construit sur chimera (32 Go, 16 threads) et on ne construit jamais sur la machine qui sert.
