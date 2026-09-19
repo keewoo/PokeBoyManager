@@ -40,6 +40,7 @@ class DetectionResponse(BaseModel):
     reading_order: int
     status: DetectionStatus
     crop_url: str
+    extraction: dict | None
     candidates: list | None
 
 

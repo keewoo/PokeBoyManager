@@ -19,6 +19,7 @@ from pbm_api.db import async_session_factory
 from pbm_api.detection.service import run_detection_for_upload
 from pbm_api.email import get_email_sender
 from pbm_api.export.service import run_export
+from pbm_api.identification.service import run_identification_for_upload
 from pbm_api.models import DataExport, Job, JobStatus, Upload, User
 from pbm_api.pricing.exchange_rates import EcbClient, store_daily_rates
 from pbm_api.pricing.service import collect_daily_prices
@@ -171,9 +172,17 @@ async def _run_detect_cards(job_id: str) -> dict:
             if upload is None:
                 raise LookupError(f"upload {upload_id} introuvable")
             summary = await run_detection_for_upload(session, storage, upload)
+            # Identification (mission `v3-identification`) chaînée dans le même job que la
+            # détection : un seul aller-retour par la file par photo, et le principe cadre « un
+            # appel IA par carte, dès le premier tir » veut dire un appel par carte détectée,
+            # pas un job de plus par carte.
+            id_summary = await run_identification_for_upload(session, storage, upload)
             report = {
                 "detections_count": summary.detections_count,
                 "method": summary.method,
+                "identified_count": id_summary.identified_count,
+                "identification_cache_hits": id_summary.cache_hits,
+                "identification_ai_calls": id_summary.ai_calls,
             }
             job.status = JobStatus.succeeded
             job.result = report

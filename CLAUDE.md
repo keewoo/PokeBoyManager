@@ -149,6 +149,29 @@ toute façon jamais déchiffrables hors de leur usage fournisseur). La suppressi
 objets de stockage (photos de collection, envois, recadrages de détection, archives d'export)
 avant le `DELETE` en cascade — pas seulement l'avatar.
 
+## Identification des cartes (lot `v3-identification`)
+
+Chaîné dans le même job `detect_cards` que la détection (`pbm_api.identification.service.
+run_identification_for_upload`, appelé par `pbm_api.worker.detect_cards_task` juste après
+`run_detection_for_upload`) — jamais un second aller-retour par la file. Pour chaque `Detection`
+en attente : empreinte perceptuelle du recadrage (aHash 64 bits, `pbm_api.identification.
+fingerprint.compute_phash`) ; touchée dans `identification_cache` (distance de Hamming ≤ 6,
+`pbm_api.identification.cache`, cache partagé entre utilisateurs comme `card_insights`), le
+résultat est réutilisé sans appel IA ; sinon un appel `AIProvider.extract`
+(`pbm_api.identification.extraction.extract_card`, schéma `CardExtraction` — nom, numéro, total,
+code d'extension, langue, PV, type, variante, confiance par champ) puis rapprochement catalogue
+(`pbm_api.identification.reconciliation.reconcile` : numéro + extension exacts, sinon numéro +
+nom, sinon recherche floue sur le nom seul, en réutilisant `pbm_api.catalog.search.
+match_candidates` tel quel) — top 3 avec score combiné (score catalogue × confiance moyenne),
+présélection au-delà de 0,9. Résultat écrit sur `Detection.extraction`/`Detection.candidates`,
+exposé par `GET /uploads/{id}/detections`. Comparaison visuelle recadrage/image officielle
+(second appel IA par carte) non implémentée : contredirait le principe « un seul appel IA par
+carte, dès le premier tir ». Jeu de 100 cartes étiquetées et mesure de précision : `uv run
+pytest tests/test_identification_synthetic_dataset.py` (fait foi, CI) ou `uv run python
+scripts/measure_identification_rate.py` (mise au point, `report.json`) ; essai manuel avec une
+vraie clé : `uv run python scripts/test_identification_manual.py <provider> <clé>` depuis
+`apps/api`. Détail : `docs/ARCHITECTURE.md` § « Reconnaissance ».
+
 ## Règles de la flotte applicables ici (résumé de `~/.claude/CLAUDE.md`)
 
 - On construit sur chimera (32 Go, 16 threads) et on ne construit jamais sur la machine qui sert.

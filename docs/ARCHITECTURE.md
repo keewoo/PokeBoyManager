@@ -213,12 +213,35 @@ passe par `pbm_api.ai.factory.create_provider(provider, api_key)`.
    clair ; taux de détection mesuré ≥ 95 % une fois le repli LLM actif (`scripts/
    measure_detection_rate.py`), 63 % à l'OpenCV seul (D4 : sans clé IA, ce taux plus bas
    s'applique et l'ajout manuel reste toujours possible).
-2. **Extraction** par carte : nom, numéro (`236/217`, `XY121`, `TG05`), code d'extension, langue, PV,
-   variante — sortie structurée validée par schéma, via `AIProvider.extract` (§ précédent, lot
-   `v3-ia-providers`) avec la clé de l'utilisateur.
-3. **Rapprochement** avec le catalogue : numéro + extension, puis numéro + nom, puis recherche floue ;
-   top 3 avec score.
-4. **Validation humaine** obligatoire ; chaque correction alimente le jeu de régression.
+2. **Extraction** par carte (lot `v3-identification`) : nom, numéro (`236/217`, `XY121`, `TG05`),
+   total de l'extension, code d'extension, langue, PV, type, variante — sortie structurée
+   validée par schéma (`pbm_api.identification.schemas.CardExtraction`, un champ de confiance
+   par valeur), via `AIProvider.extract` (§ précédent, lot `v3-ia-providers`) avec la clé de
+   l'utilisateur (`pbm_api.identification.extraction.extract_card`, un seul appel par carte).
+3. **Rapprochement** avec le catalogue (`pbm_api.identification.reconciliation.reconcile`) :
+   numéro + extension exacts, sinon numéro + nom, sinon recherche floue sur le nom seul — un
+   palier n'est tenté que si le précédent n'a rien trouvé, en réutilisant tel quel
+   `pbm_api.catalog.search.match_candidates` (`set_code` filtre strictement au premier palier,
+   `set_hint` ne fait que pondérer ensuite : un code d'extension mal lu par l'OCR n'écarte jamais
+   la bonne carte). Top 3 avec score combiné (score catalogue × confiance moyenne des champs du
+   palier retenu) ; au-delà de 0,9 le premier candidat est présélectionné
+   (`IdentificationCandidate.preselected`). Cache partagé entre utilisateurs par empreinte
+   perceptuelle du recadrage (aHash 64 bits, `pbm_api.identification.fingerprint`, distance de
+   Hamming ≤ 6, `pbm_api.identification.cache`/table `identification_cache`) : une carte
+   rephotographiée ne rappelle jamais l'IA. Chaîné dans le même job `detect_cards` que la
+   détection (`pbm_api.identification.service.run_identification_for_upload`, appelé par
+   `pbm_api.worker.detect_cards_task` juste après `run_detection_for_upload`) — pas un second
+   aller-retour par la file. Résultat écrit sur `Detection.extraction`/`Detection.candidates`,
+   exposé par `GET /uploads/{id}/detections` (`routers/uploads.py`), déjà borné au propriétaire
+   de l'envoi. Comparaison visuelle recadrage/image officielle (mission `v3-identification`
+   point 3) non implémentée : un second appel IA par carte contredirait le principe ci-dessus
+   (« un seul appel IA par carte, dès le premier tir ») — voir le compte rendu du lot. Précision
+   mesurée sur un jeu de 100 cartes étiquetées (dont les 9 cartes de démonstration,
+   `pbm_api.identification.synthetic`, extractions bruitées de façon déterministe — aucune vraie
+   photo/clé IA sur chimera) : top-1 93 %, top-3 99 % (objectif ≥ 95 %,
+   `tests/test_identification_synthetic_dataset.py`, `scripts/measure_identification_rate.py`).
+4. **Validation humaine** obligatoire (lot `v3-validation`) ; chaque correction alimente le jeu
+   de régression.
 5. **État** indicatif (centrage mesuré, coins, bords, surface) et drapeau « contrefaçon probable ».
 
 ## Anecdotes sourcées (lot `v4-anecdotes`)

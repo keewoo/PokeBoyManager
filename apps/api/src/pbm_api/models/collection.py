@@ -61,6 +61,11 @@ class Detection(Base, TimestampMixin):
     )
     bbox: Mapped[dict] = mapped_column(JSONB, nullable=False)
     crop_s3_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    # Sortie brute de l'extraction IA par carte (mission `v3-identification` point 1 : nom,
+    # numéro, total, code d'extension, langue, PV, type, variante, confiance par champ) — utile
+    # à l'écran de validation (lot `v3-validation`) même quand aucun candidat catalogue ne
+    # dépasse le seuil de présélection.
+    extraction: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     candidates: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     status: Mapped[DetectionStatus] = mapped_column(
         Enum(DetectionStatus, name="detection_status"),
