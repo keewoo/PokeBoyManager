@@ -35,6 +35,8 @@ test.describe("Écran de validation (lot v3-validation)", () => {
     const email = uniqueEmail();
 
     await page.goto("/inscription");
+    await page.getByLabel(/^nom$/i).fill("Dresseur");
+    await page.getByLabel(/date de naissance/i).fill("2000-01-01");
     await page.getByLabel(/e-mail/i).fill(email);
     await page.getByLabel(/mot de passe/i).fill(PASSWORD);
     await page.getByLabel(/j'accepte les conditions/i).check();
@@ -56,6 +58,7 @@ test.describe("Écran de validation (lot v3-validation)", () => {
     await expect(page.getByText(/1 carte trouvée/i)).toBeVisible();
     await expect(page.getByText(/Sarmuraï/).first()).toBeVisible();
     await expect(page.getByRole("button", { name: /valider/i })).toBeVisible();
+    await page.waitForLoadState("networkidle");
 
     await page.screenshot({
       path: "../../docs/roadmap/comptes-rendus/assets/v3-validation-ecran.png",

@@ -13,6 +13,8 @@ test.describe("Parcours inscription → vérification → connexion", () => {
     const email = uniqueEmail();
 
     await page.goto("/inscription");
+    await page.getByLabel(/^nom$/i).fill("Dresseur");
+    await page.getByLabel(/date de naissance/i).fill("2000-01-01");
     await page.getByLabel(/e-mail/i).fill(email);
     await page.getByLabel(/mot de passe/i).fill(PASSWORD);
     await page.getByLabel(/j'accepte les conditions/i).check();

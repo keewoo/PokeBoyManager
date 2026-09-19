@@ -44,6 +44,15 @@ def _top_candidate(detection: Detection) -> dict | None:
     return detection.candidates[0] if detection.candidates else None
 
 
+def _counterfeit_suspected(detection: Detection) -> bool:
+    """Reprend le drapeau de `Detection.condition_assessment` (mission `v3-etat` point 3,
+    `pbm_api.state.service`) au moment où l'exemplaire est créé — jamais une contrefaçon
+    probable valorisée comme l'originale (`pbm_api.pricing.valuation.item_value`)."""
+    if not detection.condition_assessment:
+        return False
+    return bool(detection.condition_assessment.get("counterfeit_suspected", False))
+
+
 async def _get_owned_detection(
     db: AsyncSession, user: User, detection_id: uuid.UUID
 ) -> Detection:
@@ -72,6 +81,7 @@ async def confirm_detection(
     top = _top_candidate(detection)
     proposed_card_id = uuid.UUID(top["card_id"]) if top else None
     acquired_at = data.acquired_at or date.today()
+    counterfeit_suspected = _counterfeit_suspected(detection)
 
     items = [
         CollectionItem(
@@ -81,6 +91,7 @@ async def confirm_detection(
             language=data.language,
             variant=data.variant,
             condition_grade=data.condition_grade,
+            counterfeit_suspected=counterfeit_suspected,
             purchase_price=data.purchase_price,
             purchase_currency=data.purchase_currency,
             photo_s3_key=detection.crop_s3_key,
@@ -154,6 +165,7 @@ async def confirm_all(
                 detection_id=detection.id,
                 language=CONFIRM_ALL_LANGUAGE,
                 variant=CONFIRM_ALL_VARIANT,
+                counterfeit_suspected=_counterfeit_suspected(detection),
                 photo_s3_key=detection.crop_s3_key,
                 acquired_at=date.today(),
             )

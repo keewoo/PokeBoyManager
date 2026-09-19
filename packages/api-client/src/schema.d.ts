@@ -430,9 +430,9 @@ export interface paths {
         };
         /**
          * List Detections
-         * @description Cartes détectées sur un envoi (mission `v3-detection`), avec leur extraction et leurs
-         *     candidats catalogue une fois identifiées (mission `v3-identification`) : préalable à la
-         *     validation humaine (lot `v3-validation`).
+         * @description Cartes détectées sur un envoi (mission `v3-detection`), avec leur extraction, leurs
+         *     candidats catalogue une fois identifiées (mission `v3-identification`) et leur état estimé
+         *     (mission `v3-etat`) : préalable à la validation humaine (lot `v3-validation`).
          */
         get: operations["list_detections_uploads__upload_id__detections_get"];
         put?: never;
@@ -960,6 +960,10 @@ export interface components {
             } | null;
             /** Candidates */
             candidates: unknown[] | null;
+            /** Condition */
+            condition: {
+                [key: string]: unknown;
+            } | null;
         };
         /**
          * DetectionStatus

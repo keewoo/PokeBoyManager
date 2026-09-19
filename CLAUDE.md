@@ -237,6 +237,15 @@ envois est fusionnée côté client et triée par ordre de lecture. Raccourcis c
 candidat sélectionné — désactivés quand le focus est dans un champ de saisie. Recherche manuelle :
 réutilise `GET /catalog/search` tel quel (`pbm_api.routers.catalog`, lot `v2-recherche`).
 
+Rebasé sur `v3-etat`/`v1-identite` (fusionnés dans `origin/main` pendant cette session) :
+`Detection.condition_assessment` (état estimé + contrefaçon, un seul appel IA partagé avec
+l'identification) existe désormais — la carte de validation affiche l'état estimé et un badge
+« contrefaçon probable » quand il est présent, pré-remplit (sans l'imposer) le champ « État »
+manuel. `confirm`/`confirm-all` reprennent le drapeau `counterfeit_suspected` de la détection sur
+le `CollectionItem` créé (`pbm_api.validation.service._counterfeit_suspected`) — sans ça, une
+contrefaçon probable aurait été valorisée comme l'originale
+(`pbm_api.pricing.valuation.item_value`).
+
 Tests : `apps/api/tests/test_validation_routes.py` (confirm/reject/confirm-all, flux SSE, accès
 croisé) — le worker arq n'étant pas démarré pendant les tests, `_simulate_worker` reproduit
 `worker._run_detect_cards` (détection puis identification directement, `Job.status` transité à la

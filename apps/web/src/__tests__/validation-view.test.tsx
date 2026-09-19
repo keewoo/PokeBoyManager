@@ -72,6 +72,7 @@ function uploadDetail(overrides: Partial<Awaited<ReturnType<typeof getUpload>>> 
             preselected: true,
           },
         ],
+        condition: null,
       },
     ],
     ...overrides,

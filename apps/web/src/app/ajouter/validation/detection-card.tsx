@@ -148,10 +148,20 @@ export function DetectionCard({
           </span>
           {detection.status === "validated" && <Badge variant="success">validée</Badge>}
           {detection.status === "rejected" && <Badge variant="danger">rejetée</Badge>}
+          {detection.condition?.counterfeit_suspected && (
+            <Badge variant="danger">contrefaçon probable</Badge>
+          )}
         </div>
 
         {isProcessing && (
           <p className="mt-1 text-sm text-muted-foreground">Identification en cours…</p>
+        )}
+
+        {detection.condition?.overall_grade_label && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            état estimé <span className="font-medium text-foreground">{detection.condition.overall_grade_label}</span>
+            {detection.condition.score_10 !== null ? ` (≈ ${detection.condition.score_10}/10)` : ""}
+          </p>
         )}
 
         {!isProcessing && candidates.length === 0 && !manualCard && (

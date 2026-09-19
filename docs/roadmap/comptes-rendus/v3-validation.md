@@ -17,6 +17,36 @@ régression de l'identification que `v3-identification` avait signalé comme man
 clic ou au clavier (1/2/3), recherche manuelle au catalogue, champs langue/variante/quantité/
 état/prix d'achat, raccourci Entrée pour valider la carte active.
 
+## Rebase sur `origin/main` (deux lots fusionnés pendant la session)
+
+`v1-identite` et `v3-etat` ont fusionné dans `origin/main` pendant cette session — les deux
+touchaient exactement les fichiers de ce lot :
+
+- **`v3-etat`** a posé `Detection.condition_assessment` (état estimé + contrefaçon probable, un
+  seul appel IA partagé avec l'identification, cohérent avec le principe cadre) et
+  `CollectionItem.counterfeit_suspected`. Conflit de fusion dans `routers/uploads.py` (les deux
+  lots ajoutaient un champ à `DetectionResponse` dans la même fonction) résolu en gardant les
+  deux ; intégration supplémentaire faite ici (pas par `v3-etat`, qui ne créait aucun
+  `CollectionItem`) : `confirm`/`confirm-all` reprennent désormais `counterfeit_suspected` sur
+  l'exemplaire créé (`_counterfeit_suspected`, test dédié
+  `test_confirm_detection_carries_counterfeit_flag_to_collection_item`) — sans ce lien, une
+  contrefaçon probable aurait été ajoutée à la collection valorisée comme l'originale. Front :
+  badge « contrefaçon probable » et pré-remplissage (non imposé) du champ « État » avec le
+  palier estimé.
+- **`v1-identite`** a rendu `last_name`/`birth_date`/`accept_terms` obligatoires à l'inscription
+  (`POST /auth/register`) et ajouté les champs correspondants au formulaire `/inscription`. Mes
+  tests API (helper `_register_verify_login`) et mon e2e Playwright ont été mis à jour en
+  conséquence. **`apps/web/e2e/auth.spec.ts` (test préexistant, pas de ce lot) était cassé par ce
+  changement** (toujours 2 champs remplis, formulaire refusé) — corrigé ici plutôt que laissé
+  rouge : sans ce correctif, le job e2e de la CI aurait échoué sur un test qui n'est pas le mien,
+  bloquant la fusion de ce lot comme de tout autre.
+- **Migration Alembic re-chaînée** : `d27e4efd0255` (ce lot) et `328aef94ea58` (`v1-identite`)
+  partaient toutes les deux de `054d503ae627` (dernière tête au moment où chaque lot a été
+  développé) — après rebase, deux têtes. `down_revision` de `d27e4efd0255` changé pour pointer
+  sur `066f6a4397cb` (nouvelle tête réelle, posée par `v3-etat`), une seule tête restaurée. Les
+  trois bases dédiées (`pbm_v3_validation`, `_test`, `_e2e`) recréées et remigrées de zéro pour
+  vérifier la chaîne complète.
+
 ## Livrables
 
 - `apps/api/src/pbm_api/validation/` (nouveau module) :
@@ -50,6 +80,8 @@ clic ou au clavier (1/2/3), recherche manuelle au catalogue, champs langue/varia
 - `apps/api/scripts/seed_validation_e2e.py` — sème un envoi déjà identifié pour l'e2e (aucune
   clé IA réelle disponible sur chimera).
 - `apps/web/e2e/validation.spec.ts` — preuve de conformité à la maquette.
+- `apps/web/e2e/auth.spec.ts` (préexistant, pas de ce lot) — corrigé après rebase sur
+  `v1-identite` (formulaire d'inscription à 5 champs, voir « Rebase »).
 - `docs/roadmap/comptes-rendus/assets/v3-validation-ecran.png` — capture de l'écran réel.
 - `CLAUDE.md` § « Écran de validation » — mis à jour.
 - `packages/api-client/src/schema.d.ts` régénéré (`pnpm gen:api`).
@@ -65,10 +97,11 @@ All checks passed!
 
 $ TEST_DATABASE_URL=postgresql+asyncpg://pbm:pbm@localhost:55432/pbm_v3_validation_test \
   TZ=Europe/Paris LC_ALL=fr_FR.UTF-8 uv run pytest -q
-347 passed in ~46s   # 335 préexistants (rebasé sur origin/main) + 12 nouveaux
+434 passed in ~1min   # 421 préexistants (après rebase sur origin/main, `v1-identite`/`v3-etat`
+                       # inclus) + 13 nouveaux
 ```
 
-- `tests/test_validation_routes.py` (12 tests) — **échouent tous sans ce lot** (aucune des
+- `tests/test_validation_routes.py` (13 tests) — **échouent tous sans ce lot** (aucune des
   routes n'existait, 404 partout) et passent une fois branchées :
   - `GET /uploads/{id}` : état + job + détections ; 404 pour l'envoi d'un autre utilisateur.
   - Flux SSE (`GET /uploads/{id}/events`) : `event: snapshot` puis `event: done` (le job est
@@ -84,7 +117,9 @@ $ TEST_DATABASE_URL=postgresql+asyncpg://pbm:pbm@localhost:55432/pbm_v3_validati
   - `reject` : marque `rejected`, aucun `CollectionItem`, correction avec `chosen_card_id=None`.
   - `confirm-all` : confirme la détection dont le premier candidat est présélectionné, laisse
     `pending` celle qui n'a aucun candidat ; 404 pour l'envoi d'un autre utilisateur.
-- Suite complète (347) toujours verte après le passage à un commit par carte dans
+  - `confirm` reprend `counterfeit_suspected` de `Detection.condition_assessment` (lot `v3-etat`,
+    fusionné pendant cette session) sur le `CollectionItem` créé — voir « Rebase ».
+- Suite complète (434) toujours verte après le passage à un commit par carte dans
   `detection/service.py`/`identification/service.py` — non-régression du pipeline existant.
 
 ```
@@ -95,7 +130,7 @@ $ pnpm --filter @pbm/web lint && pnpm --filter @pbm/web type-check && pnpm --fil
 ✓ next build — /ajouter/validation généré (route dynamique, 7,31 kB)
 
 $ pnpm --filter @pbm/web test
-64 passed   # 60 préexistants + 4 nouveaux (validation-view.test.tsx)
+65 passed   # 61 préexistants (après rebase) + 4 nouveaux (validation-view.test.tsx)
 ```
 
 - `validation-view.test.tsx` (4 tests, nouveaux) : affiche le candidat présélectionné ; valide
@@ -109,20 +144,25 @@ $ pnpm --filter @pbm/web test
 
 ```
 $ cd apps/web && E2E_DATABASE_URL=postgresql+asyncpg://pbm:pbm@localhost:55432/pbm_v3_validation_e2e \
-  pnpm exec playwright test e2e/validation.spec.ts --reporter=list
-✓ 1 [chromium] › affiche la carte détectée et la valide dans la collection (4.1s)
-1 passed (25.7s)
+  pnpm exec playwright test --reporter=list
+✓ auth.spec.ts › un visiteur crée son compte, vérifie son e-mail puis se connecte (45.4s)
+✓ auth.spec.ts › une page privée redirige vers /connexion?next=... sans session
+✓ auth.spec.ts › un mot de passe oublié renvoie le même écran, e-mail connu ou non
+✓ validation.spec.ts › affiche la carte détectée et la valide dans la collection (56.1s)
+4 passed
 ```
 
 Capture réelle (navigateur, pas une maquette JS) : `docs/roadmap/comptes-rendus/assets/
 v3-validation-ecran.png` — stepper « 3 · Validation », panneau « DÉTECTION » avec le recadrage,
 carte candidate avec nom/confiance/candidats/recherche manuelle/champs de collection, bouton
 « Ajouter les 1 carte validées », Valider/Rejeter. Conforme à la structure de l'onglet Maquette
-de `ROADMAP.html` (§ `V.validation`), à ceci près (assumé, voir « Choix techniques ») : pas de
-badge « contrefaçon probable »/« à vérifier » (heuristique de la maquette, aucune détection de
-contrefaçon dans l'API réelle) et l'image officielle du candidat de test est cassée dans la
-capture (carte semée par le script e2e, sans `image_url` réel de catalogue — comportement correct
-de `/img/cards/{id}`, qui refuse plutôt qu'un succès vide, voir `routers/images.py`).
+de `ROADMAP.html` (§ `V.validation`) ; le badge « contrefaçon probable » (posé après rebase sur
+`v3-etat`, voir « Rebase ») n'apparaît pas sur cette capture précise car le script de semis e2e ne
+renseigne pas `condition_assessment` — couvert côté API par
+`test_confirm_detection_carries_counterfeit_flag_to_collection_item`. L'image officielle du
+candidat de test est cassée dans la capture (carte semée par le script e2e, sans `image_url` réel
+de catalogue — comportement correct de `/img/cards/{id}`, qui refuse plutôt qu'un succès vide,
+voir `routers/images.py`).
 
 ⚠️ **Piège d'environnement rencontré et documenté ici pour les lots suivants** : Playwright était
 jusqu'ici **inutilisable sur chimera** (`chrome-headless-shell: error while loading shared
@@ -136,6 +176,17 @@ voudra du Playwright en local sur chimera, ou mieux, à corriger une fois pour t
 apt-get install -y libnspr4 libnss3 libasound2` (ou `pnpm exec playwright install-deps`) — hors
 de portée de cette session (pas de sudo). La CI GitHub Actions n'est pas affectée (`playwright
 install --with-deps chromium` sur un runner neuf).
+
+⚠️ **Second piège, également préexistant et sans rapport avec ce lot** : `POST /auth/register`
+appelle en vrai `api.pwnedpasswords.com` (`pbm_api.security.compromised.CompromisedPasswordChecker`,
+timeout 3 s, échec réseau non bloquant) — sur le réseau de chimera (~250 Ko/s), cet appel a pris
+jusqu'à 45 s dans mes mesures, largement au-delà du timeout par défaut de Playwright (30 s), sans
+jamais échouer côté serveur. Relevé pour que la prochaine session ne perde pas de temps à chercher
+un bug applicatif là où c'est le réseau de la machine qui est en cause ; sans impact sur la CI
+(runners GitHub, accès internet direct).
+
+**`apps/web/e2e/auth.spec.ts` corrigé** (test préexistant, pas de ce lot) : cassé par le rebase
+sur `v1-identite` (inscription devenue à 5 champs) — voir « Rebase » ci-dessus.
 
 Aucun secret dans le dépôt, les journaux ou les sorties : aucune clé IA réelle nulle part (clé de
 test au format valide déjà utilisée par `v3-identification`/`v3-detection`, jamais une vraie) ;
@@ -202,10 +253,6 @@ test au format valide déjà utilisée par `v3-identification`/`v3-detection`, j
   qui tournent en parallèle dans le même test. Vérifié manuellement à la place (navigateur,
   capture jointe) : la connexion SSE ouverte pendant que le worker simulé s'exécute a bien montré
   les détections apparaître une à une avant l'événement `done`.
-- **Pas de badge « contrefaçon probable »** (présent dans la maquette) : aucune détection de
-  contrefaçon n'existe dans l'API réelle (`v3-identification` ne l'a jamais implémentée, l'IA ne
-  sert qu'à identifier et rapprocher du catalogue) — écran conforme aux données réellement
-  disponibles, pas à cet élément spécifique de la maquette qui illustrait un cas hypothétique.
 - **Environnement Playwright de chimera cassé pour tous les lots**, pas seulement celui-ci (voir
   « Tests » § piège documenté) — contourné pour cette session, pas corrigé à la racine (pas de
   `sudo`).

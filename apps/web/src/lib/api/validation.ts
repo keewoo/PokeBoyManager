@@ -34,6 +34,15 @@ export type CardExtraction = {
   variant_confidence: number;
 };
 
+/** Forme écrite par `pbm_api.state.service` (lot `v3-etat`) — `DetectionResponse.condition` est
+ * un `dict` non typé côté API (`{[key: string]: unknown}` dans le schéma OpenAPI généré). */
+export type ConditionAssessment = {
+  overall_grade_label: string | null;
+  score_10: number | null;
+  counterfeit_suspected: boolean;
+  counterfeit_reasons: string[];
+};
+
 export type Detection = {
   id: string;
   reading_order: number;
@@ -41,6 +50,7 @@ export type Detection = {
   crop_url: string;
   extraction: CardExtraction | null;
   candidates: IdentificationCandidate[] | null;
+  condition: ConditionAssessment | null;
 };
 
 export type JobStatus = "queued" | "running" | "succeeded" | "failed";

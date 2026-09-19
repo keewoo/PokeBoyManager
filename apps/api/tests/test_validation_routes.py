@@ -88,7 +88,16 @@ def _unique_email(label: str) -> str:
 
 
 async def _register_verify_login(client: httpx.AsyncClient, email: str) -> str:
-    response = await client.post("/auth/register", json={"email": email, "password": PASSWORD})
+    response = await client.post(
+        "/auth/register",
+        json={
+            "email": email,
+            "password": PASSWORD,
+            "last_name": "Dresseur",
+            "birth_date": "2000-01-01",
+            "accept_terms": True,
+        },
+    )
     assert response.status_code == 202, response.text
     sent = client.email_sender.sent  # type: ignore[attr-defined]
     match = re.search(r"token=(\S+)", sent[-1]["body"])
@@ -341,6 +350,43 @@ async def test_confirm_detection_creates_collection_items_and_logs_correction(
     correction = correction_result.scalar_one()
     assert correction.proposed_card_id == card.id
     assert correction.chosen_card_id == card.id
+
+
+async def test_confirm_detection_carries_counterfeit_flag_to_collection_item(
+    api_client, db_session, storage, monkeypatch
+):
+    """`Detection.condition_assessment` (mission `v3-etat` point 3) signale une contrefaçon
+    probable : `confirm` doit reprendre ce drapeau sur `CollectionItem.counterfeit_suspected`,
+    jamais valoriser une contrefaçon probable comme l'originale
+    (`pbm_api.pricing.valuation.item_value`)."""
+    card = await _seed_sarmurai(db_session)
+    csrf = await _register_verify_login(api_client, _unique_email("val-confirm-counterfeit"))
+    photo = make_single_card(seed=38, index=0)
+    upload_id, job_id = await _upload_and_complete_with_ai_key(
+        api_client, csrf, _encode(photo.image)
+    )
+    await _simulate_worker(db_session, storage, upload_id, job_id, monkeypatch, STUB_PAYLOAD)
+    detection = await _first_detection(api_client, upload_id)
+
+    stored_detection = await db_session.get(Detection, uuid.UUID(detection["id"]))
+    stored_detection.condition_assessment = {
+        "counterfeit_suspected": True,
+        "counterfeit_reasons": ["x"],
+    }
+    await db_session.commit()
+
+    response = await api_client.post(
+        f"/detections/{detection['id']}/confirm",
+        json={"card_id": str(card.id)},
+        headers={CSRF_HEADER_NAME: csrf},
+    )
+    assert response.status_code == 200, response.text
+
+    items_result = await db_session.execute(
+        select(CollectionItem).where(CollectionItem.detection_id == uuid.UUID(detection["id"]))
+    )
+    item = items_result.scalar_one()
+    assert item.counterfeit_suspected is True
 
 
 async def test_confirm_detection_with_different_card_logs_a_real_correction(

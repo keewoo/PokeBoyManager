@@ -31,7 +31,9 @@ function defaultForm(detection: Detection): ConfirmForm {
       ? (detection.extraction!.variant as string)
       : "normal",
     quantity: 1,
-    conditionGrade: "",
+    // Pré-rempli depuis l'estimation automatique (lot `v3-etat`) quand elle existe, toujours
+    // modifiable — jamais imposé : l'utilisateur reste le dernier mot sur l'état déclaré.
+    conditionGrade: detection.condition?.overall_grade_label ?? "",
     purchasePrice: "",
   };
 }
