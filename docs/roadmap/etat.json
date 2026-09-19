@@ -2787,10 +2787,10 @@
       "attente": null
     },
     "v4-insights-batch": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
+      "statut": "en_cours",
+      "machine": "chimera",
+      "branche": "roadmap/v4-insights-batch",
+      "debut_reel": "2026-09-20",
       "fin_reelle": null,
       "taches": {
         "dev": {
@@ -2839,8 +2839,16 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-20T00:03+0200",
+          "machine": "chimera",
+          "evenement": "démarré",
+          "detail": "roadmap/v4-insights-batch"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": null
     },
     "v3-identification-visuelle": {
       "statut": "en_cours",
