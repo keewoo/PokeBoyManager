@@ -20,6 +20,9 @@ class User(Base, TimestampMixin):
     email: Mapped[str] = mapped_column(String(320), unique=True, nullable=False, index=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     email_verified_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    # Devise d'affichage de la valeur de collection (lot v2-prix) — code ISO 4217, converti
+    # depuis la référence EUR via `exchange_rates_daily` (pbm_api.pricing.exchange_rates).
+    preferred_currency: Mapped[str] = mapped_column(String(3), nullable=False, server_default="EUR")
 
 
 class Session(Base):

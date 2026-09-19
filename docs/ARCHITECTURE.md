@@ -116,11 +116,30 @@ logout,verify-email,forgot,reset}` (`apps/api/src/pbm_api/routers/auth.py`).
 4. **Validation humaine** obligatoire ; chaque correction alimente le jeu de régression.
 5. **État** indicatif (centrage mesuré, coins, bords, surface) et drapeau « contrefaçon probable ».
 
-## Prix
+## Prix (lot `v2-prix`)
 
-Relevé quotidien 06:00 Europe/Paris : Cardmarket (EUR, via TCGdex) et TCGplayer (USD, via Pokémon TCG
-API), taux BCE. Valeur de référence = tendance Cardmarket ; décote par état documentée. Un relevé vide
-déclenche une alerte.
+- Job `daily_prices_task` (arq, cron quotidien 06:00, `apps/api/src/pbm_api/worker.py`) : une
+  ligne `card_prices_daily` par carte × source × variante × jour, idempotente (upsert sur la
+  contrainte unique). Cardmarket via `TcgdexClient.get_card` (`pricing.cardmarket`, EUR) ;
+  TCGplayer via `PtcgClient.list_cards_in_set` groupé par extension déduite de `ptcg_id`
+  (`tcgplayer.prices.<variante>`, USD). Extraction : `pbm_api/pricing/extract.py`. Reprise sur
+  erreur à la carte/au set près, comme l'import catalogue.
+- Job `daily_exchange_rates_task` (même cron) : flux quotidien BCE
+  (`eurofxref-daily.xml`) → `exchange_rates_daily` (`pbm_api/pricing/exchange_rates.py`).
+  `get_rate_to_eur` retombe sur le taux le plus récent connu à une date donnée (pas de
+  publication le week-end), jamais une extrapolation.
+- Sonde (mission point 4) : `EmptyPriceRunError` si aucun prix n'a pu être écrit alors que le
+  catalogue contient des cartes → le `Job` correspondant passe `failed` avec l'erreur en clair,
+  jamais un succès silencieux. Pas d'alerting externe dans ce lot (aucune infra dédiée) : la
+  table `jobs` est le canal, à brancher sur une notification par un lot ultérieur.
+- Service `valuation` (`pbm_api/pricing/valuation.py`) : `reference_price_eur` = tendance
+  Cardmarket, sinon tendance TCGplayer convertie en EUR au taux BCE ; une tendance sans plafond
+  de bon sens (marché fin) est écrêtée à 3× le prix moyen du même relevé (risque documenté :
+  « ne doit pas faire exploser la valeur d'une collection »). `item_value`/`collection_value`
+  appliquent une décote par état (barème M/NM/EX/GD/LP/PL/PO, `CONDITION_MULTIPLIERS`) et
+  convertissent dans la devise demandée (`users.preferred_currency`, colonne du lot). Pas de
+  route HTTP dans ce lot (back-end seul, testé au niveau service) : `collection_value` filtre
+  toujours par `user_id` reçu en paramètre.
 
 ## Environnements
 
