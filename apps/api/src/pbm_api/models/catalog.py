@@ -77,6 +77,14 @@ class Card(Base, TimestampMixin):
     abilities: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     legal_standard: Mapped[bool | None] = mapped_column(nullable=True)
     legal_expanded: Mapped[bool | None] = mapped_column(nullable=True)
+    weaknesses: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    resistances: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    retreat_cost: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Règle spéciale portée par le nom (ex/V/VMAX/GX...), telle qu'exposée par TCGdex (`suffix`).
+    rule_suffix: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # Variantes existantes pour cette carte (ex: {"normal": false, "holo": true, "reverse": false,
+    # "firstEdition": false, "wPromo": false}), telles qu'exposées par TCGdex (`variants`).
+    variants: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     # Identifiants externes pour le rapprochement (v2-catalogue) — voir catalog/reconciliation.py.
     tcgdex_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     ptcg_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)

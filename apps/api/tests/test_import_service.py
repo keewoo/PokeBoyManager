@@ -4,6 +4,10 @@ d'aucun réseau et ne sont jamais flaky à cause d'une API tierce.
 
 `test_import_catalogue_creates_sets_cards_and_names` échoue sans ce lot (aucune des colonnes
 tcgdex_id/ptcg_id/illustrator/attacks/abilities/legal_* n'existe avant la migration) et passe avec.
+
+`test_import_catalogue_fills_completeness_fields` échoue sans le lot `v2-catalogue-complet`
+(colonnes weaknesses/resistances/retreat_cost/rule_suffix/variants inexistantes avant sa
+migration `b671eb503fa3`) et passe avec.
 """
 
 from sqlalchemy import select
@@ -47,6 +51,17 @@ FR_CARD_DETAILS = {
         "attacks": [{"name": "Vortex Explosif", "damage": 330}],
         "abilities": None,
         "legal": {"standard": False, "expanded": True},
+        "weaknesses": [{"type": "Eau", "value": "×2"}],
+        "resistances": [{"type": "Combat", "value": "-30"}],
+        "retreat": 2,
+        "suffix": "ex",
+        "variants": {
+            "firstEdition": False,
+            "holo": True,
+            "normal": False,
+            "reverse": False,
+            "wPromo": False,
+        },
     },
     "sv03.5-025": {
         "id": "sv03.5-025",
@@ -136,6 +151,35 @@ async def test_import_catalogue_creates_sets_cards_and_names(db_session):
     ).scalars().all()
     names_by_lang = {n.language: n.name for n in names}
     assert names_by_lang == {"fr": "Dracaufeu-ex", "en": "Charizard ex"}
+
+
+async def test_import_catalogue_fills_completeness_fields(db_session):
+    await import_catalogue(
+        db_session, FakeTcgdexClient(), FakePtcgClient(), languages=("fr", "en")
+    )
+
+    card = (
+        await db_session.execute(select(Card).where(Card.tcgdex_id == "sv03.5-006"))
+    ).scalar_one()
+    assert card.weaknesses == [{"type": "Eau", "value": "×2"}]
+    assert card.resistances == [{"type": "Combat", "value": "-30"}]
+    assert card.retreat_cost == 2
+    assert card.rule_suffix == "ex"
+    assert card.variants == {
+        "firstEdition": False,
+        "holo": True,
+        "normal": False,
+        "reverse": False,
+        "wPromo": False,
+    }
+
+    # Pikachu (fixture sans weaknesses/resistances/retreat/suffix) : jamais une exception,
+    # les colonnes restent nulles plutôt qu'une valeur inventée.
+    other = (
+        await db_session.execute(select(Card).where(Card.tcgdex_id == "sv03.5-025"))
+    ).scalar_one()
+    assert other.weaknesses is None
+    assert other.rule_suffix is None
 
 
 async def test_import_catalogue_is_idempotent(db_session):

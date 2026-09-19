@@ -72,6 +72,11 @@ async def _upsert_card(
     card.abilities = detail.get("abilities")
     card.legal_standard = legal.get("standard")
     card.legal_expanded = legal.get("expanded")
+    card.weaknesses = detail.get("weaknesses")
+    card.resistances = detail.get("resistances")
+    card.retreat_cost = detail.get("retreat")
+    card.rule_suffix = detail.get("suffix")
+    card.variants = detail.get("variants")
     await session.flush()
     return card, created
 
