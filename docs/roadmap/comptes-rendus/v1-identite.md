@@ -137,6 +137,17 @@ après rebase puisque ce fichier n'existait pas encore quand ce lot a démarré.
 
 Suites complètes (back 331, front 61) et client TypeScript régénérés après rebase — voir Preuves.
 
+**Second rebase, `v3-identification` fusionné entre-temps** — même mécanique de collision de
+migration : `054d503ae627` (identification cache) posée sur la même tête `2e56ba32d5ed` que la
+migration de ce lot. Rechaînée une seconde fois (`328aef94ea58.down_revision` →
+`054d503ae627`, tête unique reconfirmée par `uv run alembic heads`) ; conflit textuel
+supplémentaire sur `CLAUDE.md` (même cause : deux lots ajoutent chacun leur section au même
+endroit), résolu en gardant les deux. `tests/test_identification_service.py` (nouveau fichier de
+`v3-identification`) construisait aussi un `User(...)` sans les champs d'identité désormais
+obligatoires — corrigé. Bases dev/test recréées, migrées de zéro (10 révisions) ; suites
+complètes rejouées une troisième fois (back **350** tests, front **61**) et client TypeScript
+régénéré (sans diff, déjà à jour) — voir Preuves.
+
 ## Preuves — commandes lancées, résultats chiffrés
 
 ```
@@ -149,12 +160,12 @@ $ TZ=Europe/Paris TEST_DATABASE_URL=postgresql+asyncpg://pbm:pbm@localhost:55432
 ........................................................................ [ 45%]
 ........................................................................ [ 68%]
 ........................................................................ [ 90%]
-...........................................                              [100%]
-331 passed, 23 warnings in 40.57s
+..............................................................           [100%]
+350 passed, 23 warnings in 42.56s
 ```
-(313 tests déjà présents après le rebase avec `v5-rgpd` (export/suppression RGPD) + 18 nouveaux
-dans `test_identity.py`. Rejoué une seconde fois après rebase, bases dev/test recréées de zéro —
-voir § Rebase avant fusion.)
+(332 tests déjà présents après les rebases avec `v5-rgpd` (export/suppression RGPD) et
+`v3-identification` + 18 nouveaux dans `test_identity.py`. Rejoué à chaque rebase, bases dev/test
+recréées de zéro — voir § Rebase avant fusion.)
 
 **Preuve ciblée « un test qui échoue sans le changement, passe avec » (§6)** — `POST
 /auth/register` sans les nouveaux champs (comportement avant ce lot) :
