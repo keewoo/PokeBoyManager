@@ -17,6 +17,7 @@ from pbm_api.db import async_session_factory
 from pbm_api.models import Job, JobStatus
 from pbm_api.pricing.exchange_rates import EcbClient, store_daily_rates
 from pbm_api.pricing.service import collect_daily_prices
+from pbm_api.ranking.service import refresh_card_value_rank
 
 JOB_TYPE = "import_catalogue"
 PRICE_JOB_TYPE = "daily_prices"
@@ -91,6 +92,10 @@ async def _run_daily_prices() -> dict:
             ptcg = PtcgClient(http_client=ptcg_http)
             try:
                 report = await collect_daily_prices(session, tcgdex, ptcg)
+                # Mission `v4-ranking` point 1 : la vue matérialisée `card_value_rank` se
+                # rafraîchit juste après un relevé réussi — jamais sur un relevé vide/en échec,
+                # elle refléterait alors des prix qui n'ont pas bougé pour rien.
+                await refresh_card_value_rank(session)
                 job.status = JobStatus.succeeded
                 job.result = report
             except Exception as exc:
