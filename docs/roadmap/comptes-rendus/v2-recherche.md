@@ -39,6 +39,10 @@ score. 50 requêtes de référence en test (paramétrées, contre un vrai Postgr
   `pbm_v2_recherche_test` (tests, migrées via `alembic upgrade head`), `apps/api/.env` local
   (gitignored) pointant dessus. Pas de bucket S3 ni de préfixe Redis dédiés : ce lot ne touche à
   aucune photo ni file de jobs.
+- `apps/api/tests/conftest.py` — `TEST_DATABASE_URL` (littéral par défaut, pas lu depuis `.env` :
+  `os.environ.get(...)` seul) mis à jour vers `pbm_v2_recherche_test` — convention déjà en place
+  d'un lot à l'autre (le défaut précédent pointait `pbm_v2_prix_test`), sans quoi la suite tourne
+  silencieusement contre la base du lot précédent.
 
 ## Tests
 
@@ -47,7 +51,8 @@ $ cd apps/api && uv run ruff check .
 All checks passed!
 
 $ uv run pytest -q
-148 passed in 10.20s   # 80 préexistants + 68 nouveaux
+177 passed in 15.55s   # 109 préexistants (après rebase sur origin/main, v1-byok/v1-pages-auth
+                       # inclus) + 68 nouveaux
 
 $ uv run pytest -q tests/test_catalog_search.py tests/test_catalog_match_candidates.py -v | tail -5
 52 passed   # dont 50 requêtes de référence paramétrées
@@ -56,7 +61,7 @@ $ uv run pytest -q tests/test_catalog_search.py tests/test_catalog_match_candida
 
 Rejoué avec les variables d'environnement de la CI (surcharge des valeurs par défaut, comme
 `.github/workflows/ci.yml`) : `DATABASE_URL`/`TEST_DATABASE_URL`/`REDIS_URL`/`S3_*`/
-`TZ=Europe/Paris` → 148 passed, aucune régression liée aux noms de variables.
+`TZ=Europe/Paris` → suite complète verte, aucune régression liée aux noms de variables.
 
 - `test_search_catalog_route_exists` **échoue sans ce lot** (`404 Not Found`, aucune route
   `/catalog/search` avant) et passe avec.
