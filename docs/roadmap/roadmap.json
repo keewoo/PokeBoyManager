@@ -1,0 +1,1590 @@
+{
+  "meta": {
+    "titre": "Roadmap PokeBoyManager",
+    "date": "2026-09-19",
+    "horizon": [
+      "2026-09-21",
+      "2026-12-20"
+    ],
+    "gel": null,
+    "repo": "https://github.com/keewoo/PokeBoyManager",
+    "objectif": "Un espace **privé** où chaque collectionneur photographie ses cartes Pokémon, laisse **sa propre IA** (Claude, Gemini ou OpenAI) les reconnaître, puis gère sa collection et suit la **valeur de chaque carte dans le temps**. MVP complet en UAT le **6 novembre**, en ligne le **20 novembre**, extensions avant Noël.",
+    "stack": [
+      "**Front** : Next.js 15 (App Router) + React 19 + TypeScript, Tailwind CSS 4, shadcn/ui, TanStack Query, Recharts (courbes de valeur), react-hook-form + zod.",
+      "**Back** : FastAPI (Python 3.12) + SQLAlchemy 2 (async) + Alembic, Pydantic v2, argon2id pour les mots de passe, `cryptography` (AES-256-GCM) pour le coffre de clés IA.",
+      "**Jobs** : arq sur Redis 7 — reconnaissance des photos, import du catalogue, relevé quotidien des prix.",
+      "**Vision** : OpenCV (détection et redressement des cartes) + LLM vision de l'utilisateur via une couche fournisseurs unique (Anthropic, Google, OpenAI).",
+      "**Données** : PostgreSQL 16 (`pg_trgm`, `unaccent`) ; photos sur stockage objet S3 (MinIO en local).",
+      "**Catalogue & prix** : TCGdex (cartes FR + EN, images officielles, prix Cardmarket) et Pokémon TCG API (prix TCGplayer, légalités) ; l'historique est construit par nos relevés quotidiens.",
+      "**Monorepo** : pnpm workspaces (`apps/web`) + uv (`apps/api`) ; client TypeScript généré depuis l'OpenAPI de l'API ; CI GitHub Actions."
+    ],
+    "hypotheses": [
+      "Six couloirs de développement : deux sur devAI (back-end, livraison), quatre sur chimera (front ×2, IA, catalogue & prix), plus le couloir JF. Un couloir porte un seul lot à la fois, dans son propre worktree.",
+      "Le Mac de JF est un poste de travail : on y pilote, on n'y livre pas. Le déploiement UAT/PROD passe par devAI, les images se construisent sur chimera.",
+      "Les images officielles ne sont chargées que depuis le catalogue (TCGdex / Pokémon TCG API), mises en cache chez nous ; la photo de l'utilisateur reste privée.",
+      "Aucune IA « gratuite » implicite : la reconnaissance consomme la clé de l'utilisateur, sauf décision D4 contraire.",
+      "Les APIs gratuites donnent le prix du jour, pas l'historique : la courbe de valeur commence au premier relevé (décision D3 pour un historique rétroactif payant).",
+      "Python 3.12 partout (`UV_PYTHON=3.12`), Node 24. La CI GitHub Actions fait foi, pas une suite verte sur une machine de la flotte.",
+      "Tailles : S ≤ 2 j, M ≤ 1 sem, L ≤ 2 sem. Complexité = pièces touchées (1-5) ; difficulté = incertitude technique ou externe (1-5)."
+    ],
+    "jalons": [
+      {
+        "date": "2026-11-06",
+        "nom": "MVP en UAT",
+        "quoi": "Parcours complet en UAT : inscription → clé IA → photo → reconnaissance → validation → collection filtrée → fiche carte avec courbe de valeur, anecdotes et étude en jeu."
+      },
+      {
+        "date": "2026-11-20",
+        "nom": "En ligne",
+        "quoi": "Revue de sécurité passée, export/suppression des données, e2e verts en CI, PROD servie sur son domaine avec sauvegardes."
+      }
+    ],
+    "risques_calendrier": [
+      {
+        "risque": "Mauvaise identification : cartes quasi identiques (reverse, holo, promos, rééditions), langues, photos floues ou en classeur avec reflets.",
+        "parade": "Jamais d'ajout sans validation humaine ; top 3 des candidats avec confiance ; le numéro + l'extension priment sur le nom ; chaque correction est gardée comme exemple de régression."
+      },
+      {
+        "risque": "Historique de prix : les APIs gratuites ne donnent que le prix du jour.",
+        "parade": "Relevé quotidien dès la V2 (la courbe se remplit seule) ; D3 tranche une source payante pour l'historique rétroactif."
+      },
+      {
+        "risque": "Coût et quotas IA sur la clé de l'utilisateur ; clé invalide ou épuisée au milieu d'un lot de photos.",
+        "parade": "Estimation du coût avant lancement, images réduites, une passe par carte, cache par empreinte d'image ; erreur claire et reprise du lot là où il s'est arrêté."
+      },
+      {
+        "risque": "Fuite de clés IA ou de photos entre comptes.",
+        "parade": "Chiffrement enveloppe (clé maître hors base), clés jamais renvoyées ni journalisées, tests d'accès croisé obligatoires sur chaque route."
+      },
+      {
+        "risque": "Contrefaçons (cartes « gold foil » métal, par exemple) valorisées comme de vraies cartes.",
+        "parade": "Signalement « contrefaçon probable » par l'estimation d'état dès V3, lot dédié en V6 ; la valeur affichée est alors neutralisée."
+      },
+      {
+        "risque": "Dépendance aux APIs tierces (limites de débit, indisponibilité, changement de schéma).",
+        "parade": "Catalogue complet copié chez nous, images en cache, clé API Pokémon TCG, sonde de fraîcheur des prix."
+      },
+      {
+        "risque": "Propriété intellectuelle : images et noms © Nintendo / The Pokémon Company.",
+        "parade": "Espace privé, images servies à titre d'illustration depuis le catalogue, mention « non affilié » (D8), aucun usage commercial des visuels."
+      }
+    ],
+    "principes_repartition": [
+      "**devAI** (Mac mini M4) porte le **back-end** et la **livraison** : seul habilité à déployer l'UAT et la PROD, il garde les secrets de production.",
+      "**chimera** (i7 16 threads, 32 Go, RTX 2070S, WSL `upgreg`) **construit et teste** : les deux fronts, la vision (OpenCV, essais de modèles), l'import du catalogue et les e2e Playwright. Il pousse des branches, jamais en PROD.",
+      "Le **Mac de JF** pilote : il lit la page, lance les lots, tranche les décisions. Aucun déploiement, aucun secret en clair.",
+      "Un **contrat d'API** (OpenAPI) est posé avant chaque paire back/front : le front avance sur des données simulées sans attendre la route réelle.",
+      "Zones sérialisées : les migrations Alembic (une tête à la fois) et `docker-compose.yml`. Deux lots ne les touchent jamais en même temps."
+    ],
+    "couloirs": [
+      {
+        "id": "DA1",
+        "machine": "devAI",
+        "nom": "API, comptes & données"
+      },
+      {
+        "id": "DA2",
+        "machine": "devAI",
+        "nom": "Livraison & infra (seul à déployer)"
+      },
+      {
+        "id": "CH1",
+        "machine": "chimera",
+        "nom": "Front — comptes, accueil & collection"
+      },
+      {
+        "id": "CH4",
+        "machine": "chimera",
+        "nom": "Front — photos, validation & fiche carte"
+      },
+      {
+        "id": "CH2",
+        "machine": "chimera",
+        "nom": "IA & vision"
+      },
+      {
+        "id": "CH3",
+        "machine": "chimera",
+        "nom": "Catalogue, prix & e2e"
+      },
+      {
+        "id": "JF",
+        "machine": "JF / externe",
+        "nom": "Décisions, comptes externes"
+      }
+    ],
+    "capacite": {
+      "devAI": 2,
+      "chimera": 4
+    }
+  },
+  "pistes": [
+    {
+      "id": "F",
+      "nom": "Fondations & livraison"
+    },
+    {
+      "id": "A",
+      "nom": "Compte privé & sécurité"
+    },
+    {
+      "id": "K",
+      "nom": "Catalogue & prix"
+    },
+    {
+      "id": "I",
+      "nom": "IA — des photos aux cartes"
+    },
+    {
+      "id": "C",
+      "nom": "Collection & fiche carte"
+    },
+    {
+      "id": "W",
+      "nom": "Site public & lancement"
+    }
+  ],
+  "vagues": [
+    {
+      "id": "V0",
+      "nom": "Fondations",
+      "debut": "2026-09-21",
+      "fin": "2026-09-29",
+      "these": "Un dépôt vide : avant toute fonctionnalité, il faut le squelette, la base, la CI et une flotte capable d'y travailler.",
+      "gain": "Chaque lot suivant démarre sur un socle identique, testé en CI."
+    },
+    {
+      "id": "V1",
+      "nom": "Un compte à soi",
+      "debut": "2026-09-28",
+      "fin": "2026-10-12",
+      "these": "L'espace est privé : inscription, connexion, profil, et le coffre où l'utilisateur dépose sa propre clé IA.",
+      "gain": "Un utilisateur peut créer son compte, le gérer et brancher Claude, Gemini ou OpenAI."
+    },
+    {
+      "id": "V2",
+      "nom": "Toutes les cartes, tous les prix",
+      "debut": "2026-09-28",
+      "fin": "2026-10-09",
+      "these": "Reconnaître une carte suppose de connaître toutes les cartes ; tracer sa valeur suppose de relever les prix chaque jour, dès maintenant.",
+      "gain": "Catalogue FR + EN complet avec images officielles ; la courbe de valeur commence à se remplir."
+    },
+    {
+      "id": "V3",
+      "nom": "Des photos aux cartes",
+      "debut": "2026-10-08",
+      "fin": "2026-10-27",
+      "these": "Le cœur du produit : une photo (une carte ou un classeur de neuf) devient une liste de cartes identifiées, vérifiées par l'utilisateur.",
+      "gain": "Ajouter vingt cartes prend deux minutes au lieu d'une saisie carte par carte."
+    },
+    {
+      "id": "V4",
+      "nom": "La collection et ses fiches",
+      "debut": "2026-10-26",
+      "fin": "2026-11-06",
+      "these": "Une fois les cartes connues, on les parcourt, on les filtre, on les valorise, et chaque carte raconte son histoire.",
+      "gain": "La collection devient lisible : combien elle vaut, ce qui monte, ce que vaut chaque carte en jeu."
+    },
+    {
+      "id": "V5",
+      "nom": "En ligne",
+      "debut": "2026-10-26",
+      "fin": "2026-11-20",
+      "these": "Un espace qui garde des clés IA et des photos privées ne sort qu'après une revue de sécurité et avec des données exportables.",
+      "gain": "PROD ouverte, sauvegardée, surveillée ; RGPD tenu."
+    },
+    {
+      "id": "V6",
+      "nom": "Après le MVP",
+      "debut": "2026-11-23",
+      "fin": "2026-12-18",
+      "these": "Ce qui rend le produit meilleur que la concurrence, une fois le socle en service.",
+      "gain": "Contrefaçons repérées, alertes de prix, scan mobile, cartes gradées."
+    }
+  ],
+  "echeances": [
+    {
+      "date": "2026-09-22",
+      "quoi": "D1 — validation de la stack par JF",
+      "type": "decision"
+    },
+    {
+      "date": "2026-10-02",
+      "quoi": "D2/D3 — hébergement et source de prix tranchés",
+      "type": "decision"
+    },
+    {
+      "date": "2026-10-05",
+      "quoi": "Premier relevé quotidien des prix : la courbe de valeur commence ici",
+      "type": "interne"
+    },
+    {
+      "date": "2026-11-06",
+      "quoi": "JALON — MVP complet en UAT",
+      "type": "jalon"
+    },
+    {
+      "date": "2026-11-20",
+      "quoi": "JALON — En ligne (PROD)",
+      "type": "jalon"
+    },
+    {
+      "date": "2026-12-18",
+      "quoi": "Fin des extensions post-MVP",
+      "type": "interne"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "date": "2026-09-22",
+      "quoi": "Valider la stack : Next.js + FastAPI + PostgreSQL 16 + Redis/arq, monorepo pnpm + uv.",
+      "debloque": [
+        "v0-monorepo"
+      ]
+    },
+    {
+      "id": "D5",
+      "date": "2026-09-26",
+      "quoi": "Nom de domaine et fournisseur d'e-mails transactionnels (vérification d'adresse, mot de passe oublié) : Brevo, Resend ou SMTP existant.",
+      "debloque": [
+        "v1-auth"
+      ]
+    },
+    {
+      "id": "D2",
+      "date": "2026-10-02",
+      "quoi": "Hébergement UAT/PROD : nouveau petit VPS UpCloud (compte kailo) ou machine `sites-and-crons` ; base PostgreSQL managée ou conteneur + sauvegardes.",
+      "debloque": [
+        "v1-uat",
+        "v5-prod"
+      ]
+    },
+    {
+      "id": "D3",
+      "date": "2026-10-02",
+      "quoi": "Source de prix : gratuit (Cardmarket via TCGdex + TCGplayer, historique construit par nos relevés) ou payant (historique rétroactif, ex. PriceCharting).",
+      "debloque": [
+        "v2-prix"
+      ]
+    },
+    {
+      "id": "D4",
+      "date": "2026-10-05",
+      "quoi": "Sans clé IA personnelle : reconnaissance désactivée (saisie manuelle seulement) ou quota d'essai offert sur une clé plateforme (coût à plafonner).",
+      "debloque": [
+        "v1-byok"
+      ]
+    },
+    {
+      "id": "D7",
+      "date": "2026-10-07",
+      "quoi": "Stockage des photos (Object Storage UpCloud ou disque du VPS) et durée de conservation des photos d'origine.",
+      "debloque": [
+        "v3-upload"
+      ]
+    },
+    {
+      "id": "D6",
+      "date": "2026-10-23",
+      "quoi": "Définir le « ranking » affiché sur la fiche : rang de rareté, rang de valeur dans la collection, percentile dans l'extension — un, deux ou les trois.",
+      "debloque": [
+        "v4-ranking"
+      ]
+    },
+    {
+      "id": "D8",
+      "date": "2026-11-13",
+      "quoi": "Ouverture : sur invitation ou inscription libre ; nom public et mention « non affilié à Nintendo / The Pokémon Company ».",
+      "debloque": [
+        "v5-prod"
+      ]
+    }
+  ],
+  "taches": [
+    {
+      "id": "dev",
+      "lib": "Développement"
+    },
+    {
+      "id": "tests",
+      "lib": "Tests (unitaires, API, e2e)"
+    },
+    {
+      "id": "securite",
+      "lib": "Contrôle sécurité (isolation, secrets)"
+    },
+    {
+      "id": "maquette",
+      "lib": "Conforme à la maquette"
+    },
+    {
+      "id": "doc_tech",
+      "lib": "Doc technique (CLAUDE.md, docs/)"
+    },
+    {
+      "id": "release_uat",
+      "lib": "Livré en UAT (preuve)"
+    },
+    {
+      "id": "release_prod",
+      "lib": "Livré en PROD (preuve)"
+    },
+    {
+      "id": "backlog",
+      "lib": "BACKLOG.md et état à jour"
+    },
+    {
+      "id": "compte_rendu",
+      "lib": "Compte rendu dans le suivi"
+    }
+  ],
+  "statuts": {
+    "a_faire": "À faire",
+    "en_cours": "En cours",
+    "attente_validation": "Attente validation",
+    "bloque": "Bloqué",
+    "livre_uat": "Livré UAT",
+    "attente_go_prod": "Attente GO PROD",
+    "livre": "Livré"
+  },
+  "items": [
+    {
+      "id": "v0-flotte",
+      "vague": "V0",
+      "piste": "F",
+      "couloir": "DA2",
+      "debut": "2026-09-21",
+      "fin": "2026-09-22",
+      "priorite": "P0",
+      "taille": "S",
+      "complexite": 2,
+      "difficulte": 2,
+      "titre": "Équiper la flotte pour PokeBoyManager (clones, clés de dépôt, fleet-run)",
+      "gain": "Sans clone ni clé d'écriture sur devAI et chimera, les six couloirs n'existent pas.",
+      "fonctionnalites": "—",
+      "risques": "Clé de dépôt limitée à `keewoo/PokeBoyManager` ; WSL de chimera qui s'arrête quand plus aucun `wsl.exe` n'est ouvert ; ne jamais cloner sous `C:\\fleet-ci` (rsync `--delete`).",
+      "tenants": "Dépôt GitHub créé (fait) ; accès SSH devai/chimera.",
+      "aboutissants": "Tous les lots peuvent démarrer sur la bonne machine.",
+      "dependances": [],
+      "decision": null,
+      "refs": [
+        "~/.claude/CLAUDE.md § Flotte",
+        "app-sport-mvp/infra/chimera-lots/README.md"
+      ],
+      "mission": [
+        "devAI : cloner `git@github.com:keewoo/PokeBoyManager.git` dans `~/dev/pokeboy`, vérifier `uv` (Python 3.12) et Node 24.",
+        "chimera (WSL `Ubuntu-24.04`, utilisateur `upgreg`) : clone dans `~/dev/pokeboy`, clé de dépôt en écriture dédiée (JF l'ajoute dans GitHub → Deploy keys).",
+        "Étendre le mécanisme de lots de chimera (`~/dev/lots/launch-lot.sh`, `status-lot.sh`) au dépôt `~/dev/pokeboy` : un lot = un worktree `~/dev/wt-<id>`, journal `~/dev/logs/<id>.log`, lancé côté Windows.",
+        "Vérifier `fleet-run` depuis le Mac sur un script témoin, et Docker (colima sur devAI, Docker de la WSL sur chimera).",
+        "Lot témoin : un commit poussé depuis chaque machine sur une branche `chore/flotte`."
+      ],
+      "livrables": [
+        "clone sur devAI et chimera",
+        "un commit poussé depuis chaque machine"
+      ],
+      "taches_na": {
+        "maquette": "outillage",
+        "securite": "outillage",
+        "release_uat": "outillage",
+        "release_prod": "outillage"
+      }
+    },
+    {
+      "id": "v0-monorepo",
+      "vague": "V0",
+      "piste": "F",
+      "couloir": "DA1",
+      "debut": "2026-09-22",
+      "fin": "2026-09-23",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 2,
+      "titre": "Monorepo, environnement local Docker et CI",
+      "gain": "Un `docker compose up` donne Postgres, Redis, MinIO et Mailpit ; chaque push est testé.",
+      "fonctionnalites": "Squelette `apps/web` (Next.js) et `apps/api` (FastAPI, `/health`), client TypeScript généré depuis l'OpenAPI.",
+      "risques": "Dérive de versions entre machines : épingler Node, pnpm, Python 3.12 et les images Docker.",
+      "tenants": "D1 (stack validée).",
+      "aboutissants": "Tous les lots de code.",
+      "dependances": [],
+      "decision": "D1",
+      "refs": [
+        "docs/ARCHITECTURE.md"
+      ],
+      "mission": [
+        "Créer `apps/web` (Next.js 15, TypeScript strict, Tailwind 4, ESLint, Vitest) et `apps/api` (FastAPI, uv, ruff, pytest, `/health`).",
+        "`docker-compose.yml` : postgres:16 (extensions `pg_trgm`, `unaccent`), redis:7, minio, mailpit ; `.env.example` sans aucun secret réel.",
+        "Script `pnpm gen:api` : OpenAPI de l'API → `packages/api-client` (openapi-typescript).",
+        "GitHub Actions : lint + tests web et api en parallèle, services Postgres/Redis, badge dans le README.",
+        "`CLAUDE.md` racine à jour : commandes, conventions, règles de la flotte."
+      ],
+      "livrables": [
+        "`docker compose up` fonctionnel",
+        "CI verte sur `main`",
+        "`/health` répond 200"
+      ],
+      "taches_na": {
+        "maquette": "socle technique",
+        "release_uat": "socle technique",
+        "release_prod": "socle technique"
+      }
+    },
+    {
+      "id": "v0-schema",
+      "vague": "V0",
+      "piste": "F",
+      "couloir": "DA1",
+      "debut": "2026-09-24",
+      "fin": "2026-09-25",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 2,
+      "titre": "Modèle de données PostgreSQL v1 et migrations Alembic",
+      "gain": "Toutes les fonctionnalités partagent un schéma pensé une fois : comptes, catalogue, prix, photos, détections, collection.",
+      "fonctionnalites": "—",
+      "risques": "Distinguer la **carte du catalogue** (`cards`) de l'**exemplaire possédé** (`collection_items` : état, langue, prix d'achat, photo) ; l'historique de prix doit rester léger (une ligne par carte, source et jour).",
+      "tenants": "Monorepo en place.",
+      "aboutissants": "Comptes, catalogue, reconnaissance et collection.",
+      "dependances": [
+        "v0-monorepo"
+      ],
+      "decision": null,
+      "refs": [
+        "docs/ARCHITECTURE.md § Données"
+      ],
+      "mission": [
+        "Tables : `users`, `sessions`, `email_tokens`, `ai_credentials` (chiffrées), `sets`, `cards` (+ `card_names` par langue), `card_prices_daily` (carte, source, variante, jour, devise, bas/moyen/tendance), `uploads`, `detections` (bbox, recadrage, candidats JSON, statut), `collection_items`, `card_insights` (anecdotes, étude en jeu, cache partagé), `jobs`.",
+        "Index : trigram sur les noms, `(set_id, number)`, `(card_id, day)` ; toutes les tables utilisateur portent `user_id` avec clé étrangère et index.",
+        "Migration Alembic initiale + données de démonstration (un utilisateur, trois extensions, neuf cartes).",
+        "Schéma dessiné (Mermaid) dans `docs/ARCHITECTURE.md`."
+      ],
+      "livrables": [
+        "migration 0001 jouée en CI",
+        "seed de démonstration",
+        "schéma documenté"
+      ],
+      "taches_na": {
+        "maquette": "schéma",
+        "release_uat": "joué avec v1-uat",
+        "release_prod": "joué avec v5-prod"
+      }
+    },
+    {
+      "id": "v0-design-system",
+      "vague": "V0",
+      "piste": "F",
+      "couloir": "CH1",
+      "debut": "2026-09-24",
+      "fin": "2026-09-29",
+      "priorite": "P1",
+      "taille": "M",
+      "complexite": 2,
+      "difficulte": 2,
+      "titre": "Design system et squelette des pages (d'après la maquette)",
+      "gain": "Les deux couloirs front construisent avec les mêmes briques : pas de divergence visuelle.",
+      "fonctionnalites": "Jetons de couleur clair/sombre, typographies, composant `CardTile` (vignette de carte), barre de navigation, pages vides routées.",
+      "risques": "Ne pas reproduire le logo ni la charte officiels Pokémon : identité propre.",
+      "tenants": "Monorepo ; maquette (onglet « Maquette du site » de la page de suivi).",
+      "aboutissants": "Toutes les pages front.",
+      "dependances": [
+        "v0-monorepo"
+      ],
+      "decision": null,
+      "refs": [
+        "docs/roadmap/ROADMAP.html (onglet Maquette)"
+      ],
+      "mission": [
+        "Reprendre les jetons de la maquette (couleurs, typographies, rayons) dans `tailwind` + variables CSS, thème clair et sombre.",
+        "Installer shadcn/ui ; composants : `AppShell`, `CardTile`, `ValueDelta`, `RarityBadge`, `ConditionBadge`, `EmptyState`.",
+        "Routes vides : `/`, `/inscription`, `/connexion`, `/ajouter`, `/collection`, `/carte/[id]`, `/profil`.",
+        "Page `/design` interne listant les composants (sert de recette visuelle)."
+      ],
+      "livrables": [
+        "composants de base",
+        "routes en place",
+        "thème clair/sombre"
+      ],
+      "taches_na": {
+        "securite": "aucune donnée",
+        "release_uat": "livré avec les pages",
+        "release_prod": "livré avec les pages"
+      }
+    },
+    {
+      "id": "v1-auth",
+      "vague": "V1",
+      "piste": "A",
+      "couloir": "DA1",
+      "debut": "2026-09-28",
+      "fin": "2026-10-02",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 4,
+      "difficulte": 3,
+      "titre": "Comptes : inscription, connexion, vérification d'e-mail, mot de passe oublié",
+      "gain": "L'espace devient privé : chaque donnée appartient à un compte.",
+      "fonctionnalites": "Inscription e-mail + mot de passe, e-mail de vérification, connexion, déconnexion, mot de passe oublié, sessions multiples.",
+      "risques": "Énumération de comptes (réponses identiques qu'un e-mail existe ou non), force brute (limitation par IP et par compte), CSRF avec cookie de session.",
+      "tenants": "Schéma ; D5 (e-mails transactionnels) — Mailpit en local en attendant.",
+      "aboutissants": "Toutes les routes protégées, profil, coffre de clés IA.",
+      "dependances": [
+        "v0-schema"
+      ],
+      "decision": "D5",
+      "refs": [
+        "OWASP ASVS v4 §2-3"
+      ],
+      "mission": [
+        "`POST /auth/register`, `/auth/login`, `/auth/logout`, `/auth/verify-email`, `/auth/forgot`, `/auth/reset` ; mots de passe argon2id, 10 caractères minimum, contrôle contre les mots de passe compromis (k-anonymat HIBP).",
+        "Session : cookie `HttpOnly; Secure; SameSite=Lax`, identifiant opaque stocké haché en base, rotation à la connexion, jeton CSRF sur les requêtes qui écrivent.",
+        "Limitation : 5 tentatives / 15 min par compte et par IP (Redis) ; réponses identiques pour e-mail inconnu.",
+        "Dépendance FastAPI `current_user` : toute route utilisateur filtre par `user_id` (jamais d'identifiant d'utilisateur reçu du client).",
+        "Tests : parcours complet, jeton expiré, jeton réutilisé, force brute, session révoquée."
+      ],
+      "livrables": [
+        "routes d'authentification + tests",
+        "e-mails reçus dans Mailpit"
+      ],
+      "taches_na": {
+        "maquette": "back-end seul"
+      }
+    },
+    {
+      "id": "v1-accueil",
+      "vague": "V1",
+      "piste": "W",
+      "couloir": "CH1",
+      "debut": "2026-09-30",
+      "fin": "2026-10-02",
+      "priorite": "P1",
+      "taille": "S",
+      "complexite": 2,
+      "difficulte": 1,
+      "titre": "Page d'accueil publique (visiteur)",
+      "gain": "Explique la promesse en dix secondes et mène à l'inscription.",
+      "fonctionnalites": "Accroche, démonstration « photo → cartes → valeur », trois étapes, apporter sa propre IA, confidentialité, pied de page légal.",
+      "risques": "Aucune image officielle utilisée comme argument commercial ; mention « non affilié ».",
+      "tenants": "Design system.",
+      "aboutissants": "Lancement (V5).",
+      "dependances": [
+        "v0-design-system"
+      ],
+      "decision": null,
+      "refs": [
+        "Maquette : écran Accueil"
+      ],
+      "mission": [
+        "Construire `/` pour le visiteur d'après la maquette ; le visiteur connecté est redirigé vers son tableau de bord.",
+        "Pages statiques : mentions légales, confidentialité, conditions (brouillons à relire par JF).",
+        "Métadonnées SEO et Open Graph ; score Lighthouse ≥ 90 (mesuré sur chimera)."
+      ],
+      "livrables": [
+        "page d'accueil",
+        "pages légales en brouillon"
+      ],
+      "taches_na": {
+        "securite": "page statique"
+      }
+    },
+    {
+      "id": "v1-pages-auth",
+      "vague": "V1",
+      "piste": "A",
+      "couloir": "CH1",
+      "debut": "2026-10-05",
+      "fin": "2026-10-07",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 2,
+      "difficulte": 2,
+      "titre": "Pages inscription, connexion, vérification et mot de passe oublié",
+      "gain": "Le parcours d'entrée est complet côté utilisateur.",
+      "fonctionnalites": "Formulaires validés (zod), messages d'erreur utiles, indicateur de robustesse du mot de passe, écrans « vérifie ta boîte mail ».",
+      "risques": "Ne jamais afficher « cet e-mail n'existe pas ».",
+      "tenants": "API d'authentification, design system.",
+      "aboutissants": "Profil, toutes les pages privées.",
+      "dependances": [
+        "v1-auth",
+        "v0-design-system"
+      ],
+      "decision": null,
+      "refs": [
+        "Maquette : écrans Inscription et Connexion"
+      ],
+      "mission": [
+        "Pages `/inscription`, `/connexion`, `/verifier`, `/mot-de-passe-oublie`, `/reinitialiser` conformes à la maquette.",
+        "Garde de route côté Next.js (middleware) : pages privées → `/connexion?next=…`.",
+        "Tests composants (Vitest) et un e2e Playwright du parcours inscription → vérification → connexion."
+      ],
+      "livrables": [
+        "5 pages",
+        "e2e d'inscription vert"
+      ],
+      "taches_na": {}
+    },
+    {
+      "id": "v1-byok",
+      "vague": "V1",
+      "piste": "A",
+      "couloir": "DA1",
+      "debut": "2026-10-05",
+      "fin": "2026-10-07",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "Coffre de clés IA : Claude, Gemini ou OpenAI par utilisateur",
+      "gain": "Chaque utilisateur branche sa propre IA : pas de coût IA pour la plateforme, pas de dépendance à un seul fournisseur.",
+      "fonctionnalites": "Ajouter, tester, remplacer, supprimer une clé par fournisseur ; choisir le fournisseur par défaut ; voir l'usage (appels, coût estimé).",
+      "risques": "La clé est le secret le plus sensible du système : chiffrement enveloppe AES-256-GCM (clé maître dans l'environnement, jamais en base), jamais renvoyée (affichage `sk-ant-…4f2a`), jamais journalisée, déchiffrée seulement dans le worker au moment de l'appel.",
+      "tenants": "Comptes ; D4 (comportement sans clé).",
+      "aboutissants": "Couche fournisseurs IA, reconnaissance, anecdotes, étude en jeu.",
+      "dependances": [
+        "v1-auth"
+      ],
+      "decision": "D4",
+      "refs": [
+        "docs/ARCHITECTURE.md § Coffre de clés"
+      ],
+      "mission": [
+        "`PUT/DELETE /me/ai-keys/{provider}`, `POST /me/ai-keys/{provider}/test` (appel minimal au fournisseur), `GET /me/ai-keys` (masques seulement), `PATCH /me/ai-settings` (fournisseur et modèle par défaut).",
+        "Chiffrement : AES-256-GCM, nonce aléatoire, `user_id` en données associées (une clé copiée dans un autre compte ne se déchiffre pas) ; rotation de la clé maître documentée.",
+        "Filtre de journalisation qui masque tout motif de clé (`sk-`, `AIza`, `sk-ant-`) ; test qui échoue si une clé apparaît dans les logs.",
+        "Table d'usage : appels, jetons, coût estimé par fournisseur et par mois."
+      ],
+      "livrables": [
+        "routes du coffre + tests",
+        "test de non-fuite dans les journaux"
+      ],
+      "taches_na": {
+        "maquette": "back-end ; l'écran est porté par v1-profil"
+      }
+    },
+    {
+      "id": "v1-profil",
+      "vague": "V1",
+      "piste": "A",
+      "couloir": "CH1",
+      "debut": "2026-10-08",
+      "fin": "2026-10-12",
+      "priorite": "P1",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 2,
+      "titre": "Page profil : photo, pseudo, e-mail, mot de passe, clés IA",
+      "gain": "L'utilisateur gère lui-même son compte et son IA.",
+      "fonctionnalites": "Avatar (recadrage carré), pseudo unique, changement d'e-mail avec re-vérification, changement de mot de passe (ancien requis), onglet « Mon IA » (clés, test, fournisseur par défaut, usage), sessions actives, suppression du compte.",
+      "risques": "Changement d'e-mail = ancien e-mail prévenu ; suppression = confirmation par mot de passe.",
+      "tenants": "Pages d'authentification, coffre de clés.",
+      "aboutissants": "Reconnaissance (a besoin d'une clé), RGPD.",
+      "dependances": [
+        "v1-pages-auth",
+        "v1-byok"
+      ],
+      "decision": null,
+      "refs": [
+        "Maquette : écran Profil"
+      ],
+      "mission": [
+        "Routes back manquantes : `PATCH /me` (pseudo), `POST /me/avatar`, `POST /me/email`, `POST /me/password`, `GET/DELETE /me/sessions`.",
+        "Page `/profil` en onglets : Identité, Sécurité, Mon IA, Données.",
+        "Onglet Mon IA : trois fournisseurs, champ masqué, bouton « Tester », statut (valide / invalide / quota), fournisseur par défaut, liens vers les consoles des fournisseurs."
+      ],
+      "livrables": [
+        "page profil complète",
+        "tests des routes /me"
+      ],
+      "taches_na": {}
+    },
+    {
+      "id": "v1-uat",
+      "vague": "V1",
+      "piste": "F",
+      "couloir": "DA2",
+      "debut": "2026-10-05",
+      "fin": "2026-10-09",
+      "priorite": "P1",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "Environnement UAT continu (images construites sur chimera, déployées par devAI)",
+      "gain": "Chaque vague se recette en ligne dès qu'elle est prête, pas à la fin.",
+      "fonctionnalites": "`uat.<domaine>` : web, API, worker, Postgres, Redis, stockage ; TLS par Caddy.",
+      "risques": "Ne jamais construire sur la machine qui sert : images construites sur chimera et poussées dans un registre ; la machine UAT ne fait que `pull` + `up -d`.",
+      "tenants": "D2 (hébergement), schéma.",
+      "aboutissants": "Recette de chaque lot ; PROD (V5).",
+      "dependances": [
+        "v0-schema"
+      ],
+      "decision": "D2",
+      "refs": [
+        "~/.claude/CLAUDE.md § Règle d'or (construire ≠ servir)"
+      ],
+      "mission": [
+        "Dockerfiles `web` (Next.js standalone) et `api`/`worker` (python:3.12-slim), multi-étapes, utilisateur non root.",
+        "Registre d'images (GHCR privé) ; script de build sur chimera, script `deploy-uat.sh <tag>` sur devAI.",
+        "Serveur UAT selon D2 : Docker + Caddy, secrets dans un `.env` hors dépôt côté serveur, migrations Alembic jouées au déploiement (échec = déploiement en échec).",
+        "Preuve : `curl https://uat.…/health` et version servie = commit déployé."
+      ],
+      "livrables": [
+        "UAT servie en HTTPS",
+        "scripts de build et de déploiement documentés"
+      ],
+      "taches_na": {
+        "maquette": "infra",
+        "release_prod": "porté par v5-prod"
+      }
+    },
+    {
+      "id": "v2-catalogue",
+      "vague": "V2",
+      "piste": "K",
+      "couloir": "CH3",
+      "debut": "2026-09-28",
+      "fin": "2026-10-02",
+      "priorite": "P0",
+      "taille": "L",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "Import du catalogue complet FR + EN avec images officielles",
+      "gain": "Toutes les cartes connues chez nous : l'IA n'a plus qu'à choisir, jamais à inventer.",
+      "fonctionnalites": "Extensions (nom FR/EN, logo, date de sortie, série), cartes (nom par langue, numéro, rareté, type, PV, illustrateur, attaques, talents), images officielles basse et haute définition.",
+      "risques": "Rapprocher TCGdex et Pokémon TCG API (identifiants différents, promos XY/SM/SWSH) ; limites de débit ; volume d'images (cache paresseux).",
+      "tenants": "Schéma.",
+      "aboutissants": "Recherche, prix, identification, fiche carte.",
+      "dependances": [
+        "v0-schema"
+      ],
+      "decision": null,
+      "refs": [
+        "https://tcgdex.dev",
+        "https://docs.pokemontcg.io"
+      ],
+      "mission": [
+        "Job `import_catalogue` (arq) : TCGdex FR + EN → `sets`, `cards`, `card_names` ; idempotent, reprise sur erreur.",
+        "Rapprochement avec Pokémon TCG API (`ptcg_id`) pour les prix TCGplayer et les légalités ; table de correspondance des cas particuliers testée.",
+        "Images : URL officielles stockées ; proxy `/img/cards/{id}` qui met en cache dans le stockage objet au premier accès.",
+        "Job incrémental hebdomadaire (nouvelles extensions) ; rapport d'import (cartes ajoutées, non rapprochées)."
+      ],
+      "livrables": [
+        "catalogue importé (compter les cartes FR et EN)",
+        "rapport de rapprochement"
+      ],
+      "taches_na": {
+        "maquette": "back-end",
+        "securite": "données publiques"
+      }
+    },
+    {
+      "id": "v2-prix",
+      "vague": "V2",
+      "piste": "K",
+      "couloir": "CH3",
+      "debut": "2026-10-05",
+      "fin": "2026-10-08",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "Relevé quotidien des prix et historique de valeur",
+      "gain": "Chaque jour compte : la courbe de valeur de chaque carte commence au premier relevé.",
+      "fonctionnalites": "Prix Cardmarket (EUR) et TCGplayer (USD) par variante (normale, reverse, holo), conversion en devise de l'utilisateur, historique jour par jour.",
+      "risques": "Prix manquants pour les cartes rares ou récentes ; une valeur aberrante ne doit pas faire exploser la valeur d'une collection (médiane, bornes).",
+      "tenants": "Catalogue ; D3 (source).",
+      "aboutissants": "Collection valorisée, courbe de la fiche, alertes de prix.",
+      "dependances": [
+        "v2-catalogue"
+      ],
+      "decision": "D3",
+      "refs": [
+        "docs/ARCHITECTURE.md § Prix"
+      ],
+      "mission": [
+        "Job quotidien 06:00 Europe/Paris : prix de toutes les cartes → `card_prices_daily` (une ligne par carte × source × variante × jour), idempotent.",
+        "Taux de change quotidiens (BCE) ; valeur de référence = tendance Cardmarket, sinon TCGplayer converti.",
+        "Service `valuation` : valeur d'un exemplaire selon variante et état (décote par état documentée), valeur d'une collection à une date.",
+        "Sonde : un relevé manquant ou vide déclenche une alerte (jamais d'échec silencieux)."
+      ],
+      "livrables": [
+        "premier relevé en base",
+        "service de valorisation testé"
+      ],
+      "taches_na": {
+        "maquette": "back-end",
+        "securite": "données publiques"
+      }
+    },
+    {
+      "id": "v2-recherche",
+      "vague": "V2",
+      "piste": "K",
+      "couloir": "DA1",
+      "debut": "2026-10-08",
+      "fin": "2026-10-09",
+      "priorite": "P1",
+      "taille": "S",
+      "complexite": 2,
+      "difficulte": 2,
+      "titre": "Recherche dans le catalogue (nom, numéro, extension)",
+      "gain": "Sert à la fois l'identification (rapprochement) et la correction manuelle par l'utilisateur.",
+      "fonctionnalites": "« dracaufeu », « charizard », « 236/217 », « XY121 », « Pikachu VMAX Voltage Éclatant ».",
+      "risques": "Accents et apostrophes (`unaccent`) ; numéros au format variable (TG05, GG10, SV107).",
+      "tenants": "Catalogue.",
+      "aboutissants": "Identification, écran de validation, ajout manuel.",
+      "dependances": [
+        "v2-catalogue"
+      ],
+      "decision": null,
+      "refs": [],
+      "mission": [
+        "`GET /catalog/search?q=&set=&lang=` : trigram + unaccent sur les noms FR/EN, analyse du numéro (`n/total`, préfixes promo et galerie).",
+        "Fonction interne `match_candidates(nom, numero, set_hint, langue)` avec score, réutilisée par l'identification.",
+        "Jeu de 50 requêtes réelles avec résultat attendu, en test."
+      ],
+      "livrables": [
+        "route de recherche",
+        "50 requêtes de référence vertes"
+      ],
+      "taches_na": {
+        "maquette": "back-end",
+        "securite": "données publiques"
+      }
+    },
+    {
+      "id": "v3-upload",
+      "vague": "V3",
+      "piste": "I",
+      "couloir": "CH4",
+      "debut": "2026-10-08",
+      "fin": "2026-10-13",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 2,
+      "titre": "Page « Ajouter des photos » : une ou plusieurs photos, glisser-déposer, appareil photo",
+      "gain": "L'entrée du produit : photographier son classeur suffit.",
+      "fonctionnalites": "Plusieurs fichiers d'un coup, prise de vue mobile, HEIC accepté, aperçu, progression, estimation du coût IA avant lancement.",
+      "risques": "Photos lourdes (12 Mo) : compression côté client ; métadonnées EXIF (position GPS) supprimées ; limites de taille et de type côté serveur.",
+      "tenants": "Pages d'authentification ; D7 (stockage).",
+      "aboutissants": "Détection et identification.",
+      "dependances": [
+        "v1-pages-auth"
+      ],
+      "decision": "D7",
+      "refs": [
+        "Maquette : écran Ajouter des photos"
+      ],
+      "mission": [
+        "`POST /uploads` → URL présignée (S3) ; le navigateur envoie directement au stockage ; `POST /uploads/{id}/complete` crée le job.",
+        "Côté serveur : vérification du type réel (magic bytes), EXIF supprimé, HEIC → JPEG, taille max 20 Mo, 30 photos par lot.",
+        "Page `/ajouter` conforme à la maquette : zone de dépôt, bouton appareil photo (`capture=environment`), vignettes, estimation « ≈ 9 cartes · ≈ 0,05 € sur ta clé Claude ».",
+        "Si aucune clé IA : message et lien vers Profil → Mon IA (ou comportement D4)."
+      ],
+      "livrables": [
+        "envoi multi-photos de bout en bout",
+        "EXIF supprimé (test)"
+      ],
+      "taches_na": {}
+    },
+    {
+      "id": "v3-ia-providers",
+      "vague": "V3",
+      "piste": "I",
+      "couloir": "CH2",
+      "debut": "2026-10-08",
+      "fin": "2026-10-09",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "Couche fournisseurs IA unique (Anthropic, Google, OpenAI)",
+      "gain": "Une seule interface pour toute l'IA du produit : changer de fournisseur ne touche aucune fonctionnalité.",
+      "fonctionnalites": "Vision → JSON structuré validé par schéma, texte → JSON, avec la clé de l'utilisateur.",
+      "risques": "Formats de sortie structurée différents d'un fournisseur à l'autre ; erreurs 401/429/529 à traduire en messages clairs ; coût à tracer.",
+      "tenants": "Coffre de clés.",
+      "aboutissants": "Détection, identification, état, anecdotes, étude en jeu.",
+      "dependances": [
+        "v1-byok"
+      ],
+      "decision": null,
+      "refs": [
+        "docs/ARCHITECTURE.md § IA"
+      ],
+      "mission": [
+        "Interface `AIProvider.extract(images, schema, prompt) -> (objet validé, usage)` ; implémentations Anthropic (défaut `claude-sonnet-5`, économique `claude-haiku-4-5`), Google Gemini, OpenAI — modèles configurables par utilisateur.",
+        "Sortie structurée native de chaque fournisseur + validation Pydantic ; une nouvelle tentative guidée si le JSON est invalide.",
+        "Erreurs normalisées : clé invalide, quota, surcharge, contenu refusé → message utilisateur et état du job.",
+        "Tests avec réponses enregistrées (aucun appel réel en CI) ; script d'essai manuel avec une vraie clé."
+      ],
+      "livrables": [
+        "trois fournisseurs derrière une interface",
+        "tests enregistrés"
+      ],
+      "taches_na": {
+        "maquette": "back-end"
+      }
+    },
+    {
+      "id": "v3-detection",
+      "vague": "V3",
+      "piste": "I",
+      "couloir": "CH2",
+      "debut": "2026-10-12",
+      "fin": "2026-10-15",
+      "priorite": "P0",
+      "taille": "L",
+      "complexite": 4,
+      "difficulte": 4,
+      "titre": "Détecter et découper chaque carte d'une photo (1 à N, classeur 3×3)",
+      "gain": "Une photo de classeur donne neuf cartes redressées, prêtes à identifier.",
+      "fonctionnalites": "Recadrage et redressement de chaque carte, ordre de lecture (ligne par ligne), vignette conservée pour la fiche.",
+      "risques": "Pochettes plastiques et reflets, fond clair (cartes sur fond blanc), cartes qui se touchent : OpenCV seul ne suffit pas toujours → repli par boîtes englobantes demandées au LLM, puis redressement OpenCV dans chaque boîte.",
+      "tenants": "Couche fournisseurs IA, envoi de photos.",
+      "aboutissants": "Identification, estimation d'état.",
+      "dependances": [
+        "v3-ia-providers"
+      ],
+      "decision": null,
+      "refs": [],
+      "mission": [
+        "Pipeline worker : chargement → contours (Canny + approximation polygonale, ratio 63×88 mm) → transformation perspective → recadrages 630×880.",
+        "Repli si le nombre ou la forme est incohérent : boîtes englobantes par le LLM vision, puis affinage OpenCV dans chaque boîte.",
+        "Jeu de test : 30 photos réelles (carte seule, classeur 3×3 en toploaders comme la photo de référence, table, reflets) avec nombre attendu ; mesure du taux de détection (objectif ≥ 95 %).",
+        "Mise au point lancée sur chimera (lots d'images) ; résultat par photo : cartes détectées + image annotée de contrôle."
+      ],
+      "livrables": [
+        "taux de détection mesuré sur 30 photos",
+        "images annotées de contrôle"
+      ],
+      "taches_na": {
+        "maquette": "back-end"
+      }
+    },
+    {
+      "id": "v3-identification",
+      "vague": "V3",
+      "piste": "I",
+      "couloir": "CH2",
+      "debut": "2026-10-16",
+      "fin": "2026-10-22",
+      "priorite": "P0",
+      "taille": "L",
+      "complexite": 4,
+      "difficulte": 4,
+      "titre": "Identifier chaque carte et la rapprocher du catalogue (top 3 avec confiance)",
+      "gain": "La promesse du produit : la photo devient une carte précise, avec son extension, son numéro et sa valeur.",
+      "fonctionnalites": "Lecture du nom, numéro (ex. `236/217`, `XY121`, `TG05`), symbole ou code d'extension, langue, PV, variante (holo, reverse, full art, gold) ; trois candidats du catalogue avec score.",
+      "risques": "Numéro illisible → nom + PV + illustration ; cartes FR et EN mélangées ; variantes non distinguables à la photo (demander à l'utilisateur).",
+      "tenants": "Détection, recherche catalogue.",
+      "aboutissants": "Écran de validation, estimation d'état.",
+      "dependances": [
+        "v3-detection",
+        "v2-recherche"
+      ],
+      "decision": null,
+      "refs": [
+        "docs/ARCHITECTURE.md § Reconnaissance"
+      ],
+      "mission": [
+        "Extraction par carte (schéma JSON : nom, numéro, total, code d'extension, langue, PV, type, variante, confiance par champ).",
+        "Rapprochement : numéro + extension exacts → sinon numéro + nom → sinon recherche floue ; score combiné ; au-delà de 0,9 le candidat est présélectionné.",
+        "Optionnel si doute : comparaison visuelle recadrage / image officielle des 3 candidats par le LLM.",
+        "Cache par empreinte perceptuelle du recadrage : la même carte rephotographiée ne recoûte rien.",
+        "Jeu de 100 cartes étiquetées (dont les 9 de la photo de référence) : précision top-1 et top-3 publiées dans le compte rendu (objectif top-3 ≥ 95 %)."
+      ],
+      "livrables": [
+        "précision top-1 / top-3 mesurée",
+        "coût moyen par carte mesuré"
+      ],
+      "taches_na": {
+        "maquette": "back-end"
+      }
+    },
+    {
+      "id": "v3-validation",
+      "vague": "V3",
+      "piste": "I",
+      "couloir": "CH4",
+      "debut": "2026-10-23",
+      "fin": "2026-10-27",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 2,
+      "titre": "Écran de validation : vérifier, corriger et ajouter les cartes reconnues",
+      "gain": "Aucune carte n'entre dans la collection sans l'accord de l'utilisateur.",
+      "fonctionnalites": "Suivi en direct du traitement, pour chaque carte : recadrage à côté de l'image officielle, candidat choisi, deux autres propositions, recherche manuelle, langue, variante, quantité, état, prix d'achat ; « Tout ajouter ».",
+      "risques": "Lot interrompu (clé épuisée) : reprendre là où il s'est arrêté.",
+      "tenants": "Identification, envoi de photos.",
+      "aboutissants": "Collection.",
+      "dependances": [
+        "v3-identification",
+        "v3-upload"
+      ],
+      "decision": null,
+      "refs": [
+        "Maquette : écran Ajouter des photos (étape 2)"
+      ],
+      "mission": [
+        "`GET /uploads/{id}` (état + détections), flux SSE de progression, `POST /detections/{id}/confirm` et `/reject`, `POST /uploads/{id}/confirm-all`.",
+        "Écran conforme à la maquette ; raccourcis clavier (Entrée = valider, 1/2/3 = candidat).",
+        "Chaque correction est enregistrée (candidat proposé vs choisi) : c'est le jeu de régression de l'identification."
+      ],
+      "livrables": [
+        "parcours photo → collection complet",
+        "journal des corrections"
+      ],
+      "taches_na": {}
+    },
+    {
+      "id": "v3-etat",
+      "vague": "V3",
+      "piste": "I",
+      "couloir": "CH2",
+      "debut": "2026-10-23",
+      "fin": "2026-10-27",
+      "priorite": "P1",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 4,
+      "titre": "Estimation de l'état de la carte (centrage, coins, bords, surface)",
+      "gain": "La valeur dépend de l'état : une estimation, même indicative, rend la valorisation crédible.",
+      "fonctionnalites": "Centrage mesuré (OpenCV, marges gauche/droite et haut/bas), coins, bords, surface notés par le LLM ; état indicatif (Mint → Poor) et note sur 10 ; signal « contrefaçon probable ».",
+      "risques": "Une photo à travers une pochette ne permet pas de juger la surface : afficher la confiance, jamais présenter l'estimation comme une gradation.",
+      "tenants": "Identification.",
+      "aboutissants": "Valorisation par état, fiche carte, détection de contrefaçons (V6).",
+      "dependances": [
+        "v3-identification"
+      ],
+      "decision": null,
+      "refs": [],
+      "mission": [
+        "Mesure du centrage sur le recadrage redressé (ratios 55/45…) ; score LLM pour coins, bords, surface avec justification courte.",
+        "Mapping vers l'échelle Cardmarket (MT, NM, EX, GD, LP, PL, PO) et une note indicative /10.",
+        "Indices de contrefaçon : police, couleurs, format du numéro, carte « gold » métal inexistante au catalogue → drapeau et valeur neutralisée.",
+        "Mention permanente « estimation indicative, pas une gradation »."
+      ],
+      "livrables": [
+        "état estimé par exemplaire",
+        "drapeau contrefaçon probable"
+      ],
+      "taches_na": {
+        "maquette": "affiché par la fiche"
+      }
+    },
+    {
+      "id": "v4-collection",
+      "vague": "V4",
+      "piste": "C",
+      "couloir": "CH1",
+      "debut": "2026-10-28",
+      "fin": "2026-10-30",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 2,
+      "titre": "Page collection : grille, filtres, tris et valeur totale",
+      "gain": "La collection devient lisible et valorisée d'un coup d'œil.",
+      "fonctionnalites": "Grille ou liste ; filtres : extension, série, rareté, type, langue, état, variante, valeur min/max, date d'ajout, doublons, contrefaçons signalées ; recherche ; tris (valeur, variation 30 j, date, numéro) ; valeur totale et variation.",
+      "risques": "Performances à 5 000 cartes : pagination côté serveur, filtres en paramètres d'URL (partageables avec soi-même).",
+      "tenants": "Validation (des cartes existent), prix.",
+      "aboutissants": "Fiche carte, tableau de bord.",
+      "dependances": [
+        "v3-validation",
+        "v2-prix"
+      ],
+      "decision": null,
+      "refs": [
+        "Maquette : écran Collection"
+      ],
+      "mission": [
+        "`GET /me/collection` (filtres, tri, pagination par curseur, agrégats : nombre, valeur totale, variation 7/30 j) ; `PATCH/DELETE /me/collection/{item}`.",
+        "Page `/collection` conforme à la maquette, filtres en panneau latéral (tiroir sur mobile), état dans l'URL.",
+        "Ajout manuel d'une carte (recherche catalogue) sans photo.",
+        "Test de charge : 5 000 exemplaires, réponse < 300 ms."
+      ],
+      "livrables": [
+        "page collection filtrable",
+        "mesure de performance"
+      ],
+      "taches_na": {}
+    },
+    {
+      "id": "v4-ranking",
+      "vague": "V4",
+      "piste": "C",
+      "couloir": "DA1",
+      "debut": "2026-10-26",
+      "fin": "2026-10-27",
+      "priorite": "P1",
+      "taille": "S",
+      "complexite": 2,
+      "difficulte": 2,
+      "titre": "Classement (« ranking ») de chaque carte",
+      "gain": "Situer une carte : est-ce une pièce maîtresse de ma collection, et de son extension ?",
+      "fonctionnalites": "Selon D6 : rang de rareté, rang de valeur dans ma collection (« n° 3 sur 128 »), percentile de valeur dans son extension.",
+      "risques": "Recalcul coûteux : vue matérialisée rafraîchie après le relevé de prix.",
+      "tenants": "Prix ; D6.",
+      "aboutissants": "Fiche carte, tableau de bord.",
+      "dependances": [
+        "v2-prix"
+      ],
+      "decision": "D6",
+      "refs": [],
+      "mission": [
+        "Vue matérialisée `card_value_rank` (percentile dans l'extension), rafraîchie par le job de prix.",
+        "Rang dans la collection calculé à la demande ; exposé dans `GET /me/collection/{item}`.",
+        "Tests sur jeu de données de démonstration."
+      ],
+      "livrables": [
+        "classements exposés par l'API"
+      ],
+      "taches_na": {
+        "maquette": "affiché par la fiche"
+      }
+    },
+    {
+      "id": "v4-anecdotes",
+      "vague": "V4",
+      "piste": "C",
+      "couloir": "CH2",
+      "debut": "2026-10-28",
+      "fin": "2026-10-30",
+      "priorite": "P1",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "Histoire et anecdotes de la carte (sourcées)",
+      "gain": "Ce qui fait aimer une carte : son illustrateur, sa réédition, pourquoi elle a flambé.",
+      "fonctionnalites": "Trois à cinq anecdotes courtes avec source cliquable ; générées une fois par carte et partagées entre utilisateurs (cache).",
+      "risques": "Hallucinations : une anecdote sans source n'est pas affichée ; génération sur la clé de l'utilisateur qui ouvre la fiche la première fois.",
+      "tenants": "Couche fournisseurs IA, catalogue.",
+      "aboutissants": "Fiche carte.",
+      "dependances": [
+        "v3-ia-providers",
+        "v2-catalogue"
+      ],
+      "decision": null,
+      "refs": [
+        "Poképédia",
+        "Bulbapedia"
+      ],
+      "mission": [
+        "Collecte de contexte : pages Poképédia / Bulbapedia de la carte et de l'extension (récupération serveur, liste blanche de domaines — pas d'URL fournie par l'utilisateur).",
+        "Génération sur ce contexte seulement, JSON `{anecdote, source_url}` ; rejet de toute anecdote sans URL présente dans le contexte.",
+        "Cache `card_insights` (langue, version, date) ; bouton « Signaler une erreur »."
+      ],
+      "livrables": [
+        "anecdotes sourcées sur 20 cartes de test"
+      ],
+      "taches_na": {
+        "maquette": "affiché par la fiche"
+      }
+    },
+    {
+      "id": "v4-fiche",
+      "vague": "V4",
+      "piste": "C",
+      "couloir": "CH4",
+      "debut": "2026-11-02",
+      "fin": "2026-11-05",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 4,
+      "difficulte": 2,
+      "titre": "Fiche carte : image officielle, ma photo, état, valeur dans le temps, histoire",
+      "gain": "La page qu'on ouvre le plus : tout sur une carte, en un écran.",
+      "fonctionnalites": "Image officielle haute définition (bascule vers ma photo), extension (logo, date de sortie, numéro), rareté et classement, état estimé détaillé, courbe de valeur (7 j, 30 j, 1 an, tout) par variante, date d'ajout et prix d'achat (plus-value), anecdotes, étude en jeu, exemplaires possédés.",
+      "risques": "Courbe courte au début (historique depuis le premier relevé) : l'afficher honnêtement.",
+      "tenants": "Collection, classement, anecdotes, état.",
+      "aboutissants": "MVP complet.",
+      "dependances": [
+        "v4-collection",
+        "v4-ranking",
+        "v4-anecdotes",
+        "v3-etat"
+      ],
+      "decision": null,
+      "refs": [
+        "Maquette : écran Fiche carte"
+      ],
+      "mission": [
+        "`GET /cards/{id}` (catalogue + prix + insights) et `GET /me/collection/{item}` (exemplaire).",
+        "Page `/carte/[id]` conforme à la maquette ; courbe Recharts avec prix d'achat en ligne de référence.",
+        "Onglets : Valeur · Histoire · En jeu · Mes exemplaires ; génération à la demande des anecdotes et de l'étude en jeu si absentes."
+      ],
+      "livrables": [
+        "fiche carte complète en UAT"
+      ],
+      "taches_na": {}
+    },
+    {
+      "id": "v4-jeu",
+      "vague": "V4",
+      "piste": "C",
+      "couloir": "CH2",
+      "debut": "2026-11-02",
+      "fin": "2026-11-05",
+      "priorite": "P2",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "Étude d'utilisation en jeu (légalité, attaques, présence en tournoi)",
+      "gain": "Répond à « est-ce que cette carte sert encore ? » — utile pour décider de la jouer ou de la vendre.",
+      "fonctionnalites": "Formats où elle est légale (Standard, Étendu), analyse du coût et des dégâts des attaques, talents, règle ex/V/VMAX (cartes Prix), rôle typique dans un deck, présence dans les decks de tournoi récents, note de jouabilité.",
+      "risques": "Données de tournoi : source et date affichées ; ne jamais inventer un résultat de tournoi.",
+      "tenants": "Couche fournisseurs IA, catalogue (légalités).",
+      "aboutissants": "Fiche carte (onglet En jeu).",
+      "dependances": [
+        "v4-anecdotes"
+      ],
+      "decision": null,
+      "refs": [
+        "Pokémon TCG API (legalities)",
+        "Limitless TCG"
+      ],
+      "mission": [
+        "Légalités et règles depuis le catalogue (déterministe, sans IA).",
+        "Présence en tournoi : relevé périodique depuis une source publique de decklists, si ses conditions le permettent ; sinon section masquée.",
+        "Synthèse IA sur ces données : rôle, forces, limites, cartes associées ; mise en cache partagée."
+      ],
+      "livrables": [
+        "onglet En jeu alimenté pour 20 cartes de test"
+      ],
+      "taches_na": {
+        "maquette": "affiché par la fiche"
+      }
+    },
+    {
+      "id": "v4-dashboard",
+      "vague": "V4",
+      "piste": "C",
+      "couloir": "CH1",
+      "debut": "2026-11-02",
+      "fin": "2026-11-03",
+      "priorite": "P1",
+      "taille": "S",
+      "complexite": 2,
+      "difficulte": 1,
+      "titre": "Accueil connecté : valeur de la collection, hausses et baisses, derniers ajouts",
+      "gain": "Une raison de revenir chaque semaine.",
+      "fonctionnalites": "Valeur totale et courbe, meilleures hausses et baisses sur 30 j, cinq derniers ajouts, raccourci « Ajouter des photos ».",
+      "risques": "—",
+      "tenants": "Collection, classement.",
+      "aboutissants": "Alertes de prix (V6).",
+      "dependances": [
+        "v4-collection"
+      ],
+      "decision": null,
+      "refs": [
+        "Maquette : écran Accueil (connecté)"
+      ],
+      "mission": [
+        "`GET /me/dashboard` (agrégats), page `/` pour l'utilisateur connecté, conforme à la maquette."
+      ],
+      "livrables": [
+        "tableau de bord en UAT"
+      ],
+      "taches_na": {}
+    },
+    {
+      "id": "v5-rgpd",
+      "vague": "V5",
+      "piste": "A",
+      "couloir": "DA1",
+      "debut": "2026-10-28",
+      "fin": "2026-10-29",
+      "priorite": "P1",
+      "taille": "S",
+      "complexite": 2,
+      "difficulte": 2,
+      "titre": "Exporter mes données et supprimer mon compte",
+      "gain": "Obligation RGPD et confiance : on repart avec sa collection, ou on part sans laisser de trace.",
+      "fonctionnalites": "Export ZIP (collection JSON + CSV, photos), suppression définitive (clés IA, photos, sessions, collection) après confirmation.",
+      "risques": "Suppression incomplète (photos dans le stockage objet, sauvegardes) : la documenter.",
+      "tenants": "Coffre de clés, schéma.",
+      "aboutissants": "Lancement.",
+      "dependances": [
+        "v1-byok"
+      ],
+      "decision": null,
+      "refs": [],
+      "mission": [
+        "Job d'export asynchrone → lien de téléchargement signé valable 24 h, envoyé par e-mail.",
+        "Suppression : effacement immédiat des clés IA et sessions, purge des photos, test qui vérifie qu'il ne reste aucune ligne liée au `user_id`.",
+        "Page confidentialité complétée (durées de conservation, sous-traitants IA choisis par l'utilisateur)."
+      ],
+      "livrables": [
+        "export et suppression testés"
+      ],
+      "taches_na": {}
+    },
+    {
+      "id": "v5-securite",
+      "vague": "V5",
+      "piste": "A",
+      "couloir": "DA1",
+      "debut": "2026-11-09",
+      "fin": "2026-11-12",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "Revue de sécurité avant ouverture",
+      "gain": "Le site garde des clés IA et des photos privées : il ne sort pas sans preuve d'isolation.",
+      "fonctionnalites": "—",
+      "risques": "Accès croisé entre comptes (IDOR), fuite de clés, SSRF via les URL d'images ou d'anecdotes, envoi de fichiers malveillants.",
+      "tenants": "Toutes les routes du MVP.",
+      "aboutissants": "Mise en PROD.",
+      "dependances": [
+        "v4-fiche",
+        "v5-rgpd",
+        "v3-validation"
+      ],
+      "decision": null,
+      "refs": [
+        "OWASP ASVS v4 niveau 1",
+        "OWASP API Security Top 10"
+      ],
+      "mission": [
+        "Test automatique d'accès croisé : pour chaque route, l'utilisateur B tente d'accéder aux objets de A → 404 attendu partout.",
+        "En-têtes (CSP, HSTS, frame-ancestors), cookies, CORS, limites de débit, taille d'envoi ; dépendances (`pip-audit`, `pnpm audit`).",
+        "Contrôle des journaux et traces : aucune clé, aucun cookie, aucune photo signée.",
+        "Rapport `docs/SECURITE.md` : ce qui a été testé, ce qui reste."
+      ],
+      "livrables": [
+        "tests d'accès croisé en CI",
+        "rapport de sécurité"
+      ],
+      "taches_na": {
+        "maquette": "sans écran"
+      }
+    },
+    {
+      "id": "v5-e2e",
+      "vague": "V5",
+      "piste": "F",
+      "couloir": "CH3",
+      "debut": "2026-11-06",
+      "fin": "2026-11-11",
+      "priorite": "P1",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 2,
+      "titre": "Parcours e2e Playwright en CI",
+      "gain": "Chaque livraison prouve que le parcours complet fonctionne encore.",
+      "fonctionnalites": "—",
+      "risques": "IA non déterministe : fournisseur simulé en e2e, un test réel manuel par semaine.",
+      "tenants": "Fiche carte, validation.",
+      "aboutissants": "Mise en PROD.",
+      "dependances": [
+        "v4-fiche"
+      ],
+      "decision": null,
+      "refs": [],
+      "mission": [
+        "Parcours : inscription → vérification (Mailpit) → clé IA (simulée) → envoi de la photo de référence 3×3 → validation → collection filtrée → fiche carte.",
+        "Exécution sur chimera en local, dans la CI (GitHub Actions) sur chaque PR ; captures en artefact en cas d'échec."
+      ],
+      "livrables": [
+        "e2e verts en CI"
+      ],
+      "taches_na": {
+        "maquette": "tests",
+        "release_uat": "tests",
+        "release_prod": "tests"
+      }
+    },
+    {
+      "id": "v5-prod",
+      "vague": "V5",
+      "piste": "W",
+      "couloir": "DA2",
+      "debut": "2026-11-16",
+      "fin": "2026-11-20",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "Mise en PROD : domaine, sauvegardes, surveillance",
+      "gain": "Le site est ouvert.",
+      "fonctionnalites": "PROD sur son domaine, inscription ouverte ou sur invitation (D8).",
+      "risques": "Construire sur chimera, déployer par devAI : la PROD ne fait que tirer ses images. Sauvegarde non testée = pas de sauvegarde.",
+      "tenants": "Revue de sécurité, e2e verts, UAT stable ; D2, D8.",
+      "aboutissants": "V6.",
+      "dependances": [
+        "v5-securite",
+        "v5-e2e",
+        "v1-uat"
+      ],
+      "decision": "D8",
+      "refs": [],
+      "mission": [
+        "Environnement PROD selon D2 ; secrets uniquement côté serveur ; clé maître du coffre distincte de l'UAT.",
+        "Sauvegarde quotidienne de la base + stockage objet, restauration testée sur l'UAT.",
+        "Surveillance : `/health` externe, file de jobs, relevé de prix du jour, alertes par e-mail.",
+        "Déploiement par devAI, preuve : version servie = tag, parcours e2e rejoué contre la PROD avec un compte de test."
+      ],
+      "livrables": [
+        "PROD en service",
+        "restauration testée",
+        "surveillance active"
+      ],
+      "taches_na": {
+        "maquette": "infra"
+      }
+    },
+    {
+      "id": "v6-contrefacon",
+      "vague": "V6",
+      "piste": "I",
+      "couloir": "CH2",
+      "debut": "2026-11-23",
+      "fin": "2026-12-02",
+      "priorite": "P2",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 4,
+      "titre": "Détection des contrefaçons probables",
+      "gain": "Beaucoup de cartes « gold » en métal ou noir et or circulent : les repérer protège la valeur affichée et l'utilisateur.",
+      "fonctionnalites": "Drapeau et explication (« aucune Pikachu VMAX noir et or n'existe au catalogue »), valeur neutralisée, filtre « contrefaçons probables ».",
+      "risques": "Faux positifs sur des promos rares : toujours « probable », jamais « certain », contestable par l'utilisateur.",
+      "tenants": "Estimation d'état.",
+      "aboutissants": "—",
+      "dependances": [
+        "v3-etat"
+      ],
+      "decision": null,
+      "refs": [],
+      "mission": [
+        "Règles déterministes (variante absente du catalogue, numéro impossible) + indices visuels par le LLM ; jeu de 30 contrefaçons connues et 30 vraies cartes."
+      ],
+      "livrables": [
+        "précision mesurée sur 60 cartes"
+      ],
+      "taches_na": {}
+    },
+    {
+      "id": "v6-alertes",
+      "vague": "V6",
+      "piste": "K",
+      "couloir": "CH3",
+      "debut": "2026-11-23",
+      "fin": "2026-11-25",
+      "priorite": "P2",
+      "taille": "S",
+      "complexite": 2,
+      "difficulte": 1,
+      "titre": "Alertes de prix et récapitulatif hebdomadaire par e-mail",
+      "gain": "Être prévenu quand une carte monte ou baisse fortement.",
+      "fonctionnalites": "Seuils par carte, récap du lundi (valeur, hausses, baisses), désinscription en un clic.",
+      "risques": "—",
+      "tenants": "Prix, tableau de bord.",
+      "aboutissants": "—",
+      "dependances": [
+        "v4-dashboard"
+      ],
+      "decision": null,
+      "refs": [],
+      "mission": [
+        "Job après le relevé de prix, modèle d'e-mail, préférences dans le profil."
+      ],
+      "livrables": [
+        "alertes en PROD"
+      ],
+      "taches_na": {}
+    },
+    {
+      "id": "v6-pwa",
+      "vague": "V6",
+      "piste": "C",
+      "couloir": "CH1",
+      "debut": "2026-11-23",
+      "fin": "2026-12-04",
+      "priorite": "P2",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "Application mobile installable (PWA) et scan en direct",
+      "gain": "Scanner ses cartes au téléphone, sans passer par la galerie.",
+      "fonctionnalites": "Installation sur l'écran d'accueil, cadre de visée caméra, capture automatique quand la carte est nette, consultation hors ligne.",
+      "risques": "Accès caméra iOS en PWA.",
+      "tenants": "Envoi de photos, collection.",
+      "aboutissants": "—",
+      "dependances": [
+        "v5-prod"
+      ],
+      "decision": null,
+      "refs": [],
+      "mission": [
+        "Manifest + service worker, écran de scan `getUserMedia`, envoi par lots."
+      ],
+      "livrables": [
+        "PWA installable"
+      ],
+      "taches_na": {}
+    },
+    {
+      "id": "v6-import-export",
+      "vague": "V6",
+      "piste": "C",
+      "couloir": "DA1",
+      "debut": "2026-11-23",
+      "fin": "2026-11-27",
+      "priorite": "P3",
+      "taille": "M",
+      "complexite": 2,
+      "difficulte": 2,
+      "titre": "Import/export CSV et liste de souhaits",
+      "gain": "Arriver avec une collection existante ; suivre les cartes qu'on veut acheter.",
+      "fonctionnalites": "Import CSV (format générique et exports courants), export CSV, liste de souhaits avec prix cible.",
+      "risques": "Rapprochement des lignes importées : même moteur que l'identification, avec validation.",
+      "tenants": "Recherche, collection.",
+      "aboutissants": "—",
+      "dependances": [
+        "v5-prod"
+      ],
+      "decision": null,
+      "refs": [],
+      "mission": [
+        "Import en job avec écran de validation réutilisé, export synchrone, table `wishlist_items`."
+      ],
+      "livrables": [
+        "import/export en PROD"
+      ],
+      "taches_na": {}
+    },
+    {
+      "id": "v6-gradation",
+      "vague": "V6",
+      "piste": "K",
+      "couloir": "CH3",
+      "debut": "2026-11-30",
+      "fin": "2026-12-04",
+      "priorite": "P3",
+      "taille": "M",
+      "complexite": 2,
+      "difficulte": 3,
+      "titre": "Cartes gradées (PSA, PCA, CGC)",
+      "gain": "Les cartes gradées valent souvent plusieurs fois la carte brute.",
+      "fonctionnalites": "Saisie de l'organisme, de la note et du numéro de certificat ; lecture de l'étiquette sur la photo ; valeur par note si disponible.",
+      "risques": "Sources de prix gradés rarement gratuites.",
+      "tenants": "Collection, prix.",
+      "aboutissants": "—",
+      "dependances": [
+        "v5-prod"
+      ],
+      "decision": null,
+      "refs": [],
+      "mission": [
+        "Champs de gradation sur l'exemplaire, extraction de l'étiquette par la couche IA, source de prix gradés selon disponibilité."
+      ],
+      "livrables": [
+        "exemplaires gradés gérés"
+      ],
+      "taches_na": {}
+    }
+  ]
+}

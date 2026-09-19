@@ -1,0 +1,1909 @@
+{
+  "etats": {
+    "v0-flotte": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "na",
+          "preuve": "sans objet : outillage",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : outillage",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "na",
+          "preuve": "sans objet : outillage",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "na",
+          "preuve": "sans objet : outillage",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v0-monorepo": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : socle technique",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "na",
+          "preuve": "sans objet : socle technique",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "na",
+          "preuve": "sans objet : socle technique",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v0-schema": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : schéma",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "na",
+          "preuve": "sans objet : joué avec v1-uat",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "na",
+          "preuve": "sans objet : joué avec v5-prod",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v0-design-system": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "na",
+          "preuve": "sans objet : aucune donnée",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "na",
+          "preuve": "sans objet : livré avec les pages",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "na",
+          "preuve": "sans objet : livré avec les pages",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v1-auth": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : back-end seul",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v1-accueil": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "na",
+          "preuve": "sans objet : page statique",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v1-pages-auth": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v1-byok": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : back-end ; l'écran est porté par v1-profil",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v1-profil": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v1-uat": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : infra",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "na",
+          "preuve": "sans objet : porté par v5-prod",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v2-catalogue": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "na",
+          "preuve": "sans objet : données publiques",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : back-end",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v2-prix": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "na",
+          "preuve": "sans objet : données publiques",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : back-end",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v2-recherche": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "na",
+          "preuve": "sans objet : données publiques",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : back-end",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v3-upload": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v3-ia-providers": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : back-end",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v3-detection": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : back-end",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v3-identification": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : back-end",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v3-validation": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v3-etat": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : affiché par la fiche",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v4-collection": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v4-ranking": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : affiché par la fiche",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v4-anecdotes": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : affiché par la fiche",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v4-fiche": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v4-jeu": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : affiché par la fiche",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v4-dashboard": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v5-rgpd": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v5-securite": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : sans écran",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v5-e2e": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : tests",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "na",
+          "preuve": "sans objet : tests",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "na",
+          "preuve": "sans objet : tests",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v5-prod": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : infra",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v6-contrefacon": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v6-alertes": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v6-pwa": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v6-import-export": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    },
+    "v6-gradation": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
+    }
+  },
+  "decisions_prises": {}
+}
