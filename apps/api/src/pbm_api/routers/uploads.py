@@ -140,9 +140,9 @@ async def list_detections(
     db: Annotated[AsyncSession, Depends(get_session)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> ListDetectionsResponse:
-    """Cartes détectées sur un envoi (mission `v3-detection`), avec leur extraction et leurs
-    candidats catalogue une fois identifiées (mission `v3-identification`) : préalable à la
-    validation humaine (lot `v3-validation`)."""
+    """Cartes détectées sur un envoi (mission `v3-detection`), avec leur extraction, leurs
+    candidats catalogue une fois identifiées (mission `v3-identification`) et leur état estimé
+    (mission `v3-etat`) : préalable à la validation humaine (lot `v3-validation`)."""
     try:
         detections = await service.list_detections(db, current_user, upload_id)
     except UploadNotFoundError:
@@ -158,6 +158,7 @@ async def list_detections(
                 crop_url=f"/uploads/{upload_id}/detections/{detection.id}/crop",
                 extraction=detection.extraction,
                 candidates=detection.candidates,
+                condition=detection.condition_assessment,
             )
             for detection in detections
         ],

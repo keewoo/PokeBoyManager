@@ -186,6 +186,29 @@ async def test_item_value_applies_condition_decote(db_session):
     assert value == Decimal("10") * CONDITION_MULTIPLIERS["excellent"]
 
 
+async def test_item_value_neutralized_to_zero_for_suspected_counterfeit(db_session):
+    """Mission `v3-etat` point 3 : une carte signalée contrefaçon probable n'est jamais
+    valorisée comme l'originale, même avec un prix de référence et un état mint."""
+    card = await _make_card(db_session)
+    await _add_price(
+        db_session, card, source=PriceSource.cardmarket, low=8, mid=10, trend=Decimal("10")
+    )
+    user = await _make_user(db_session)
+    item = CollectionItem(
+        user_id=user.id,
+        card_id=card.id,
+        language="fr",
+        variant=PriceVariant.normal,
+        condition_grade="mint",
+        counterfeit_suspected=True,
+    )
+    db_session.add(item)
+    await db_session.flush()
+
+    assert await item_value(db_session, item, as_of=DAY) == Decimal("0")
+    assert await item_value(db_session, item, as_of=DAY, currency="USD") == Decimal("0")
+
+
 async def test_item_value_none_when_no_price_available(db_session):
     card = await _make_card(db_session)
     user = await _make_user(db_session)

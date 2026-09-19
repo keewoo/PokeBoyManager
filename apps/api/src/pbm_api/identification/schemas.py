@@ -1,14 +1,20 @@
-"""Schéma d'extraction par carte (mission `v3-identification` point 1).
+"""Schéma d'extraction par carte (mission `v3-identification` point 1, étendu par `v3-etat`).
 
 Un seul appel `AIProvider.extract` par carte, dès le premier tir (principe cadre, voir
 `docs/ARCHITECTURE.md` § « la base sait, l'IA reconnaît ») : ce schéma ne demande au modèle que
 ce que le catalogue ne sait pas déjà déduire d'une photo (nom, numéro, extension, langue, PV,
-variante) — jamais une information que le rapprochement catalogue pourrait retrouver seul.
+variante) — jamais une information que le rapprochement catalogue pourrait retrouver seul. Les
+champs `*_wear`/`counterfeit_*` (lot `v3-etat`) suivent le même principe côté état de
+l'exemplaire : coins, bords et surface ne se mesurent pas par OpenCV comme le centrage
+(`pbm_api.state.centering`), ils sont demandés au modèle dans ce même appel plutôt que d'en
+ajouter un second (« un seul appel IA par carte, dès le premier tir »).
 """
 
 from enum import StrEnum
 
 from pydantic import BaseModel, Field
+
+from pbm_api.state.grades import ConditionGrade
 
 
 class CardVariantGuess(StrEnum):
@@ -50,6 +56,27 @@ class CardExtraction(BaseModel):
     card_type_confidence: float = Field(ge=0.0, le=1.0, default=0.0)
     variant: CardVariantGuess | None = None
     variant_confidence: float = Field(ge=0.0, le=1.0, default=0.0)
+
+    # État de l'exemplaire (mission `v3-etat` point 1) : un palier par défaut, pas une mesure —
+    # la confiance doit chuter (jamais être maquillée) quand la photo ne permet pas de juger
+    # (pochette/toploader, reflet) ; voir `pbm_api.state.centering` pour le centrage, mesuré par
+    # OpenCV plutôt que demandé ici.
+    corner_wear: ConditionGrade | None = None
+    corner_wear_confidence: float = Field(ge=0.0, le=1.0, default=0.0)
+    corner_wear_note: str | None = None
+    edge_wear: ConditionGrade | None = None
+    edge_wear_confidence: float = Field(ge=0.0, le=1.0, default=0.0)
+    edge_wear_note: str | None = None
+    surface_wear: ConditionGrade | None = None
+    surface_wear_confidence: float = Field(ge=0.0, le=1.0, default=0.0)
+    surface_wear_note: str | None = None
+
+    # Indices de contrefaçon (mission point 3) : police, couleurs, format du numéro incohérents
+    # avec une carte officielle — jamais un simple "je ne reconnais pas cette carte" (ça, c'est
+    # le rôle du rapprochement catalogue, `pbm_api.identification.reconciliation`).
+    counterfeit_suspected: bool = False
+    counterfeit_confidence: float = Field(ge=0.0, le=1.0, default=0.0)
+    counterfeit_reason: str | None = None
 
 
 class IdentificationCandidate(BaseModel):

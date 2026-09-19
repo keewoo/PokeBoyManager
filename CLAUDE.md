@@ -172,6 +172,26 @@ scripts/measure_identification_rate.py` (mise au point, `report.json`) ; essai m
 vraie clé : `uv run python scripts/test_identification_manual.py <provider> <clé>` depuis
 `apps/api`. Détail : `docs/ARCHITECTURE.md` § « Reconnaissance ».
 
+## État estimé de l'exemplaire (lot `v3-etat`)
+
+Chaîné après l'identification dans le même job `detect_cards`
+(`pbm_api.state.service.run_state_estimation_for_upload`, appelé par
+`pbm_api.worker.detect_cards_task` juste après `run_identification_for_upload`) — jamais un job
+ni un appel IA de plus. Deux sources combinées en un palier global (le plus sévère l'emporte,
+`pbm_api.state.grades.worst_grade`) : centrage mesuré par OpenCV sur le recadrage déjà en
+stockage (`pbm_api.state.centering`, sans clé IA requise, `None` plutôt qu'une mesure inventée
+sans bordure distincte) ; coins/bords/surface demandés à l'IA dans le même appel que
+l'identification (`CardExtraction.corner_wear`/`edge_wear`/`surface_wear`, `pbm_api.
+identification.extraction`). Palier mappé sur l'abréviation Cardmarket et une note /10 dérivée de
+`pbm_api.pricing.valuation.CONDITION_MULTIPLIERS` (même barème que la décote de valeur). Résultat
+sur `Detection.condition_assessment`, exposé par `GET /uploads/{id}/detections`. Contrefaçon
+probable (`pbm_api.state.counterfeit`) : signal IA + contrôle déterministe (carte « gold » perçue
+mais rareté catalogue non confirmée) ; `CollectionItem.counterfeit_suspected` neutralise la
+valeur à zéro dans `pbm_api.pricing.valuation.item_value`. Mise au point centrage : `uv run
+python scripts/measure_centering_rate.py` depuis `apps/api` (jeu synthétique dédié,
+`pbm_api.state.synthetic` — aucune carte physique sur chimera). Détail :
+`docs/ARCHITECTURE.md` § « Reconnaissance ».
+
 ## Identité du compte (lot `v1-identite`)
 
 `users` porte prénom (facultatif), nom, date de naissance, version/horodatage des conditions

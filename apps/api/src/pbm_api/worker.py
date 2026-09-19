@@ -26,6 +26,7 @@ from pbm_api.models import DataExport, Job, JobStatus, Upload, User
 from pbm_api.pricing.exchange_rates import EcbClient, store_daily_rates
 from pbm_api.pricing.service import collect_daily_prices
 from pbm_api.ranking.service import refresh_card_value_rank
+from pbm_api.state.service import run_state_estimation_for_upload
 from pbm_api.storage import build_storage
 
 JOB_TYPE = "import_catalogue"
@@ -180,12 +181,19 @@ async def _run_detect_cards(job_id: str) -> dict:
             # appel IA par carte, dès le premier tir » veut dire un appel par carte détectée,
             # pas un job de plus par carte.
             id_summary = await run_identification_for_upload(session, storage, upload)
+            # État (mission `v3-etat`) chaîné après l'identification, dans le même job : le
+            # centrage se mesure sur le recadrage déjà en stockage, coins/bords/surface/
+            # contrefaçon viennent de l'extraction que l'identification vient d'écrire (fraîche
+            # ou réutilisée du cache) — jamais un appel IA de plus.
+            state_summary = await run_state_estimation_for_upload(session, storage, upload)
             report = {
                 "detections_count": summary.detections_count,
                 "method": summary.method,
                 "identified_count": id_summary.identified_count,
                 "identification_cache_hits": id_summary.cache_hits,
                 "identification_ai_calls": id_summary.ai_calls,
+                "state_assessed_count": state_summary.assessed_count,
+                "state_counterfeit_flagged_count": state_summary.counterfeit_flagged_count,
             }
             job.status = JobStatus.succeeded
             job.result = report

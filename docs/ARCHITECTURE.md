@@ -264,7 +264,42 @@ passe par `pbm_api.ai.factory.create_provider(provider, api_key)`.
    `tests/test_identification_synthetic_dataset.py`, `scripts/measure_identification_rate.py`).
 4. **Validation humaine** obligatoire (lot `v3-validation`) ; chaque correction alimente le jeu
    de régression.
-5. **État** indicatif (centrage mesuré, coins, bords, surface) et drapeau « contrefaçon probable ».
+5. **État** indicatif (lot `v3-etat`), chaîné après l'identification dans le même job `detect_
+   cards` (`pbm_api.state.service.run_state_estimation_for_upload`, appelé par `pbm_api.worker.
+   detect_cards_task` juste après `run_identification_for_upload`) — jamais un job de plus ni un
+   second appel IA. Deux sources combinées en un seul palier global (le plus sévère l'emporte,
+   `pbm_api.state.grades.worst_grade`) :
+   - **Centrage** mesuré par OpenCV sur le recadrage déjà en stockage (`pbm_api.state.
+     centering`), sans jamais dépendre d'une clé IA (D4) : bordure de couleur unie détectée par
+     contraste (Lab + seuillage Otsu) contre le cadre intérieur (illustration + texte), marges
+     gauche/droite/haut/bas mesurées en pixels, palier par axe puis le plus sévère des deux
+     retenu. `None` (pas de mesure inventée) quand aucune bordure nette ne se distingue (carte
+     full art/gold, ou reflet de pochette trop marqué) — mesuré sur le jeu synthétique dédié
+     (`pbm_api.state.synthetic`, `scripts/measure_centering_rate.py`) : erreur absolue moyenne
+     0,5 px, 0 cas non mesurable sur les 7 configurations couvertes.
+   - **Coins, bords, surface** demandés au modèle dans le même appel `AIProvider.extract` que
+     l'identification (`CardExtraction.corner_wear`/`edge_wear`/`surface_wear`, un palier +
+     justification courte + confiance chacun, `pbm_api.identification.extraction`) — jamais un
+     second appel, la confiance chute (jamais la note) quand la photo ne permet pas de juger
+     (pochette/toploader, reflet, angle).
+
+   Palier global mappé sur l'abréviation Cardmarket (MT/NM/EX/GD/LP/PL/PO,
+   `pbm_api.state.grades.CARDMARKET_LABELS`) et une note /10 dérivée directement de
+   `pbm_api.pricing.valuation.CONDITION_MULTIPLIERS` (même barème que la décote de valeur, pas
+   un second qui pourrait diverger) — toujours accompagné de la mention « estimation indicative,
+   pas une gradation professionnelle » (mission « risques & pièges »). Résultat écrit sur
+   `Detection.condition_assessment` (colonne distincte d'`extraction` : existe même sans clé IA),
+   exposé par `GET /uploads/{id}/detections`, déjà borné au propriétaire de l'envoi.
+
+   **Contrefaçon probable** (`pbm_api.state.counterfeit.assess_counterfeit`) : le signal explicite
+   de l'IA (`CardExtraction.counterfeit_suspected`/`counterfeit_reason`) complété par un contrôle
+   déterministe — une carte perçue comme « gold »/métal (`CardVariantGuess.gold`) alors que la
+   carte du catalogue rapprochée n'est répertoriée sous aucune rareté « gold »/« secret »/
+   « hyper »/« rainbow » connue est signalée, jamais l'inverse quand aucune carte n'a pu être
+   rapprochée (pas de contrôle possible). `CollectionItem.counterfeit_suspected` (posé par ce
+   lot, à reprendre du `Detection` par le futur lot `v4-collection` lors de la création de
+   l'exemplaire — pas encore de route de création dans ce dépôt) neutralise la valeur à zéro dans
+   `pbm_api.pricing.valuation.item_value`, jamais valorisée comme l'originale.
 
 ## Anecdotes sourcées (lot `v4-anecdotes`)
 

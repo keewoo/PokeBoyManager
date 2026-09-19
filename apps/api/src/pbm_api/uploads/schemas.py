@@ -42,6 +42,7 @@ class DetectionResponse(BaseModel):
     crop_url: str
     extraction: dict | None
     candidates: list | None
+    condition: dict | None
 
 
 class ListDetectionsResponse(BaseModel):

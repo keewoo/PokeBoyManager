@@ -3,7 +3,7 @@ import uuid
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import Date, Enum, ForeignKey, Integer, Numeric, String
+from sqlalchemy import Boolean, Date, Enum, ForeignKey, Integer, Numeric, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -67,6 +67,11 @@ class Detection(Base, TimestampMixin):
     # dépasse le seuil de présélection.
     extraction: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     candidates: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    # Centrage (OpenCV) + coins/bords/surface/contrefaçon (extraction ci-dessus) combinés en un
+    # état indicatif (mission `v3-etat`, `pbm_api.state.service.run_state_estimation_for_upload`)
+    # — colonne distincte d'`extraction` : le centrage n'en fait pas partie (mesuré, pas demandé
+    # à l'IA), et ce résultat existe même quand `extraction` est absent (D4, sans clé IA).
+    condition_assessment: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     status: Mapped[DetectionStatus] = mapped_column(
         Enum(DetectionStatus, name="detection_status"),
         nullable=False,
@@ -102,6 +107,11 @@ class CollectionItem(Base, TimestampMixin):
         PRICE_VARIANT_ENUM, nullable=False, default=PriceVariant.normal
     )
     condition_grade: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # Reprend le drapeau de `Detection.condition_assessment` (mission `v3-etat` point 3) au
+    # moment où l'exemplaire est créé (lot `v4-collection`, pas encore posé dans ce dépôt) :
+    # `pbm_api.pricing.valuation.item_value` neutralise la valeur d'un exemplaire ainsi signalé,
+    # jamais une contrefaçon probable valorisée comme l'originale.
+    counterfeit_suspected: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     purchase_price: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
     purchase_currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
     photo_s3_key: Mapped[str | None] = mapped_column(String(512), nullable=True)

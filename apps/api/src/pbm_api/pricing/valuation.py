@@ -113,7 +113,17 @@ async def item_value(
     as_of: date | None = None,
     currency: str = "EUR",
 ) -> Decimal | None:
-    """Valeur d'un exemplaire = référence de prix de sa variante × décote de son état."""
+    """Valeur d'un exemplaire = référence de prix de sa variante × décote de son état.
+
+    Neutralisée à zéro pour un exemplaire signalé contrefaçon probable (mission `v3-etat`
+    point 3, `pbm_api.state.counterfeit`) : jamais valorisée comme l'originale, mais toujours un
+    exemplaire « pricé » plutôt qu'une valeur manquante (`None`), qui signifierait plutôt
+    « aucune référence de prix disponible »."""
+    if item.counterfeit_suspected:
+        # Zéro dans n'importe quelle devise ne dépend d'aucun taux de change du jour — jamais
+        # `None` ici, qui signifierait « aucune référence de prix disponible » plutôt que
+        # « valeur neutralisée ».
+        return Decimal("0")
     as_of = as_of or datetime.now(UTC).date()
     reference = await reference_price_eur(session, item.card_id, item.variant, as_of)
     if reference is None:
