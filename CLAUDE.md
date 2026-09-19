@@ -168,13 +168,46 @@ code d'extension, langue, PV, type, variante, confiance par champ) puis rapproch
 nom, sinon recherche floue sur le nom seul, en réutilisant `pbm_api.catalog.search.
 match_candidates` tel quel) — top 3 avec score combiné (score catalogue × confiance moyenne),
 présélection au-delà de 0,9. Résultat écrit sur `Detection.extraction`/`Detection.candidates`,
-exposé par `GET /uploads/{id}/detections`. Comparaison visuelle recadrage/image officielle
-(second appel IA par carte) non implémentée : contredirait le principe « un seul appel IA par
-carte, dès le premier tir ». Jeu de 100 cartes étiquetées et mesure de précision : `uv run
-pytest tests/test_identification_synthetic_dataset.py` (fait foi, CI) ou `uv run python
+exposé par `GET /uploads/{id}/detections`. Jeu de 100 cartes étiquetées et mesure de précision :
+`uv run pytest tests/test_identification_synthetic_dataset.py` (fait foi, CI) ou `uv run python
 scripts/measure_identification_rate.py` (mise au point, `report.json`) ; essai manuel avec une
 vraie clé : `uv run python scripts/test_identification_manual.py <provider> <clé>` depuis
 `apps/api`. Détail : `docs/ARCHITECTURE.md` § « Reconnaissance ».
+
+## Comparaison visuelle (lot `v3-identification-visuelle`)
+
+Insérée entre le cache d'empreinte ci-dessus et l'appel IA, dans `pbm_api.identification.
+service._identify_one` : chaque recadrage est comparé à l'index des images officielles de toutes
+les cartes (table `card_visual_index` — `full_phash`/`illustration_phash`, aHash 64 bits sur
+l'image entière et sur sa seule zone d'illustration, `pbm_api.identification.visual_geometry`) ;
+`pbm_api.identification.visual_index.VisualIndex` charge l'index en mémoire (numpy) une fois par
+envoi, jamais par carte — recherche par XOR + comptage de bits vectorisé, pas en SQL (volume visé
+~20 000 cartes × 2 langues, largement au-delà de ce que `identification_cache` documente comme
+acceptable en scan SQL). Une correspondance confiante (`resolve`, `CONFIDENT_SCORE_THRESHOLD` =
+0,85, sans concurrent d'une autre carte à moins d'`AMBIGUITY_MARGIN` = 0,06) identifie la carte
+**sans aucun appel IA**, y compris sans clé configurée (D4) : les champs viennent directement du
+catalogue (`pbm_api.identification.visual_resolve.build_confident_extraction`, confiance 1,0,
+jamais repassés par le rapprochement flou), `Detection.identification_method = "visuel"` (colonne
+posée par ce lot, comme `IdentificationCache.method`) — sert au badge « reconnue sans IA » de
+l'écran de validation (`apps/web/src/app/ajouter/validation/detection-card.tsx`). Un groupe
+« même illustration » (réimpression/reverse/promo) n'est jamais tranché par la seule comparaison
+visuelle (pas d'OCR local disponible sur chimera — ni `tesseract` ni `sudo apt` sur cette
+session, voir le compte rendu) : ses candidats sont injectés dans le prompt du **même** appel
+`AIProvider.extract` (`pbm_api.identification.extraction.extract_card(..., visual_hints=...)`),
+ou laissés à la validation humaine sans clé IA (`identification_method = "aucun"`, candidats tout
+de même exposés). Construction de l'index (hors serveur de PROD) : `uv run python
+scripts/build_visual_index.py [--limit N] [--languages fr,en]` — télécharge l'image officielle
+basse définition par carte × langue (déduction d'URL par langue, `pbm_api.identification.
+visual_build.image_url_for_language`), la met aussi en cache dans le stockage objet
+(`cards/{id}/{langue}/low.webp`, réutilisée par le proxy `/img/cards/{id}`), idempotent et
+reprenable (une carte déjà indexée est sautée). Mesure sur jeu synthétique (images procédurales,
+`pbm_api.identification.visual_synthetic` — même contrainte qu'ailleurs, aucune vraie
+photo/carte) : `uv run pytest tests/test_visual_identification_synthetic_dataset.py` (fait foi,
+CI, objectif ≥ 60 % reconnu sans IA) ou `uv run python
+scripts/measure_visual_identification_rate.py` (mise au point, `report.json`) ; performance/
+mémoire à l'échelle de production (empreintes aléatoires, pas besoin d'images réelles) : `uv run
+python scripts/measure_visual_index_performance.py`. Détail : `docs/ARCHITECTURE.md` §
+« Reconnaissance ».
 
 ## État estimé de l'exemplaire (lot `v3-etat`)
 
@@ -186,7 +219,10 @@ ni un appel IA de plus. Deux sources combinées en un palier global (le plus sé
 stockage (`pbm_api.state.centering`, sans clé IA requise, `None` plutôt qu'une mesure inventée
 sans bordure distincte) ; coins/bords/surface demandés à l'IA dans le même appel que
 l'identification (`CardExtraction.corner_wear`/`edge_wear`/`surface_wear`, `pbm_api.
-identification.extraction`). Palier mappé sur l'abréviation Cardmarket et une note /10 dérivée de
+identification.extraction`) — `None` (jamais inventés) quand la carte a été reconnue par le seul
+index visuel (lot `v3-identification-visuelle`, `identification_method = "visuel"`, aucun appel
+IA fait) : l'état global retombe alors sur le centrage seul, `worst_grade` ignore les paliers
+absents. Palier mappé sur l'abréviation Cardmarket et une note /10 dérivée de
 `pbm_api.pricing.valuation.CONDITION_MULTIPLIERS` (même barème que la décote de valeur). Résultat
 sur `Detection.condition_assessment`, exposé par `GET /uploads/{id}/detections`. Contrefaçon
 probable (`pbm_api.state.counterfeit`) : signal IA + contrôle déterministe (carte « gold » perçue
@@ -249,6 +285,11 @@ manuel. `confirm`/`confirm-all` reprennent le drapeau `counterfeit_suspected` de
 le `CollectionItem` créé (`pbm_api.validation.service._counterfeit_suspected`) — sans ça, une
 contrefaçon probable aurait été valorisée comme l'originale
 (`pbm_api.pricing.valuation.item_value`).
+
+Étendu par `v3-identification-visuelle` : `detection-card.tsx` affiche un badge « reconnue sans
+IA » quand `Detection.identification_method === "visuel"` (comparaison à l'index visuel des
+images officielles, aucun appel IA) — même emplacement que les badges statut/contrefaçon
+existants, aucun autre changement d'écran.
 
 Tests : `apps/api/tests/test_validation_routes.py` (confirm/reject/confirm-all, flux SSE, accès
 croisé) — le worker arq n'étant pas démarré pendant les tests, `_simulate_worker` reproduit

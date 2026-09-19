@@ -287,16 +287,31 @@ passe par `pbm_api.ai.factory.create_provider(provider, api_key)`.
    `pbm_api.worker.detect_cards_task` juste après `run_detection_for_upload`) — pas un second
    aller-retour par la file. Résultat écrit sur `Detection.extraction`/`Detection.candidates`,
    exposé par `GET /uploads/{id}/detections` (`routers/uploads.py`), déjà borné au propriétaire
-   de l'envoi. Comparaison visuelle recadrage/image officielle (mission `v3-identification`
-   point 3) non implémentée : un second appel IA par carte contredirait le principe ci-dessus
-   (« un seul appel IA par carte, dès le premier tir ») — voir le compte rendu du lot. Précision
-   mesurée sur un jeu de 100 cartes étiquetées (dont les 9 cartes de démonstration,
-   `pbm_api.identification.synthetic`, extractions bruitées de façon déterministe — aucune vraie
-   photo/clé IA sur chimera) : top-1 93 %, top-3 99 % (objectif ≥ 95 %,
+   de l'envoi. Précision mesurée sur un jeu de 100 cartes étiquetées (dont les 9 cartes de
+   démonstration, `pbm_api.identification.synthetic`, extractions bruitées de façon déterministe
+   — aucune vraie photo/clé IA sur chimera) : top-1 93 %, top-3 99 % (objectif ≥ 95 %,
    `tests/test_identification_synthetic_dataset.py`, `scripts/measure_identification_rate.py`).
-4. **Validation humaine** obligatoire (lot `v3-validation`) ; chaque correction alimente le jeu
+4. **Comparaison visuelle** (lot `v3-identification-visuelle`), insérée entre le cache
+   d'empreinte ci-dessus et l'appel IA : chaque recadrage est aussi comparé à un index des
+   images officielles de toutes les cartes (`card_visual_index` — un `full_phash`/`illustration_
+   phash` aHash 64 bits par carte × langue, `pbm_api.identification.visual_index.VisualIndex`,
+   chargé en mémoire une fois par envoi, jamais par carte). Une correspondance confiante (score ≥
+   `CONFIDENT_SCORE_THRESHOLD`, sans concurrent d'une autre carte à moins d'`AMBIGUITY_MARGIN`)
+   identifie la carte **sans aucun appel IA** — y compris sans clé configurée (D4) — les champs
+   viennent alors directement du catalogue (confiance 1,0, `Detection.identification_method =
+   "visuel"`). Un groupe « même illustration » (réimpression/reverse/promo, mission « risques &
+   pièges ») n'est jamais tranché par la seule comparaison visuelle (pas d'OCR local disponible
+   sur chimera, voir le compte rendu) : ses candidats sont injectés dans le prompt du **même**
+   appel `AIProvider.extract` que l'extraction/l'état (jamais un second appel — le principe cadre
+   reste respecté), ou laissés à la validation humaine sans clé IA. Mesuré sur un jeu synthétique
+   dédié (`pbm_api.identification.visual_synthetic`, images procédurales — même contrainte
+   qu'ailleurs, aucune vraie photo/carte sur chimera) : 79 % des cartes reconnues sans IA,
+   100 % de précision parmi elles, 0 groupe ambigu résolu à tort avec confiance
+   (`tests/test_visual_identification_synthetic_dataset.py`, objectif ≥ 60 % — voir le compte
+   rendu du lot pour la mesure de performance/mémoire à l'échelle de production).
+5. **Validation humaine** obligatoire (lot `v3-validation`) ; chaque correction alimente le jeu
    de régression.
-5. **État** indicatif (lot `v3-etat`), chaîné après l'identification dans le même job `detect_
+6. **État** indicatif (lot `v3-etat`), chaîné après l'identification dans le même job `detect_
    cards` (`pbm_api.state.service.run_state_estimation_for_upload`, appelé par `pbm_api.worker.
    detect_cards_task` juste après `run_identification_for_upload`) — jamais un job de plus ni un
    second appel IA. Deux sources combinées en un seul palier global (le plus sévère l'emporte,
