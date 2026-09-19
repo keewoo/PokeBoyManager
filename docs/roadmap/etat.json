@@ -2917,21 +2917,21 @@
       "attente": null
     },
     "v3-identification-visuelle": {
-      "statut": "en_cours",
+      "statut": "integre",
       "machine": "chimera",
       "branche": "roadmap/v3-identification-visuelle",
       "debut_reel": "2026-09-20",
-      "fin_reelle": null,
+      "fin_reelle": "2026-09-20",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit bed3b2f76 intégré dans main — voir docs/roadmap/comptes-rendus/v3-identification-visuelle.md",
+          "maj": "2026-09-20T00:46+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit bed3b2f76 intégré dans main — voir docs/roadmap/comptes-rendus/v3-identification-visuelle.md",
+          "maj": "2026-09-20T00:46+0200"
         },
         "securite": {
           "etat": "a_faire",
@@ -2959,14 +2959,14 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit bed3b2f76 intégré dans main — voir docs/roadmap/comptes-rendus/v3-identification-visuelle.md",
+          "maj": "2026-09-20T00:46+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit bed3b2f76 intégré dans main — voir docs/roadmap/comptes-rendus/v3-identification-visuelle.md",
+          "maj": "2026-09-20T00:46+0200"
         }
       },
       "journal": [
@@ -2975,9 +2975,43 @@
           "machine": "chimera",
           "evenement": "démarré",
           "detail": "roadmap/v3-identification-visuelle"
+        },
+        {
+          "quand": "2026-09-20T00:46+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit bed3b2f76"
         }
       ],
-      "compte_rendu": {},
+      "compte_rendu": {
+        "resume": "Index visuel des images officielles (`card_visual_index` — aHash 64 bits sur l'illustration et sur la carte entière, par carte × langue) inséré dans le pipeline de reconnaissance entre le cache d'empreinte existant (photo déjà vue) et l'appel IA : une correspondance visuelle confiante identifie la carte **sans aucun appel IA**, y compris sans clé configurée (D4) ; un groupe « même illustration » (réimpression/reverse/promo) n'est jamais tranché seul, ses candidats sont injectés dans le prompt du **même** appel `AIProvider.extract` que l'extraction/l'état (le principe « un seul appel IA par carte » reste respecté). Mesuré sur un jeu synthétique de 100 cartes : 79 % reconnues sans IA, 100 % de précision parmi elles, 0 groupe ambigu résolu à tort avec confiance. Recherche vectorisée en mémoire (numpy) : ~4 ms/carte à l'échelle de production (40 000 lignes), 625 Ko pour les empreintes elles-mêmes — largement dans le budget du serveur de 4 Go.",
+        "livrables": [
+          "`apps/api/src/pbm_api/identification/` :",
+          "`visual_geometry.py` — normalisation géométrique commune à l'image officielle et au",
+          "`visual_index.py` — `VisualIndex` (chargement en mémoire depuis `card_visual_index`,",
+          "`visual_build.py` — `compute_visual_hashes` (image officielle → deux empreintes),",
+          "`visual_resolve.py` — construit une `CardExtraction`/`IdentificationCandidate` directement",
+          "`visual_synthetic.py` — jeu de 100 cartes procédurales (image officielle + photo utilisateur",
+          "`service.py` — `_identify_one` réordonné : cache d'empreinte → comparaison visuelle → IA",
+          "`extraction.py` — `extract_card(..., visual_hints=[...])` ajoute les candidats visuels au"
+        ],
+        "preuves": [],
+        "ecarts": [
+          "**Jeu de 100 cartes \"visuelles\" synthétique, pas de vraies photos/images officielles** (voir",
+          "**Index construit sur un échantillon réel (1 634 lignes / 820 cartes), pas sur tout le",
+          "**Badge front minimal, pas de nouvel écran** : la grille de ce lot qualifie « maquette » de",
+          "**OCR local non implémenté** (voir « Choix techniques ») — le repli « sinon IA » prévu par la",
+          "**Descripteur couleur non ajouté** (mission point 1 : « éventuellement un descripteur"
+        ],
+        "reste": [
+          "Lancer `scripts/build_visual_index.py` sans `--limit` en tâche de fond (hors serveur de PROD,",
+          "Vraie campagne de photos pour mesurer la précision/le taux de couverture réels de la",
+          "OCR local léger du numéro (mission point 2), si `tesseract` devient installable (sudo/paquet",
+          "Étendre `AIProvider.extract`/le prompt d'état pour couvrir les cartes reconnues par le seul",
+          "e2e Playwright `validation.spec.ts` à relancer en conditions réelles pour confirmer le rendu du",
+          "Descripteur couleur en complément des deux aHash, si une vraie campagne photo montre des cas"
+        ]
+      },
       "attente": null
     },
     "v7-regles-moteur": {
