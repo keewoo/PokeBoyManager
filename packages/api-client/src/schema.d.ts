@@ -438,6 +438,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/cards/{card_id}/insights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Card Insights */
+        get: operations["get_card_insights_cards__card_id__insights_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cards/{card_id}/insights/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Report Card Insights */
+        post: operations["report_card_insights_cards__card_id__insights_report_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -507,10 +541,31 @@ export interface components {
             /** Estimated Cost Eur */
             estimated_cost_eur: string;
         };
+        /** AnecdoteOut */
+        AnecdoteOut: {
+            /** Text */
+            text: string;
+            /** Source Url */
+            source_url: string;
+        };
         /** Body_upload_avatar_me_avatar_post */
         Body_upload_avatar_me_avatar_post: {
             /** File */
             file: string;
+        };
+        /** CardInsightsResponse */
+        CardInsightsResponse: {
+            /**
+             * Card Id
+             * Format: uuid
+             */
+            card_id: string;
+            /** Status */
+            status: string;
+            /** Anecdotes */
+            anecdotes: components["schemas"]["AnecdoteOut"][];
+            /** Generated At */
+            generated_at: string | null;
         };
         /** CardSearchResult */
         CardSearchResult: {
@@ -698,6 +753,11 @@ export interface components {
             email: string;
             /** Password */
             password: string;
+        };
+        /** ReportCardInsightRequest */
+        ReportCardInsightRequest: {
+            /** Reason */
+            reason?: string | null;
         };
         /** ResetPasswordRequest */
         ResetPasswordRequest: {
@@ -1653,6 +1713,70 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["CollectionItemDetail"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_card_insights_cards__card_id__insights_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                card_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardInsightsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_card_insights_cards__card_id__insights_report_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                card_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportCardInsightRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
