@@ -1,11 +1,11 @@
-import { EmptyState } from "@/components/empty-state";
+import { Suspense } from "react";
+
+import { CollectionView } from "./collection-view";
 
 export default function CollectionPage() {
   return (
-    <EmptyState
-      title="Ta collection est vide"
-      description="La grille filtrable des cartes arrive avec le lot v4-collection."
-      action={{ label: "Ajouter une carte", href: "/ajouter" }}
-    />
+    <Suspense fallback={<p className="text-sm text-muted-foreground">Chargement…</p>}>
+      <CollectionView />
+    </Suspense>
   );
 }
