@@ -1935,6 +1935,11 @@
       "prise": "DÉFAUT PROVISOIRE du pilote (à confirmer par JF) : les trois classements — rang de rareté, rang de valeur dans la collection, percentile de valeur dans l'extension.",
       "par": "JF",
       "quand": "2026-09-19T19:59+0200"
+    },
+    "D2": {
+      "prise": "JF le 19/09 : UAT et PROD hébergées sur le même serveur que kailo.life (UpCloud « sites-and-crons », STARTER-2xCPU-4GB, de-fra1). Conséquences : images construites sur chimera et tirées par le serveur (aucun build sur place : 2 cœurs / 4 Go déjà partagés avec kailo.life et ACX) ; Caddy/proxy existant à étendre ; ressources à mesurer avant la PROD ; accès root absent sur cette machine à vérifier pour le lot v1-uat.",
+      "par": "JF",
+      "quand": "2026-09-19T20:11+0200"
     }
   }
 }
