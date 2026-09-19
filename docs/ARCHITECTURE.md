@@ -79,6 +79,24 @@ logout,verify-email,forgot,reset}` (`apps/api/src/pbm_api/routers/auth.py`).
 - Anti-énumération : réponse identique côté `/auth/register` et `/auth/forgot` que l'e-mail
   soit déjà pris/connu ou non.
 
+## Catalogue (lot `v2-catalogue`)
+
+- Source : [TCGdex](https://api.tcgdex.net) (FR + EN, sans clé) pour `sets`/`cards`/`card_names`,
+  les images officielles, l'illustrateur, les attaques/talents et les légalités (déjà exposées par
+  carte, pas besoin d'un second appel). `Set.tcgdex_id` / `Card.tcgdex_id` sont les clés
+  d'idempotence de l'import.
+- Rapprochement avec [Pokémon TCG API](https://pokemontcg.io) (`Card.ptcg_id`) : les deux
+  catalogues n'utilisent pas les mêmes id d'extension (`sv03.5` vs `sv3pt5`, `hgssp` vs `hsp`...) —
+  table de correspondance des cas particuliers dans
+  `apps/api/src/pbm_api/catalog/reconciliation.py`, testée. Optionnel : une panne de Pokémon TCG
+  API (observée flaky le 2026-09-19) dégrade l'import sans le faire échouer, `ptcg_id` reste nul.
+- Job `import_catalogue` (arq, `apps/api/src/pbm_api/worker.py`) : idempotent, reprise sur erreur
+  (commit par extension). Mode `full` (liste d'extensions ou tout le catalogue) et `incremental`
+  (nouvelles extensions seulement, cron hebdomadaire).
+- Proxy `GET /img/cards/{id}?size=high|low` (`apps/api/src/pbm_api/routers/images.py`) : sert
+  l'image officielle, mise en cache dans le stockage objet (`ObjectStorage`,
+  `apps/api/src/pbm_api/s3.py`) au premier accès.
+
 ## Coffre de clés IA
 
 - AES-256-GCM, nonce aléatoire, `user_id` en données associées ; clé maître dans l'environnement du
