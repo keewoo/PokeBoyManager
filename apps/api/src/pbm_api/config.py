@@ -43,9 +43,10 @@ class Settings(BaseSettings):
     # clé puis rechiffrer avec la nouvelle (aucune clé en clair journalisée pendant l'opération).
     ai_key_encryption_key: str = "bo8a8UxneCy51yL6Mhan73p0Yxh+tKGlj4cIAbrfRvo="
 
-    # --- Envoi de photos (lot v3-upload) ---
+    # --- Stockage des photos (lots v3-upload, v1-profil) ---
     # D7 : deux implémentations de stockage — "s3" (MinIO en dev/CI, Object Storage en ligne)
     # ou "local" (disque du serveur en UAT/PROD, `PHOTOS_STORAGE_PATH`). Voir `pbm_api.storage`.
+    # Sert les photos de cartes (v3-upload) et l'avatar utilisateur (v1-profil).
     storage_backend: str = "s3"
     photos_storage_path: str = "./var/photos"
     upload_max_size_bytes: int = 20 * 1024 * 1024

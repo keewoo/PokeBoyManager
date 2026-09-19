@@ -7,6 +7,7 @@ from pbm_api.routers.auth import router as auth_router
 from pbm_api.routers.catalog import router as catalog_router
 from pbm_api.routers.health import router as health_router
 from pbm_api.routers.images import router as images_router
+from pbm_api.routers.profile import router as profile_router
 from pbm_api.routers.uploads import router as uploads_router
 from pbm_api.security.log_filter import install_api_key_redaction
 from pbm_api.security.validation_errors import install_validation_error_redaction
@@ -33,4 +34,5 @@ app.include_router(auth_router)
 app.include_router(images_router)
 app.include_router(ai_keys_router)
 app.include_router(catalog_router)
+app.include_router(profile_router)
 app.include_router(uploads_router)

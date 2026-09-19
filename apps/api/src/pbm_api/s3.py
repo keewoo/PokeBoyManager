@@ -74,3 +74,9 @@ class ObjectStorage:
     async def presign_put(self, key: str, content_type: str, expires_in: int = 900) -> str:
         """URL présignée S3 : le navigateur envoie directement au stockage (lot `v3-upload`)."""
         return await asyncio.to_thread(self._presign_put_sync, key, content_type, expires_in)
+
+    def _delete_sync(self, key: str) -> None:
+        self._client.delete_object(Bucket=self.bucket, Key=key)
+
+    async def delete(self, key: str) -> None:
+        await asyncio.to_thread(self._delete_sync, key)

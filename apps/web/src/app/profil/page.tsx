@@ -1,10 +1,5 @@
-import { EmptyState } from "@/components/empty-state";
+import { ProfileTabs } from "@/components/profile/profile-tabs";
 
 export default function ProfilPage() {
-  return (
-    <EmptyState
-      title="Profil"
-      description="Les clés IA, préférences et informations de compte arrivent avec les lots v1-profil et v1-byok."
-    />
-  );
+  return <ProfileTabs />;
 }

@@ -4,8 +4,9 @@
   utilisé par le proxy d'images du catalogue.
 - `local` (UAT/PROD, disque du serveur) : `pbm_api.storage.local.LocalObjectStorage`.
 
-Aucune fonctionnalité ne doit supposer l'une ou l'autre : le code applicatif (routeur
-`uploads`) ne connaît que le protocole `get`/`put`/`ensure_bucket` commun aux deux.
+Aucune fonctionnalité ne doit supposer l'une ou l'autre : le code applicatif (routeurs
+`uploads`, `profile`) ne connaît que le protocole `get`/`put`/`delete`/`ensure_bucket` commun
+aux deux.
 """
 
 from pbm_api.config import settings

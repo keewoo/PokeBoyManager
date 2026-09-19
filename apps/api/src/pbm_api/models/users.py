@@ -26,6 +26,11 @@ class User(Base, TimestampMixin):
     email: Mapped[str] = mapped_column(String(320), unique=True, nullable=False, index=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     email_verified_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    # Nouvelle adresse en attente de re-vérification (lot v1-profil) : `email` ne change
+    # qu'une fois le jeton `change_email` envoyé à cette adresse consommé.
+    pending_email: Mapped[str | None] = mapped_column(String(320), nullable=True)
+    pseudo: Mapped[str | None] = mapped_column(String(32), unique=True, nullable=True)
+    avatar_key: Mapped[str | None] = mapped_column(String(255), nullable=True)
     # Devise d'affichage de la valeur de collection (lot v2-prix) — code ISO 4217, converti
     # depuis la référence EUR via `exchange_rates_daily` (pbm_api.pricing.exchange_rates).
     preferred_currency: Mapped[str] = mapped_column(String(3), nullable=False, server_default="EUR")
@@ -56,6 +61,7 @@ class Session(Base):
 class EmailTokenKind(enum.StrEnum):
     verify_email = "verify_email"
     reset_password = "reset_password"
+    change_email = "change_email"
 
 
 class EmailToken(Base):

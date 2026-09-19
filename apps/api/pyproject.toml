@@ -21,6 +21,7 @@ dependencies = [
     "cryptography>=44.0.0",
     "pillow>=11.0.0",
     "pillow-heif>=0.18.0",
+    "python-multipart>=0.0.32",
 ]
 
 [dependency-groups]
@@ -56,7 +57,7 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.ruff.lint.flake8-bugbear]
 # FastAPI impose `Depends(...)` comme valeur par défaut d'argument : appel volontaire,
 # pas le piège habituel d'objet mutable partagé entre appels que B008 détecte.
-extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends"]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends", "fastapi.File"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

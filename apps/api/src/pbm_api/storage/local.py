@@ -44,3 +44,9 @@ class LocalObjectStorage:
 
     async def put(self, key: str, data: bytes, content_type: str) -> None:
         await asyncio.to_thread(self._put_sync, key, data, content_type)
+
+    def _delete_sync(self, key: str) -> None:
+        self._path_for(key).unlink(missing_ok=True)
+
+    async def delete(self, key: str) -> None:
+        await asyncio.to_thread(self._delete_sync, key)
