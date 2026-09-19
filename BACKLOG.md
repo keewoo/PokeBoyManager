@@ -15,9 +15,9 @@ _Un dépôt vide : avant toute fonctionnalité, il faut le squelette, la base, l
 | Lot | Prio | Titre | Couloir | Prévu | Dépend de | Décision | Statut | Prompt |
 |---|---|---|---|---|---|---|---|---|
 | `v0-flotte` | P0 | Équiper la flotte pour PokeBoyManager (clones, clés de dépôt, fleet-run) | DA2 (devAI) | 21 sept. → 22 sept. | — | — | Livré | [prompt](prompts/v0-flotte.md) |
-| `v0-monorepo` | P0 | Monorepo, environnement local Docker et CI | DA1 (devAI) | 22 sept. → 23 sept. | — | D1 | À faire | [prompt](prompts/v0-monorepo.md) |
-| `v0-schema` | P0 | Modèle de données PostgreSQL v1 et migrations Alembic | DA1 (devAI) | 24 sept. → 25 sept. | v0-monorepo | — | À faire | [prompt](prompts/v0-schema.md) |
-| `v0-design-system` | P1 | Design system et squelette des pages (d'après la maquette) | CH1 (chimera) | 24 sept. → 29 sept. | v0-monorepo | — | À faire | [prompt](prompts/v0-design-system.md) |
+| `v0-monorepo` | P0 | Monorepo, environnement local Docker et CI | DA1 (devAI) | 22 sept. → 23 sept. | — | D1 | Intégré (main) | [prompt](prompts/v0-monorepo.md) |
+| `v0-schema` | P0 | Modèle de données PostgreSQL v1 et migrations Alembic | DA1 (devAI) | 24 sept. → 25 sept. | v0-monorepo | — | Intégré (main) | [prompt](prompts/v0-schema.md) |
+| `v0-design-system` | P1 | Design system et squelette des pages (d'après la maquette) | CH1 (chimera) | 24 sept. → 29 sept. | v0-monorepo | — | Intégré (main) | [prompt](prompts/v0-design-system.md) |
 
 ## V1 — Un compte à soi (28 sept. → 12 oct.)
 
@@ -25,13 +25,13 @@ _L'espace est privé : inscription, connexion, profil, et le coffre où l'utilis
 
 | Lot | Prio | Titre | Couloir | Prévu | Dépend de | Décision | Statut | Prompt |
 |---|---|---|---|---|---|---|---|---|
-| `v1-auth` | P0 | Comptes : inscription, connexion, vérification d'e-mail, mot de passe oublié | DA1 (devAI) | 28 sept. → 2 oct. | v0-schema | D5 | À faire | [prompt](prompts/v1-auth.md) |
-| `v1-accueil` | P1 | Page d'accueil publique (visiteur) | CH1 (chimera) | 30 sept. → 2 oct. | v0-design-system | — | À faire | [prompt](prompts/v1-accueil.md) |
-| `v1-pages-auth` | P0 | Pages inscription, connexion, vérification et mot de passe oublié | CH1 (chimera) | 5 oct. → 7 oct. | v1-auth, v0-design-system | — | À faire | [prompt](prompts/v1-pages-auth.md) |
-| `v1-byok` | P0 | Coffre de clés IA : Claude, Gemini ou OpenAI par utilisateur | DA1 (devAI) | 5 oct. → 7 oct. | v1-auth | D4 | À faire | [prompt](prompts/v1-byok.md) |
+| `v1-auth` | P0 | Comptes : inscription, connexion, vérification d'e-mail, mot de passe oublié | DA1 (devAI) | 28 sept. → 2 oct. | v0-schema | D5 | Intégré (main) | [prompt](prompts/v1-auth.md) |
+| `v1-accueil` | P1 | Page d'accueil publique (visiteur) | CH1 (chimera) | 30 sept. → 2 oct. | v0-design-system | — | Intégré (main) | [prompt](prompts/v1-accueil.md) |
+| `v1-pages-auth` | P0 | Pages inscription, connexion, vérification et mot de passe oublié | CH1 (chimera) | 5 oct. → 7 oct. | v1-auth, v0-design-system | — | Intégré (main) | [prompt](prompts/v1-pages-auth.md) |
+| `v1-byok` | P0 | Coffre de clés IA : Claude, Gemini ou OpenAI par utilisateur | DA1 (devAI) | 5 oct. → 7 oct. | v1-auth | D4 | Intégré (main) | [prompt](prompts/v1-byok.md) |
 | `v1-uat` | P1 | Environnement UAT continu (images construites sur chimera, déployées par devAI) | DA2 (devAI) | 5 oct. → 9 oct. | v0-schema | D2 | À faire | [prompt](prompts/v1-uat.md) |
-| `v1-profil` | P1 | Page profil : photo, pseudo, e-mail, mot de passe, clés IA | CH1 (chimera) | 8 oct. → 12 oct. | v1-pages-auth, v1-byok | — | À faire | [prompt](prompts/v1-profil.md) |
-| `v1-identite` | P0 | Identité du compte : prénom, nom, date de naissance, acceptation des conditions, création de compte par l'administrateur | CH1 (chimera) | 13 oct. → 14 oct. | v1-profil | — | À faire | [prompt](prompts/v1-identite.md) |
+| `v1-profil` | P1 | Page profil : photo, pseudo, e-mail, mot de passe, clés IA | CH1 (chimera) | 8 oct. → 12 oct. | v1-pages-auth, v1-byok | — | Intégré (main) | [prompt](prompts/v1-profil.md) |
+| `v1-identite` | P0 | Identité du compte : prénom, nom, date de naissance, acceptation des conditions, création de compte par l'administrateur | CH1 (chimera) | 13 oct. → 14 oct. | v1-profil | — | Intégré (main) | [prompt](prompts/v1-identite.md) |
 
 ## V2 — Toutes les cartes, tous les prix (28 sept. → 9 oct.)
 
@@ -39,10 +39,10 @@ _Reconnaître une carte suppose de connaître toutes les cartes ; tracer sa vale
 
 | Lot | Prio | Titre | Couloir | Prévu | Dépend de | Décision | Statut | Prompt |
 |---|---|---|---|---|---|---|---|---|
-| `v2-catalogue` | P0 | Import du catalogue complet FR + EN avec images officielles | CH3 (chimera) | 28 sept. → 2 oct. | v0-schema | — | À faire | [prompt](prompts/v2-catalogue.md) |
-| `v2-prix` | P0 | Relevé quotidien des prix et historique de valeur | CH3 (chimera) | 5 oct. → 8 oct. | v2-catalogue | D3 | À faire | [prompt](prompts/v2-prix.md) |
-| `v2-recherche` | P1 | Recherche dans le catalogue (nom, numéro, extension) | DA1 (devAI) | 8 oct. → 9 oct. | v2-catalogue | — | À faire | [prompt](prompts/v2-recherche.md) |
-| `v2-catalogue-complet` | P0 | Base de référence complète : toutes les cartes, toutes leurs infos, tous les prix — avant la première photo | CH3 (chimera) | 12 oct. → 14 oct. | v2-prix, v2-recherche | — | À faire | [prompt](prompts/v2-catalogue-complet.md) |
+| `v2-catalogue` | P0 | Import du catalogue complet FR + EN avec images officielles | CH3 (chimera) | 28 sept. → 2 oct. | v0-schema | — | Intégré (main) | [prompt](prompts/v2-catalogue.md) |
+| `v2-prix` | P0 | Relevé quotidien des prix et historique de valeur | CH3 (chimera) | 5 oct. → 8 oct. | v2-catalogue | D3 | Intégré (main) | [prompt](prompts/v2-prix.md) |
+| `v2-recherche` | P1 | Recherche dans le catalogue (nom, numéro, extension) | DA1 (devAI) | 8 oct. → 9 oct. | v2-catalogue | — | Intégré (main) | [prompt](prompts/v2-recherche.md) |
+| `v2-catalogue-complet` | P0 | Base de référence complète : toutes les cartes, toutes leurs infos, tous les prix — avant la première photo | CH3 (chimera) | 12 oct. → 14 oct. | v2-prix, v2-recherche | — | Bloqué | [prompt](prompts/v2-catalogue-complet.md) |
 
 ## V3 — Des photos aux cartes (8 oct. → 27 oct.)
 
@@ -50,13 +50,13 @@ _Le cœur du produit : une photo (une carte ou un classeur de neuf) devient une 
 
 | Lot | Prio | Titre | Couloir | Prévu | Dépend de | Décision | Statut | Prompt |
 |---|---|---|---|---|---|---|---|---|
-| `v3-upload` | P0 | Page « Ajouter des photos » : une ou plusieurs photos, glisser-déposer, appareil photo | CH4 (chimera) | 8 oct. → 13 oct. | v1-pages-auth | D7 | À faire | [prompt](prompts/v3-upload.md) |
-| `v3-ia-providers` | P0 | Couche fournisseurs IA unique (Anthropic, Google, OpenAI) | CH2 (chimera) | 8 oct. → 9 oct. | v1-byok | — | À faire | [prompt](prompts/v3-ia-providers.md) |
-| `v3-detection` | P0 | Détecter et découper chaque carte d'une photo (1 à N, classeur 3×3) | CH2 (chimera) | 12 oct. → 15 oct. | v3-ia-providers | — | À faire | [prompt](prompts/v3-detection.md) |
-| `v3-identification` | P0 | Identifier chaque carte et la rapprocher du catalogue (top 3 avec confiance) | CH2 (chimera) | 16 oct. → 22 oct. | v3-detection, v2-recherche | — | À faire | [prompt](prompts/v3-identification.md) |
+| `v3-upload` | P0 | Page « Ajouter des photos » : une ou plusieurs photos, glisser-déposer, appareil photo | CH4 (chimera) | 8 oct. → 13 oct. | v1-pages-auth | D7 | Intégré (main) | [prompt](prompts/v3-upload.md) |
+| `v3-ia-providers` | P0 | Couche fournisseurs IA unique (Anthropic, Google, OpenAI) | CH2 (chimera) | 8 oct. → 9 oct. | v1-byok | — | Intégré (main) | [prompt](prompts/v3-ia-providers.md) |
+| `v3-detection` | P0 | Détecter et découper chaque carte d'une photo (1 à N, classeur 3×3) | CH2 (chimera) | 12 oct. → 15 oct. | v3-ia-providers | — | Intégré (main) | [prompt](prompts/v3-detection.md) |
+| `v3-identification` | P0 | Identifier chaque carte et la rapprocher du catalogue (top 3 avec confiance) | CH2 (chimera) | 16 oct. → 22 oct. | v3-detection, v2-recherche | — | Intégré (main) | [prompt](prompts/v3-identification.md) |
 | `v3-identification-visuelle` | P1 | Identifier sans IA : comparer chaque carte détectée aux images officielles de la base | CH3 (chimera) | 23 oct. → 29 oct. | v3-identification, v2-catalogue-complet | — | À faire | [prompt](prompts/v3-identification-visuelle.md) |
-| `v3-validation` | P0 | Écran de validation : vérifier, corriger et ajouter les cartes reconnues | CH4 (chimera) | 23 oct. → 27 oct. | v3-identification, v3-upload | — | À faire | [prompt](prompts/v3-validation.md) |
-| `v3-etat` | P1 | Estimation de l'état de la carte (centrage, coins, bords, surface) | CH2 (chimera) | 23 oct. → 27 oct. | v3-identification | — | À faire | [prompt](prompts/v3-etat.md) |
+| `v3-validation` | P0 | Écran de validation : vérifier, corriger et ajouter les cartes reconnues | CH4 (chimera) | 23 oct. → 27 oct. | v3-identification, v3-upload | — | En cours | [prompt](prompts/v3-validation.md) |
+| `v3-etat` | P1 | Estimation de l'état de la carte (centrage, coins, bords, surface) | CH2 (chimera) | 23 oct. → 27 oct. | v3-identification | — | En cours | [prompt](prompts/v3-etat.md) |
 
 ## V4 — La collection et ses fiches (26 oct. → 6 nov.)
 
@@ -64,11 +64,11 @@ _Une fois les cartes connues, on les parcourt, on les filtre, on les valorise, e
 
 | Lot | Prio | Titre | Couloir | Prévu | Dépend de | Décision | Statut | Prompt |
 |---|---|---|---|---|---|---|---|---|
-| `v4-ranking` | P1 | Classement (« ranking ») de chaque carte | DA1 (devAI) | 26 oct. → 27 oct. | v2-prix | D6 | À faire | [prompt](prompts/v4-ranking.md) |
+| `v4-ranking` | P1 | Classement (« ranking ») de chaque carte | DA1 (devAI) | 26 oct. → 27 oct. | v2-prix | D6 | Intégré (main) | [prompt](prompts/v4-ranking.md) |
 | `v4-collection` | P0 | Page collection : grille, filtres, tris et valeur totale | CH1 (chimera) | 28 oct. → 30 oct. | v3-validation, v2-prix | — | À faire | [prompt](prompts/v4-collection.md) |
-| `v4-anecdotes` | P1 | Histoire et anecdotes de la carte (sourcées) | CH2 (chimera) | 28 oct. → 30 oct. | v3-ia-providers, v2-catalogue | — | À faire | [prompt](prompts/v4-anecdotes.md) |
+| `v4-anecdotes` | P1 | Histoire et anecdotes de la carte (sourcées) | CH2 (chimera) | 28 oct. → 30 oct. | v3-ia-providers, v2-catalogue | — | Intégré (main) | [prompt](prompts/v4-anecdotes.md) |
 | `v4-fiche` | P0 | Fiche carte : image officielle, ma photo, état, valeur dans le temps, histoire | CH4 (chimera) | 2 nov. → 5 nov. | v4-collection, v4-ranking, v4-anecdotes, v3-etat | — | À faire | [prompt](prompts/v4-fiche.md) |
-| `v4-jeu` | P2 | Étude d'utilisation en jeu (légalité, attaques, présence en tournoi) | CH2 (chimera) | 2 nov. → 5 nov. | v4-anecdotes | — | À faire | [prompt](prompts/v4-jeu.md) |
+| `v4-jeu` | P2 | Étude d'utilisation en jeu (légalité, attaques, présence en tournoi) | CH2 (chimera) | 2 nov. → 5 nov. | v4-anecdotes | — | En cours | [prompt](prompts/v4-jeu.md) |
 | `v4-dashboard` | P1 | Accueil connecté : valeur de la collection, hausses et baisses, derniers ajouts | CH1 (chimera) | 2 nov. → 3 nov. | v4-collection | — | À faire | [prompt](prompts/v4-dashboard.md) |
 | `v4-insights-batch` | P1 | Pré-générer histoire et étude en jeu de TOUTES les cartes, en un seul passage par carte | CH2 (chimera) | 6 nov. → 12 nov. | v4-jeu, v2-catalogue-complet | D4 | À faire | [prompt](prompts/v4-insights-batch.md) |
 
@@ -78,7 +78,7 @@ _Un espace qui garde des clés IA et des photos privées ne sort qu'après une r
 
 | Lot | Prio | Titre | Couloir | Prévu | Dépend de | Décision | Statut | Prompt |
 |---|---|---|---|---|---|---|---|---|
-| `v5-rgpd` | P1 | Exporter mes données et supprimer mon compte | DA1 (devAI) | 28 oct. → 29 oct. | v1-byok | — | À faire | [prompt](prompts/v5-rgpd.md) |
+| `v5-rgpd` | P1 | Exporter mes données et supprimer mon compte | DA1 (devAI) | 28 oct. → 29 oct. | v1-byok | — | Intégré (main) | [prompt](prompts/v5-rgpd.md) |
 | `v5-e2e` | P1 | Parcours e2e Playwright en CI | CH3 (chimera) | 6 nov. → 11 nov. | v4-fiche | — | À faire | [prompt](prompts/v5-e2e.md) |
 | `v5-securite` | P0 | Revue de sécurité avant ouverture | DA1 (devAI) | 9 nov. → 12 nov. | v4-fiche, v5-rgpd, v3-validation | — | À faire | [prompt](prompts/v5-securite.md) |
 | `v5-prod` | P0 | Mise en PROD : domaine, sauvegardes, surveillance | DA2 (devAI) | 16 nov. → 20 nov. | v5-securite, v5-e2e, v1-uat | D8 | À faire | [prompt](prompts/v5-prod.md) |

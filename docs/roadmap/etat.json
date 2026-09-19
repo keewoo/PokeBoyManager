@@ -109,21 +109,21 @@
       "attente": null
     },
     "v0-monorepo": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
-      "fin_reelle": null,
+      "statut": "integre",
+      "machine": "chimera",
+      "branche": "roadmap/v0-monorepo",
+      "debut_reel": "2026-09-19",
+      "fin_reelle": "2026-09-19",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 21811783d intégré dans main — voir docs/roadmap/comptes-rendus/v0-monorepo.md",
+          "maj": "2026-09-19T20:13+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 21811783d intégré dans main — voir docs/roadmap/comptes-rendus/v0-monorepo.md",
+          "maj": "2026-09-19T20:13+0200"
         },
         "securite": {
           "etat": "a_faire",
@@ -151,35 +151,67 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 21811783d intégré dans main — voir docs/roadmap/comptes-rendus/v0-monorepo.md",
+          "maj": "2026-09-19T20:13+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 21811783d intégré dans main — voir docs/roadmap/comptes-rendus/v0-monorepo.md",
+          "maj": "2026-09-19T20:13+0200"
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-19T20:13+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit 21811783d"
+        }
+      ],
+      "compte_rendu": {
+        "resume": "Socle technique livré : monorepo pnpm + uv, `apps/web` (Next.js 15), `apps/api` (FastAPI, `/health`), `docker-compose.yml` (Postgres 16, Redis 7, MinIO, Mailpit) avec les ports par défaut de l'infra partagée `pbm-shared`, client TypeScript généré depuis l'OpenAPI (`packages/api-client`), CI GitHub Actions (lint + tests web/api en parallèle), `CLAUDE.md` racine mis à jour.",
+        "livrables": [
+          "`apps/web` — Next.js 15.5, React 19, TypeScript strict, Tailwind 4, ESLint (flat config),",
+          "`apps/api` — FastAPI 0.141, Python 3.12 via uv, route `GET /health` → `{\"status\": \"ok\"}`,",
+          "`packages/api-client` — script `pnpm gen:api` : exporte l'OpenAPI de `apps/api` (sans lancer",
+          "`docker-compose.yml` + `.env.example` — Postgres 16 (`pg_trgm`, `unaccent` via",
+          "`.github/workflows/ci.yml` — deux jobs parallèles (`web`, `api`), services Postgres/Redis",
+          "`CLAUDE.md` racine — structure du monorepo, commandes, variables d'environnement, rappel"
+        ],
+        "preuves": [],
+        "ecarts": [
+          "**Tâche `maquette` non traitée** : sans objet pour ce lot (socle technique, aucune page",
+          "**Test d'accès croisé (§6) non applicable** : aucune route utilisateur, aucune session,",
+          "**`fleet-run` non utilisé** : conformément au CONTEXTE D'EXÉCUTION, les suites tournent",
+          "**Aucune clé IA réelle utilisée** (conforme aux consignes) : rien dans ce lot n'appelle un"
+        ],
+        "reste": [
+          "Modèle de données PostgreSQL + Alembic (`v0-schema`).",
+          "Design system / squelette de pages conforme à la maquette (`v0-design-system`).",
+          "Authentification, sessions, premier `user_id` et donc premier test d'accès croisé réel",
+          "Brancher `packages/api-client` dans `apps/web` une fois qu'il y a des appels API réels à",
+          "CI GitHub Actions écrite et validée localement (syntaxe YAML vérifiée) mais **pas encore"
+        ]
+      },
+      "attente": null
     },
     "v0-schema": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
-      "fin_reelle": null,
+      "statut": "integre",
+      "machine": "chimera",
+      "branche": "roadmap/v0-schema",
+      "debut_reel": "2026-09-19",
+      "fin_reelle": "2026-09-19",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 70a3eadf0 intégré dans main — voir docs/roadmap/comptes-rendus/v0-schema.md",
+          "maj": "2026-09-19T20:27+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 70a3eadf0 intégré dans main — voir docs/roadmap/comptes-rendus/v0-schema.md",
+          "maj": "2026-09-19T20:27+0200"
         },
         "securite": {
           "etat": "a_faire",
@@ -207,35 +239,70 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 70a3eadf0 intégré dans main — voir docs/roadmap/comptes-rendus/v0-schema.md",
+          "maj": "2026-09-19T20:27+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 70a3eadf0 intégré dans main — voir docs/roadmap/comptes-rendus/v0-schema.md",
+          "maj": "2026-09-19T20:27+0200"
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-19T20:27+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit 70a3eadf0"
+        }
+      ],
+      "compte_rendu": {
+        "resume": "Modèle de données PostgreSQL v1 posé via SQLAlchemy 2 (async) + une migration Alembic initiale unique, jouée et vérifiée (upgrade / downgrade complet / upgrade) sur la base dédiée `pbm_v0_schema` et sur `pbm_v0_schema_test`. Seed de démonstration idempotent. Schéma documenté (Mermaid) dans `docs/ARCHITECTURE.md`. CI mise à jour pour jouer la migration avant les tests de l'API.",
+        "livrables": [
+          "`apps/api/src/pbm_api/models/` — modèles SQLAlchemy 2 (`Mapped`/`mapped_column`) :",
+          "`apps/api/migrations/` — Alembic (template async), `env.py` branché sur",
+          "`apps/api/src/pbm_api/seed.py` — un utilisateur (`demo@pokeboymanager.local`), trois",
+          "`apps/api/src/pbm_api/db.py` — moteur async + fabrique de sessions (`async_sessionmaker`).",
+          "`docs/ARCHITECTURE.md` — diagramme Mermaid mis à jour (`email_tokens`, `jobs` ajoutés,",
+          "`.github/workflows/ci.yml` — job `api` : ajout d'une étape `uv run alembic upgrade head`",
+          "`apps/api/pyproject.toml` — dépendances ajoutées : `sqlalchemy`, `alembic`, `asyncpg`,",
+          "Bases dédiées créées sur l'infra partagée `pbm-shared` : `pbm_v0_schema` (dev, seedée) et"
+        ],
+        "preuves": [],
+        "ecarts": [
+          "**§6 « test d'accès croisé » adapté** : ce lot ne crée aucune route HTTP (pas encore",
+          "**§6 « Front → conformité à la maquette »** : sans objet, confirmé par la grille de",
+          "**`fleet-run` non utilisé** : conformément au CONTEXTE D'EXÉCUTION, les suites tournent",
+          "**Aucune clé IA réelle utilisée** (conforme aux consignes) : le seed ne dépose aucune",
+          "**CI non exécutée sur GitHub** : la mise à jour de `.github/workflows/ci.yml` a été"
+        ],
+        "reste": [
+          "Authentification (hash du mot de passe, sessions, `email_tokens`) — table posée, logique",
+          "Chiffrement AES-256-GCM réel des clés IA (`ai_credentials.encrypted_key`/`nonce`) — colonnes",
+          "Import réel du catalogue (TCGdex / Pokémon TCG API) pour remplacer le seed de démonstration.",
+          "Premières routes API (auth, collection) et donc premier test d'accès croisé HTTP réel.",
+          "Worker arq consommant la table `jobs`."
+        ]
+      },
+      "attente": null
     },
     "v0-design-system": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
-      "fin_reelle": null,
+      "statut": "integre",
+      "machine": "chimera",
+      "branche": "roadmap/v0-design-system",
+      "debut_reel": "2026-09-19",
+      "fin_reelle": "2026-09-19",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit d280056a5 intégré dans main — voir docs/roadmap/comptes-rendus/v0-design-system.md",
+          "maj": "2026-09-19T20:40+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit d280056a5 intégré dans main — voir docs/roadmap/comptes-rendus/v0-design-system.md",
+          "maj": "2026-09-19T20:40+0200"
         },
         "securite": {
           "etat": "na",
@@ -263,35 +330,66 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit d280056a5 intégré dans main — voir docs/roadmap/comptes-rendus/v0-design-system.md",
+          "maj": "2026-09-19T20:40+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit d280056a5 intégré dans main — voir docs/roadmap/comptes-rendus/v0-design-system.md",
+          "maj": "2026-09-19T20:40+0200"
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-19T20:40+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit d280056a5"
+        }
+      ],
+      "compte_rendu": {
+        "resume": "Design system livré dans `apps/web` : jetons de couleur clair/sombre et typographies repris de l'identité propre de la maquette (`.mk` dans `docs/roadmap/ROADMAP.html`, onglet « Maquette du site »), briques `shadcn/ui` minimales (`cn()`, `Button`, `Badge`), six composants métier (`AppShell`, `CardTile`, `ValueDelta`, `RarityBadge`, `ConditionBadge`, `EmptyState`), les sept routes vides demandées, et une page interne `/design` servant de recette visuelle.",
+        "livrables": [
+          "**Jetons** (`apps/web/src/app/globals.css`) : `--background`, `--foreground`, `--card`,",
+          "**Typographies** (`next/font/google`, variables CSS) : Bricolage Grotesque (titres),",
+          "**`shadcn/ui` posé à la main, pas via le CLI** (voir Écarts) : `components.json`,",
+          "**Composants métier** (`src/components/`) : `AppShell` (nav + logo + bascule thème + lien",
+          "**Routes** : `/`, `/inscription`, `/connexion`, `/ajouter`, `/collection`, `/carte/[id]`,",
+          "**`/design`** : nuancier des jetons, échantillons typographiques, variantes `Button`/`Badge`,"
+        ],
+        "preuves": [],
+        "ecarts": [
+          "**Capture d'écran de la maquette non produite** (§6 : « conformité à l'écran de la maquette,",
+          "**Test d'accès croisé (§6) sans objet** : confirmé par la grille du prompt lui-même",
+          "**`fleet-run` non utilisé** : conformément au CONTEXTE D'EXÉCUTION, tout tourne « ici même sur",
+          "**Aucune clé IA réelle utilisée** : rien dans ce lot n'appelle un fournisseur IA."
+        ],
+        "reste": [
+          "Contenu fonctionnel des sept routes (accueil, auth, ajout, collection, fiche, profil) —",
+          "Capture d'écran réelle de conformité à la maquette (cf. écart ci-dessus).",
+          "Brancher les images officielles du catalogue dans `CardTile` (`next/image` +",
+          "Étendre `shadcn/ui` (autres primitives : `Input`, `Select`, `Dialog`…) au fur et à mesure des"
+        ]
+      },
+      "attente": null
     },
     "v1-auth": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
-      "fin_reelle": null,
+      "statut": "integre",
+      "machine": "chimera",
+      "branche": "roadmap/v1-auth",
+      "debut_reel": "2026-09-19",
+      "fin_reelle": "2026-09-19",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 2732a093a intégré dans main — voir docs/roadmap/comptes-rendus/v1-auth.md",
+          "maj": "2026-09-19T20:51+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 2732a093a intégré dans main — voir docs/roadmap/comptes-rendus/v1-auth.md",
+          "maj": "2026-09-19T20:51+0200"
         },
         "securite": {
           "etat": "a_faire",
@@ -319,35 +417,64 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 2732a093a intégré dans main — voir docs/roadmap/comptes-rendus/v1-auth.md",
+          "maj": "2026-09-19T20:51+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 2732a093a intégré dans main — voir docs/roadmap/comptes-rendus/v1-auth.md",
+          "maj": "2026-09-19T20:51+0200"
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-19T20:51+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit 2732a093a"
+        }
+      ],
+      "compte_rendu": {
+        "resume": "Comptes e-mail + mot de passe pour PokeBoyManager : inscription, vérification d'adresse, connexion, déconnexion, mot de passe oublié/réinitialisation. Six routes FastAPI sous `/auth`, session par cookie opaque haché en base (rotation à chaque connexion, sessions multiples), CSRF par double soumission signée, limitation de tentatives par Redis, mots de passe argon2id contrôlés contre les fuites connues (k-anonymat HIBP). E-mails transactionnels envoyés via SMTP (Mailpit en dev, D5). Aucun front dans ce lot (back-end seul — les pages viennent du lot `v1-pages-auth`).",
+        "livrables": [
+          "`apps/api/src/pbm_api/routers/auth.py` — les six routes : `POST /auth/register`,",
+          "`apps/api/src/pbm_api/auth/` — logique métier indépendante de FastAPI :",
+          "`service.py` : inscription (anti-énumération — même réponse, même code, qu'un compte",
+          "`dependencies.py` : `get_current_user`/`get_current_session`/`require_csrf` —",
+          "`errors.py`, `schemas.py` — exceptions du domaine, schémas Pydantic des requêtes/réponses.",
+          "`apps/api/src/pbm_api/security/` :",
+          "`passwords.py` — hachage argon2id (`argon2-cffi`), politique 10 caractères minimum.",
+          "`compromised.py` — `CompromisedPasswordChecker`, k-anonymat HIBP (SHA-1, 5 premiers"
+        ],
+        "preuves": [],
+        "ecarts": [],
+        "reste": [
+          "**Front** (`v1-pages-auth`) : pages `/inscription`, `/connexion`, `/verifier-email`,",
+          "**Fournisseur SMTP définitif** : D5 reste provisoire pour l'expéditeur",
+          "**Client Redis par appel** (choix technique ci-dessus) : optimisation possible (pool",
+          "**`GET /auth/me`** ou équivalent : pas posé (hors périmètre strict de la mission) — le lot",
+          "Aucune CI GitHub Actions déclenchée depuis cette session (dépôt relais local, pas GitHub) —"
+        ]
+      },
+      "attente": null
     },
     "v1-accueil": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
-      "fin_reelle": null,
+      "statut": "integre",
+      "machine": "chimera",
+      "branche": "roadmap/v1-accueil",
+      "debut_reel": "2026-09-19",
+      "fin_reelle": "2026-09-19",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 33919ac01 intégré dans main — voir docs/roadmap/comptes-rendus/v1-accueil.md",
+          "maj": "2026-09-19T20:54+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 33919ac01 intégré dans main — voir docs/roadmap/comptes-rendus/v1-accueil.md",
+          "maj": "2026-09-19T20:54+0200"
         },
         "securite": {
           "etat": "na",
@@ -375,35 +502,65 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 33919ac01 intégré dans main — voir docs/roadmap/comptes-rendus/v1-accueil.md",
+          "maj": "2026-09-19T20:54+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 33919ac01 intégré dans main — voir docs/roadmap/comptes-rendus/v1-accueil.md",
+          "maj": "2026-09-19T20:54+0200"
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-19T20:54+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit 33919ac01"
+        }
+      ],
+      "compte_rendu": {
+        "resume": "Page d'accueil publique (`/`) reproduisant l'écran « Accueil (visiteur) » de la maquette (`docs/roadmap/ROADMAP.html`, onglet Maquette, fonction `V.accueil`) : accroche, démonstration « photo → cartes → valeur », quatre étapes, panneau « Apporte ta propre IA », pied de page légal. Trois pages légales en brouillon (`/mentions-legales`, `/confidentialite`, `/conditions`) marquées explicitement « à relire par JF ». Métadonnées SEO et Open Graph dédiées sur `/`.",
+        "livrables": [
+          "**`apps/web/src/app/page.tsx`** : hero (accroche, accroche H1, deux CTA `/inscription` et",
+          "**`apps/web/src/components/scan-demo.tsx`** : démonstration visuelle statique (9",
+          "**`apps/web/src/components/legal-footer.tsx`** : liens vers les trois pages légales +",
+          "**Pages légales brouillons** : `apps/web/src/app/{mentions-legales,confidentialite,",
+          "**Tests** (TDD, voir Preuves) : `scan-demo.test.tsx`, `legal-footer.test.tsx`,"
+        ],
+        "preuves": [],
+        "ecarts": [
+          "**Redirection du visiteur connecté (mission §3.1) non implémentée.** Aucun mécanisme de",
+          "**Score Lighthouse ≥ 90 (mission §3.3) non mesuré.** Tentative réelle avec le binaire",
+          "**Capture d'écran de conformité à la maquette (§6) non produite** — même blocage que",
+          "**Test d'accès croisé (§6) sans objet** : aucune route utilisateur, aucune session, aucune",
+          "**`fleet-run` non utilisé** : conformément au CONTEXTE D'EXÉCUTION, tout tourne ici même sur"
+        ],
+        "reste": [
+          "Redirection visiteur connecté → tableau de bord, une fois `v1-auth` (session) et",
+          "Mesure réelle du score Lighthouse et capture d'écran de conformité à la maquette, une fois",
+          "Compléter les pages légales (éditeur, hébergeur, contact) avant mise en ligne — actuellement"
+        ]
+      },
+      "attente": null
     },
     "v1-pages-auth": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
-      "fin_reelle": null,
+      "statut": "integre",
+      "machine": "chimera",
+      "branche": "roadmap/v1-pages-auth",
+      "debut_reel": "2026-09-19",
+      "fin_reelle": "2026-09-19",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 3d6a2370e intégré dans main — voir docs/roadmap/comptes-rendus/v1-pages-auth.md",
+          "maj": "2026-09-19T21:32+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 3d6a2370e intégré dans main — voir docs/roadmap/comptes-rendus/v1-pages-auth.md",
+          "maj": "2026-09-19T21:32+0200"
         },
         "securite": {
           "etat": "a_faire",
@@ -431,35 +588,65 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 3d6a2370e intégré dans main — voir docs/roadmap/comptes-rendus/v1-pages-auth.md",
+          "maj": "2026-09-19T21:32+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 3d6a2370e intégré dans main — voir docs/roadmap/comptes-rendus/v1-pages-auth.md",
+          "maj": "2026-09-19T21:32+0200"
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-19T21:32+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit 3d6a2370e"
+        }
+      ],
+      "compte_rendu": {
+        "resume": "Les 5 pages d'authentification (`/inscription`, `/connexion`, `/mot-de-passe-oublie`, `/verifier`, `/reinitialiser`) sont livrées, conformes à la maquette, connectées à l'API `v1-auth` avec zod + react-hook-form, une garde de route middleware sur les pages privées, et un e2e Playwright du parcours inscription → vérification (Mailpit) → connexion. En construisant ce parcours, deux défauts bloquants du lot `v1-auth` sont apparus et ont été corrigés (voir « Corrections apportées à `v1-auth` ») : sans eux, aucun appel du front à l'API ne pouvait fonctionner dans un vrai navigateur.",
+        "livrables": [
+          "**Pages** (`apps/web/src/app/{inscription,connexion,mot-de-passe-oublie,verifier,reinitialiser}`) :",
+          "**Client API** (`src/lib/api/auth.ts`) : typé depuis `@pbm/api-client` (régénéré par",
+          "**Garde de route** (`apps/web/src/middleware.ts`) : `/collection`, `/ajouter`, `/carte/*`,",
+          "**Anti-énumération respectée côté front** : même écran de succès sur `/inscription` et",
+          "**Composants UI ajoutés** (`src/components/ui/{input,label,checkbox}.tsx`) : absents du design",
+          "**Tests composants (Vitest)** : `apps/web/src/__tests__/{inscription,connexion,verifier,",
+          "**e2e Playwright** (`apps/web/e2e/auth.spec.ts`, `playwright.config.ts`) : parcours réel"
+        ],
+        "preuves": [],
+        "ecarts": [
+          "**Pseudo et « rester connecté »** non implémentés (voir Choix techniques) : nécessitent une",
+          "**Test d'accès croisé (section 6 du prompt)** sans objet ici : ce lot n'ajoute aucune route API",
+          "**e2e Playwright non vert en exécution locale sur chimera** (voir section suivante) : vert en"
+        ],
+        "reste": [
+          "Vérifier que le job CI `e2e` tourne bien vert une fois sur GitHub (pas déclenchable depuis ce",
+          "Décision produit sur le pseudo/nom d'affichage et sur un « rester connecté » à durée",
+          "`docs_tech` : `CLAUDE.md` et `docs/ARCHITECTURE.md` mis à jour dans ce lot (CORS, routes"
+        ]
+      },
+      "attente": null
     },
     "v1-byok": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
-      "fin_reelle": null,
+      "statut": "integre",
+      "machine": "chimera",
+      "branche": "roadmap/v1-byok",
+      "debut_reel": "2026-09-19",
+      "fin_reelle": "2026-09-19",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 8ee0500f8 intégré dans main — voir docs/roadmap/comptes-rendus/v1-byok.md",
+          "maj": "2026-09-19T21:22+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 8ee0500f8 intégré dans main — voir docs/roadmap/comptes-rendus/v1-byok.md",
+          "maj": "2026-09-19T21:22+0200"
         },
         "securite": {
           "etat": "a_faire",
@@ -487,35 +674,65 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 8ee0500f8 intégré dans main — voir docs/roadmap/comptes-rendus/v1-byok.md",
+          "maj": "2026-09-19T21:22+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 8ee0500f8 intégré dans main — voir docs/roadmap/comptes-rendus/v1-byok.md",
+          "maj": "2026-09-19T21:22+0200"
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-19T21:22+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit 8ee0500f8"
+        }
+      ],
+      "compte_rendu": {
+        "resume": "Coffre de clés IA par utilisateur (Anthropic, Gemini, OpenAI) : ajouter/tester/remplacer/ supprimer une clé par fournisseur, choisir le fournisseur et le modèle par défaut, lire l'usage (appels/jetons/coût estimé par fournisseur et par mois). Chiffrement AES-256-GCM avec `user_id` en données associées (une clé copiée dans un autre compte ne se déchiffre pas), la clé n'est jamais renvoyée ni journalisée en clair. Le test d'une clé fait un vrai appel réseau minimal (liste de modèles) contre le fournisseur — vérifié en direct contre les trois API réelles depuis chimera (voir Preuves). D4 appliquée telle quelle : sans clé personnelle, la reconnaissance reste désactivée (pas de clé plateforme, pas de quota d'essai) ; ce lot ne touche pas à la reconnaissance elle-même, seulement au coffre qui l'alimentera.",
+        "livrables": [
+          "`apps/api/src/pbm_api/routers/ai_keys.py` — `GET/PUT/DELETE /me/ai-keys[/{provider}]`,",
+          "`apps/api/src/pbm_api/ai/` — logique métier indépendante de FastAPI :",
+          "`service.py` : upsert/suppression/liste des clés, test (clé fournie ou clé stockée",
+          "`providers.py` : `ProviderKeyTester`, injecté par dépendance FastAPI — un aller-retour",
+          "`errors.py`, `schemas.py` — exceptions du domaine, schémas Pydantic.",
+          "`apps/api/src/pbm_api/security/crypto.py` — AES-256-GCM (`cryptography`), nonce aléatoire",
+          "`apps/api/src/pbm_api/security/log_filter.py` — anti-fuite de clé dans les journaux, via",
+          "`apps/api/src/pbm_api/security/validation_errors.py` — anti-fuite de clé dans les réponses"
+        ],
+        "preuves": [],
+        "ecarts": [],
+        "reste": [
+          "**Front** (`v1-profil`, selon le plan) : écran de gestion des clés — la maquette est portée",
+          "**Écriture de `ai_usage_monthly`** : ce lot pose la table et sa lecture seule ; le worker de",
+          "**Essai avec une vraie clé** (`scripts/test_ai_key_manual.py`) : fait avec des clés",
+          "**`pnpm gen:api`** : à relancer par le prochain lot qui consomme `/me/ai-keys` côté front",
+          "**Rotation de la clé maître `AI_KEY_ENCRYPTION_KEY`** : documentée en commentaire",
+          "Aucune CI GitHub Actions déclenchée depuis cette session (dépôt relais local, pas GitHub) —"
+        ]
+      },
+      "attente": null
     },
     "v1-profil": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
-      "fin_reelle": null,
+      "statut": "integre",
+      "machine": "chimera",
+      "branche": "roadmap/v1-profil",
+      "debut_reel": "2026-09-19",
+      "fin_reelle": "2026-09-19",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit c36ae24fc intégré dans main — voir docs/roadmap/comptes-rendus/v1-profil.md",
+          "maj": "2026-09-19T22:09+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit c36ae24fc intégré dans main — voir docs/roadmap/comptes-rendus/v1-profil.md",
+          "maj": "2026-09-19T22:09+0200"
         },
         "securite": {
           "etat": "a_faire",
@@ -543,18 +760,50 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit c36ae24fc intégré dans main — voir docs/roadmap/comptes-rendus/v1-profil.md",
+          "maj": "2026-09-19T22:09+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit c36ae24fc intégré dans main — voir docs/roadmap/comptes-rendus/v1-profil.md",
+          "maj": "2026-09-19T22:09+0200"
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-19T22:09+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit c36ae24fc"
+        }
+      ],
+      "compte_rendu": {
+        "resume": "Page `/profil` complète en 4 onglets (Identité, Sécurité, Mon IA, Mes données), conforme à la maquette (`docs/roadmap/ROADMAP.html`, fonction `V.profil`). Routes back manquantes posées : `GET/PATCH /me` (pseudo), `POST /me/avatar` (recadrage carré côté serveur), `GET /me/avatar`, `POST /me/email` + `POST /me/email/confirm` (re-vérification, ancienne adresse notifiée), `POST /me/password` (rotation des autres sessions, session courante conservée), `GET /me/sessions` + `DELETE /me/sessions/{id}`, `DELETE /me` (suppression du compte, mot de passe requis). Front : onglet « Mon IA » branché sur les routes déjà posées par `v1-byok` (`/me/ai-keys`, `/me/ai-settings`, `/me/ai-usage`) — aucun front n'existait encore pour elles.",
+        "livrables": [
+          "`pbm_api/photo_storage.py` — `PhotoStorage` (backends `s3`/`local`), `pbm_api/s3.py` complété",
+          "`pbm_api/profile/` — `avatar.py` (recadrage centré en carré + redimensionnement 512×512 +",
+          "`pbm_api/routers/profile.py` — 11 routes sous `/me`, toutes dérivées du cookie de session",
+          "`pbm_api/models/users.py` — `pseudo` (unique), `avatar_key`, `pending_email` ; `EmailTokenKind`",
+          "`pbm_api/config.py` — `storage_backend`, `photos_storage_path`.",
+          "Migration `3221843f145c` (colonnes + `ALTER TYPE email_token_kind ADD VALUE 'change_email'` —",
+          "`pbm_api/main.py` — routeur `profile` branché.",
+          "Tests : `test_profile.py` (20 cas dont isolation croisée), `test_avatar.py` (4, recadrage),"
+        ],
+        "preuves": [],
+        "ecarts": [
+          "**Capture d'écran de la maquette non produite.** Playwright (déjà en devDependency,",
+          "Aucun autre écart sur la mission §3 (routes back, page en 4 onglets, onglet Mon IA)."
+        ],
+        "reste": [
+          "Capture d'écran de la maquette (voir Écarts au plan).",
+          "**Export des données (onglet « Mes données »)** : bouton affiché mais désactivé — l'export",
+          "**Sélection de modèle par fournisseur IA** (ex. `claude-sonnet-5` vs `claude-haiku-4-5`,",
+          "**Confirmation manuelle des e-mails de changement d'adresse via Mailpit** : les tests",
+          "**`apps/web/src/lib/api/uploads.ts` (lot `v3-upload`) duplique `apps/web/src/lib/api/"
+        ]
+      },
+      "attente": null
     },
     "v1-uat": {
       "statut": "a_faire",
@@ -613,21 +862,21 @@
       "compte_rendu": {}
     },
     "v2-catalogue": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
-      "fin_reelle": null,
+      "statut": "integre",
+      "machine": "chimera",
+      "branche": "roadmap/v2-catalogue",
+      "debut_reel": "2026-09-19",
+      "fin_reelle": "2026-09-19",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 8f314918f intégré dans main — voir docs/roadmap/comptes-rendus/v2-catalogue.md",
+          "maj": "2026-09-19T21:03+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 8f314918f intégré dans main — voir docs/roadmap/comptes-rendus/v2-catalogue.md",
+          "maj": "2026-09-19T21:03+0200"
         },
         "securite": {
           "etat": "na",
@@ -655,35 +904,69 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 8f314918f intégré dans main — voir docs/roadmap/comptes-rendus/v2-catalogue.md",
+          "maj": "2026-09-19T21:03+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 8f314918f intégré dans main — voir docs/roadmap/comptes-rendus/v2-catalogue.md",
+          "maj": "2026-09-19T21:03+0200"
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-19T21:03+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit 8f314918f"
+        }
+      ],
+      "compte_rendu": {
+        "resume": "Job `import_catalogue` (arq) idempotent qui importe extensions et cartes FR+EN depuis [TCGdex](https://api.tcgdex.net) (public, sans clé), les rapproche de [Pokémon TCG API](https://pokemontcg.io) (`ptcg_id`) via une table de correspondance des cas particuliers construite et testée depuis les deux API en direct, et sert les images officielles via un proxy qui les met en cache dans MinIO/S3 au premier accès. Cron hebdomadaire (nouvelles extensions). Testé en conditions réelles : import de 3 extensions (362 cartes, 362 noms FR + 362 EN), proxy d'image (premier accès réseau 3,2 s → deuxième accès cache 11 ms), job arq déclenché via une vraie file Redis.",
+        "livrables": [
+          "`apps/api/src/pbm_api/catalog/tcgdex_client.py` — client TCGdex v2 (`list_sets`, `get_set`,",
+          "`apps/api/src/pbm_api/catalog/ptcg_client.py` — client Pokémon TCG API avec retry/backoff",
+          "`apps/api/src/pbm_api/catalog/reconciliation.py` — `SET_ID_OVERRIDES` : 43 correspondances",
+          "`apps/api/src/pbm_api/catalog/import_service.py` — `import_catalogue()` : upsert par",
+          "`apps/api/src/pbm_api/worker.py` — `WorkerSettings` arq : `import_catalogue_task` (déclenché),",
+          "`apps/api/src/pbm_api/s3.py` — `ObjectStorage` : enveloppe `boto3` (synchrone, déléguée à un",
+          "`apps/api/src/pbm_api/routers/images.py` — `GET /img/cards/{id}?size=high|low` : 404 si la",
+          "`apps/api/src/pbm_api/models/catalog.py` — `Set.tcgdex_id` (unique) ; `Card.tcgdex_id`"
+        ],
+        "preuves": [],
+        "ecarts": [
+          "**Import réel limité à un échantillon** (3 extensions au total sur la session : `hgssp`,",
+          "**Pokémon TCG API réellement flaky pendant toute la session** (500/502 intermittents,",
+          "**Une extension TCGdex sans cartes énumérées** (`wp`, « W Promotional » : `cardCount.official=7`",
+          "**CI non exécutée sur GitHub** (dépôt relais local, pas de remote GitHub depuis chimera) : la"
+        ],
+        "reste": [
+          "**Import complet du catalogue** (les ~220 extensions, toutes langues) : à lancer avec un budget",
+          "**Relevé de prix quotidien** (Cardmarket/TCGplayer → `card_prices_daily`) : `ptcg_id` et les",
+          "**Reconciliation des jobs orphelins** : un worker arq tué en cours de route laisse sa ligne",
+          "**Endpoint HTTP de déclenchement manuel de l'import** : ce lot expose le job via arq",
+          "**Rapport d'import exposé** : le rapport (`Job.result`) existe et est complet, mais aucune route"
+        ]
+      },
+      "attente": null
     },
     "v2-prix": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
-      "fin_reelle": null,
+      "statut": "integre",
+      "machine": "chimera",
+      "branche": "roadmap/v2-prix",
+      "debut_reel": "2026-09-19",
+      "fin_reelle": "2026-09-19",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 90949c517 intégré dans main — voir docs/roadmap/comptes-rendus/v2-prix.md",
+          "maj": "2026-09-19T21:19+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 90949c517 intégré dans main — voir docs/roadmap/comptes-rendus/v2-prix.md",
+          "maj": "2026-09-19T21:19+0200"
         },
         "securite": {
           "etat": "na",
@@ -711,35 +994,70 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 90949c517 intégré dans main — voir docs/roadmap/comptes-rendus/v2-prix.md",
+          "maj": "2026-09-19T21:19+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 90949c517 intégré dans main — voir docs/roadmap/comptes-rendus/v2-prix.md",
+          "maj": "2026-09-19T21:19+0200"
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-19T21:19+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit 90949c517"
+        }
+      ],
+      "compte_rendu": {
+        "resume": "Relevé quotidien de prix (`card_prices_daily`, table déjà présente depuis `v0-schema`) : deux jobs arq cron 06:00 (heure locale du process, même convention que le cron hebdomadaire de `v2-catalogue`) — `daily_prices_task` (Cardmarket via TCGdex + TCGplayer via Pokémon TCG API, idempotent, reprise à la carte/au set près) et `daily_exchange_rates_task` (taux BCE quotidiens, nouvelle table `exchange_rates_daily`). Service `valuation` : valeur d'un exemplaire (référence Cardmarket sinon TCGplayer converti, décote par état, écrêtage d'une tendance aberrante) et valeur d'une collection à une date, dans la devise demandée. Testé par 33 tests (doublures pour TCGdex/Pokémon TCG API/BCE) **et** en conditions réelles : relevé réel de 2 cartes connues (Dracaufeu-ex, Charizard), taux BCE réels (29 devises), jobs déclenchés via une vraie file Redis arq, valorisation calculée sur ces données réelles avec conversion EUR→USD.",
+        "livrables": [
+          "`apps/api/src/pbm_api/pricing/extract.py` — `extract_cardmarket_prices`/",
+          "`apps/api/src/pbm_api/pricing/service.py` — `collect_daily_prices()` : une ligne",
+          "`apps/api/src/pbm_api/pricing/exchange_rates.py` — `EcbClient` (flux XML quotidien BCE,",
+          "`apps/api/src/pbm_api/pricing/valuation.py` — `reference_price_eur` (tendance Cardmarket,",
+          "`apps/api/src/pbm_api/models/pricing.py` — `ExchangeRateDaily` (`day`, `currency`, `rate` =",
+          "`apps/api/src/pbm_api/models/users.py` — `User.preferred_currency` (ISO 4217, défaut `EUR`) :",
+          "`apps/api/migrations/versions/8565c4640de8_…` — migration additive (`exchange_rates_daily`,",
+          "`apps/api/src/pbm_api/worker.py` — `daily_prices_task`, `daily_exchange_rates_task` ajoutés à"
+        ],
+        "preuves": [],
+        "ecarts": [
+          "**Relevé réel limité à 2 cartes** (Dracaufeu-ex, Charizard), pas tout le catalogue : le",
+          "**Pas de reverse_holo/first_edition côté Cardmarket** : la carte de test observée en direct",
+          "**`1stEditionNormal`/`unlimited`/`unlimitedHolofoil` de TCGplayer non modélisés** : notre",
+          "**Cron « 06:00 » sans fuseau horaire explicite** : comme le cron hebdomadaire existant de"
+        ],
+        "reste": [
+          "**Alerting réel sur `EmptyPriceRunError`** : aujourd'hui seulement visible via",
+          "**Reverse holo / 1st edition Cardmarket** : à activer dès qu'une carte de test les expose",
+          "**Les trois classements (D6)** et **courbe de la fiche** : listés comme aboutissants de ce lot",
+          "**Alertes de prix** (aboutissant du lot) : nécessitent une route + une notification, hors",
+          "**Import complet du catalogue en dev** avant de rejouer un relevé à grande échelle (voir écart",
+          "**Route de préférence utilisateur** pour `preferred_currency` : la colonne existe, aucune route"
+        ]
+      },
+      "attente": null
     },
     "v2-recherche": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
-      "fin_reelle": null,
+      "statut": "integre",
+      "machine": "chimera",
+      "branche": "roadmap/v2-recherche",
+      "debut_reel": "2026-09-19",
+      "fin_reelle": "2026-09-19",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 2365d846a intégré dans main — voir docs/roadmap/comptes-rendus/v2-recherche.md",
+          "maj": "2026-09-19T21:38+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 2365d846a intégré dans main — voir docs/roadmap/comptes-rendus/v2-recherche.md",
+          "maj": "2026-09-19T21:38+0200"
         },
         "securite": {
           "etat": "na",
@@ -767,35 +1085,67 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 2365d846a intégré dans main — voir docs/roadmap/comptes-rendus/v2-recherche.md",
+          "maj": "2026-09-19T21:38+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 2365d846a intégré dans main — voir docs/roadmap/comptes-rendus/v2-recherche.md",
+          "maj": "2026-09-19T21:38+0200"
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-19T21:38+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit 2365d846a"
+        }
+      ],
+      "compte_rendu": {
+        "resume": "`GET /catalog/search?q=&set=&lang=` : recherche dans le catalogue par nom (trigram + `unaccent` sur `card_names`, FR/EN, casse et accents ignorés) ou par numéro (simple, zéro-rempli, formats promo/galerie `TG05`/`GG10`/`SV107`/`XY121`, format `numéro/total`). `match_candidates` (`pbm_api.catalog.search`) est la fonction interne de rapprochement, écrite pour être réutilisée telle quelle par la reconnaissance (lot futur) : donné un nom et/ou un numéro déjà extraits, plus des indices optionnels d'extension et de total, elle renvoie les cartes candidates classées par score. 50 requêtes de référence en test (paramétrées, contre un vrai Postgres avec `pg_trgm`/ `unaccent`) + 16 tests directs de `match_candidates`/`parse_query`.",
+        "livrables": [
+          "`apps/api/src/pbm_api/catalog/search.py` — `parse_query` (numéro vs nom), `match_candidates`",
+          "`apps/api/src/pbm_api/routers/catalog.py` — `GET /catalog/search`, `_search_by_name` (essaie",
+          "`apps/api/src/pbm_api/main.py` — routeur `catalog` enregistré.",
+          "`apps/api/tests/test_catalog_search.py` — 50 requêtes de référence paramétrées (`CATALOG_QUERIES`,",
+          "`apps/api/tests/test_catalog_match_candidates.py` — `parse_query` (numéro, numéro/total, promo/",
+          "`docs/ARCHITECTURE.md` — section « Recherche catalogue (lot `v2-recherche`) ».",
+          "Bases dédiées créées sur l'infra partagée `pbm-shared` : `pbm_v2_recherche` (dev),",
+          "`apps/api/tests/conftest.py` — `TEST_DATABASE_URL` (littéral par défaut, pas lu depuis `.env` :"
+        ],
+        "preuves": [],
+        "ecarts": [
+          "**Catalogue de dev vide au démarrage de ce lot** (bases isolées par lot, comme `v2-prix`) : les",
+          "**Client TypeScript (`packages/api-client`) non régénéré** : `pnpm gen:api` nécessite",
+          "**Pas de pagination/curseur sur `/catalog/search`** : la mission ne la demande pas (« route de"
+        ],
+        "reste": [
+          "Revalider seuils/poids de score contre le catalogue réel importé (voir écart ci-dessus).",
+          "Régénérer `packages/api-client` (`pnpm gen:api`) dès qu'un lot installe les dépendances du",
+          "Écran de recherche (front, maquette « Recherche ») : consomme cette route, hors périmètre ici.",
+          "Brancher `match_candidates` sur la reconnaissance (lot futur), avec `nom`/`numero`/`set_hint`"
+        ]
+      },
+      "attente": null
     },
     "v3-upload": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
-      "fin_reelle": null,
+      "statut": "integre",
+      "machine": "chimera",
+      "branche": "roadmap/v3-upload",
+      "debut_reel": "2026-09-19",
+      "fin_reelle": "2026-09-19",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 90764ab9a intégré dans main — voir docs/roadmap/comptes-rendus/v3-upload.md",
+          "maj": "2026-09-19T21:58+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 90764ab9a intégré dans main — voir docs/roadmap/comptes-rendus/v3-upload.md",
+          "maj": "2026-09-19T21:58+0200"
         },
         "securite": {
           "etat": "a_faire",
@@ -823,35 +1173,69 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 90764ab9a intégré dans main — voir docs/roadmap/comptes-rendus/v3-upload.md",
+          "maj": "2026-09-19T21:58+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 90764ab9a intégré dans main — voir docs/roadmap/comptes-rendus/v3-upload.md",
+          "maj": "2026-09-19T21:58+0200"
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-19T21:58+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit 90764ab9a"
+        }
+      ],
+      "compte_rendu": {
+        "resume": "Page `/ajouter` : glisser-déposer ou sélection de plusieurs photos, bouton appareil photo (`capture=environment`), aperçus, retrait avant envoi, estimation avant lancement, progression par photo. Back-end : `POST /uploads` (cible d'envoi par fichier — URL présignée S3 en dev/CI, route locale signée en backend `local`), le navigateur envoie les octets directement au stockage, `POST /uploads/{id}/complete` revérifie le type réel (magic bytes via décodage Pillow, pas l'en-tête déclaré), supprime l'EXIF (position GPS incluse), convertit HEIC → JPEG, et crée un `Job` de reconnaissance (`type=detect_cards`, `status=queued`) seulement si l'utilisateur a une clé IA personnelle (D4 : sinon photo conservée, reconnaissance désactivée, ajout manuel possible — hors périmètre de ce lot).",
+        "livrables": [
+          "`apps/api/src/pbm_api/uploads/` — `service.py` (création par lot, validation, cible d'envoi,",
+          "`apps/api/src/pbm_api/routers/uploads.py` — `POST /uploads`, `PUT /uploads/{id}/raw`,",
+          "`apps/api/src/pbm_api/storage/` — `LocalObjectStorage` (disque, D7) + `build_storage()`",
+          "`apps/api/src/pbm_api/security/upload_tokens.py` — jeton HMAC signé à expiration pour la",
+          "`apps/api/src/pbm_api/config.py` — `storage_backend` (déf. `s3`), `photos_storage_path`,",
+          "`apps/web/src/app/ajouter/upload-view.tsx` — page conforme à la maquette (copie exacte",
+          "`apps/web/src/lib/api/uploads.ts` — client API (cible d'envoi, envoi des octets, complétion,",
+          "`apps/web/src/lib/config.ts` — `getCsrfCookieName()` (première route du front à écrire, donc"
+        ],
+        "preuves": [],
+        "ecarts": [
+          "**Pas de screenshot du navigateur joint** (§6 : « Front → conformité à l'écran de la maquette,",
+          "**Compression côté client non implémentée** (voir « Choix techniques »).",
+          "**Job de reconnaissance créé mais jamais consommé** (voir « Choix techniques ») : le worker",
+          "**Estimation de coût approximative** (voir « Choix techniques »)."
+        ],
+        "reste": [
+          "`v3-identification` : consommer les `Job(type=\"detect_cards\", status=queued)` créés ici,",
+          "Lien « Profil → Mon IA » : pointe aujourd'hui sur `/profil` (page encore un `EmptyState`, lot",
+          "Compression côté client des photos lourdes (risque documenté par la mission).",
+          "Capture d'écran navigateur de `/ajouter` (voir écart ci-dessus) — à obtenir depuis une machine",
+          "Estimation de coût affinée une fois `v3-identification` livré (comptage réel de cartes par"
+        ]
+      },
+      "attente": null
     },
     "v3-ia-providers": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
-      "fin_reelle": null,
+      "statut": "integre",
+      "machine": "chimera",
+      "branche": "roadmap/v3-ia-providers",
+      "debut_reel": "2026-09-19",
+      "fin_reelle": "2026-09-19",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 10b0f1661 intégré dans main — voir docs/roadmap/comptes-rendus/v3-ia-providers.md",
+          "maj": "2026-09-19T21:37+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 10b0f1661 intégré dans main — voir docs/roadmap/comptes-rendus/v3-ia-providers.md",
+          "maj": "2026-09-19T21:37+0200"
         },
         "securite": {
           "etat": "a_faire",
@@ -879,35 +1263,63 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 10b0f1661 intégré dans main — voir docs/roadmap/comptes-rendus/v3-ia-providers.md",
+          "maj": "2026-09-19T21:37+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 10b0f1661 intégré dans main — voir docs/roadmap/comptes-rendus/v3-ia-providers.md",
+          "maj": "2026-09-19T21:37+0200"
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-19T21:37+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit 10b0f1661"
+        }
+      ],
+      "compte_rendu": {
+        "resume": "Couche fournisseurs IA unique : `AIProvider.extract(images, schema, prompt) -> (objet validé, usage)`, une implémentation par fournisseur (Anthropic, Google Gemini, OpenAI) derrière une seule interface — la reconnaissance (lot futur) n'appellera jamais un fournisseur en direct. Sortie structurée native de chaque fournisseur (`output_config.format` Anthropic, `response_format` strict OpenAI, `responseSchema` Gemini) traduite depuis un schéma Pydantic, validée par Pydantic côté serveur, une nouvelle tentative guidée si elle ne valide pas. Erreurs normalisées (clé invalide, quota, surcharge, fournisseur injoignable, contenu refusé) avec un message utilisateur prêt à consigner sur un `Job`. Aucune clé IA réelle disponible sur chimera : suite automatisée sur réponses enregistrées (`httpx.MockTransport`), essai manuel avec des clés invalides confirmant le format de requête et l'authentification contre le vrai réseau des trois fournisseurs (voir Preuves).",
+        "livrables": [
+          "`apps/api/src/pbm_api/ai/base.py` — interface `AIProvider` (méthode `extract`, template",
+          "`apps/api/src/pbm_api/ai/anthropic_provider.py` — `POST /v1/messages`, `output_config.format`",
+          "`apps/api/src/pbm_api/ai/openai_provider.py` — `POST /v1/chat/completions`,",
+          "`apps/api/src/pbm_api/ai/gemini_provider.py` — `generateContent`,",
+          "`apps/api/src/pbm_api/ai/json_schema.py` — `to_strict_schema` (Anthropic/OpenAI : `$ref`",
+          "`apps/api/src/pbm_api/ai/http_errors.py` — correspondance code HTTP → erreur normalisée",
+          "`apps/api/src/pbm_api/ai/images.py` — `detect_media_type` (octets → JPEG/PNG/WebP par",
+          "`apps/api/src/pbm_api/ai/factory.py` — `create_provider(provider, api_key)`, seul point de"
+        ],
+        "preuves": [],
+        "ecarts": [],
+        "reste": [
+          "**Intégration au job de reconnaissance** (aboutissants du plan : détection, identification,",
+          "**Confirmation des modèles par défaut OpenAI/Gemini avec une vraie clé** : `gpt-4o` et",
+          "**Chemin « clé valide » non prouvé contre le vrai réseau** : comme pour `v1-byok`, seul le",
+          "**Normalisation Gemini du schéma** (`pbm_api.ai.json_schema._to_gemini`) couvre le cas"
+        ]
+      },
+      "attente": null
     },
     "v3-detection": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
-      "fin_reelle": null,
+      "statut": "integre",
+      "machine": "chimera",
+      "branche": "roadmap/v3-detection",
+      "debut_reel": "2026-09-19",
+      "fin_reelle": "2026-09-19",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 035ab97bf intégré dans main — voir docs/roadmap/comptes-rendus/v3-detection.md",
+          "maj": "2026-09-19T22:32+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 035ab97bf intégré dans main — voir docs/roadmap/comptes-rendus/v3-detection.md",
+          "maj": "2026-09-19T22:32+0200"
         },
         "securite": {
           "etat": "a_faire",
@@ -935,35 +1347,70 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 035ab97bf intégré dans main — voir docs/roadmap/comptes-rendus/v3-detection.md",
+          "maj": "2026-09-19T22:32+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 035ab97bf intégré dans main — voir docs/roadmap/comptes-rendus/v3-detection.md",
+          "maj": "2026-09-19T22:32+0200"
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-19T22:32+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit 035ab97bf"
+        }
+      ],
+      "compte_rendu": {
+        "resume": "Pipeline de détection et découpage des cartes d'une photo (`pbm_api.detection`) : contours OpenCV (Canny + `approxPolyDP`, filtrage par ratio 63×88 mm ±12 %) puis redressement perspective vers un recadrage fixe 630×880 px, en ordre de lecture ligne par ligne (classeur 3×3). Repli par boîtes englobantes demandées au LLM (un seul appel par **photo**, jamais par carte) quand un second passage sur les mêmes contours (`has_unclaimed_regions`) signale une zone de la taille d'une carte laissée sans quadrilatère retenu — cartes qui se touchent, contour fusionné rejeté, fond clair sans contraste. Chaque boîte du LLM est ensuite affinée par le même OpenCV dans sa sous-image.",
+        "livrables": [
+          "`apps/api/src/pbm_api/detection/` :",
+          "`geometry.py` — ordre de correction des coins, ordre de lecture ligne par ligne, redressement",
+          "`opencv_pipeline.py` — détection de quadrilatères (Canny, `approxPolyDP`, filtre de ratio,",
+          "`annotate.py` — image de contrôle annotée (contours + numéro d'ordre), encodage JPEG partagé.",
+          "`llm_fallback.py` — schéma Pydantic des boîtes normalisées, prompt, appel",
+          "`pipeline.py` — `run_detection` : orchestration OpenCV → repli → affinage → recadrages.",
+          "`service.py` — `run_detection_for_upload` : DB/stockage (crops, image de contrôle,",
+          "`synthetic.py` — générateur de photos synthétiques (voir « Écarts au plan »)."
+        ],
+        "preuves": [],
+        "ecarts": [
+          "**Jeu de test « 30 photos réelles » remplacé par 30 photos synthétiques**",
+          "**Repli LLM jamais appelé avec une vraie clé** (mission : « aucune clé IA réelle disponible ») :",
+          "**`estimated_cost_eur` non calculé** (voir « Choix techniques »).",
+          "**Seuils OpenCV calés sur le jeu synthétique uniquement** (ratio ±12 %, recouvrement 70 % pour",
+          "**Aucune validation humaine ni rapprochement catalogue** (points 3-4 de la section"
+        ],
+        "reste": [
+          "Lot d'identification : consommer `Detection.bbox`/`crop_s3_key`, appeler `AIProvider.extract`",
+          "Vraie campagne de photos (appareil + cartes physiques, hors chimera) pour mesurer le taux de",
+          "Essai du repli avec une vraie clé IA (`scripts/measure_detection_rate.py --provider --api-key`)",
+          "Table de tarification par modèle pour `estimated_cost_eur` (`ai_usage_monthly`) — inexistante",
+          "Front : aucune page attendue ici (« maquette : sans objet »), mais le lot d'identification ou"
+        ]
+      },
+      "attente": null
     },
     "v3-identification": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
-      "fin_reelle": null,
+      "statut": "integre",
+      "machine": "chimera",
+      "branche": "roadmap/v3-identification",
+      "debut_reel": "2026-09-19",
+      "fin_reelle": "2026-09-19",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 211aeb07d intégré dans main — voir docs/roadmap/comptes-rendus/v3-identification.md",
+          "maj": "2026-09-19T23:01+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 211aeb07d intégré dans main — voir docs/roadmap/comptes-rendus/v3-identification.md",
+          "maj": "2026-09-19T23:01+0200"
         },
         "securite": {
           "etat": "a_faire",
@@ -991,24 +1438,58 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 211aeb07d intégré dans main — voir docs/roadmap/comptes-rendus/v3-identification.md",
+          "maj": "2026-09-19T23:01+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 211aeb07d intégré dans main — voir docs/roadmap/comptes-rendus/v3-identification.md",
+          "maj": "2026-09-19T23:01+0200"
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-19T23:01+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit 211aeb07d"
+        }
+      ],
+      "compte_rendu": {
+        "resume": "Extraction par carte et rapprochement catalogue (`pbm_api.identification`), chaînés dans le même job `detect_cards` que la détection (`v3-detection`) — pas un second aller-retour par la file. Pour chaque `Detection` en attente : empreinte perceptuelle du recadrage (aHash 64 bits) ; touchée dans un cache partagé entre utilisateurs, le résultat est réutilisé sans appel IA ; sinon un appel `AIProvider.extract` (schéma `CardExtraction` : nom, numéro, total, code d'extension, langue, PV, type, variante, confiance par champ) puis rapprochement catalogue en cascade (numéro + extension exacts, sinon numéro + nom, sinon recherche floue sur le nom seul), top 3 avec score combiné et présélection au-delà de 0,9. Résultat écrit sur `Detection.extraction`/ `Detection.candidates`, exposé par la route déjà bornée au propriétaire de l'envoi (`GET /uploads/{id}/detections`, `v3-detection`).",
+        "livrables": [
+          "`apps/api/src/pbm_api/identification/` :",
+          "`schemas.py` — `CardExtraction` (sortie IA, un champ de confiance par valeur),",
+          "`extraction.py` — prompt et `extract_card` (`AIProvider.extract`, un appel par carte).",
+          "`reconciliation.py` — `reconcile` : cascade numéro+extension → numéro+nom → nom seul,",
+          "`fingerprint.py` — `compute_phash` (aHash 64 bits sur le recadrage 630×880), `hamming_",
+          "`cache.py` — `find_cached`/`store_cache` sur `identification_cache` (XOR + `bit_count`",
+          "`service.py` — `run_identification_for_upload` : orchestration DB/stockage, indépendante",
+          "`synthetic.py` — jeu de 100 cartes étiquetées (mission point 5, voir « Tests »)."
+        ],
+        "preuves": [],
+        "ecarts": [
+          "**Jeu de « 100 cartes étiquetées » synthétique, pas de vraies photos** (voir « Tests ») : même",
+          "**Coût moyen par carte non mesurable en euros** : aucune clé IA réelle disponible sur chimera,",
+          "**Repli LLM jamais appelé avec une vraie clé** (mission : « aucune clé IA réelle disponible ») :",
+          "**Comparaison visuelle (mission point 3) non implémentée** (voir « Choix techniques »)."
+        ],
+        "reste": [
+          "Lot `v3-validation` : écran de validation humaine — corriger `Detection.extraction`/",
+          "Lot `v3-etat` : estimation de l'état (centrage, coins, bords, surface). Le principe « un seul",
+          "Vraie campagne de photos + clé IA réelle pour mesurer la précision top-1/top-3 réelle (au-delà",
+          "Table de tarification par modèle pour `estimated_cost_eur` — toujours absente du dépôt.",
+          "Réglage du seuil de présélection (0,9) et du seuil de distance de Hamming du cache (6) une fois"
+        ]
+      },
+      "attente": null
     },
     "v3-validation": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
+      "statut": "en_cours",
+      "machine": "chimera",
+      "branche": "roadmap/v3-validation",
+      "debut_reel": "2026-09-19",
       "fin_reelle": null,
       "taches": {
         "dev": {
@@ -1057,14 +1538,22 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-19T23:09+0200",
+          "machine": "chimera",
+          "evenement": "démarré",
+          "detail": "roadmap/v3-validation"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": null
     },
     "v3-etat": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
+      "statut": "en_cours",
+      "machine": "chimera",
+      "branche": "roadmap/v3-etat",
+      "debut_reel": "2026-09-19",
       "fin_reelle": null,
       "taches": {
         "dev": {
@@ -1113,8 +1602,16 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-19T23:09+0200",
+          "machine": "chimera",
+          "evenement": "démarré",
+          "detail": "roadmap/v3-etat"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": null
     },
     "v4-collection": {
       "statut": "a_faire",
@@ -1173,21 +1670,21 @@
       "compte_rendu": {}
     },
     "v4-ranking": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
-      "fin_reelle": null,
+      "statut": "integre",
+      "machine": "chimera",
+      "branche": "roadmap/v4-ranking",
+      "debut_reel": "2026-09-19",
+      "fin_reelle": "2026-09-19",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 7d4317930 intégré dans main — voir docs/roadmap/comptes-rendus/v4-ranking.md",
+          "maj": "2026-09-19T22:20+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 7d4317930 intégré dans main — voir docs/roadmap/comptes-rendus/v4-ranking.md",
+          "maj": "2026-09-19T22:20+0200"
         },
         "securite": {
           "etat": "a_faire",
@@ -1215,35 +1712,66 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 7d4317930 intégré dans main — voir docs/roadmap/comptes-rendus/v4-ranking.md",
+          "maj": "2026-09-19T22:20+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 7d4317930 intégré dans main — voir docs/roadmap/comptes-rendus/v4-ranking.md",
+          "maj": "2026-09-19T22:20+0200"
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-19T22:20+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit 7d4317930"
+        }
+      ],
+      "compte_rendu": {
+        "resume": "D6 (confirmé dans `etat.json`) : les trois classements — rang de rareté, rang de valeur dans la collection personnelle, percentile de valeur dans l'extension. Vue matérialisée `card_value_rank` (percentile de valeur + rang de rareté, tous deux partitionnés par extension — « pièce maîtresse de ma collection, et de son extension », le gain du lot), rafraîchie automatiquement juste après chaque relevé quotidien de prix réussi. Rang de valeur dans la collection calculé à la demande (collection personnelle, bien plus petite que le catalogue entier). Les trois exposés par `GET /me/collection/{item}` — première route de collection posée dans le dépôt, aucun lot fusionné avant celui-ci ne l'avait créée.",
+        "livrables": [
+          "`apps/api/migrations/versions/11f10f8c0f40_card_value_rank_materialized_view.py` — vue",
+          "`apps/api/src/pbm_api/ranking/service.py` — `refresh_card_value_rank` (rafraîchit la vue),",
+          "`apps/api/src/pbm_api/routers/collection.py` — `GET /me/collection/{item_id}` : 404 si",
+          "`apps/api/src/pbm_api/worker.py` — `refresh_card_value_rank` appelée dans `_run_daily_prices`",
+          "`apps/api/src/pbm_api/main.py` — routeur `collection` enregistré.",
+          "`apps/api/tests/test_ranking.py` (8 tests) — percentile ordonné et borné par extension,",
+          "`apps/api/tests/test_collection.py` (4 tests) — 200 avec classements corrects, 401 sans",
+          "`apps/api/tests/conftest.py` — `TEST_DATABASE_URL` pointée vers `pbm_v4_ranking_test`"
+        ],
+        "preuves": [],
+        "ecarts": [
+          "Aucun écart de périmètre : les trois livrables de la mission (vue matérialisée, rang à la",
+          "La route `GET /me/collection/{item}` elle-même n'était pas dans le périmètre explicite de ce"
+        ],
+        "reste": [
+          "`v4-collection` : `GET /me/collection` (liste, filtres, tri, pagination, agrégats) et",
+          "`v4-fiche` : enrichir `GET /me/collection/{item}` (et `GET /cards/{id}`) avec les données de",
+          "Revalider seuils/comportement de `card_value_rank` contre le catalogue réel importé (dizaines",
+          "Basculer vers `REFRESH MATERIALIZED VIEW CONCURRENTLY` si le volume de lecture concurrente en"
+        ]
+      },
+      "attente": null
     },
     "v4-anecdotes": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
-      "fin_reelle": null,
+      "statut": "integre",
+      "machine": "chimera",
+      "branche": "roadmap/v4-anecdotes",
+      "debut_reel": "2026-09-19",
+      "fin_reelle": "2026-09-19",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 36c7cf210 intégré dans main — voir docs/roadmap/comptes-rendus/v4-anecdotes.md",
+          "maj": "2026-09-19T22:30+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 36c7cf210 intégré dans main — voir docs/roadmap/comptes-rendus/v4-anecdotes.md",
+          "maj": "2026-09-19T22:30+0200"
         },
         "securite": {
           "etat": "a_faire",
@@ -1271,18 +1799,50 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 36c7cf210 intégré dans main — voir docs/roadmap/comptes-rendus/v4-anecdotes.md",
+          "maj": "2026-09-19T22:30+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 36c7cf210 intégré dans main — voir docs/roadmap/comptes-rendus/v4-anecdotes.md",
+          "maj": "2026-09-19T22:30+0200"
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-19T22:30+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit 36c7cf210"
+        }
+      ],
+      "compte_rendu": {
+        "resume": "`GET /cards/{card_id}/insights` : trois à cinq anecdotes courtes par carte, sourcées sur des pages Poképédia/Bulbapedia récupérées côté serveur (liste blanche fixe de deux domaines MediaWiki, jamais une URL fournie par le client), générées avec la clé IA de l'utilisateur qui ouvre la fiche la première fois, mises en cache dans `card_insights` (partagé entre tous les utilisateurs) et jamais régénérées ensuite pour la même carte. Toute anecdote dont `source_url` n'appartient pas au contexte réellement récupéré est rejetée, y compris si le modèle a ignoré la consigne du prompt (défense en profondeur contre le risque « hallucinations » de la mission). `POST /cards/{card_id}/insights/report` : bouton « Signaler une erreur », un signalement par utilisateur et par carte.",
+        "livrables": [
+          "`apps/api/src/pbm_api/insights/context.py` — `MediaWikiClient` (recherche + extrait texte brut",
+          "`apps/api/src/pbm_api/insights/generation.py` — `AnecdoteItem`/`AnecdotesExtraction` (schéma",
+          "`apps/api/src/pbm_api/insights/service.py` — `get_or_create_card_insight` : cache",
+          "`apps/api/src/pbm_api/routers/card_insights.py` — les deux routes, dépendances FastAPI",
+          "`apps/api/src/pbm_api/models/catalog.py` — `CardInsightReport` (nouveau modèle ; `CardInsight`",
+          "`apps/api/migrations/versions/7fc6cd5efc72_card_insight_reports.py` — table",
+          "`apps/api/src/pbm_api/main.py` — routeur `card_insights` enregistré.",
+          "`apps/api/tests/test_insights_context.py` — `MediaWikiClient`/`collect_context` en isolation"
+        ],
+        "preuves": [],
+        "ecarts": [
+          "**`card_insights` sans dimension « langue »/« version »** : la mission liste « Cache",
+          "**Verrou consultatif non testé en concurrence réelle** : voir choix techniques — le comportement",
+          "**Preuve des 20 cartes avec fournisseur simulé, pas une vraie clé IA** : conforme au cadre",
+          "**Client TypeScript régénéré, mais aucune page front ne le consomme encore** : `v4-fiche`"
+        ],
+        "reste": [
+          "`v4-fiche` : consommer `GET /cards/{id}/insights` sur la fiche carte, bouton « Signaler une",
+          "Décision explicite si une dimension « langue »/« version » doit être ajoutée à `card_insights`",
+          "Test de concurrence réelle du verrou consultatif (deux connexions séparées), si un lot futur en"
+        ]
+      },
+      "attente": null
     },
     "v4-fiche": {
       "statut": "a_faire",
@@ -1341,10 +1901,10 @@
       "compte_rendu": {}
     },
     "v4-jeu": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
+      "statut": "en_cours",
+      "machine": "chimera",
+      "branche": "roadmap/v4-jeu",
+      "debut_reel": "2026-09-19",
       "fin_reelle": null,
       "taches": {
         "dev": {
@@ -1393,8 +1953,16 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-19T23:09+0200",
+          "machine": "chimera",
+          "evenement": "démarré",
+          "detail": "roadmap/v4-jeu"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": null
     },
     "v4-dashboard": {
       "statut": "a_faire",
@@ -1453,21 +2021,21 @@
       "compte_rendu": {}
     },
     "v5-rgpd": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
-      "fin_reelle": null,
+      "statut": "integre",
+      "machine": "chimera",
+      "branche": "roadmap/v5-rgpd",
+      "debut_reel": "2026-09-19",
+      "fin_reelle": "2026-09-19",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 4e47e8d0b intégré dans main — voir docs/roadmap/comptes-rendus/v5-rgpd.md",
+          "maj": "2026-09-19T22:56+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 4e47e8d0b intégré dans main — voir docs/roadmap/comptes-rendus/v5-rgpd.md",
+          "maj": "2026-09-19T22:56+0200"
         },
         "securite": {
           "etat": "a_faire",
@@ -1495,18 +2063,49 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 4e47e8d0b intégré dans main — voir docs/roadmap/comptes-rendus/v5-rgpd.md",
+          "maj": "2026-09-19T22:56+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 4e47e8d0b intégré dans main — voir docs/roadmap/comptes-rendus/v5-rgpd.md",
+          "maj": "2026-09-19T22:56+0200"
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-19T22:56+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit 4e47e8d0b"
+        }
+      ],
+      "compte_rendu": {
+        "resume": "Export ZIP de la collection (JSON + CSV + photos) avec lien de téléchargement signé valable 24 h envoyé par e-mail, et suppression de compte (posée par `v1-profil`) complétée pour purger aussi le stockage objet — pas seulement l'avatar. Page confidentialité complétée (durées de conservation par type de donnée, sous-traitants IA choisis par l'utilisateur, mention de l'export). `POST /me/export` enfile un vrai job arq (`pbm_api.queue.get_arq_pool`), sur le même schéma que `detect_cards_task` posé en parallèle par `v3-detection` — le premier job du dépôt enfilé depuis une route HTTP, avant ce lot.",
+        "livrables": [
+          "`apps/api/migrations/versions/2e56ba32d5ed_data_exports.py` — table `data_exports` (statut",
+          "`apps/api/src/pbm_api/models/jobs.py` — modèle `DataExport`.",
+          "`apps/api/src/pbm_api/export/` :",
+          "`archive.py` — construit le ZIP (`profil.json`, `collection.json`, `collection.csv`,",
+          "`service.py` — `create_export` (pose la ligne `queued`) et `run_export` (travail réel :",
+          "`errors.py`, `schemas.py`.",
+          "`apps/api/src/pbm_api/routers/export.py` — `POST /me/export` (crée + enfile), `GET",
+          "`apps/api/src/pbm_api/worker.py` — `export_user_data_task` (ouvre sa propre session, comme"
+        ],
+        "preuves": [],
+        "ecarts": [
+          "**Architecture d'exécution de l'export changée en cours de lot** (synchrone → arq), suite au",
+          "**Pas de capture d'écran** jointe (maquette vérifiée autrement) — voir choix techniques."
+        ],
+        "reste": [
+          "Capture d'écran réelle de l'onglet « Mes données » une fois un environnement avec Chromium",
+          "Le front affiche aujourd'hui le message de succès dès la réponse `202` (`\"queued\"`) sans",
+          "Sauvegardes de la base/du stockage objet (mentionnées comme risque dans le plan) : hors",
+          "Adresse e-mail de contact RGPD dans `/confidentialite` (« [adresse e-mail à compléter] ») :"
+        ]
+      },
+      "attente": null
     },
     "v5-securite": {
       "statut": "a_faire",
@@ -1957,21 +2556,21 @@
       "compte_rendu": {}
     },
     "v1-identite": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
-      "fin_reelle": null,
+      "statut": "integre",
+      "machine": "chimera",
+      "branche": "roadmap/v1-identite",
+      "debut_reel": "2026-09-19",
+      "fin_reelle": "2026-09-19",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit cc63226dc intégré dans main — voir docs/roadmap/comptes-rendus/v1-identite.md",
+          "maj": "2026-09-19T23:07+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit cc63226dc intégré dans main — voir docs/roadmap/comptes-rendus/v1-identite.md",
+          "maj": "2026-09-19T23:07+0200"
         },
         "securite": {
           "etat": "a_faire",
@@ -1999,22 +2598,51 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit cc63226dc intégré dans main — voir docs/roadmap/comptes-rendus/v1-identite.md",
+          "maj": "2026-09-19T23:07+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit cc63226dc intégré dans main — voir docs/roadmap/comptes-rendus/v1-identite.md",
+          "maj": "2026-09-19T23:07+0200"
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-19T23:07+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit cc63226dc"
+        }
+      ],
+      "compte_rendu": {
+        "resume": "Identité du compte : prénom (facultatif), nom, date de naissance et acceptation horodatée des conditions sur `/inscription` (validation d'âge ≥ 15 ans, RGPD art. 8) et dans Profil → Identité (sans contrainte d'âge, un compte existant reste éditable). Commande d'administration `create-user` pour créer un compte déjà vérifié (mot de passe par entrée standard ou généré, changement forcé optionnel à la première connexion) — pose le socle pour le compte d'Aymeric à la mise en PROD.",
+        "livrables": [
+          "`pbm_api/models/users.py` — `first_name` (nullable), `last_name`, `birth_date`,",
+          "`pbm_api/legal.py` — `CURRENT_TERMS_VERSION`, `MINIMUM_AGE_YEARS` (15).",
+          "`pbm_api/auth/service.py` — `register_user` valide conditions obligatoires, date de naissance",
+          "`pbm_api/profile/service.py` — `update_identity` (remplace `update_pseudo`) : pseudo + prénom +",
+          "`pbm_api/routers/auth.py` — `POST /auth/login` renvoie `must_change_password` (front : bascule",
+          "`pbm_api/routers/profile.py` — `GET/PATCH /me` exposent et acceptent les trois champs",
+          "`pbm_api/admin.py` — `python -m pbm_api.admin create-user` (argparse) : validations dédiées",
+          "Migration `328aef94ea58` (down_revision `7fc6cd5efc72`, tête précédente) — colonnes `NOT NULL`"
+        ],
+        "preuves": [],
+        "ecarts": [
+          "**Capture d'écran de la maquette non produite** — même contrainte d'environnement déjà",
+          "Aucun autre écart sur la mission §3 (migration, API, front, commande d'administration,"
+        ],
+        "reste": [
+          "Capture d'écran de la maquette (voir Écarts au plan).",
+          "Aucune autre dette identifiée dans le périmètre de ce lot."
+        ]
+      },
+      "attente": null
     },
     "v2-catalogue-complet": {
-      "statut": "a_faire",
-      "machine": null,
+      "statut": "bloque",
+      "machine": "chimera",
       "branche": null,
       "debut_reel": null,
       "fin_reelle": null,
@@ -2065,8 +2693,21 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-19T23:09+0200",
+          "machine": "chimera",
+          "evenement": "arrêté",
+          "detail": "code de sortie 0, 3 lignes de journal"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": {
+        "quand": "2026-09-19T23:09+0200",
+        "raisons": [
+          "lot arrêté par l'ordonnanceur : code de sortie 0, 3 lignes de journal"
+        ]
+      }
     },
     "v4-insights-batch": {
       "statut": "a_faire",
