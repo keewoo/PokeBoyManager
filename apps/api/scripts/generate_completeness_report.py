@@ -68,6 +68,20 @@ def _render(stats: CompletenessStats) -> str:
     else:
         lines.append("(aucun — toutes les extensions ont autant de cartes que le total officiel)")
 
+    lines += [
+        "",
+        "## Explication des trous confirmés",
+        "",
+        "Vérifié le 2026-09-19 par requête directe sur `api.tcgdex.net` : pour `jumbo`, `wp`, "
+        "`rc`, `B1a` et `B2`, le détail de l'extension annonce un `cardCount.total` mais renvoie "
+        "un tableau `cards` **vide** — la source elle-même n'a pas les fiches, notre import ne "
+        "peut pas créer des cartes qui n'existent pas côté TCGdex. Pour `basep`, `np`, `svp` et "
+        "`swshp`, le tableau `cards` est partiel par rapport à `cardCount.total` (même méthode "
+        "de vérification). Ce n'est pas une erreur de notre pipeline ni une panne réseau "
+        "transitoire — deux imports ciblés à des minutes d'écart ont ramené exactement les "
+        "mêmes nombres.",
+    ]
+
     return "\n".join(lines) + "\n"
 
 

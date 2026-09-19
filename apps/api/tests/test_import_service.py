@@ -274,6 +274,30 @@ async def test_import_catalogue_keeps_primary_lang_when_secondary_missing(db_ses
     assert en_name is None
 
 
+async def test_import_catalogue_set_ids_filters_to_targeted_sets(db_session):
+    """Reprise ciblée (`import_full_catalogue.py <sets>`) : sert à relancer seulement les
+    extensions restées en échec après un import complet, sans retraiter les ~200 autres."""
+    report = await import_catalogue(
+        db_session,
+        FakeTcgdexClient(),
+        FakePtcgClient(),
+        languages=("fr", "en"),
+        set_ids=["sv03.5"],
+    )
+    assert report["sets_seen"] == 1
+    assert report["cards_created"] == 2
+
+    report_no_match = await import_catalogue(
+        db_session,
+        FakeTcgdexClient(),
+        FakePtcgClient(),
+        languages=("fr", "en"),
+        set_ids=["autre-extension"],
+    )
+    assert report_no_match["sets_seen"] == 0
+    assert report_no_match["cards_created"] == 0
+
+
 async def test_import_catalogue_incremental_skips_known_sets(db_session):
     tcgdex = FakeTcgdexClient()
     await import_catalogue(db_session, tcgdex, FakePtcgClient(), languages=("fr", "en"))

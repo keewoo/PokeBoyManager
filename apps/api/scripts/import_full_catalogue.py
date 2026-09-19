@@ -8,12 +8,16 @@ Usage :
     DATABASE_URL=postgresql+asyncpg://pbm:pbm@localhost:55432/pbm_catalogue_ref \
         uv run python scripts/import_full_catalogue.py
 
+    # Reprise ciblée sur les extensions en échec d'un import précédent (voir son rapport JSON) :
+    DATABASE_URL=... uv run python scripts/import_full_catalogue.py me02.5,2013bw,neo1
+
 Journal de progression (une ligne par extension, horodatée) sur stdout — à rediriger vers un
 fichier pour un import de plusieurs dizaines de minutes.
 """
 
 import asyncio
 import json
+import sys
 import time
 from datetime import UTC, datetime
 
@@ -30,6 +34,7 @@ def _log(message: str) -> None:
 
 
 async def main() -> None:
+    set_ids = sys.argv[1].split(",") if len(sys.argv) > 1 else None
     start = time.monotonic()
     sets_done = 0
 
@@ -50,13 +55,17 @@ async def main() -> None:
     ):
         tcgdex = TcgdexClient(http_client=tcgdex_http)
         ptcg = PtcgClient(http_client=ptcg_http)
-        _log("import complet démarré (FR+EN, toutes extensions)")
+        _log(
+            "import complet démarré (FR+EN, "
+            + (f"extensions ciblées : {set_ids}" if set_ids else "toutes extensions")
+            + ")"
+        )
         report = await import_catalogue(
             session,
             tcgdex,
             ptcg,
             languages=("fr", "en"),
-            set_ids=None,
+            set_ids=set_ids,
             mode="full",
             progress_callback=on_set_done,
         )
