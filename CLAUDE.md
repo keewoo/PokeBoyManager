@@ -348,6 +348,44 @@ Pas de route HTTP dans ce lot (script/cron interne) : aucun test d'accès crois�
 propre à ajouter, `card_insights` reste le même cache partagé sans notion de propriétaire déjà
 couvert par les tests de `v4-anecdotes`/`v4-jeu`.
 
+## Page collection (lot `v4-collection`)
+
+`GET /me/collection` (`pbm_api.collection.service.list_collection`) : filtres extension
+(`set_id`)/série/rareté/type/langue/variante/état/valeur min-max/date d'ajout (`acquired_from`/
+`acquired_to`)/doublons/contrefaçons, tri (`sort`, valeur/variation 30 j/date d'ajout/numéro/nom),
+pagination par curseur (`cursor`, opaque — id du dernier exemplaire de la page), agrégats (nombre,
+valeur totale, variation 7/30 j). `GET /me/collection/facets` (valeurs de filtre, scopées à
+l'utilisateur — jamais le catalogue entier). `POST /me/collection` (ajout manuel, `card_id` +
+quantité, réutilise `GET /catalog/search`, aucun `Detection`/`photo_s3_key`). `PATCH`/`DELETE
+/me/collection/{item_id}` (`PATCH` partiel : seuls les champs envoyés changent).
+
+Valeur calculée à la demande pour chaque exemplaire (comme `pricing.valuation.item_value`),
+jamais stockée : `list_collection` charge en une requête le sous-ensemble filtré par les critères
+« bon marché » (catalogue, langue, variante, état, dates, colonnes explicites — jamais les
+entités ORM `Card`/`Set` complètes, coûteuses à 5 000 lignes à cause de leurs colonnes JSONB),
+valorise ce sous-ensemble par lots (`pricing.valuation.bulk_item_values_multi` — une requête de
+prix `UNION ALL`/`DISTINCT ON` pour les 3 dates de référence à la fois, aujourd'hui/-7 j/-30 j,
+jamais une requête par exemplaire ni par fenêtre), puis applique le filtre de valeur, le tri et
+la pagination en mémoire (mission point 4 : 5 000 exemplaires en moins de 300 ms — mesuré,
+`scripts/measure_collection_performance.py`). `collection_value` (`v4-ranking`) réutilise
+désormais ce même chemin (corrige le N+1 qu'il portait depuis `v2-prix`).
+
+Doublon = même `card_id` (toutes langues/variantes confondues) présent au moins deux fois dans
+la collection entière de l'utilisateur, jamais recalculé sur un sous-ensemble filtré. `value_eur`
+neutralisée à `0` pour un exemplaire signalé contrefaçon probable, `value_change_30d_pct` calculé
+serveur (`None` si la référence 30 j est inconnue ou nulle) pour rejoindre le composant partagé
+`apps/web/src/components/value-delta.tsx` (seule forme montrée par la maquette).
+`rarity-badge.tsx`/`condition-badge.tsx` (même composant partagé) ne sont **pas** réutilisés ici :
+leurs taxonomies fixes ne correspondent ni aux libellés bruts du catalogue TCGdex
+(`Card.rarity`) ni au barème `pricing.valuation.CONDITION_MULTIPLIERS` — les forcer aurait
+affiché des libellés inexacts (voir `docs/roadmap/comptes-rendus/v4-collection.md`).
+
+Front `apps/web/src/app/collection/` : panneau de filtres (tiroir sur mobile), recherche + tri,
+état entièrement dans l'URL (partageable, retour arrière du navigateur fonctionnel), pagination
+« Charger plus » (curseur en état de composant, pas dans l'URL). Tests :
+`apps/api/tests/test_collection_routes.py` (accès croisé compris),
+`apps/web/src/__tests__/collection-view.test.tsx`.
+
 ## Règles de la flotte applicables ici (résumé de `~/.claude/CLAUDE.md`)
 
 - On construit sur chimera (32 Go, 16 threads) et on ne construit jamais sur la machine qui sert.
