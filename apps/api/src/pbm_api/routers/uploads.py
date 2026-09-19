@@ -62,6 +62,7 @@ def _detection_response(upload_id: uuid.UUID, detection: Detection) -> Detection
         extraction=detection.extraction,
         candidates=detection.candidates,
         condition=detection.condition_assessment,
+        identification_method=detection.identification_method,
     )
 
 _storage = build_storage()

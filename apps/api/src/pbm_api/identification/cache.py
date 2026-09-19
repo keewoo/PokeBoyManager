@@ -43,12 +43,15 @@ async def store_cache(
     extraction: CardExtraction,
     candidates: list[dict],
     tier: str,
+    *,
+    method: str,
 ) -> IdentificationCache:
     row = IdentificationCache(
         phash=phash,
         extraction=extraction.model_dump(mode="json"),
         candidates=candidates,
         tier=tier,
+        method=method,
     )
     session.add(row)
     await session.flush()

@@ -67,6 +67,13 @@ class Detection(Base, TimestampMixin):
     # dépasse le seuil de présélection.
     extraction: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     candidates: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    # Comment cette détection a été (ou non) identifiée (mission `v3-identification-visuelle`) :
+    # "visuel" (comparaison à l'index visuel des images officielles, aucun appel IA), "ia" (appel
+    # `AIProvider.extract`, éventuellement assisté de candidats visuels), "aucun" (rien trouvé,
+    # ou D4 sans clé et sans correspondance visuelle confiante) — `None` tant que l'identification
+    # n'est pas encore passée. Sert uniquement au badge « reconnue sans IA » de l'écran de
+    # validation, jamais consulté par le rapprochement lui-même.
+    identification_method: Mapped[str | None] = mapped_column(String(16), nullable=True)
     # Centrage (OpenCV) + coins/bords/surface/contrefaçon (extraction ci-dessus) combinés en un
     # état indicatif (mission `v3-etat`, `pbm_api.state.service.run_state_estimation_for_upload`)
     # — colonne distincte d'`extraction` : le centrage n'en fait pas partie (mesuré, pas demandé

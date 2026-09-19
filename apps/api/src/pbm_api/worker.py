@@ -192,6 +192,7 @@ async def _run_detect_cards(job_id: str) -> dict:
                 "identified_count": id_summary.identified_count,
                 "identification_cache_hits": id_summary.cache_hits,
                 "identification_ai_calls": id_summary.ai_calls,
+                "identification_visual_matches": id_summary.visual_matches,
                 "state_assessed_count": state_summary.assessed_count,
                 "state_counterfeit_flagged_count": state_summary.counterfeit_flagged_count,
             }

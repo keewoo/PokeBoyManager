@@ -44,6 +44,9 @@ class DetectionResponse(BaseModel):
     extraction: dict | None
     candidates: list | None
     condition: dict | None
+    # "visuel" (index visuel, aucun appel IA), "ia", "aucun" ou `None` (pas encore traitée) —
+    # mission `v3-identification-visuelle` : sert uniquement au badge « reconnue sans IA ».
+    identification_method: str | None
 
 
 class ListDetectionsResponse(BaseModel):

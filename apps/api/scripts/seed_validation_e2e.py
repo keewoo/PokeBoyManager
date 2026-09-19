@@ -122,6 +122,7 @@ async def main() -> None:
                 crop_s3_key=crop_key,
                 extraction=extraction,
                 candidates=candidates,
+                identification_method="ia",
                 status=DetectionStatus.pending,
             )
         )

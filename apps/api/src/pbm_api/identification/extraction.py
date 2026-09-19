@@ -37,7 +37,28 @@ PROMPT = (
 )
 
 
+def _prompt_with_visual_hints(visual_hints: list[str]) -> str:
+    """Ajoute au prompt les candidats retenus par la comparaison visuelle (mission
+    `v3-identification-visuelle` point 3) quand elle est ambiguë (groupe « même illustration ») :
+    toujours le même appel, jamais un second — juste plus de contexte pour trancher entre un
+    nombre restreint de cartes plutôt que de lire à l'aveugle."""
+    if not visual_hints:
+        return PROMPT
+    hints = "\n".join(f"- {hint}" for hint in visual_hints)
+    return (
+        f"{PROMPT}\n\nA visual comparison against the official card images narrowed this down "
+        f"to one of these candidates (same illustration, different printing/language/edition) — "
+        f"use it to help pick the exact name/number/set, but only report what you can actually "
+        f"read on the photo, never invent a match if none of them is visibly correct:\n{hints}"
+    )
+
+
 async def extract_card(
-    provider: AIProvider, image: ImageInput, *, model: str | None = None
+    provider: AIProvider,
+    image: ImageInput,
+    *,
+    model: str | None = None,
+    visual_hints: list[str] | None = None,
 ) -> tuple[CardExtraction, ExtractionUsage]:
-    return await provider.extract([image], CardExtraction, PROMPT, model=model)
+    prompt = _prompt_with_visual_hints(visual_hints or [])
+    return await provider.extract([image], CardExtraction, prompt, model=model)
