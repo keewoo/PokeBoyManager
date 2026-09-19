@@ -16,6 +16,8 @@ dependencies = [
     "httpx>=0.28.1",
     "redis>=8.1.0",
     "email-validator>=2.3.0",
+    "arq>=0.26.3",
+    "boto3>=1.35.0",
 ]
 
 [dependency-groups]
@@ -23,8 +25,15 @@ dev = [
     "ruff>=0.8.4",
     "pytest>=8.3.4",
     "pytest-asyncio>=0.25.0",
-    "httpx>=0.28.1",
 ]
+
+[tool.uv]
+# arq 0.28.0 (dernière version publiée) épingle encore `redis<6` ; v1-auth dépend de
+# redis-py 8.1.0. Le client `redis.asyncio` qu'arq utilise (Redis, BlockingConnectionPool)
+# n'a pas changé de forme entre les deux — vérifié en conditions réelles (job arq enqueue +
+# burst contre un Redis 7 réel, voir compte rendu v2-catalogue) : la contrainte amont est
+# obsolète, pas un vrai conflit d'API.
+override-dependencies = ["redis>=8.1.0"]
 
 [build-system]
 requires = ["hatchling"]

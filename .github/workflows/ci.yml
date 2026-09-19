@@ -62,6 +62,10 @@ jobs:
       DATABASE_URL: postgresql+asyncpg://pbm:pbm@localhost:5432/pbm_test
       TEST_DATABASE_URL: postgresql+asyncpg://pbm:pbm@localhost:5432/pbm_test
       REDIS_URL: redis://localhost:6379/0
+      S3_ENDPOINT_URL: http://localhost:9000
+      S3_ACCESS_KEY: pbm
+      S3_SECRET_KEY: pbmpbmpbm
+      S3_BUCKET: pbm-v2-catalogue-ci
       TZ: Europe/Paris
     steps:
       - uses: actions/checkout@v4
@@ -73,6 +77,21 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      # MinIO n'a pas de commande par défaut compatible avec le bloc `services:` de GitHub
+      # Actions (pas d'option pour surcharger la commande) : démarré comme un conteneur
+      # ordinaire, comme dans docker-compose.yml.
+      - name: Start MinIO
+        run: |
+          docker run -d --name minio -p 9000:9000 \
+            -e MINIO_ROOT_USER=pbm -e MINIO_ROOT_PASSWORD=pbmpbmpbm \
+            quay.io/minio/minio:latest server /data
+          for _ in $(seq 1 20); do
+            curl -sf http://localhost:9000/minio/health/live && exit 0
+            sleep 2
+          done
+          echo "MinIO n'a jamais répondu" >&2
+          exit 1
 
       - working-directory: apps/api
         run: uv sync --locked

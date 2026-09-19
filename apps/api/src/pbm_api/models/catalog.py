@@ -26,11 +26,15 @@ class Set(Base, TimestampMixin):
     """Une extension du jeu (ex: 'Écarlate et Violet')."""
 
     __tablename__ = "sets"
+    __table_args__ = (UniqueConstraint("tcgdex_id", name="uq_sets_tcgdex_id"),)
 
     id: Mapped[uuid.UUID] = mapped_column(
         PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     code: Mapped[str] = mapped_column(String(32), unique=True, nullable=False)
+    # Identifiant TCGdex (ex: "sv03.5") — clé d'idempotence de l'import, différente de `code`
+    # (choisi librement) et différente de l'id Pokémon TCG API ("sv3pt5", voir reconciliation.py).
+    tcgdex_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     series: Mapped[str | None] = mapped_column(String(255), nullable=True)
     release_date: Mapped[date | None] = mapped_column(Date, nullable=True)
@@ -45,6 +49,7 @@ class Card(Base, TimestampMixin):
     __tablename__ = "cards"
     __table_args__ = (
         UniqueConstraint("set_id", "number", name="uq_cards_set_number"),
+        UniqueConstraint("tcgdex_id", name="uq_cards_tcgdex_id"),
         Index(
             "ix_cards_name_trgm",
             "name",
@@ -64,7 +69,17 @@ class Card(Base, TimestampMixin):
     rarity: Mapped[str | None] = mapped_column(String(64), nullable=True)
     supertype: Mapped[str | None] = mapped_column(String(64), nullable=True)
     hp: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # URL de base TCGdex sans extension (ex: ".../sv/sv03.5/006") : le proxy /img/cards/{id}
+    # y ajoute "/high.webp" ou "/low.webp" selon la définition demandée.
     image_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    illustrator: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    attacks: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    abilities: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    legal_standard: Mapped[bool | None] = mapped_column(nullable=True)
+    legal_expanded: Mapped[bool | None] = mapped_column(nullable=True)
+    # Identifiants externes pour le rapprochement (v2-catalogue) — voir catalog/reconciliation.py.
+    tcgdex_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    ptcg_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
 
 
 class CardName(Base):
