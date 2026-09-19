@@ -43,5 +43,13 @@ class Settings(BaseSettings):
     # clé puis rechiffrer avec la nouvelle (aucune clé en clair journalisée pendant l'opération).
     ai_key_encryption_key: str = "bo8a8UxneCy51yL6Mhan73p0Yxh+tKGlj4cIAbrfRvo="
 
+    # --- Envoi de photos (lot v3-upload) ---
+    # D7 : deux implémentations de stockage — "s3" (MinIO en dev/CI, Object Storage en ligne)
+    # ou "local" (disque du serveur en UAT/PROD, `PHOTOS_STORAGE_PATH`). Voir `pbm_api.storage`.
+    storage_backend: str = "s3"
+    photos_storage_path: str = "./var/photos"
+    upload_max_size_bytes: int = 20 * 1024 * 1024
+    upload_max_files_per_batch: int = 30
+
 
 settings = Settings()

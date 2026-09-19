@@ -63,3 +63,14 @@ class ObjectStorage:
 
     async def put(self, key: str, data: bytes, content_type: str) -> None:
         await asyncio.to_thread(self._put_sync, key, data, content_type)
+
+    def _presign_put_sync(self, key: str, content_type: str, expires_in: int) -> str:
+        return self._client.generate_presigned_url(
+            "put_object",
+            Params={"Bucket": self.bucket, "Key": key, "ContentType": content_type},
+            ExpiresIn=expires_in,
+        )
+
+    async def presign_put(self, key: str, content_type: str, expires_in: int = 900) -> str:
+        """URL présignée S3 : le navigateur envoie directement au stockage (lot `v3-upload`)."""
+        return await asyncio.to_thread(self._presign_put_sync, key, content_type, expires_in)

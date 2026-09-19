@@ -12,3 +12,11 @@ if (!window.matchMedia) {
     dispatchEvent: () => false,
   });
 }
+
+// jsdom n'implémente pas les URL d'objet (aperçus de photos, lot v3-upload).
+if (!URL.createObjectURL) {
+  URL.createObjectURL = () => "blob:mock";
+}
+if (!URL.revokeObjectURL) {
+  URL.revokeObjectURL = () => {};
+}
