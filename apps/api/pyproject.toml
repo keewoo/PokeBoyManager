@@ -12,6 +12,10 @@ dependencies = [
     "alembic>=1.14.0",
     "asyncpg>=0.30.0",
     "greenlet>=3.1.1",
+    "argon2-cffi>=25.1.0",
+    "httpx>=0.28.1",
+    "redis>=8.1.0",
+    "email-validator>=2.3.0",
 ]
 
 [dependency-groups]
@@ -36,6 +40,11 @@ extend-exclude = ["migrations/versions"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI impose `Depends(...)` comme valeur par défaut d'argument : appel volontaire,
+# pas le piège habituel d'objet mutable partagé entre appels que B008 détecte.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

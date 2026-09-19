@@ -58,6 +58,27 @@ Migration Alembic initiale : `apps/api/migrations/versions/5e0d551b788e_initial_
 (lot `v0-schema`). Modèles SQLAlchemy : `apps/api/src/pbm_api/models/`. Seed de démonstration
 (un utilisateur, trois extensions, neuf cartes) : `apps/api/src/pbm_api/seed.py`.
 
+## Authentification
+
+Lot `v1-auth`. Compte e-mail + mot de passe (argon2id, 10 caractères minimum, refusé s'il
+apparaît dans une fuite connue — k-anonymat HIBP). Routes : `POST /auth/{register,login,
+logout,verify-email,forgot,reset}` (`apps/api/src/pbm_api/routers/auth.py`).
+
+- **Session** : cookie `HttpOnly; Secure; SameSite=Lax`, identifiant opaque haché (SHA-256)
+  en base (`sessions.token_hash`), rotation à chaque connexion (nouvelle session, l'ancienne
+  reste valide — sessions multiples). Dépendance `get_current_user` (`pbm_api.auth.
+  dependencies`) : à réutiliser par toute route utilisateur des lots suivants — elle ne
+  dérive jamais d'un identifiant fourni par le client, uniquement du cookie.
+- **CSRF** : double soumission signée (`pbm_api.security.csrf`) — cookie `pbm_csrf` = HMAC
+  du jeton de session, à renvoyer dans l'en-tête `X-CSRF-Token` sur toute écriture
+  authentifiée (dépendance `require_csrf`, déjà posée sur `/auth/logout`).
+- **Limitation** : 5 tentatives / 15 min par compte et par IP (Redis), sur `/auth/login` et
+  `/auth/forgot` (`pbm_api.security.rate_limit`).
+- **E-mails** : jetons à usage unique (`email_tokens`, expirent, non réutilisables) envoyés
+  via SMTP (`pbm_api.email` — Mailpit en dev, D5 provisoire pour le fournisseur en ligne).
+- Anti-énumération : réponse identique côté `/auth/register` et `/auth/forgot` que l'e-mail
+  soit déjà pris/connu ou non.
+
 ## Coffre de clés IA
 
 - AES-256-GCM, nonce aléatoire, `user_id` en données associées ; clé maître dans l'environnement du

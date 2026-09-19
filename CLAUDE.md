@@ -64,9 +64,13 @@ pnpm gen:api
 
 `apps/api` lit sa configuration via `pbm_api.config.Settings` (pydantic-settings, fichier `.env`
 optionnel) : `DATABASE_URL`, `REDIS_URL`, `S3_ENDPOINT_URL`/`S3_ACCESS_KEY`/`S3_SECRET_KEY`/
-`S3_BUCKET`/`S3_REGION`, `SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASSWORD`/`SMTP_FROM`. Chaque
-lot pointe sa propre base/bucket/préfixe — ne jamais réutiliser ceux d'un autre lot sur l'infra
-partagée (`pbm-shared`). `apps/web` lit `NEXT_PUBLIC_API_URL` (défaut `http://localhost:8000`).
+`S3_BUCKET`/`S3_REGION`, `SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASSWORD`/`SMTP_FROM`,
+`SECRET_KEY`/`APP_PUBLIC_URL`/`SESSION_COOKIE_NAME`/`CSRF_COOKIE_NAME`/`SESSION_TTL_DAYS`/
+`EMAIL_TOKEN_TTL_MINUTES`/`LOGIN_RATE_LIMIT_MAX_ATTEMPTS`/`LOGIN_RATE_LIMIT_WINDOW_SECONDS`
+(comptes, lot `v1-auth` — `SECRET_KEY` signe les jetons CSRF, à définir par variable
+d'environnement en dehors du dépôt pour tout déploiement). Chaque lot pointe sa propre
+base/bucket/préfixe — ne jamais réutiliser ceux d'un autre lot sur l'infra partagée
+(`pbm-shared`). `apps/web` lit `NEXT_PUBLIC_API_URL` (défaut `http://localhost:8000`).
 
 ## Règles de la flotte applicables ici (résumé de `~/.claude/CLAUDE.md`)
 
