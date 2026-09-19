@@ -145,6 +145,38 @@ une seule fois — jamais en argument de commande ni journalisé.
   l'image officielle, mise en cache dans le stockage objet (`ObjectStorage`,
   `apps/api/src/pbm_api/s3.py`) au premier accès.
 
+## Base de référence complète (lot `v2-catalogue-complet`)
+
+- Complétude de `Card` pour que la fiche n'appelle jamais l'IA pour une information déjà connue :
+  `weaknesses`/`resistances` (JSONB, `[{type, value}]`), `retreat_cost`, `variants` (JSONB,
+  booléens TCGdex `normal`/`holo`/`reverse`/`firstEdition`/`wPromo`), `rule_marker` — règle
+  spéciale ex/GX/V/VMAX/VSTAR/BREAK... TCGdex l'expose tantôt en `suffix` (ex, GX — la carte garde
+  un stade d'évolution ordinaire), tantôt directement en `stage` (V/VMAX/VSTAR n'ont pas de
+  `suffix`) : `catalog.import_service._rule_marker` réconcilie les deux. `Set.release_date`/
+  `logo_url`/`symbol_url` existaient déjà (`v2-catalogue`). Toutes les colonnes JSONB de
+  `Card`/`CardInsight` utilisent `none_as_null=True` (sinon un champ absent écrit un scalaire JSON
+  `null`, pas un SQL NULL — fausse tout calcul `IS NOT NULL`, voir rapport de complétude).
+- `import_catalogue` précharge les détails de carte d'une extension en parallèle (jusqu'à 8,
+  réseau seul via `asyncio.gather`+`Semaphore` — les upserts en base restent séquentiels, une
+  `AsyncSession` n'est pas sûre en usage concurrent) : décisif pour un import complet
+  (~20 000 cartes × 2 langues) sur le lien à ~250 ko/s de chimera.
+- `scripts/import_full_catalogue.py` / `scripts/collect_full_daily_prices.py` : lancent
+  respectivement `import_catalogue(mode="full")` et `collect_daily_prices` sur toute la base
+  pointée par `DATABASE_URL`, avec journal de progression (`progress_callback` optionnel sur les
+  deux fonctions) — durées mesurées dans le compte rendu du lot.
+- `pbm_api.catalog.completeness.compute_completeness_stats` : extensions/cartes par langue, %
+  image/`ptcg_id`/prix/champs de règles, extensions non rapprochées, trous restants (cartes
+  importées < `Set.total_cards` officiel TCGdex). `scripts/generate_completeness_report.py` en
+  fait `docs/catalogue/COMPLETUDE.md`.
+- `scripts/catalogue_seed.sh export|import <DATABASE_URL> [DUMP_PATH]` : graine réutilisable
+  (dump/restauration `pg_dump`/`pg_restore` data-only des seules tables `sets`/`cards`/
+  `card_names`/`card_prices_daily`, jamais les données utilisateur) pour peupler UAT/PROD sans
+  refaire l'import complet au déploiement (D2, hors périmètre de ce lot). Idempotent (DELETE ciblé
+  dans l'ordre des dépendances avant restauration) ; dépend de `postgresql-client`
+  (`pg_dump`/`pg_restore`/`psql`), présent nativement sur les runners `ubuntu-latest` de GitHub
+  Actions, absent par défaut sur chimera (installé localement sans `sudo` pour cette session, voir
+  compte rendu).
+
 ## Recherche catalogue (lot `v2-recherche`)
 
 - `GET /catalog/search?q=&set=&lang=` (`apps/api/src/pbm_api/routers/catalog.py`) : `q` est
