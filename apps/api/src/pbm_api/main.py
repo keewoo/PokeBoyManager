@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pbm_api.config import settings
 from pbm_api.routers.ai_keys import router as ai_keys_router
 from pbm_api.routers.auth import router as auth_router
+from pbm_api.routers.card_insights import router as card_insights_router
 from pbm_api.routers.catalog import router as catalog_router
 from pbm_api.routers.collection import router as collection_router
 from pbm_api.routers.health import router as health_router
@@ -38,3 +39,4 @@ app.include_router(catalog_router)
 app.include_router(profile_router)
 app.include_router(uploads_router)
 app.include_router(collection_router)
+app.include_router(card_insights_router)

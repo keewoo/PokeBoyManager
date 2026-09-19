@@ -204,6 +204,31 @@ passe par `pbm_api.ai.factory.create_provider(provider, api_key)`.
 4. **Validation humaine** obligatoire ; chaque correction alimente le jeu de régression.
 5. **État** indicatif (centrage mesuré, coins, bords, surface) et drapeau « contrefaçon probable ».
 
+## Anecdotes sourcées (lot `v4-anecdotes`)
+
+- `GET /cards/{card_id}/insights` (`apps/api/src/pbm_api/routers/card_insights.py`) : trois à
+  cinq anecdotes courtes, chacune avec `source_url`. Cache partagé `card_insights` (une ligne
+  par carte, posée dès `v0-schema`) : générées **une seule fois**, avec la clé IA de
+  l'utilisateur qui ouvre la fiche la première fois (D4 : sans clé par défaut,
+  `status: "no_ai_key"`, jamais d'appel) — tout utilisateur suivant lit le cache, sans clé.
+- Contexte (`pbm_api.insights.context`) : API MediaWiki publique de deux domaines fixes,
+  `www.pokepedia.fr` et `bulbapedia.bulbagarden.net` — recherche puis extrait texte brut, jamais
+  une URL fournie par le client. Résilient à un wiki muet ou en panne (`fetch_page` ne lève
+  jamais).
+- Génération (`pbm_api.insights.generation`) : `AIProvider.extract` (fournisseur de
+  l'utilisateur, `v3-ia-providers`) sur un prompt qui liste les pages et leurs URLs ; toute
+  anecdote dont `source_url` ne figure pas dans le contexte réellement récupéré est rejetée après
+  coup (`pbm_api.insights.service`), même si le modèle a ignoré la consigne — défense en
+  profondeur contre l'hallucination.
+- `POST /cards/{card_id}/insights/report` (table `card_insight_reports`) : bouton « Signaler une
+  erreur », un signalement par utilisateur et par carte.
+- Verrou consultatif Postgres (`pg_advisory_xact_lock`) : deux requêtes concurrentes sur une
+  carte jamais vue ne déclenchent qu'un seul appel IA. Cache positif 180 jours (une anecdote
+  sourcée ne se périme pas), négatif 1 jour (une carte sans contexte aujourd'hui peut en trouver
+  un demain — jamais un échec permanent silencieux).
+- `in_game_study` (étude en jeu, même table `card_insights`) : hors périmètre de ce lot, laissé
+  `NULL`.
+
 ## Prix (lot `v2-prix`)
 
 - Job `daily_prices_task` (arq, cron quotidien 06:00, `apps/api/src/pbm_api/worker.py`) : une

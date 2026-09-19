@@ -171,3 +171,26 @@ class CardInsight(Base):
     source_model: Mapped[str | None] = mapped_column(String(64), nullable=True)
     generated_at: Mapped[datetime | None] = mapped_column(nullable=True)
     cached_until: Mapped[datetime | None] = mapped_column(nullable=True)
+
+
+class CardInsightReport(Base):
+    """Signalement « erreur dans les anecdotes » (mission `v4-anecdotes` point 3) — un
+    signalement par utilisateur et par carte, un second clic met à jour la raison plutôt que
+    d'empiler des doublons."""
+
+    __tablename__ = "card_insight_reports"
+    __table_args__ = (
+        UniqueConstraint("card_id", "user_id", name="uq_card_insight_reports_card_user"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    card_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("cards.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)

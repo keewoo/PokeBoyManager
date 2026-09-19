@@ -3,6 +3,7 @@ from pbm_api.models.base import Base
 from pbm_api.models.catalog import (
     Card,
     CardInsight,
+    CardInsightReport,
     CardName,
     CardPriceDaily,
     PriceSource,
@@ -36,6 +37,7 @@ __all__ = [
     "PriceSource",
     "PriceVariant",
     "CardInsight",
+    "CardInsightReport",
     "Upload",
     "UploadStatus",
     "Detection",
