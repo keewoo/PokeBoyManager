@@ -21,3 +21,11 @@ class UploadAlreadyProcessedError(Exception):
 
 class UploadRawMissingError(Exception):
     """`complete` appelé avant que les octets bruts n'aient été reçus par le stockage."""
+
+
+class DetectionNotFoundError(Exception):
+    """Aucune détection avec cet id pour cet envoi de cet utilisateur."""
+
+
+class DetectionCropMissingError(Exception):
+    """Le recadrage n'est plus dans le stockage (objet supprimé entre-temps)."""

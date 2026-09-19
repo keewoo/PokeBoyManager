@@ -194,8 +194,25 @@ passe par `pbm_api.ai.factory.create_provider(provider, api_key)`.
 
 ## Reconnaissance
 
-1. **Détection** : contours OpenCV + ratio 63×88 mm, redressement perspective ; repli par boîtes
-   englobantes demandées au LLM quand la photo est difficile (pochettes, reflets, fond clair).
+1. **Détection** (lot `v3-detection`) : contours OpenCV (Canny + `approxPolyDP`, filtrage par
+   ratio 63×88 mm ±12 %, `pbm_api.detection.opencv_pipeline`) + redressement perspective vers un
+   recadrage fixe 630×880 px (`pbm_api.detection.geometry`, ordre de lecture ligne par ligne). Un
+   second passage sur les mêmes contours (`has_unclaimed_regions`) détecte une zone de la taille
+   d'une carte non rattachée à un quadrilatère retenu (cartes qui se touchent, contour fusionné
+   rejeté) : c'est le signal de « nombre ou forme incohérent » qui déclenche le repli par boîtes
+   englobantes demandées au LLM (`pbm_api.detection.llm_fallback`, un seul appel par photo, pas
+   par carte), affinées ensuite par le même pipeline OpenCV dans chaque boîte
+   (`pbm_api.detection.pipeline.run_detection`). Déclenché par `POST /uploads/{id}/complete`
+   (`Job(type="detect_cards")`, mission `v3-upload`) via un pool `arq` mis en file depuis l'API
+   (`pbm_api.queue`, premier job du dépôt enfilé depuis une route HTTP plutôt qu'en cron/CLI) et
+   exécuté par `pbm_api.worker.detect_cards_task`. Résultat exposé par `GET
+   /uploads/{id}/detections` et `GET /uploads/{id}/detections/{detection_id}/crop`
+   (`routers/uploads.py`), bornés au propriétaire de l'envoi. Jeu de test : 30 photos
+   **synthétiques** (`pbm_api.detection.synthetic` — aucun appareil photo/carte physique sur
+   chimera, voir le compte rendu du lot) couvrant carte seule/classeur 3×3/reflets/table/fond
+   clair ; taux de détection mesuré ≥ 95 % une fois le repli LLM actif (`scripts/
+   measure_detection_rate.py`), 63 % à l'OpenCV seul (D4 : sans clé IA, ce taux plus bas
+   s'applique et l'ajout manuel reste toujours possible).
 2. **Extraction** par carte : nom, numéro (`236/217`, `XY121`, `TG05`), code d'extension, langue, PV,
    variante — sortie structurée validée par schéma, via `AIProvider.extract` (§ précédent, lot
    `v3-ia-providers`) avec la clé de l'utilisateur.

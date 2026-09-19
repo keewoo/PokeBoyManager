@@ -1,0 +1,248 @@
+{
+  "total_photos": 30,
+  "opencv_only_rate": 0.6333333333333333,
+  "with_fallback_rate": 1.0,
+  "fallback_simulated": true,
+  "photos": [
+    {
+      "id": "carte_seule_0",
+      "category": "carte_seule",
+      "expected": 1,
+      "opencv_only": 1,
+      "with_fallback": 1,
+      "method": "opencv"
+    },
+    {
+      "id": "carte_seule_1",
+      "category": "carte_seule",
+      "expected": 1,
+      "opencv_only": 1,
+      "with_fallback": 1,
+      "method": "opencv"
+    },
+    {
+      "id": "carte_seule_2",
+      "category": "carte_seule",
+      "expected": 1,
+      "opencv_only": 1,
+      "with_fallback": 1,
+      "method": "opencv"
+    },
+    {
+      "id": "carte_seule_3",
+      "category": "carte_seule",
+      "expected": 1,
+      "opencv_only": 0,
+      "with_fallback": 1,
+      "method": "llm_fallback"
+    },
+    {
+      "id": "carte_seule_4",
+      "category": "carte_seule",
+      "expected": 1,
+      "opencv_only": 1,
+      "with_fallback": 1,
+      "method": "opencv"
+    },
+    {
+      "id": "carte_seule_5",
+      "category": "carte_seule",
+      "expected": 1,
+      "opencv_only": 1,
+      "with_fallback": 1,
+      "method": "opencv"
+    },
+    {
+      "id": "carte_seule_6",
+      "category": "carte_seule",
+      "expected": 1,
+      "opencv_only": 1,
+      "with_fallback": 1,
+      "method": "opencv"
+    },
+    {
+      "id": "carte_seule_7",
+      "category": "carte_seule",
+      "expected": 1,
+      "opencv_only": 1,
+      "with_fallback": 1,
+      "method": "opencv"
+    },
+    {
+      "id": "classeur_3x3_0",
+      "category": "classeur_3x3",
+      "expected": 9,
+      "opencv_only": 9,
+      "with_fallback": 9,
+      "method": "opencv"
+    },
+    {
+      "id": "classeur_3x3_1",
+      "category": "classeur_3x3",
+      "expected": 9,
+      "opencv_only": 9,
+      "with_fallback": 9,
+      "method": "opencv"
+    },
+    {
+      "id": "classeur_3x3_2",
+      "category": "classeur_3x3",
+      "expected": 9,
+      "opencv_only": 9,
+      "with_fallback": 9,
+      "method": "opencv"
+    },
+    {
+      "id": "classeur_3x3_3",
+      "category": "classeur_3x3",
+      "expected": 9,
+      "opencv_only": 9,
+      "with_fallback": 9,
+      "method": "opencv"
+    },
+    {
+      "id": "classeur_3x3_4",
+      "category": "classeur_3x3",
+      "expected": 9,
+      "opencv_only": 9,
+      "with_fallback": 9,
+      "method": "opencv"
+    },
+    {
+      "id": "classeur_3x3_5",
+      "category": "classeur_3x3",
+      "expected": 9,
+      "opencv_only": 9,
+      "with_fallback": 9,
+      "method": "opencv"
+    },
+    {
+      "id": "classeur_3x3_reflets_0",
+      "category": "classeur_3x3_reflets",
+      "expected": 9,
+      "opencv_only": 9,
+      "with_fallback": 9,
+      "method": "opencv"
+    },
+    {
+      "id": "classeur_3x3_reflets_1",
+      "category": "classeur_3x3_reflets",
+      "expected": 9,
+      "opencv_only": 9,
+      "with_fallback": 9,
+      "method": "opencv"
+    },
+    {
+      "id": "classeur_3x3_reflets_2",
+      "category": "classeur_3x3_reflets",
+      "expected": 9,
+      "opencv_only": 9,
+      "with_fallback": 9,
+      "method": "opencv"
+    },
+    {
+      "id": "classeur_3x3_reflets_3",
+      "category": "classeur_3x3_reflets",
+      "expected": 9,
+      "opencv_only": 9,
+      "with_fallback": 9,
+      "method": "opencv"
+    },
+    {
+      "id": "classeur_3x3_reflets_4",
+      "category": "classeur_3x3_reflets",
+      "expected": 9,
+      "opencv_only": 9,
+      "with_fallback": 9,
+      "method": "opencv"
+    },
+    {
+      "id": "classeur_3x3_reflets_5",
+      "category": "classeur_3x3_reflets",
+      "expected": 9,
+      "opencv_only": 9,
+      "with_fallback": 9,
+      "method": "opencv"
+    },
+    {
+      "id": "table_0",
+      "category": "table",
+      "expected": 2,
+      "opencv_only": 1,
+      "with_fallback": 2,
+      "method": "llm_fallback"
+    },
+    {
+      "id": "table_1",
+      "category": "table",
+      "expected": 3,
+      "opencv_only": 2,
+      "with_fallback": 3,
+      "method": "llm_fallback"
+    },
+    {
+      "id": "table_2",
+      "category": "table",
+      "expected": 3,
+      "opencv_only": 2,
+      "with_fallback": 3,
+      "method": "llm_fallback"
+    },
+    {
+      "id": "table_3",
+      "category": "table",
+      "expected": 4,
+      "opencv_only": 0,
+      "with_fallback": 4,
+      "method": "llm_fallback"
+    },
+    {
+      "id": "table_4",
+      "category": "table",
+      "expected": 4,
+      "opencv_only": 2,
+      "with_fallback": 4,
+      "method": "llm_fallback"
+    },
+    {
+      "id": "table_5",
+      "category": "table",
+      "expected": 5,
+      "opencv_only": 2,
+      "with_fallback": 5,
+      "method": "llm_fallback"
+    },
+    {
+      "id": "fond_clair_0",
+      "category": "fond_clair",
+      "expected": 4,
+      "opencv_only": 0,
+      "with_fallback": 4,
+      "method": "llm_fallback"
+    },
+    {
+      "id": "fond_clair_1",
+      "category": "fond_clair",
+      "expected": 1,
+      "opencv_only": 0,
+      "with_fallback": 1,
+      "method": "llm_fallback"
+    },
+    {
+      "id": "fond_clair_2",
+      "category": "fond_clair",
+      "expected": 4,
+      "opencv_only": 0,
+      "with_fallback": 4,
+      "method": "llm_fallback"
+    },
+    {
+      "id": "fond_clair_3",
+      "category": "fond_clair",
+      "expected": 1,
+      "opencv_only": 0,
+      "with_fallback": 1,
+      "method": "llm_fallback"
+    }
+  ]
+}

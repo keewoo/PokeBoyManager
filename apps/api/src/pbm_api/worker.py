@@ -3,21 +3,25 @@
 Lancement : `uv run arq pbm_api.worker.WorkerSettings`.
 """
 
+import uuid
 from datetime import UTC, datetime
 
 import httpx
 from arq.connections import RedisSettings
 from arq.cron import cron
 
+from pbm_api.ai.errors import AIProviderError
 from pbm_api.catalog.import_service import import_catalogue
 from pbm_api.catalog.ptcg_client import PtcgClient
 from pbm_api.catalog.tcgdex_client import TcgdexClient
 from pbm_api.config import settings
 from pbm_api.db import async_session_factory
-from pbm_api.models import Job, JobStatus
+from pbm_api.detection.service import run_detection_for_upload
+from pbm_api.models import Job, JobStatus, Upload
 from pbm_api.pricing.exchange_rates import EcbClient, store_daily_rates
 from pbm_api.pricing.service import collect_daily_prices
 from pbm_api.ranking.service import refresh_card_value_rank
+from pbm_api.storage import build_storage
 
 JOB_TYPE = "import_catalogue"
 PRICE_JOB_TYPE = "daily_prices"
@@ -146,8 +150,61 @@ async def daily_exchange_rates_task(ctx: dict) -> dict:
     return await _run_daily_exchange_rates()
 
 
+async def _run_detect_cards(job_id: str) -> dict:
+    async with async_session_factory() as session:
+        job = await session.get(Job, uuid.UUID(job_id))
+        if job is None:
+            # Ne peut arriver qu'avec un job créé puis effacé entre l'enfilage et l'exécution
+            # (aucune suppression de `Job` n'existe dans ce dépôt) : signalé, jamais avalé.
+            raise LookupError(f"job {job_id} introuvable")
+
+        job.status = JobStatus.running
+        job.started_at = _now_naive_utc()
+        await session.commit()
+
+        upload_id = uuid.UUID(job.payload["upload_id"])
+        upload = await session.get(Upload, upload_id)
+        storage = build_storage()
+        try:
+            if upload is None:
+                raise LookupError(f"upload {upload_id} introuvable")
+            summary = await run_detection_for_upload(session, storage, upload)
+            report = {
+                "detections_count": summary.detections_count,
+                "method": summary.method,
+            }
+            job.status = JobStatus.succeeded
+            job.result = report
+        except AIProviderError as exc:
+            # `user_message` est le texte normalisé prêt à consigner sur le `Job` (mission
+            # `v3-ia-providers` point 3) ; `detail` (brut, potentiellement technique) ne part
+            # que dans les journaux serveur, jamais sur une ligne visible depuis l'API.
+            job.status = JobStatus.failed
+            job.error = exc.user_message
+            report = {"error": exc.user_message}
+        except Exception as exc:
+            job.status = JobStatus.failed
+            job.error = str(exc)
+            report = {"error": str(exc)}
+        job.finished_at = _now_naive_utc()
+        await session.commit()
+    return report
+
+
+async def detect_cards_task(ctx: dict, job_id: str) -> dict:
+    """Détection des cartes d'une photo (mission `v3-detection`) : contours OpenCV + repli par
+    boîtes englobantes LLM, un `Job` par envoi complété (`POST /uploads/{id}/complete`, D4 —
+    déclenché seulement si l'utilisateur a une clé IA, sinon l'ajout manuel reste possible)."""
+    return await _run_detect_cards(job_id)
+
+
 class WorkerSettings:
-    functions = [import_catalogue_task, daily_prices_task, daily_exchange_rates_task]
+    functions = [
+        import_catalogue_task,
+        daily_prices_task,
+        daily_exchange_rates_task,
+        detect_cards_task,
+    ]
     cron_jobs = [
         cron(weekly_incremental_import, weekday=0, hour=6, minute=0),
         cron(daily_prices_task, hour=6, minute=0),

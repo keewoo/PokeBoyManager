@@ -4,9 +4,12 @@ Toute lecture/écriture part d'un `User` déjà authentifié par la dépendance 
 aucune fonction ici n'accepte de `user_id` fourni par l'appelant pour un tiers.
 """
 
+from datetime import date
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from pbm_api.ai.base import ExtractionUsage
 from pbm_api.ai.errors import DefaultProviderWithoutKeyError, ProviderKeyNotFoundError
 from pbm_api.ai.providers import ProviderKeyTester
 from pbm_api.models import AiCredential, AiProvider, AiUsageMonthly, User
@@ -93,6 +96,53 @@ async def update_settings(
     await db.commit()
     await db.refresh(user)
     return user
+
+
+async def get_default_credential(db: AsyncSession, user: User) -> tuple[AiProvider, str] | None:
+    """Fournisseur + clé déchiffrée à utiliser pour un appel du worker (mission `v3-detection`,
+    repli LLM) : le fournisseur par défaut de l'utilisateur s'il a une clé, sinon la première
+    clé enregistrée (`AiCredential`, ordre non garanti — un seul fournisseur suffit ici, le
+    choix explicite reste `ai_default_provider`, réglable via `PATCH /me/ai-settings`)."""
+    if user.ai_default_provider is not None:
+        credential = await _get_credential(db, user, user.ai_default_provider)
+        if credential is not None:
+            decrypted = decrypt_api_key(credential.encrypted_key, credential.nonce, user.id)
+            return credential.provider, decrypted
+
+    credentials = await list_keys(db, user)
+    if not credentials:
+        return None
+    credential = credentials[0]
+    decrypted = decrypt_api_key(credential.encrypted_key, credential.nonce, user.id)
+    return credential.provider, decrypted
+
+
+async def record_usage(db: AsyncSession, user: User, usage: ExtractionUsage) -> None:
+    """Alimente `ai_usage_monthly` (mission `v2-prix`/`v1-byok` : table posée, lecture seule
+    jusqu'ici) à chaque appel réel au fournisseur — premier appelant : le repli LLM de la
+    détection (mission `v3-detection`). `estimated_cost_eur` reste à 0 : aucune table de
+    tarification par modèle n'existe encore dans ce dépôt (reste à faire, hors périmètre de ce
+    lot), seuls les compteurs d'appels et de jetons sont fiables aujourd'hui."""
+    period = date.today().replace(day=1)
+    result = await db.execute(
+        select(AiUsageMonthly).where(
+            AiUsageMonthly.user_id == user.id,
+            AiUsageMonthly.provider == usage.provider,
+            AiUsageMonthly.period == period,
+        )
+    )
+    row = result.scalar_one_or_none()
+    if row is None:
+        # `calls_count`/`tokens_count` par défaut (0) ne sont posés par SQLAlchemy qu'à l'insert
+        # (`server_default`/`default` côté colonne) : les fixer ici évite un `None += 1` avant
+        # tout flush.
+        row = AiUsageMonthly(
+            user_id=user.id, provider=usage.provider, period=period, calls_count=0, tokens_count=0
+        )
+        db.add(row)
+    row.calls_count += 1
+    row.tokens_count += usage.input_tokens + usage.output_tokens
+    await db.commit()
 
 
 async def list_usage(db: AsyncSession, user: User) -> list[AiUsageMonthly]:

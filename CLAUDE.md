@@ -115,6 +115,23 @@ guidée si le JSON ne valide pas. Erreurs normalisées (`pbm_api.ai.errors` :
 essai manuel avec une vraie clé : `uv run python scripts/test_ai_extraction_manual.py <provider>
 <clé>` depuis `apps/api`.
 
+## Détection de cartes (lot `v3-detection`)
+
+Pipeline `pbm_api.detection.pipeline.run_detection` : contours OpenCV (`opencv_pipeline.py`,
+ratio 63×88 mm) + redressement perspective (`geometry.py`, recadrage fixe 630×880) ; repli par
+boîtes englobantes demandées au LLM (`llm_fallback.py`, un seul appel par photo) quand
+`has_unclaimed_regions` signale une zone de la taille d'une carte non rattachée à un
+quadrilatère retenu, affinées ensuite par le même OpenCV dans chaque boîte. Orchestration
+DB/stockage (`detection/service.py`) déclenchée par `pbm_api.worker.detect_cards_task`, mis en
+file depuis `POST /uploads/{id}/complete` via `pbm_api.queue.get_arq_pool` — **premier job du
+dépôt enfilé depuis une route HTTP** (les autres jobs `arq` du dépôt sont en cron ou CLI direct).
+Résultat consultable par `GET /uploads/{id}/detections` et `.../detections/{id}/crop`
+(`routers/uploads.py`), bornés au propriétaire de l'envoi. Jeu de test : 30 photos
+**synthétiques** (`pbm_api.detection.synthetic` — aucun appareil photo/carte physique sur
+chimera) ; mise au point : `uv run python scripts/measure_detection_rate.py [--provider <p>
+--api-key <clé>]` depuis `apps/api`, écrit une image annotée de contrôle par photo. Détail :
+`docs/ARCHITECTURE.md` § « Reconnaissance ».
+
 ## Règles de la flotte applicables ici (résumé de `~/.claude/CLAUDE.md`)
 
 - On construit sur chimera (32 Go, 16 threads) et on ne construit jamais sur la machine qui sert.

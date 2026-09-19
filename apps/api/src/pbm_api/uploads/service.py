@@ -7,15 +7,18 @@ jamais par un identifiant fourni tel quel par l'appelant.
 
 import uuid
 
+from arq.connections import ArqRedis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.ai.service import list_keys as list_ai_keys
 from pbm_api.config import settings
-from pbm_api.models import Job, JobStatus, Upload, UploadStatus, User
+from pbm_api.models import Detection, Job, JobStatus, Upload, UploadStatus, User
 from pbm_api.security.upload_tokens import generate_upload_token
 from pbm_api.storage import LocalObjectStorage, StorageBackend
 from pbm_api.uploads.errors import (
+    DetectionCropMissingError,
+    DetectionNotFoundError,
     InvalidFileError,
     TooManyFilesError,
     UploadAlreadyProcessedError,
@@ -125,7 +128,11 @@ async def store_raw_bytes(
 
 
 async def complete_upload(
-    db: AsyncSession, user: User, storage: StorageBackend, upload_id: uuid.UUID
+    db: AsyncSession,
+    user: User,
+    storage: StorageBackend,
+    arq_pool: ArqRedis,
+    upload_id: uuid.UUID,
 ) -> tuple[Upload, Job | None]:
     upload = await _get_owned_upload(db, user, upload_id)
     if upload.status != UploadStatus.pending:
@@ -163,4 +170,41 @@ async def complete_upload(
     await db.commit()
     if job is not None:
         await db.refresh(job)
+        # Mise en file réelle du job de détection (mission `v3-detection`) : la ligne `Job`
+        # seule (mission `v3-upload`) ne déclenchait encore rien côté worker. Le nom doit
+        # correspondre à la fonction enregistrée dans `pbm_api.worker.WorkerSettings.functions`.
+        await arq_pool.enqueue_job("detect_cards_task", str(job.id))
     return upload, job
+
+
+async def list_detections(db: AsyncSession, user: User, upload_id: uuid.UUID) -> list[Detection]:
+    """Détections d'un envoi (mission `v3-detection`) : l'appartenance de l'envoi à `user`
+    borne toute la requête, jamais un `upload_id` seul fourni par l'appelant."""
+    await _get_owned_upload(db, user, upload_id)
+    result = await db.execute(select(Detection).where(Detection.upload_id == upload_id))
+    detections = list(result.scalars().all())
+    # Tri par ordre de lecture (mission point 1), pas par insertion : plus fiable qu'un
+    # horodatage dont la précision peut être insuffisante pour départager des lignes créées
+    # dans la même transaction.
+    detections.sort(key=lambda d: d.bbox.get("reading_order", 0))
+    return detections
+
+
+async def get_detection_crop(
+    db: AsyncSession,
+    storage: StorageBackend,
+    user: User,
+    upload_id: uuid.UUID,
+    detection_id: uuid.UUID,
+) -> bytes:
+    await _get_owned_upload(db, user, upload_id)
+    result = await db.execute(
+        select(Detection).where(Detection.id == detection_id, Detection.upload_id == upload_id)
+    )
+    detection = result.scalar_one_or_none()
+    if detection is None or detection.crop_s3_key is None:
+        raise DetectionNotFoundError
+    data = await storage.get(detection.crop_s3_key)
+    if data is None:
+        raise DetectionCropMissingError
+    return data

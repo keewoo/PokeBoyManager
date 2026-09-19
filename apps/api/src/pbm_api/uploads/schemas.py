@@ -2,7 +2,7 @@ import uuid
 
 from pydantic import BaseModel, Field
 
-from pbm_api.models.collection import UploadStatus
+from pbm_api.models.collection import DetectionStatus, UploadStatus
 
 
 class UploadFileRequest(BaseModel):
@@ -33,3 +33,16 @@ class CompleteUploadResponse(BaseModel):
     size_bytes: int
     recognition_enabled: bool
     job_id: uuid.UUID | None
+
+
+class DetectionResponse(BaseModel):
+    id: uuid.UUID
+    reading_order: int
+    status: DetectionStatus
+    crop_url: str
+    candidates: list | None
+
+
+class ListDetectionsResponse(BaseModel):
+    upload_id: uuid.UUID
+    detections: list[DetectionResponse]

@@ -7,17 +7,22 @@ convertit le HEIC en JPEG et crée le job de reconnaissance si une clé IA est c
 import uuid
 from typing import Annotated
 
+from arq.connections import ArqRedis
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.auth.dependencies import get_current_user, require_csrf
 from pbm_api.config import settings
 from pbm_api.db import get_session
 from pbm_api.models import User
+from pbm_api.queue import get_arq_pool
 from pbm_api.security.upload_tokens import verify_upload_token
 from pbm_api.storage import StorageBackend, build_storage
 from pbm_api.uploads import service
 from pbm_api.uploads.errors import (
+    DetectionCropMissingError,
+    DetectionNotFoundError,
     InvalidFileError,
     TooManyFilesError,
     UploadAlreadyProcessedError,
@@ -29,6 +34,8 @@ from pbm_api.uploads.schemas import (
     CompleteUploadResponse,
     CreateUploadsRequest,
     CreateUploadsResponse,
+    DetectionResponse,
+    ListDetectionsResponse,
 )
 
 router = APIRouter(prefix="/uploads", tags=["uploads"])
@@ -98,11 +105,14 @@ async def complete_upload(
     upload_id: uuid.UUID,
     db: Annotated[AsyncSession, Depends(get_session)],
     storage: Annotated[StorageBackend, Depends(get_storage)],
+    arq_pool: Annotated[ArqRedis, Depends(get_arq_pool)],
     current_user: Annotated[User, Depends(get_current_user)],
     _csrf: Annotated[None, Depends(require_csrf)],
 ) -> CompleteUploadResponse:
     try:
-        upload, job = await service.complete_upload(db, current_user, storage, upload_id)
+        upload, job = await service.complete_upload(
+            db, current_user, storage, arq_pool, upload_id
+        )
     except UploadNotFoundError:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "envoi introuvable") from None
     except UploadAlreadyProcessedError:
@@ -122,3 +132,52 @@ async def complete_upload(
         recognition_enabled=job is not None,
         job_id=job.id if job is not None else None,
     )
+
+
+@router.get("/{upload_id}/detections", response_model=ListDetectionsResponse)
+async def list_detections(
+    upload_id: uuid.UUID,
+    db: Annotated[AsyncSession, Depends(get_session)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> ListDetectionsResponse:
+    """Cartes détectées sur un envoi (mission `v3-detection`) : préalable à la validation
+    humaine (identification, lot ultérieur)."""
+    try:
+        detections = await service.list_detections(db, current_user, upload_id)
+    except UploadNotFoundError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "envoi introuvable") from None
+
+    return ListDetectionsResponse(
+        upload_id=upload_id,
+        detections=[
+            DetectionResponse(
+                id=detection.id,
+                reading_order=detection.bbox.get("reading_order", 0),
+                status=detection.status,
+                crop_url=f"/uploads/{upload_id}/detections/{detection.id}/crop",
+                candidates=detection.candidates,
+            )
+            for detection in detections
+        ],
+    )
+
+
+@router.get("/{upload_id}/detections/{detection_id}/crop")
+async def get_detection_crop(
+    upload_id: uuid.UUID,
+    detection_id: uuid.UUID,
+    db: Annotated[AsyncSession, Depends(get_session)],
+    storage: Annotated[StorageBackend, Depends(get_storage)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> Response:
+    try:
+        data = await service.get_detection_crop(db, storage, current_user, upload_id, detection_id)
+    except UploadNotFoundError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "envoi introuvable") from None
+    except DetectionNotFoundError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "détection introuvable") from None
+    except DetectionCropMissingError:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "recadrage introuvable dans le stockage"
+        ) from None
+    return Response(content=data, media_type="image/jpeg")
