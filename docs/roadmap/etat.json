@@ -2824,21 +2824,21 @@
       "attente": null
     },
     "v4-insights-batch": {
-      "statut": "en_cours",
+      "statut": "integre",
       "machine": "chimera",
       "branche": "roadmap/v4-insights-batch",
       "debut_reel": "2026-09-20",
-      "fin_reelle": null,
+      "fin_reelle": "2026-09-20",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit eefc452d8 intégré dans main — voir docs/roadmap/comptes-rendus/v4-insights-batch.md",
+          "maj": "2026-09-20T00:34+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit eefc452d8 intégré dans main — voir docs/roadmap/comptes-rendus/v4-insights-batch.md",
+          "maj": "2026-09-20T00:34+0200"
         },
         "securite": {
           "etat": "a_faire",
@@ -2866,14 +2866,14 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit eefc452d8 intégré dans main — voir docs/roadmap/comptes-rendus/v4-insights-batch.md",
+          "maj": "2026-09-20T00:34+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit eefc452d8 intégré dans main — voir docs/roadmap/comptes-rendus/v4-insights-batch.md",
+          "maj": "2026-09-20T00:34+0200"
         }
       },
       "journal": [
@@ -2882,9 +2882,38 @@
           "machine": "chimera",
           "evenement": "démarré",
           "detail": "roadmap/v4-insights-batch"
+        },
+        {
+          "quand": "2026-09-20T00:34+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit eefc452d8"
         }
       ],
-      "compte_rendu": {},
+      "compte_rendu": {
+        "resume": "Pipeline `pbm_api.insights_batch` : un seul appel Anthropic par carte (Message Batches API, remise -50 %) rend ensemble anecdotes sourcées FR + EN et étude d'utilisation en jeu (légalités, forces/limites, note de jouabilité), écrit dans `card_insights` — la même table que `v4-anecdotes`/`v4-jeu` lisent déjà à la demande. Ces routes à la demande deviennent automatiquement un repli pour une carte pas encore couverte : **aucune modification de leur code**, leur logique de cache existante (`_fresh`/`_study_fresh`) suffit dès lors que ce lot écrit dans les mêmes colonnes avec les mêmes conventions de fraîcheur.",
+        "livrables": [
+          "`apps/api/src/pbm_api/insights_batch/combined_generation.py` — schéma combiné",
+          "`apps/api/src/pbm_api/insights_batch/anthropic_batches.py` — client fin de la Message Batches",
+          "`apps/api/src/pbm_api/insights_batch/pricing.py` — tarifs Batch **vérifiés** (pas devinés) le",
+          "`apps/api/src/pbm_api/insights_batch/ledger.py` — grand livre local",
+          "`apps/api/src/pbm_api/insights_batch/runner.py` — orchestration (`run_once`) : sélection,",
+          "`apps/api/src/pbm_api/models/catalog.py` — `CardInsight.anecdotes_en` (nouvelle colonne",
+          "`apps/api/migrations/versions/684d2afd5fe7_...py` (fusion préalable, voir ci-dessus) et",
+          "`apps/api/src/pbm_api/insights/context.py` — `MediaWikiClient` envoie désormais un"
+        ],
+        "preuves": [],
+        "ecarts": [
+          "La mesure de coût est une **estimation**, pas une mesure facturée (aucune clé plateforme",
+          "Les anecdotes EN sont produites et stockées (`anecdotes_en`) mais **aucune route ne les"
+        ],
+        "reste": [
+          "Lancer `scripts/run_insights_batch.py`/`measure_insights_batch_cost.py --live` dès que JF",
+          "Un futur lot front pourrait exposer `anecdotes_en` (déjà en base) si un besoin bilingue est",
+          "Revalider `_ESTIMATED_CHARS_PER_TOKEN`/`_ESTIMATED_OUTPUT_TOKENS`",
+          "Rétro-couvrir les cartes déjà traitées à la demande (avant ce lot) avec les anecdotes EN si le"
+        ]
+      },
       "attente": null
     },
     "v3-identification-visuelle": {
