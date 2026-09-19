@@ -1,0 +1,15 @@
+{
+  "name": "pokeboymanager",
+  "private": true,
+  "packageManager": "pnpm@12.4.2",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev:web": "pnpm --filter @pbm/web dev",
+    "build:web": "pnpm --filter @pbm/web build",
+    "lint:web": "pnpm --filter @pbm/web lint",
+    "test:web": "pnpm --filter @pbm/web test",
+    "gen:api": "pnpm --filter @pbm/api-client gen"
+  }
+}
