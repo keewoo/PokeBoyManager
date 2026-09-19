@@ -229,6 +229,36 @@ passe par `pbm_api.ai.factory.create_provider(provider, api_key)`.
   route HTTP dans ce lot (back-end seul, testé au niveau service) : `collection_value` filtre
   toujours par `user_id` reçu en paramètre.
 
+## Classement (lot `v4-ranking`)
+
+D6 : les trois classements affichés sur la fiche carte — rang de rareté, rang de valeur dans la
+collection personnelle, percentile de valeur dans l'extension.
+
+- Vue matérialisée `card_value_rank` (migration `11f10f8c0f40`, une ligne par carte du
+  catalogue) : `reference_price_eur` (tendance Cardmarket la plus récente, sinon tendance
+  TCGplayer convertie en EUR au taux le plus récent connu — approximation assumée pour un
+  agrégat périodique, contrairement à `pricing.valuation.reference_price_eur` qui aligne prix et
+  taux au jour près pour la valeur d'un exemplaire ; écrêtage des tendances aberrantes identique
+  à `_sanitize_trend`, maximum entre variantes), `value_percentile` (`PERCENT_RANK()` partitionné
+  par `set_id` — 0..1, 0 pour une partition à une seule carte tarifée), `rarity_rank`/
+  `rarity_group_size` (`DENSE_RANK()` croissant sur la taille du groupe de cartes partageant la
+  même valeur de `cards.rarity` au sein de l'extension : moins de cartes de cette rareté = rang 1
+  = plus rare — dérivé uniquement du catalogue, aucune échelle de rareté externe).
+- Rafraîchie par `pbm_api.ranking.service.refresh_card_value_rank` (`REFRESH MATERIALIZED VIEW`
+  simple, pas `CONCURRENTLY` — verrou exclusif bref accepté pour un job quotidien à faible trafic
+  concurrent ; un index unique sur `card_id` est déjà posé pour basculer vers `CONCURRENTLY` plus
+  tard sans nouvelle migration), appelée depuis `worker._run_daily_prices` juste après un relevé
+  de prix réussi — jamais sur un relevé vide ou en échec.
+- Rang de valeur dans la collection (`pbm_api.ranking.service.collection_rank`) : calculé à la
+  demande (pas de vue, collection personnelle bien plus petite que le catalogue entier), classe
+  les exemplaires d'un utilisateur par `item_value` décroissant (`RANK` SQL standard — égalité de
+  valeur = même rang, le suivant saute d'autant) ; un exemplaire sans prix connu n'est pas classé.
+- `GET /me/collection/{item}` (`pbm_api/routers/collection.py`) expose les trois classements sur
+  un exemplaire. Première route de collection posée dans le dépôt (aucun lot fusionné avant
+  celui-ci ne l'avait créée) : volontairement réduite aux champs nécessaires à ce lot —
+  `v4-collection` (liste, filtres, `PATCH`/`DELETE`) et `v4-fiche` (données de catalogue
+  enrichies) l'étendent sans revenir sur ce qui précède.
+
 ## Environnements
 
 | | Où | Comment |
