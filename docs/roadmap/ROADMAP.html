@@ -183,6 +183,57 @@ footer.rf ul{margin:0;padding-left:18px}
 @media (max-width:640px){h1{font-size:27px}details.card>summary{grid-template-columns:auto 1fr}details.card>summary .gridT{grid-column:1/-1}.filters{position:static}}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 
+/* ================= MAQUETTE DU JEU (V7) ================= */
+.gm{--felt:#123528;--felt-2:#0C2519;--edge:#1E4C38;--glow:#F2C14E}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .gm{--felt:#0D2A20;--felt-2:#081A12;--edge:#1B4130} }
+:root[data-theme="dark"] .gm{--felt:#0D2A20;--felt-2:#081A12;--edge:#1B4130}
+.board{background:radial-gradient(circle at 50% 40%,var(--felt),var(--felt-2));border-radius:14px;padding:14px;display:grid;gap:10px;color:#E7EFE9;container-type:inline-size}
+.side{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center}
+.side.me{align-items:end}
+.zone{display:grid;gap:4px;justify-items:center;font:600 10.5px "JetBrains Mono",monospace;color:#9FB8AB}
+.pile{width:46px;aspect-ratio:63/88;border-radius:5px;display:grid;place-items:center;font:700 13px "JetBrains Mono",monospace;color:#0C2519}
+.pile.deck{background:linear-gradient(150deg,#2F6FE0,#16326B);color:#DCE7FF;box-shadow:inset 0 0 0 2px rgba(255,255,255,.25)}
+.pile.disc{background:rgba(255,255,255,.08);border:1px dashed rgba(255,255,255,.35);color:#B9C9C0}
+.prizes{display:grid;grid-template-columns:repeat(3,16px);gap:3px}
+.prizes i{width:16px;aspect-ratio:63/88;border-radius:3px;background:linear-gradient(150deg,#2F6FE0,#16326B);box-shadow:inset 0 0 0 1px rgba(255,255,255,.3);display:block}
+.prizes i.taken{background:transparent;border:1px dashed rgba(255,255,255,.35);box-shadow:none}
+.active-slot{display:grid;justify-items:center;gap:6px}
+.bench{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.slot{width:62px;position:relative;cursor:pointer;background:none;border:0;padding:0}
+.slot.big{width:104px}
+.slot .ptcg{box-shadow:0 6px 16px -8px rgba(0,0,0,.8)}
+.slot.empty{width:62px;aspect-ratio:63/88;border:2px dashed rgba(255,255,255,.28);border-radius:6px;display:grid;place-items:center;color:rgba(255,255,255,.5);font:600 10px "Instrument Sans",sans-serif}
+.slot.empty.drop{border-color:var(--glow);background:rgba(242,193,78,.12);color:var(--glow)}
+.slot .hp{position:absolute;top:-6px;right:-6px;background:#B3261E;color:#fff;font:700 10px "JetBrains Mono",monospace;border-radius:999px;padding:1px 5px;box-shadow:0 0 0 2px var(--felt)}
+.slot .en{position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);display:flex;gap:2px}
+.slot .en i{width:10px;height:10px;border-radius:50%;border:1px solid rgba(0,0,0,.3)}
+.slot[aria-pressed="true"] .ptcg{outline:2px solid var(--glow);outline-offset:2px}
+.turnbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:rgba(0,0,0,.28);border-radius:10px;padding:8px 12px;font-size:13px}
+.turnbar b{color:var(--glow)}
+.hand{display:flex;justify-content:center;padding-top:6px;min-height:104px}
+.hand .slot{width:74px;margin:0 -10px;transform-origin:bottom center;transition:transform .15s}
+.hand .slot:hover,.hand .slot[aria-pressed="true"]{transform:translateY(-10px) scale(1.06);z-index:2}
+.gm-log{background:var(--m-surface);border:1px solid var(--m-line);border-radius:12px;padding:10px 12px;max-height:210px;overflow:auto;font-size:12.5px;color:var(--m-body)}
+.gm-log b{color:var(--m-ink)}
+.gm-grid{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:14px;align-items:start}
+.deckbuild{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.dk-list{display:grid;gap:6px;max-height:420px;overflow:auto;padding-right:4px}
+.dk-row{display:grid;grid-template-columns:34px 1fr auto auto;gap:10px;align-items:center;padding:6px 8px;border:1px solid var(--m-line);border-radius:10px;background:var(--m-surface);font-size:13px}
+.dk-row .cnt{font:600 13px "JetBrains Mono",monospace}
+.dk-row button{font:600 12px "Instrument Sans";border:1px solid var(--m-line);background:var(--m-surface-2);color:var(--m-ink);border-radius:8px;width:26px;height:26px;cursor:pointer}
+.legal{display:grid;gap:6px;padding:12px;border-radius:12px;background:var(--m-surface-2);font-size:13px}
+.legal .ok{color:var(--m-up)} .legal .no{color:var(--m-down)}
+.bar60{height:8px;border-radius:99px;background:var(--m-line);overflow:hidden}
+.bar60 i{display:block;height:100%;background:var(--m-focus)}
+.queue{display:grid;place-items:center;gap:14px;padding:40px 16px;text-align:center}
+.pulse{width:74px;height:74px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#F2C14E,#D93A1E);animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.12);opacity:.85}}
+@media (prefers-reduced-motion:reduce){.pulse{animation:none}}
+.endcard{display:grid;gap:12px;justify-items:center;text-align:center;padding:26px;border-radius:14px;background:var(--m-surface);border:1px solid var(--m-line)}
+.endcard .big{font:800 34px "Bricolage Grotesque",sans-serif}
+@container (max-width:620px){.slot{width:48px}.slot.big{width:78px}.hand .slot{width:60px}}
+@media (max-width:820px){.gm-grid,.deckbuild{grid-template-columns:minmax(0,1fr)}}
+
 /* ================= MAQUETTE — identité propre du site ================= */
 .mk{
   --m-ground:#E9ECF1; --m-surface:#FFFFFF; --m-surface-2:#F5F6F9; --m-line:#D9DDE5; --m-ink:#12151B; --m-body:#4A5160; --m-muted:#7D8494;
@@ -418,6 +469,7 @@ footer.rf ul{margin:0;padding-left:18px}
     <span class="brand">PokeBoyManager</span>
     <button class="tab" role="tab" id="tab-roadmap" aria-controls="view-roadmap" aria-selected="true">Roadmap &amp; backlog</button>
     <button class="tab" role="tab" id="tab-maquette" aria-controls="view-maquette" aria-selected="false">Maquette du site</button>
+    <button class="tab" role="tab" id="tab-jeu" aria-controls="view-jeu" aria-selected="false">Maquette du jeu</button>
   </div>
 
   <!-- ===================== ROADMAP ===================== -->
@@ -510,6 +562,21 @@ footer.rf ul{margin:0;padding-left:18px}
       </div>
     </div>
   </div>
+
+  <!-- ===================== MAQUETTE DU JEU ===================== -->
+  <div id="view-jeu" role="tabpanel" aria-labelledby="tab-jeu" hidden>
+    <div class="mk-intro">
+      <h1>Maquette du jeu</h1>
+      <p>Vague <b>V7, après le MVP</b> : construire des decks avec <b>ses propres cartes</b>, entrer dans la file d'attente, puis jouer à deux au tour par tour. Le plateau ci-dessous est cliquable : sélectionne une carte de ta main, pose-la sur le banc, attache une énergie, attaque. <b>Ce prototype simule le jeu ; les règles réelles seront appliquées par le serveur</b> (lot <code>v7-regles-moteur</code>), jamais par le navigateur.</p>
+    </div>
+    <div class="mk-screens" role="toolbar" aria-label="Écrans du jeu" id="gm-screens"></div>
+    <div class="mk gm">
+      <div class="mk-frame">
+        <div class="mk-chrome" aria-hidden="true"><i></i><i></i><i></i><span class="url" id="gm-url">pokeboy.acx-connect.com/jeu</span></div>
+        <div class="mk-page" id="gm-page"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -517,7 +584,7 @@ const D = {"meta": {"titre": "Roadmap PokeBoyManager", "date": "2026-09-19", "ho
 
 /* ============================== ONGLETS ============================== */
 (function(){
-  const tabs = [['roadmap', 'tab-roadmap', 'view-roadmap'], ['maquette', 'tab-maquette', 'view-maquette']];
+  const tabs = [['roadmap', 'tab-roadmap', 'view-roadmap'], ['maquette', 'tab-maquette', 'view-maquette'], ['jeu', 'tab-jeu', 'view-jeu']];
   function show(k){
     tabs.forEach(([n, t, v]) => { document.getElementById(t).setAttribute('aria-selected', n === k); document.getElementById(v).hidden = n !== k; });
     try { localStorage.setItem('pbm-tab', k); } catch (e) {}
@@ -525,6 +592,7 @@ const D = {"meta": {"titre": "Roadmap PokeBoyManager", "date": "2026-09-19", "ho
   tabs.forEach(([n, t]) => document.getElementById(t).addEventListener('click', () => show(n)));
   let k = 'roadmap'; try { k = localStorage.getItem('pbm-tab') || 'roadmap'; } catch (e) {}
   if (location.hash === '#maquette') k = 'maquette';
+  if (location.hash === '#jeu') k = 'jeu';
   show(k);
   window.__showTab = show;
 })();
@@ -546,7 +614,7 @@ const COUL = Object.fromEntries(D.meta.couloirs.map(c => [c.id, c]));
 const byId = Object.fromEntries(D.items.map(i => [i.id, i]));
 const E = D.etats, ST = D.statuts, PR = {P0:0,P1:1,P2:2,P3:3};
 const [J1, J2] = D.meta.jalons.map(j => j.date);
-const jalonDe = i => i.fin <= J1 ? D.meta.jalons[0].nom : D.meta.jalons[1].nom;
+const jalonDe = i => (D.meta.jalons.find(j => i.fin <= j.date) || D.meta.jalons[D.meta.jalons.length - 1]).nom;
 const TODAY = new Date().toISOString().slice(0, 10);
 const machClass = m => m === 'JF / externe' ? 'JF' : m;
 const stPill = s => `<span class="pill st-${s}">${esc(ST[s])}</span>`;
@@ -565,7 +633,8 @@ const cnt = Object.fromEntries(ORDER.map(s => [s, 0]));
 D.items.forEach(i => cnt[E[i.id].statut]++);
 $('#kpis').innerHTML = ORDER.slice().reverse().map(s => `<div class="kpi st-${s}"><span class="n">${cnt[s]}</span><span class="l">${esc(ST[s])}</span></div>`).join('');
 $('#jalons').innerHTML = D.meta.jalons.map((j, k) => {
-  const set = D.items.filter(i => k === 0 ? i.fin <= J1 : (i.fin > J1 && i.fin <= J2));
+  const bornes = D.meta.jalons.map(x => x.date);
+  const set = D.items.filter(i => i.fin <= bornes[k] && (k === 0 || i.fin > bornes[k - 1]));
   const done = set.filter(i => ['livre', 'integre', 'livre_uat', 'attente_go_prod'].includes(E[i.id].statut)).length;
   const pct = set.length ? Math.round(done / set.length * 100) : 0;
   return `<article class="jal ${k === 0 ? 'first' : ''}"><span class="date">${fr(j.date)} · ${esc(j.nom)}</span><div class="big">${done}<small>/ ${set.length} intégrés ou livrés (${pct} %)</small></div><div class="prog" role="img" aria-label="${pct} % livrés"><i style="width:${pct}%"></i></div><p>${md(j.quoi)}</p></article>`;
@@ -1054,4 +1123,177 @@ view.addEventListener('input', e => {
 try { const s = JSON.parse(localStorage.getItem('pbm-mk') || '{}'); if (s.cur && V[s.cur]) cur = s.cur; if (s.ficheId && byId[s.ficheId]) ficheId = s.ficheId; } catch (e) {}
 render();
 })();
+/* ============================== MAQUETTE DU JEU ============================== */
+(function(){
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sym = {grass:'P', fire:'F', psy:'Ψ', elec:'É', water:'E', col:'★', fight:'C'};
+const ECOL = {fire:'#E2552B', water:'#2F7CC0', grass:'#4E8A3E', elec:'#D9A300', psy:'#8A4A9E', col:'#D9D2C1', fight:'#9A5530'};
+// Cartes du joueur (les siennes, reprises de la maquette du site) + quelques cartes de deck.
+const P = [
+  {id:'dracaufeu', nom:'Dracaufeu-EX', type:'fire', pv:180, num:'XY121', att:[{n:'Cru-Aile', c:['col','col','col'], d:60},{n:'Explo-Combustion', c:['fire','fire','col','col'], d:150}]},
+  {id:'salameche', nom:'Salamèche', type:'fire', pv:70, num:'168/165', att:[{n:'Griffe', c:['col'], d:10},{n:'Flammèche', c:['fire','col'], d:30}]},
+  {id:'psykokwak', nom:'Psykokwak', type:'water', pv:70, num:'236/217', att:[{n:'Collision', c:['water','col'], d:20}]},
+  {id:'pikachu', nom:'Pikachu', type:'elec', pv:60, num:'TG05/TG30', att:[{n:'Charge Éclair', c:['elec'], d:20}]},
+  {id:'mimiqui', nom:'Mimiqui', type:'psy', pv:70, num:'GG14/GG70', att:[{n:'Mains Malicieuses', c:['psy'], d:20}]},
+  {id:'ronflex', nom:'Ronflex', type:'col', pv:150, num:'143/165', att:[{n:'Écrasement', c:['col','col','col'], d:70}]},
+  {id:'energie-feu', nom:'Énergie Feu', type:'fire', energie:true, num:'de base'},
+  {id:'energie-eau', nom:'Énergie Eau', type:'water', energie:true, num:'de base'}
+];
+const byId = Object.fromEntries(P.map(c => [c.id, c]));
+const ADV = {id:'lucario', nom:'Lucario V', type:'fight', pv:210, num:'027/172', att:[{n:'Poing Météore', c:['fight','col'], d:60}]};
+const art = c => `<div class="ptcg t-${c.type}" role="img" aria-label="${esc(c.nom)}"><div class="in"><div class="top"><span>${esc(c.nom)}</span>${c.energie ? '' : `<span class="hp">${c.pv} PV</span>`}</div><div class="art"><span class="sym">${sym[c.type]}</span></div><div class="bot"><span>${esc(c.num)}</span><span>${c.energie ? 'ÉNERGIE' : 'FR'}</span></div></div></div>`;
+
+// --- état simulé d'une partie ---
+let ecran = 'decks', sel = null, deck = {dracaufeu:1, salameche:3, psykokwak:2, pikachu:3, mimiqui:2, ronflex:2, 'energie-feu':12, 'energie-eau':8};
+const G = {
+  tour: 1, aMoi: true, fini: null,
+  moi: {actif: {c: byId.salameche, pv: 70, deg: 0, en: []}, banc: [], main: ['dracaufeu','energie-feu','pikachu','psykokwak','energie-feu'], pioche: 41, defausse: 0, prix: 6},
+  adv: {actif: {c: ADV, pv: 210, deg: 60, en: ['fight','col']}, banc: [{c: byId.ronflex, pv: 150, deg: 0, en: []}], pioche: 39, defausse: 2, prix: 5},
+  log: [{q: 'Tour 1', t: 'La partie commence. <b>Toi</b> : premier joueur.'}, {q: 'Tour 1', t: 'Tu places <b>Salamèche</b> comme Pokémon actif.'}]
+};
+const dit = (t) => G.log.unshift({q: `Tour ${G.tour}`, t});
+const nbDeck = () => Object.values(deck).reduce((a, b) => a + b, 0);
+const posseded = {dracaufeu:1, salameche:4, psykokwak:2, pikachu:4, mimiqui:2, ronflex:3, 'energie-feu':99, 'energie-eau':99};
+
+const slot = (p, cls = '', extra = '') => !p ? '' : `${art(p.c)}${p.deg ? `<span class="hp">${p.pv - p.deg}/${p.pv}</span>` : ''}${p.en.length ? `<span class="en">${p.en.map(e => `<i style="background:${ECOL[e]}"></i>`).join('')}</span>` : ''}`;
+const zonePiles = (j, cote) => `<div class="zone"><span>récompenses</span><div class="prizes" aria-label="${j.prix} récompenses restantes">${Array.from({length:6},(_,i)=>`<i class="${i < 6 - j.prix ? 'taken' : ''}"></i>`).join('')}</div></div>`;
+const zoneDeck = j => `<div class="zone"><span>pioche</span><div class="pile deck">${j.pioche}</div></div><div class="zone"><span>défausse</span><div class="pile disc">${j.defausse}</div></div>`;
+
+function plateau(){
+  const m = G.moi, a = G.adv;
+  const drop = sel && byId[sel] && !byId[sel].energie && m.banc.length < 5;
+  return `<div class="board">
+    <div class="side">
+      ${zonePiles(a)}
+      <div class="active-slot">
+        <div class="bench">${a.banc.map(p => `<div class="slot">${slot(p)}</div>`).join('') || '<div class="slot empty">banc</div>'}</div>
+        <div class="slot big" aria-label="Pokémon actif adverse">${slot(a.actif)}</div>
+      </div>
+      <div style="display:flex;gap:8px">${zoneDeck(a)}</div>
+    </div>
+    <div class="turnbar"><span>Tour <b>${G.tour}</b> · ${G.fini ? '<b>partie terminée</b>' : (G.aMoi ? '<b>à toi de jouer</b>' : 'tour de l\'adversaire')}</span>
+      <span>Adversaire : <b>dracofeu_77</b> · récompenses ${a.prix}</span>
+      <span style="display:flex;gap:6px">${G.fini ? '' : `<button class="mbtn sm" data-gm="attaquer">Attaquer</button><button class="mbtn ghost sm" data-gm="fin">Fin du tour</button>`}<button class="mbtn ghost sm" data-gm="abandon">Abandonner</button></span></div>
+    <div class="side me">
+      ${zoneDeck(m)}
+      <div class="active-slot">
+        <div class="slot big" aria-label="Mon Pokémon actif">${slot(m.actif)}</div>
+        <div class="bench">${m.banc.map((p, i) => `<button class="slot" data-gm="banc" data-i="${i}">${slot(p)}</button>`).join('')}${m.banc.length < 5 ? `<div class="slot empty ${drop ? 'drop' : ''}" data-gm="poser">${drop ? 'poser ici' : 'banc'}</div>` : ''}</div>
+      </div>
+      ${zonePiles(m)}
+    </div>
+    <div class="hand">${m.main.map((id, i) => `<button class="slot" data-gm="main" data-i="${i}" aria-pressed="${sel === id && selIdx === i}">${art(byId[id])}</button>`).join('')}</div>
+  </div>`;
+}
+let selIdx = -1;
+
+const V = {};
+V.decks = () => `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:16px"><h2>Mes decks</h2><button class="mbtn red" data-gm="ecran:build">Nouveau deck</button></div>
+  <div class="cgrid" style="grid-template-columns:repeat(auto-fill,minmax(230px,1fr))">
+    ${[['Feu du dimanche','fire',60,true],['Éclair bricolé','elec',54,false],['Mono-Eau','water',60,true]].map(([n,t,c,ok]) => `<button class="panel" style="display:grid;gap:8px;text-align:left;cursor:pointer;border:1px solid var(--m-line)" data-gm="ecran:build">
+      <div style="display:flex;gap:8px;align-items:center"><span class="badge" style="background:${ECOL[t]};color:#fff;border-color:transparent">${sym[t]}</span><b>${n}</b></div>
+      <div class="bar60"><i style="width:${c / 60 * 100}%"></i></div>
+      <div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--m-muted)"><span class="mono">${c}/60 cartes</span>${ok ? '<span class="badge up">jouable</span>' : '<span class="badge down">incomplet</span>'}</div></button>`).join('')}
+  </div>
+  <p class="ex-note" style="margin-top:16px">Un deck ne contient que des cartes que tu possèdes. Si tu en retires une de ta collection, le deck reste lisible mais devient injouable, avec la raison affichée.</p>`;
+
+V.build = () => {
+  const total = nbDeck(), pkm = Object.entries(deck).filter(([k]) => !byId[k].energie).reduce((a, [, v]) => a + v, 0);
+  const trop = Object.entries(deck).filter(([k, v]) => !byId[k].energie && v > 4);
+  const manque = Object.entries(deck).filter(([k, v]) => v > (posseded[k] || 0));
+  return `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:14px"><h2>Feu du dimanche</h2><div style="display:flex;gap:8px"><button class="mbtn ghost sm" data-gm="ia">Proposer un deck avec mon IA</button><button class="mbtn sm">Enregistrer</button></div></div>
+  <div class="deckbuild">
+    <div><h3 style="margin-bottom:8px">Ma collection</h3><input class="msearch" placeholder="Filtrer : nom, type, extension" aria-label="Filtrer ma collection" style="margin-bottom:10px">
+      <div class="dk-list">${P.map(c => `<div class="dk-row"><div>${art(c)}</div><div><b>${esc(c.nom)}</b><div class="ex-note">${c.energie ? 'énergie de base · fournie' : `${c.pv} PV · ${esc(c.num)}`}</div></div><span class="cnt">${deck[c.id] || 0}/${posseded[c.id] > 90 ? '∞' : posseded[c.id]}</span><span style="display:flex;gap:4px"><button data-gm="moins" data-c="${c.id}" aria-label="Retirer ${esc(c.nom)}">−</button><button data-gm="plus" data-c="${c.id}" aria-label="Ajouter ${esc(c.nom)}">+</button></span></div>`).join('')}</div></div>
+    <div><h3 style="margin-bottom:8px">Le deck</h3>
+      <div class="legal">
+        <div style="display:flex;justify-content:space-between"><span>Cartes</span><b class="mono">${total}/60</b></div>
+        <div class="bar60"><i style="width:${Math.min(100, total / 60 * 100)}%"></i></div>
+        <div>${total === 60 ? '<span class="ok">✓ 60 cartes</span>' : `<span class="no">✗ ${60 - total > 0 ? (60 - total) + ' carte(s) manquante(s)' : 'trop de cartes'}</span>`}</div>
+        <div>${trop.length ? `<span class="no">✗ plus de 4 exemplaires : ${trop.map(([k]) => byId[k].nom).join(', ')}</span>` : '<span class="ok">✓ maximum 4 exemplaires par carte</span>'}</div>
+        <div>${manque.length ? `<span class="no">✗ cartes non possédées : ${manque.map(([k]) => byId[k].nom).join(', ')}</span>` : '<span class="ok">✓ toutes les cartes sont dans ta collection</span>'}</div>
+        <div><span class="ok">✓ ${pkm} Pokémon</span> · <span class="ok">${total - pkm} énergies</span></div>
+      </div>
+      <div class="dk-list" style="margin-top:12px">${Object.entries(deck).filter(([, v]) => v > 0).map(([k, v]) => `<div class="dk-row"><div>${art(byId[k])}</div><div><b>${esc(byId[k].nom)}</b><div class="ex-note">${byId[k].energie ? 'énergie de base' : esc(byId[k].num)}</div></div><span class="cnt">×${v}</span><span style="display:flex;gap:4px"><button data-gm="moins" data-c="${k}">−</button><button data-gm="plus" data-c="${k}">+</button></span></div>`).join('')}</div>
+      <div style="margin-top:12px"><button class="mbtn red" data-gm="ecran:file">Jouer avec ce deck</button></div>
+    </div>
+  </div>`;
+};
+
+V.file = () => `<div class="queue">
+    <span class="ex-note">FILE D'ATTENTE</span>
+    <div class="pulse" aria-hidden="true"></div>
+    <h2>On te cherche un adversaire…</h2>
+    <p>Deck choisi : <b>Feu du dimanche</b> · 60 cartes · <span class="mono">18 s</span></p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><button class="mbtn" data-gm="ecran:partie">Simuler : un adversaire est trouvé</button><button class="mbtn ghost">Changer de deck</button><button class="mbtn ghost">Quitter la file</button></div>
+    <p class="ex-note" style="max-width:56ch">Dès que deux joueurs attendent avec un deck jouable, la partie se crée : tirage du premier joueur, 7 cartes en main, 6 récompenses. Fermer l'onglet te sort de la file.</p>
+  </div>`;
+
+V.partie = () => `<div class="gm-grid">
+  <div>${plateau()}
+    <p class="ex-note" style="margin-top:8px">Clique une carte de ta main, puis « poser ici » pour l'envoyer au banc ; une énergie s'attache au Pokémon actif. <b>Rafraîchir la page ne perd pas la partie</b> : l'état vit sur le serveur, le navigateur ne garde qu'un jeton de partie.</p>
+  </div>
+  <div>
+    <h3 style="margin-bottom:8px">Journal</h3>
+    <div class="gm-log">${G.log.map(l => `<div style="margin-bottom:6px"><b class="mono">${l.q}</b> · ${l.t}</div>`).join('')}</div>
+    <div class="legal" style="margin-top:12px"><div><b>Toi</b> · récompenses ${G.moi.prix} · main ${G.moi.main.length}</div><div><b>dracofeu_77</b> · récompenses ${G.adv.prix} · main 4</div><div class="ex-note">Tu ne vois jamais la main ni la pioche de l'adversaire : le serveur ne les envoie pas.</div></div>
+  </div></div>`;
+
+V.fin = () => `<div class="endcard">
+    <span class="ex-note">PARTIE TERMINÉE · 12 TOURS · 9 MIN</span>
+    <div class="big">${G.fini === 'perdu' ? 'Défaite' : 'Victoire'}</div>
+    <p>${G.fini === 'perdu' ? 'dracofeu_77 a pris ses 6 récompenses.' : 'Tu as pris tes 6 récompenses avant dracofeu_77.'}</p>
+    <div style="display:flex;gap:18px;flex-wrap:wrap;justify-content:center" class="mono">
+      <span>Dégâts infligés <b>310</b></span><span>Pokémon mis KO <b>3</b></span><span>Énergies attachées <b>9</b></span></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><button class="mbtn red" data-gm="ecran:file">Rejouer</button><button class="mbtn ghost" data-gm="ecran:decks">Mes decks</button><button class="mbtn ghost">Revoir le journal</button></div>
+  </div>`;
+
+const ECRANS = [['decks', 'Mes decks', 'pokeboy.acx-connect.com/jeu/decks'], ['build', 'Constructeur de deck', 'pokeboy.acx-connect.com/jeu/decks/feu-du-dimanche'], ['file', "File d'attente", 'pokeboy.acx-connect.com/jeu/file'], ['partie', 'Plateau de jeu', 'pokeboy.acx-connect.com/jeu/partie/8f21'], ['fin', 'Fin de partie', 'pokeboy.acx-connect.com/jeu/partie/8f21/fin']];
+function rend(){
+  $('#gm-url').textContent = (ECRANS.find(e => e[0] === ecran) || ECRANS[0])[2];
+  $('#gm-page').innerHTML = V[ecran]();
+  $('#gm-screens').innerHTML = ECRANS.map(([k, l]) => `<button class="chip" data-gm="ecran:${k}" aria-pressed="${ecran === k}">${l}</button>`).join('');
+}
+function tourAdverse(){
+  setTimeout(() => {
+    const m = G.moi;
+    G.adv.en = null;
+    dit("L'adversaire attache une <b>Énergie Combat</b> à Lucario V et attaque avec <b>Poing Météore</b> : 60 dégâts.");
+    m.actif.deg += 60;
+    if (m.actif.deg >= m.actif.pv) {
+      dit('<b>Salamèche</b> est mis K.O. — l\'adversaire prend une récompense.');
+      G.adv.prix -= 1; m.defausse += 1 + m.actif.en.length;
+      if (m.banc.length) { m.actif = m.banc.shift(); dit(`<b>${m.actif.c.nom}</b> passe au poste actif.`); }
+      else { G.fini = 'perdu'; ecran = 'fin'; }
+    }
+    G.tour += 1; G.aMoi = true;
+    rend();
+  }, 900);
+}
+document.getElementById('view-jeu').addEventListener('click', e => {
+  const b = e.target.closest('[data-gm]'); if (!b) return;
+  const a = b.dataset.gm;
+  if (a.startsWith('ecran:')) { ecran = a.slice(6); sel = null; selIdx = -1; rend(); return; }
+  if (a === 'plus' || a === 'moins') { const c = b.dataset.c; deck[c] = Math.max(0, (deck[c] || 0) + (a === 'plus' ? 1 : -1)); rend(); return; }
+  if (a === 'ia') { deck = {dracaufeu:1, salameche:4, psykokwak:2, pikachu:4, ronflex:3, 'energie-feu':14, 'energie-eau':4}; rend();
+    const z = document.querySelector('#gm-page .legal'); if (z) z.insertAdjacentHTML('afterbegin', '<div class="ex-note">Proposition de ton IA (Claude) : priorité au Feu, 18 énergies, Ronflex comme mur. Toutes les cartes sont dans ta collection.</div>'); return; }
+  if (a === 'main') { const i = +b.dataset.i; const id = G.moi.main[i];
+    if (byId[id].energie) { G.moi.actif.en.push(byId[id].type); G.moi.main.splice(i, 1); dit(`Tu attaches une <b>${byId[id].nom}</b> à ${G.moi.actif.c.nom}.`); sel = null; selIdx = -1; }
+    else { sel = (sel === id && selIdx === i) ? null : id; selIdx = (sel ? i : -1); }
+    rend(); return; }
+  if (a === 'poser' && sel !== null) { const i = selIdx, c = byId[sel];
+    G.moi.banc.push({c, pv: c.pv, deg: 0, en: []}); G.moi.main.splice(i, 1); dit(`Tu poses <b>${c.nom}</b> sur le banc.`); sel = null; selIdx = -1; rend(); return; }
+  if (a === 'attaquer') { const at = G.moi.actif.c.att && G.moi.actif.c.att[0];
+    if (!at) return;
+    if (G.moi.actif.en.length < at.c.length) { dit(`<b>Action refusée par le serveur</b> : ${at.n} coûte ${at.c.length} énergies, ${G.moi.actif.c.nom} n'en a que ${G.moi.actif.en.length}.`); rend(); return; }
+    G.adv.actif.deg += at.d; dit(`${G.moi.actif.c.nom} utilise <b>${at.n}</b> : ${at.d} dégâts.`);
+    if (G.adv.actif.deg >= G.adv.actif.pv) { dit(`<b>${G.adv.actif.c.nom}</b> est mis K.O. — tu prends une récompense.`); G.moi.prix -= 1; if (G.moi.prix === 0) { G.fini = 'gagne'; ecran = 'fin'; } else { G.adv.actif = G.adv.banc.shift() || G.adv.actif; } }
+    G.aMoi = false; rend(); if (!G.fini) tourAdverse(); return; }
+  if (a === 'fin') { dit('Tu termines ton tour.'); G.aMoi = false; rend(); tourAdverse(); return; }
+  if (a === 'abandon') { G.fini = 'perdu'; ecran = 'fin'; rend(); return; }
+});
+rend();
+})();
+
 </script>

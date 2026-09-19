@@ -4,7 +4,7 @@
     "date": "2026-09-19",
     "horizon": [
       "2026-09-21",
-      "2026-12-20"
+      "2027-02-28"
     ],
     "gel": null,
     "repo": "https://github.com/keewoo/PokeBoyManager",
@@ -26,7 +26,8 @@
       "Aucune IA « gratuite » implicite : la reconnaissance consomme la clé de l'utilisateur, sauf décision D4 contraire.",
       "Les APIs gratuites donnent le prix du jour, pas l'historique : la courbe de valeur commence au premier relevé (décision D3 pour un historique rétroactif payant).",
       "Python 3.12 partout (`UV_PYTHON=3.12`), Node 24. La CI GitHub Actions fait foi, pas une suite verte sur une machine de la flotte.",
-      "Tailles : S ≤ 2 j, M ≤ 1 sem, L ≤ 2 sem. Complexité = pièces touchées (1-5) ; difficulté = incertitude technique ou externe (1-5)."
+      "Tailles : S ≤ 2 j, M ≤ 1 sem, L ≤ 2 sem. Complexité = pièces touchées (1-5) ; difficulté = incertitude technique ou externe (1-5).",
+      "**Le jeu (V7) ne démarre qu'après le MVP en PROD.** Il s'appuie sur la même base : les cartes jouables sont celles que le joueur possède, avec leurs attaques et faiblesses déjà en base (principe « la base sait »)."
     ],
     "jalons": [
       {
@@ -38,6 +39,11 @@
         "date": "2026-11-20",
         "nom": "En ligne",
         "quoi": "Revue de sécurité passée, export/suppression des données, e2e verts en CI, PROD servie sur son domaine avec sauvegardes."
+      },
+      {
+        "date": "2027-02-20",
+        "nom": "Jeu jouable",
+        "quoi": "Deux joueurs s'affrontent en ligne avec leurs propres cartes : decks construits depuis sa collection (ou proposés par son IA), file d'attente, partie au tour par tour sur un plateau graphique, reprise après un F5."
       }
     ],
     "risques_calendrier": [
@@ -68,6 +74,22 @@
       {
         "risque": "Propriété intellectuelle : images et noms © Nintendo / The Pokémon Company.",
         "parade": "Espace privé, images servies à titre d'illustration depuis le catalogue, mention « non affilié » (D8), aucun usage commercial des visuels."
+      },
+      {
+        "risque": "Règles du jeu Pokémon : le jeu complet (dresseurs, talents, états spéciaux, cartes spéciales) est un moteur énorme ; tout viser d'un coup ne tiendrait pas.",
+        "parade": "Périmètre v1 tranché par D9 : Pokémon de base et évolutions, énergies, attaques, faiblesse/résistance, coût de retraite, récompenses, conditions de victoire. Dresseurs, talents et états spéciaux en v2, derrière un moteur déjà testé."
+      },
+      {
+        "risque": "Tricherie : un client qui connaîtrait la main ou la pioche de l'adversaire.",
+        "parade": "L'état de la partie vit sur le serveur, qui seul applique les règles ; chaque joueur ne reçoit que ce qu'il a le droit de voir ; chaque action est validée et journalisée (lot v7-anti-triche)."
+      },
+      {
+        "risque": "Reprise après un F5 ou une coupure réseau en pleine partie.",
+        "parade": "Aucun état de jeu dans le navigateur : un jeton de partie en cookie, l'état rechargé depuis le serveur, file d'événements idempotente et numérotée (lot v7-temps-reel)."
+      },
+      {
+        "risque": "Propriété intellectuelle : jouer en ligne avec des cartes Pokémon touche au terrain de The Pokémon Company (qui édite son propre jeu en ligne).",
+        "parade": "D11 : espace privé, entre comptes invités, sans publicité ni revenu, cartes limitées à celles que le joueur possède réellement ; à cadrer avant d'ouvrir la file d'attente à d'autres que les proches."
       }
     ],
     "principes_repartition": [
@@ -143,6 +165,10 @@
     {
       "id": "W",
       "nom": "Site public & lancement"
+    },
+    {
+      "id": "J",
+      "nom": "Jeu — decks et parties"
     }
   ],
   "vagues": [
@@ -201,6 +227,14 @@
       "fin": "2026-12-18",
       "these": "Ce qui rend le produit meilleur que la concurrence, une fois le socle en service.",
       "gain": "Contrefaçons repérées, alertes de prix, scan mobile, cartes gradées."
+    },
+    {
+      "id": "V7",
+      "nom": "Jouer avec ses cartes",
+      "debut": "2026-11-30",
+      "fin": "2027-02-20",
+      "these": "Après le MVP : construire des decks avec SES cartes (l'IA peut en proposer un selon les types voulus), puis s'affronter à deux, en ligne, au tour par tour, sur un plateau graphique — avec sa propre photo ou l'image officielle de chaque carte.",
+      "gain": "La collection ne se regarde plus, elle se joue."
     }
   ],
   "echeances": [
@@ -299,6 +333,30 @@
       "quoi": "Ouverture : sur invitation ou inscription libre ; nom public et mention « non affilié à Nintendo / The Pokémon Company ».",
       "debloque": [
         "v5-prod"
+      ]
+    },
+    {
+      "id": "D9",
+      "date": "2026-11-27",
+      "quoi": "Périmètre des règles v1 du moteur de jeu : proposition — Pokémon de base et évolutions, énergies, attaques, faiblesse/résistance, retraite, banc, récompenses, conditions de victoire ; dresseurs, talents et états spéciaux en v2.",
+      "debloque": [
+        "v7-regles-moteur"
+      ]
+    },
+    {
+      "id": "D10",
+      "date": "2026-12-18",
+      "quoi": "Un deck n'utilise que les cartes possédées — faut-il faire une exception pour les Énergies de base (illimitées, comme dans les decks papier) ? Proposition : oui, les Énergies de base sont fournies.",
+      "debloque": [
+        "v7-decks-api"
+      ]
+    },
+    {
+      "id": "D11",
+      "date": "2027-01-09",
+      "quoi": "Cadre du jeu en ligne (propriété intellectuelle) : partie privée entre comptes invités seulement, ou file d'attente ouverte à tous les inscrits ? Sans revenu ni publicité dans les deux cas.",
+      "debloque": [
+        "v7-file-attente"
       ]
     }
   ],
@@ -1717,6 +1775,384 @@
         "exemplaires gradés gérés"
       ],
       "taches_na": {}
+    },
+    {
+      "vague": "V7",
+      "piste": "J",
+      "id": "v7-regles-moteur",
+      "couloir": "DA1",
+      "debut": "2026-11-30",
+      "fin": "2026-12-18",
+      "priorite": "P0",
+      "taille": "L",
+      "complexite": 5,
+      "difficulte": 4,
+      "titre": "Moteur de règles du jeu, côté serveur, rejouable et testé",
+      "gain": "Le cœur du jeu : sans un moteur qui applique les règles et fait autorité, il n'y a ni partie honnête ni reprise après coupure.",
+      "fonctionnalites": "État complet d'une partie (zones : actif, banc, main, pioche, défausse, récompenses, énergies attachées), déroulé d'un tour (pioche, pose, évolution, énergie, attaque, retraite), dégâts avec faiblesse et résistance, mises KO, récompenses, conditions de victoire, abandon.",
+      "risques": "Périmètre (D9) : dresseurs, talents et états spéciaux ne sont PAS dans la v1 — le moteur doit être écrit pour les accueillir sans être réécrit. Un moteur de règles se teste par des centaines de cas : chaque règle a son test, et toute partie est rejouable depuis son journal d'actions.",
+      "tenants": "Cartes, attaques et faiblesses déjà en base (catalogue complet) ; D9.",
+      "aboutissants": "File d'attente, temps réel, plateau, parties.",
+      "dependances": [],
+      "decision": "D9",
+      "refs": [
+        "Règles officielles du JCC Pokémon"
+      ],
+      "mission": [
+        "Modéliser l'état d'une partie (structures pures, sérialisable en JSON) et le journal d'actions numéroté.",
+        "Implémenter les actions légales d'un tour et la résolution des attaques (dégâts, faiblesse ×2, résistance, KO, récompenses) ; toute action illégale est refusée avec sa raison.",
+        "Rejouabilité : rejouer le journal reconstruit exactement le même état (test de propriété).",
+        "Couverture : au moins 150 cas de règles, dont les cas limites (plus de cartes à piocher = défaite, banc plein, retraite sans énergie, KO simultané).",
+        "Interface claire pour la v2 (dresseurs, talents, états spéciaux) sans réécriture."
+      ],
+      "livrables": [
+        "moteur pur + journal rejouable",
+        "≥ 150 tests de règles verts"
+      ],
+      "taches_na": {
+        "maquette": "back-end"
+      }
+    },
+    {
+      "vague": "V7",
+      "piste": "J",
+      "id": "v7-decks-api",
+      "couloir": "DA1",
+      "debut": "2027-01-04",
+      "fin": "2027-01-08",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 2,
+      "titre": "Decks : création, légalité et sauvegarde, uniquement avec ses cartes",
+      "gain": "Un joueur construit ses decks à partir de sa collection réelle — c'est ce qui rend le jeu personnel.",
+      "fonctionnalites": "Plusieurs decks par joueur, nom, duplication, suppression ; contrôle de légalité (60 cartes, maximum 4 exemplaires d'une même carte par son nom, Énergies de base selon D10) ; un deck ne peut contenir que des exemplaires possédés, et signale ce qui manque.",
+      "risques": "Une carte vendue ou supprimée de la collection casse un deck existant : le deck reste lisible mais devient injouable, avec la raison affichée.",
+      "tenants": "Collection, moteur de règles ; D10.",
+      "aboutissants": "Constructeur de deck, proposition par l'IA, file d'attente.",
+      "dependances": [
+        "v7-regles-moteur"
+      ],
+      "decision": "D10",
+      "refs": [],
+      "mission": [
+        "Tables `decks` et `deck_cards` (référence à l'exemplaire possédé), routes CRUD filtrées par `user_id`.",
+        "Service de légalité : 60 cartes, règle des 4 exemplaires, Énergies de base, cartes non possédées, et un rapport lisible de ce qui bloque.",
+        "Revalidation d'un deck quand la collection change ; tests d'accès croisé."
+      ],
+      "livrables": [
+        "API decks + légalité testée"
+      ],
+      "taches_na": {
+        "maquette": "back-end"
+      }
+    },
+    {
+      "vague": "V7",
+      "piste": "J",
+      "id": "v7-decks-ui",
+      "couloir": "CH1",
+      "debut": "2027-01-11",
+      "fin": "2027-01-15",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 2,
+      "titre": "Constructeur de deck",
+      "gain": "Construire un deck doit être agréable, sinon personne ne joue.",
+      "fonctionnalites": "Deux colonnes : ma collection filtrable d'un côté, le deck de l'autre ; compteur 60, répartition par type et par rôle, avertissements de légalité en direct, sauvegarde, duplication.",
+      "risques": "—",
+      "tenants": "API des decks, design system.",
+      "aboutissants": "File d'attente, partie.",
+      "dependances": [
+        "v7-decks-api"
+      ],
+      "decision": null,
+      "refs": [
+        "Maquette du jeu : écran Constructeur de deck"
+      ],
+      "mission": [
+        "Page `/jeu/decks` et `/jeu/decks/[id]` conformes à la maquette du jeu.",
+        "Glisser-déposer ou clic pour ajouter et retirer, compteurs en direct, messages de légalité.",
+        "Tests d'interface et un e2e « construire un deck légal à partir de sa collection »."
+      ],
+      "livrables": [
+        "constructeur de deck utilisable"
+      ],
+      "taches_na": {}
+    },
+    {
+      "vague": "V7",
+      "piste": "J",
+      "id": "v7-deck-ia",
+      "couloir": "CH2",
+      "debut": "2027-01-18",
+      "fin": "2027-01-22",
+      "priorite": "P1",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "Deck proposé par l'IA du joueur, selon les types voulus",
+      "gain": "Demander « fais-moi un deck Feu avec mes cartes » évite la page blanche.",
+      "fonctionnalites": "Choix des types privilégiés et d'une intention (agressif, défensif, équilibré) ; l'IA propose un deck légal pris dans la collection, explique ses choix carte par carte ; le joueur modifie puis sauve.",
+      "risques": "Le deck proposé doit être **légal et possédé** : la proposition passe par le service de légalité avant d'être affichée — une proposition invalide est corrigée automatiquement, jamais montrée telle quelle. Un seul appel IA par proposition (principe « dès le premier tir »).",
+      "tenants": "API des decks, couche fournisseurs IA, clé du joueur.",
+      "aboutissants": "—",
+      "dependances": [
+        "v7-decks-api"
+      ],
+      "decision": null,
+      "refs": [],
+      "mission": [
+        "Construire le contexte : cartes possédées utiles (avec attaques, coûts, faiblesses), types demandés, intention.",
+        "Un appel structuré → liste de cartes + explications ; validation par le service de légalité, correction automatique (compléter en Énergies, retirer les surnuméraires) et trace de ce qui a été corrigé.",
+        "Tests avec réponses enregistrées ; mesure du coût moyen d'une proposition."
+      ],
+      "livrables": [
+        "proposition de deck légale, explicable, modifiable"
+      ],
+      "taches_na": {
+        "maquette": "intégré à l'écran de construction"
+      }
+    },
+    {
+      "vague": "V7",
+      "piste": "J",
+      "id": "v7-images-jeu",
+      "couloir": "CH3",
+      "debut": "2027-01-04",
+      "fin": "2027-01-08",
+      "priorite": "P1",
+      "taille": "M",
+      "complexite": 2,
+      "difficulte": 2,
+      "titre": "Cartes jouables : ma photo ou l'image officielle",
+      "gain": "Jouer avec SES cartes, visuellement : c'est ce qui distingue ce jeu d'un jeu générique.",
+      "fonctionnalites": "Pour chaque exemplaire : version jouable issue de sa photo (recadrée et redressée par la détection) ou image officielle ; choix par défaut par joueur ; préchargement des images du deck avant la partie.",
+      "risques": "Photos lourdes ou sombres : version jouable normalisée (taille, luminosité) ; jamais la photo d'un autre joueur que la sienne.",
+      "tenants": "Détection et recadrage, stockage, catalogue.",
+      "aboutissants": "Plateau de jeu.",
+      "dependances": [],
+      "decision": null,
+      "refs": [],
+      "mission": [
+        "Génération et cache des versions jouables (deux tailles), route servie signée.",
+        "Préférence du joueur (ma photo / image officielle) et repli automatique.",
+        "Préchargement du deck au lancement de la partie, mesuré."
+      ],
+      "livrables": [
+        "images jouables en cache, préchargement mesuré"
+      ],
+      "taches_na": {
+        "maquette": "back-end"
+      }
+    },
+    {
+      "vague": "V7",
+      "piste": "J",
+      "id": "v7-file-attente",
+      "couloir": "DA1",
+      "debut": "2027-01-11",
+      "fin": "2027-01-15",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "File d'attente et appariement de deux joueurs",
+      "gain": "Le point d'entrée du jeu : on choisit son deck, on entre dans la file, et la partie démarre dès qu'un adversaire est prêt.",
+      "fonctionnalites": "Entrer dans la file avec un deck légal, voir l'attente, annuler ; appariement dès que deux joueurs sont prêts ; création de la partie et redirection des deux joueurs ; partie privée par invitation (selon D11).",
+      "risques": "Deux appariements simultanés pour le même joueur : l'entrée en partie est atomique (verrou en base). Un joueur qui ferme l'onglet dans la file en sort automatiquement.",
+      "tenants": "Moteur de règles, decks ; D11.",
+      "aboutissants": "Partie en temps réel.",
+      "dependances": [
+        "v7-regles-moteur",
+        "v7-decks-api"
+      ],
+      "decision": "D11",
+      "refs": [],
+      "mission": [
+        "Table `matchmaking_queue` et `matches` ; entrée, sortie, appariement atomique, expiration.",
+        "Création de la partie : tirage du premier joueur, mains de départ, 6 récompenses, mulligan selon les règles.",
+        "Tests : deux joueurs appariés une seule fois, annulation, joueur disparu."
+      ],
+      "livrables": [
+        "file d'attente et appariement testés"
+      ],
+      "taches_na": {
+        "maquette": "back-end ; écran porté par v7-partie-ui"
+      }
+    },
+    {
+      "vague": "V7",
+      "piste": "J",
+      "id": "v7-temps-reel",
+      "couloir": "DA1",
+      "debut": "2027-01-18",
+      "fin": "2027-01-22",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 4,
+      "difficulte": 4,
+      "titre": "Temps réel et reprise après F5",
+      "gain": "Une partie doit survivre à un rafraîchissement, à un tunnel ou à un Wi-Fi qui saute.",
+      "fonctionnalites": "Canal temps réel (WebSocket) par partie, événements numérotés, resynchronisation complète à la reconnexion, jeton de partie en cookie, minuterie de tour et gestion des déconnexions (abandon automatique après un délai annoncé).",
+      "risques": "Aucun état de jeu dans le navigateur : le serveur fait foi, le client n'a qu'une vue. Un événement rejoué ne doit jamais produire deux effets (idempotence par numéro).",
+      "tenants": "Moteur de règles, file d'attente.",
+      "aboutissants": "Plateau, déroulé de la partie, anti-triche.",
+      "dependances": [
+        "v7-file-attente"
+      ],
+      "decision": null,
+      "refs": [],
+      "mission": [
+        "Canal par partie, autorisation par jeton de partie (cookie HttpOnly), vue filtrée par joueur (jamais la main adverse).",
+        "Événements numérotés + `GET /matches/{id}/state?since=` pour rattraper après une coupure ; test qui coupe la connexion en plein tour et reprend.",
+        "Minuteries : tour, déconnexion, abandon ; tout est décidé par le serveur."
+      ],
+      "livrables": [
+        "reprise après F5 prouvée par un test",
+        "vue filtrée par joueur"
+      ],
+      "taches_na": {
+        "maquette": "back-end"
+      }
+    },
+    {
+      "vague": "V7",
+      "piste": "J",
+      "id": "v7-plateau",
+      "couloir": "CH4",
+      "debut": "2027-01-26",
+      "fin": "2027-02-06",
+      "priorite": "P0",
+      "taille": "L",
+      "complexite": 4,
+      "difficulte": 3,
+      "titre": "Plateau de jeu graphique",
+      "gain": "C'est ce que le joueur voit : un plateau lisible, avec ses vraies cartes.",
+      "fonctionnalites": "Zones des deux joueurs (actif, banc de 5, pioche, défausse, 6 récompenses, énergies attachées, compteurs de dégâts), main en éventail, glisser-déposer, mise en évidence des actions possibles, adaptatif mobile.",
+      "risques": "Lisibilité sur téléphone : plateau compact, zoom sur une carte au toucher long. Aucune information cachée dans le DOM (la main adverse n'est jamais envoyée).",
+      "tenants": "Temps réel, images jouables, design system.",
+      "aboutissants": "Déroulé de la partie.",
+      "dependances": [
+        "v7-temps-reel",
+        "v7-images-jeu"
+      ],
+      "decision": null,
+      "refs": [
+        "Maquette du jeu : écran Plateau"
+      ],
+      "mission": [
+        "Composants de plateau conformes à la maquette du jeu, en deux moitiés symétriques.",
+        "Glisser-déposer des cartes de la main vers le banc, énergie sur un Pokémon, sélection d'une attaque ; les actions illégales ne sont même pas proposées.",
+        "Rendu à partir de la seule vue serveur ; rafraîchir la page redonne le même plateau."
+      ],
+      "livrables": [
+        "plateau jouable sur ordinateur et téléphone"
+      ],
+      "taches_na": {}
+    },
+    {
+      "vague": "V7",
+      "piste": "J",
+      "id": "v7-partie-ui",
+      "couloir": "CH4",
+      "debut": "2027-02-09",
+      "fin": "2027-02-13",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 2,
+      "titre": "Déroulé d'une partie : file d'attente, tours, journal, fin de partie",
+      "gain": "Relie tout : on entre dans la file, on joue, on gagne ou on perd, et on recommence.",
+      "fonctionnalites": "Écran de file d'attente avec choix du deck, indicateur « à toi de jouer », phases du tour, journal des actions, chronomètre, abandon, écran de fin avec récapitulatif et rejouer.",
+      "risques": "—",
+      "tenants": "Plateau, file d'attente, temps réel.",
+      "aboutissants": "Parcours e2e du jeu.",
+      "dependances": [
+        "v7-plateau"
+      ],
+      "decision": null,
+      "refs": [
+        "Maquette du jeu : écrans File d'attente et Fin de partie"
+      ],
+      "mission": [
+        "Pages `/jeu`, `/jeu/file`, `/jeu/partie/[id]`, écran de fin ; reprise automatique d'une partie en cours à la connexion.",
+        "Journal des actions lisible (qui a fait quoi) et chronomètre de tour.",
+        "Tests d'interface et parcours complet simulé."
+      ],
+      "livrables": [
+        "parcours de jeu complet"
+      ],
+      "taches_na": {}
+    },
+    {
+      "vague": "V7",
+      "piste": "J",
+      "id": "v7-anti-triche",
+      "couloir": "DA1",
+      "debut": "2027-01-25",
+      "fin": "2027-01-29",
+      "priorite": "P1",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "Autorité du serveur et anti-triche",
+      "gain": "Une partie n'a d'intérêt que si elle est honnête.",
+      "fonctionnalites": "Validation de chaque action (tour du joueur, action légale, cible valide), anti-rejeu, limites de débit, journal d'audit complet de la partie, détection des incohérences.",
+      "risques": "Le risque n'est pas l'attaque sophistiquée mais la fuite d'information : vérifier qu'aucune route ne renvoie la main, la pioche ou les récompenses de l'adversaire.",
+      "tenants": "Temps réel.",
+      "aboutissants": "Ouverture du jeu à d'autres joueurs.",
+      "dependances": [
+        "v7-temps-reel"
+      ],
+      "decision": null,
+      "refs": [],
+      "mission": [
+        "Tests d'intrusion applicative : jouer hors de son tour, jouer une carte non possédée, rejouer un événement, lire l'état adverse — tous refusés.",
+        "Journal d'audit par partie, conservé, et rejouable pour arbitrer un litige.",
+        "Limites de débit par joueur et par partie."
+      ],
+      "livrables": [
+        "tests d'abus verts",
+        "journal d'audit rejouable"
+      ],
+      "taches_na": {
+        "maquette": "back-end"
+      }
+    },
+    {
+      "vague": "V7",
+      "piste": "J",
+      "id": "v7-e2e-jeu",
+      "couloir": "CH3",
+      "debut": "2027-02-16",
+      "fin": "2027-02-20",
+      "priorite": "P1",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "Partie complète jouée automatiquement, à deux navigateurs",
+      "gain": "Prouve que le jeu tient debout de bout en bout, et le prouve à chaque livraison.",
+      "fonctionnalites": "—",
+      "risques": "Test à deux contextes de navigateur, avec temps réel : le rendre déterministe (tirages semés côté serveur en mode test).",
+      "tenants": "Déroulé de la partie.",
+      "aboutissants": "Ouverture du jeu.",
+      "dependances": [
+        "v7-partie-ui"
+      ],
+      "decision": null,
+      "refs": [],
+      "mission": [
+        "Deux joueurs Playwright : construction de deck, file, partie scriptée jusqu'à la victoire, F5 au milieu de la partie, reprise, fin.",
+        "Exécution en CI, captures en cas d'échec."
+      ],
+      "livrables": [
+        "e2e du jeu vert en CI"
+      ],
+      "taches_na": {
+        "maquette": "tests"
+      }
     }
   ]
 }

@@ -7,6 +7,7 @@
 
 - **2026-11-06 — MVP en UAT** : Parcours complet en UAT : inscription → clé IA → photo → reconnaissance → validation → collection filtrée → fiche carte avec courbe de valeur, anecdotes et étude en jeu.
 - **2026-11-20 — En ligne** : Revue de sécurité passée, export/suppression des données, e2e verts en CI, PROD servie sur son domaine avec sauvegardes.
+- **2027-02-20 — Jeu jouable** : Deux joueurs s'affrontent en ligne avec leurs propres cartes : decks construits depuis sa collection (ou proposés par son IA), file d'attente, partie au tour par tour sur un plateau graphique, reprise après un F5.
 
 ## V0 — Fondations (21 sept. → 29 sept.)
 
@@ -94,6 +95,24 @@ _Ce qui rend le produit meilleur que la concurrence, une fois le socle en servic
 | `v6-import-export` | P3 | Import/export CSV et liste de souhaits | DA1 (devAI) | 23 nov. → 27 nov. | v5-prod | — | À faire | [prompt](prompts/v6-import-export.md) |
 | `v6-gradation` | P3 | Cartes gradées (PSA, PCA, CGC) | CH3 (chimera) | 30 nov. → 4 déc. | v5-prod | — | À faire | [prompt](prompts/v6-gradation.md) |
 
+## V7 — Jouer avec ses cartes (30 nov. → 20 févr.)
+
+_Après le MVP : construire des decks avec SES cartes (l'IA peut en proposer un selon les types voulus), puis s'affronter à deux, en ligne, au tour par tour, sur un plateau graphique — avec sa propre photo ou l'image officielle de chaque carte._
+
+| Lot | Prio | Titre | Couloir | Prévu | Dépend de | Décision | Statut | Prompt |
+|---|---|---|---|---|---|---|---|---|
+| `v7-regles-moteur` | P0 | Moteur de règles du jeu, côté serveur, rejouable et testé | DA1 (devAI) | 30 nov. → 18 déc. | — | D9 | À faire | [prompt](prompts/v7-regles-moteur.md) |
+| `v7-decks-api` | P0 | Decks : création, légalité et sauvegarde, uniquement avec ses cartes | DA1 (devAI) | 4 janv. → 8 janv. | v7-regles-moteur | D10 | À faire | [prompt](prompts/v7-decks-api.md) |
+| `v7-images-jeu` | P1 | Cartes jouables : ma photo ou l'image officielle | CH3 (chimera) | 4 janv. → 8 janv. | — | — | À faire | [prompt](prompts/v7-images-jeu.md) |
+| `v7-decks-ui` | P0 | Constructeur de deck | CH1 (chimera) | 11 janv. → 15 janv. | v7-decks-api | — | À faire | [prompt](prompts/v7-decks-ui.md) |
+| `v7-file-attente` | P0 | File d'attente et appariement de deux joueurs | DA1 (devAI) | 11 janv. → 15 janv. | v7-regles-moteur, v7-decks-api | D11 | À faire | [prompt](prompts/v7-file-attente.md) |
+| `v7-deck-ia` | P1 | Deck proposé par l'IA du joueur, selon les types voulus | CH2 (chimera) | 18 janv. → 22 janv. | v7-decks-api | — | À faire | [prompt](prompts/v7-deck-ia.md) |
+| `v7-temps-reel` | P0 | Temps réel et reprise après F5 | DA1 (devAI) | 18 janv. → 22 janv. | v7-file-attente | — | À faire | [prompt](prompts/v7-temps-reel.md) |
+| `v7-anti-triche` | P1 | Autorité du serveur et anti-triche | DA1 (devAI) | 25 janv. → 29 janv. | v7-temps-reel | — | À faire | [prompt](prompts/v7-anti-triche.md) |
+| `v7-plateau` | P0 | Plateau de jeu graphique | CH4 (chimera) | 26 janv. → 6 févr. | v7-temps-reel, v7-images-jeu | — | À faire | [prompt](prompts/v7-plateau.md) |
+| `v7-partie-ui` | P0 | Déroulé d'une partie : file d'attente, tours, journal, fin de partie | CH4 (chimera) | 9 févr. → 13 févr. | v7-plateau | — | À faire | [prompt](prompts/v7-partie-ui.md) |
+| `v7-e2e-jeu` | P1 | Partie complète jouée automatiquement, à deux navigateurs | CH3 (chimera) | 16 févr. → 20 févr. | v7-partie-ui | — | À faire | [prompt](prompts/v7-e2e-jeu.md) |
+
 ## Décisions de JF
 
 | # | Avant le | Décision | Prise | Débloque |
@@ -106,3 +125,6 @@ _Ce qui rend le produit meilleur que la concurrence, une fois le socle en servic
 | D7 | 2026-10-07 | Stockage des photos (Object Storage UpCloud ou disque du VPS) et durée de conservation des photos d'origine. | DÉFAUT PROVISOIRE (recommandation devAI du 19/09, à confirmer par JF) : photos sur le disque local du serveur (/srv/pokeboy/<env>/data/photos) au lancement ; l'application garde une interface de stockage à deux implémentations (disque local en UAT/PROD, S3/MinIO en dev) ; UpCloud Object Storage à chiffrer si le volume l'exige. Photos conservées jusqu'à suppression. | v3-upload |
 | D6 | 2026-10-23 | Définir le « ranking » affiché sur la fiche : rang de rareté, rang de valeur dans la collection, percentile dans l'extension — un, deux ou les trois. | DÉFAUT PROVISOIRE du pilote (à confirmer par JF) : les trois classements — rang de rareté, rang de valeur dans la collection, percentile de valeur dans l'extension. | v4-ranking |
 | D8 | 2026-11-13 | Ouverture : sur invitation ou inscription libre ; nom public et mention « non affilié à Nintendo / The Pokémon Company ». | en attente | v5-prod |
+| D9 | 2026-11-27 | Périmètre des règles v1 du moteur de jeu : proposition — Pokémon de base et évolutions, énergies, attaques, faiblesse/résistance, retraite, banc, récompenses, conditions de victoire ; dresseurs, talents et états spéciaux en v2. | en attente | v7-regles-moteur |
+| D10 | 2026-12-18 | Un deck n'utilise que les cartes possédées — faut-il faire une exception pour les Énergies de base (illimitées, comme dans les decks papier) ? Proposition : oui, les Énergies de base sont fournies. | en attente | v7-decks-api |
+| D11 | 2027-01-09 | Cadre du jeu en ligne (propriété intellectuelle) : partie privée entre comptes invités seulement, ou file d'attente ouverte à tous les inscrits ? Sans revenu ni publicité dans les deux cas. | en attente | v7-file-attente |
