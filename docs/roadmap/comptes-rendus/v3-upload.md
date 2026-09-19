@@ -67,6 +67,11 @@ $ uv run pytest -q
 126 passed in 16.39s   # 109 préexistants + 17 nouveaux (tests/test_uploads.py)
 ```
 
+Rejoué après rebase sur `origin/main` (qui a reçu entre-temps `v2-recherche` et `v3-ia-providers`,
+fusionnés en parallèle) : `227 passed`, résolu deux conflits triviaux (`main.py` — les deux routeurs
+ajoutés en parallèle, `catalog` et `uploads` — et le défaut `TEST_DATABASE_URL` de
+`tests/conftest.py`, même convention documentée par `v2-recherche`), aucune régression.
+
 - `tests/test_uploads.py` — `test_create_uploads_returns_one_presigned_target_per_file`
   **échoue sans ce lot** (404, aucun routeur `uploads`) et passe avec.
   - Cibles d'envoi : une par fichier, lot > 30 refusé, type non accepté refusé, taille > 20 Mo

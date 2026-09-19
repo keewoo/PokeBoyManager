@@ -227,6 +227,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/catalog/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search Catalog */
+        get: operations["search_catalog_catalog_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/uploads": {
         parameters: {
             query?: never;
@@ -350,6 +367,33 @@ export interface components {
             tokens_count: number;
             /** Estimated Cost Eur */
             estimated_cost_eur: string;
+        };
+        /** CardSearchResult */
+        CardSearchResult: {
+            /**
+             * Card Id
+             * Format: uuid
+             */
+            card_id: string;
+            /**
+             * Set Id
+             * Format: uuid
+             */
+            set_id: string;
+            /** Number */
+            number: string;
+            /** Name */
+            name: string;
+            /** Matched Name */
+            matched_name: string;
+            /** Language */
+            language: string | null;
+            /** Set Name */
+            set_name: string;
+            /** Set Code */
+            set_code: string;
+            /** Score */
+            score: number;
         };
         /** CompleteUploadResponse */
         CompleteUploadResponse: {
@@ -918,6 +962,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AiUsageEntry"][];
+                };
+            };
+        };
+    };
+    search_catalog_catalog_search_get: {
+        parameters: {
+            query: {
+                q: string;
+                set?: string | null;
+                lang?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardSearchResult"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
