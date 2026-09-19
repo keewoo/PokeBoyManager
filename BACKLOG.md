@@ -55,7 +55,7 @@ _Le cœur du produit : une photo (une carte ou un classeur de neuf) devient une 
 | `v3-detection` | P0 | Détecter et découper chaque carte d'une photo (1 à N, classeur 3×3) | CH2 (chimera) | 12 oct. → 15 oct. | v3-ia-providers | — | Intégré (main) | [prompt](prompts/v3-detection.md) |
 | `v3-identification` | P0 | Identifier chaque carte et la rapprocher du catalogue (top 3 avec confiance) | CH2 (chimera) | 16 oct. → 22 oct. | v3-detection, v2-recherche | — | Intégré (main) | [prompt](prompts/v3-identification.md) |
 | `v3-identification-visuelle` | P1 | Identifier sans IA : comparer chaque carte détectée aux images officielles de la base | CH3 (chimera) | 23 oct. → 29 oct. | v3-identification, v2-catalogue-complet | — | En cours | [prompt](prompts/v3-identification-visuelle.md) |
-| `v3-validation` | P0 | Écran de validation : vérifier, corriger et ajouter les cartes reconnues | CH4 (chimera) | 23 oct. → 27 oct. | v3-identification, v3-upload | — | En cours | [prompt](prompts/v3-validation.md) |
+| `v3-validation` | P0 | Écran de validation : vérifier, corriger et ajouter les cartes reconnues | CH4 (chimera) | 23 oct. → 27 oct. | v3-identification, v3-upload | — | Intégré (main) | [prompt](prompts/v3-validation.md) |
 | `v3-etat` | P1 | Estimation de l'état de la carte (centrage, coins, bords, surface) | CH2 (chimera) | 23 oct. → 27 oct. | v3-identification | — | Intégré (main) | [prompt](prompts/v3-etat.md) |
 
 ## V4 — La collection et ses fiches (26 oct. → 6 nov.)
@@ -65,7 +65,7 @@ _Une fois les cartes connues, on les parcourt, on les filtre, on les valorise, e
 | Lot | Prio | Titre | Couloir | Prévu | Dépend de | Décision | Statut | Prompt |
 |---|---|---|---|---|---|---|---|---|
 | `v4-ranking` | P1 | Classement (« ranking ») de chaque carte | DA1 (devAI) | 26 oct. → 27 oct. | v2-prix | D6 | Intégré (main) | [prompt](prompts/v4-ranking.md) |
-| `v4-collection` | P0 | Page collection : grille, filtres, tris et valeur totale | CH1 (chimera) | 28 oct. → 30 oct. | v3-validation, v2-prix | — | À faire | [prompt](prompts/v4-collection.md) |
+| `v4-collection` | P0 | Page collection : grille, filtres, tris et valeur totale | CH1 (chimera) | 28 oct. → 30 oct. | v3-validation, v2-prix | — | En cours | [prompt](prompts/v4-collection.md) |
 | `v4-anecdotes` | P1 | Histoire et anecdotes de la carte (sourcées) | CH2 (chimera) | 28 oct. → 30 oct. | v3-ia-providers, v2-catalogue | — | Intégré (main) | [prompt](prompts/v4-anecdotes.md) |
 | `v4-fiche` | P0 | Fiche carte : image officielle, ma photo, état, valeur dans le temps, histoire | CH4 (chimera) | 2 nov. → 5 nov. | v4-collection, v4-ranking, v4-anecdotes, v3-etat | — | À faire | [prompt](prompts/v4-fiche.md) |
 | `v4-jeu` | P2 | Étude d'utilisation en jeu (légalité, attaques, présence en tournoi) | CH2 (chimera) | 2 nov. → 5 nov. | v4-anecdotes | — | Intégré (main) | [prompt](prompts/v4-jeu.md) |

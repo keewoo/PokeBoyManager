@@ -1486,21 +1486,21 @@
       "attente": null
     },
     "v3-validation": {
-      "statut": "en_cours",
+      "statut": "integre",
       "machine": "chimera",
       "branche": "roadmap/v3-validation",
       "debut_reel": "2026-09-19",
-      "fin_reelle": null,
+      "fin_reelle": "2026-09-20",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 9ca4b604c intégré dans main — voir docs/roadmap/comptes-rendus/v3-validation.md",
+          "maj": "2026-09-20T00:07+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 9ca4b604c intégré dans main — voir docs/roadmap/comptes-rendus/v3-validation.md",
+          "maj": "2026-09-20T00:07+0200"
         },
         "securite": {
           "etat": "a_faire",
@@ -1528,14 +1528,14 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 9ca4b604c intégré dans main — voir docs/roadmap/comptes-rendus/v3-validation.md",
+          "maj": "2026-09-20T00:07+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 9ca4b604c intégré dans main — voir docs/roadmap/comptes-rendus/v3-validation.md",
+          "maj": "2026-09-20T00:07+0200"
         }
       },
       "journal": [
@@ -1544,9 +1544,38 @@
           "machine": "chimera",
           "evenement": "démarré",
           "detail": "roadmap/v3-validation"
+        },
+        {
+          "quand": "2026-09-20T00:07+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit 9ca4b604c"
         }
       ],
-      "compte_rendu": {},
+      "compte_rendu": {
+        "resume": "Écran de validation : état d'un envoi + flux SSE de progression (`GET /uploads/{id}`, `GET /uploads/{id}/events`), décision humaine sur chaque détection (`POST /detections/{id}/confirm` et `/reject`), ajout groupé des cartes déjà bien identifiées (`POST /uploads/{id}/confirm-all`). Chaque décision écrit une `IdentificationCorrection` (candidat proposé vs choisi) — le jeu de régression de l'identification que `v3-identification` avait signalé comme manquant. Front `/ajouter/validation` : recadrage + image officielle côte à côte, candidats sélectionnables au clic ou au clavier (1/2/3), recherche manuelle au catalogue, champs langue/variante/quantité/ état/prix d'achat, raccourci Entrée pour valider la carte active.",
+        "livrables": [
+          "`apps/api/src/pbm_api/validation/` (nouveau module) :",
+          "`schemas.py` — `ConfirmDetectionRequest/Response`, `RejectDetectionResponse`,",
+          "`service.py` — `confirm_detection`, `reject_detection`, `confirm_all` : appartenance",
+          "`errors.py` — `DetectionNotFoundError`, `DetectionAlreadyProcessedError`,",
+          "`apps/api/src/pbm_api/models/identification.py` — `IdentificationCorrection` (nouvelle table :",
+          "`apps/api/migrations/versions/d27e4efd0255_...py` — table `identification_corrections`.",
+          "`apps/api/src/pbm_api/routers/detections.py` (nouveau) — `POST /detections/{id}/confirm`,",
+          "`apps/api/src/pbm_api/routers/uploads.py` — `GET /uploads/{id}` (état + job + détections),"
+        ],
+        "preuves": [],
+        "ecarts": [
+          "**Flux SSE non prouvé en vraie concurrence par la suite automatisée** (voir « Tests ») : la",
+          "**Environnement Playwright de chimera cassé pour tous les lots**, pas seulement celui-ci (voir"
+        ],
+        "reste": [
+          "Corriger l'environnement Playwright de chimera à la racine : `sudo apt-get install -y",
+          "Utiliser le jeu de corrections (`identification_corrections`) pour mesurer un vrai taux de",
+          "`v4-collection` (déjà prévu ailleurs) : la page `/collection` reste l'état vide de",
+          "Décider si l'écran de validation doit distinguer visuellement un candidat non présélectionné"
+        ]
+      },
       "attente": null
     },
     "v3-etat": {
@@ -1643,10 +1672,10 @@
       "attente": null
     },
     "v4-collection": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
+      "statut": "en_cours",
+      "machine": "chimera",
+      "branche": "roadmap/v4-collection",
+      "debut_reel": "2026-09-20",
       "fin_reelle": null,
       "taches": {
         "dev": {
@@ -1695,8 +1724,16 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-20T00:08+0200",
+          "machine": "chimera",
+          "evenement": "démarré",
+          "detail": "roadmap/v4-collection"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": null
     },
     "v4-ranking": {
       "statut": "integre",
