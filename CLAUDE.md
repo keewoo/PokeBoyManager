@@ -206,6 +206,46 @@ uv run python -m pbm_api.admin create-user --email … --pseudo … --last-name 
 Mot de passe lu sur l'entrée standard ou généré et affiché une seule fois — jamais en argument ni
 journalisé. Détail : `docs/ARCHITECTURE.md` § « Identité du compte ».
 
+## Écran de validation (lot `v3-validation`)
+
+Routes (`apps/api/src/pbm_api/routers/uploads.py`, `routers/detections.py`) : `GET
+/uploads/{id}` (état de l'envoi + job de reconnaissance le plus récent + détections — chargement
+initial de l'écran), `GET /uploads/{id}/events` (flux SSE, `event: snapshot` à chaque changement
+détecté par sondage puis `event: done`/`timeout` en fin de job), `POST
+/detections/{id}/confirm`/`/reject`, `POST /uploads/{id}/confirm-all`. `Upload.status` ne reflète
+que le traitement de la photo brute (EXIF, HEIC), pas la reconnaissance : la progression réelle
+vient du `Job` (`type="detect_cards"`) le plus récent pour cet envoi
+(`pbm_api.uploads.service.get_latest_recognition_job`). `pbm_api.detection.service` et
+`pbm_api.identification.service` commitent désormais une détection à la fois (pas un seul commit
+en fin de job) pour que le flux SSE voie une progression réelle et qu'un job interrompu (clé
+épuisée) garde les cartes déjà traitées.
+
+`confirm` crée `quantity` `CollectionItem` (une ligne par exemplaire, `CollectionItem` n'a pas de
+colonne quantité) et écrit une `IdentificationCorrection` (`pbm_api.models.identification`) :
+candidat proposé (premier de `Detection.candidates`, `None` si aucun) contre celui réellement
+retenu (`None` = rejetée) — le jeu de régression de l'identification, jamais consulté par le
+produit lui-même. `confirm-all` (« Tout ajouter ») n'agit que sur les détections dont le premier
+candidat est présélectionné (`preselected`, score > `PRESELECTION_THRESHOLD` — voir
+`pbm_api.identification.reconciliation`), langue "fr"/variante normale/un exemplaire par défaut ;
+le reste reste `pending`, jamais ajouté sans qu'un candidat se soit démarqué même implicitement.
+
+Front (`apps/web/src/app/ajouter/validation/`) : un envoi peut regrouper plusieurs photos (donc
+plusieurs `upload_id`, l'API n'ayant pas de notion de lot) — `upload-view.tsx` redirige vers
+`/ajouter/validation?uploads=<id1>,<id2>,…` après l'envoi, la liste des détections de tous les
+envois est fusionnée côté client et triée par ordre de lecture. Raccourcis clavier (mission point
+2) : Entrée valide la détection active (premier `pending` de la liste), 1/2/3 changent son
+candidat sélectionné — désactivés quand le focus est dans un champ de saisie. Recherche manuelle :
+réutilise `GET /catalog/search` tel quel (`pbm_api.routers.catalog`, lot `v2-recherche`).
+
+Tests : `apps/api/tests/test_validation_routes.py` (confirm/reject/confirm-all, flux SSE, accès
+croisé) — le worker arq n'étant pas démarré pendant les tests, `_simulate_worker` reproduit
+`worker._run_detect_cards` (détection puis identification directement, `Job.status` transité à la
+main). e2e Playwright de conformité à la maquette :
+`apps/web/e2e/validation.spec.ts` — aucune clé IA réelle disponible sur chimera, l'envoi
+« déjà identifié » est semé directement en base par `apps/api/scripts/seed_validation_e2e.py`
+(même forme que `_simulate_worker`) ; seul l'écran de validation est exercé par le navigateur, pas
+le pipeline de reconnaissance réel.
+
 ## Règles de la flotte applicables ici (résumé de `~/.claude/CLAUDE.md`)
 
 - On construit sur chimera (32 Go, 16 threads) et on ne construit jamais sur la machine qui sert.
