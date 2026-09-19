@@ -7,6 +7,7 @@ extension est validée (`commit`) dès qu'elle est complète, pour qu'un arrêt 
 perde pas le travail déjà fait.
 """
 
+import asyncio
 import logging
 from datetime import date
 from typing import Any
@@ -26,6 +27,44 @@ from pbm_api.models import Card, CardName, Set
 logger = logging.getLogger(__name__)
 
 MAX_UNMATCHED_SAMPLE = 50
+
+# Étapes d'évolution ordinaires (TCGdex `stage`, en français — seule langue dont on récupère le
+# détail complet de carte, voir `import_catalogue`) : tout `stage` en dehors de cette liste porte
+# lui-même une règle spéciale (VMAX, VSTAR, BREAK...), faute de `suffix` pour ces cas (constaté en
+# direct le 2026-09-19 : Astronelle VMAX a `stage="VMAX"`, `suffix=None`).
+ORDINARY_STAGES = {"Base", "Niveau 1", "Niveau 2"}
+
+
+def _rule_marker(detail: dict) -> str | None:
+    suffix = detail.get("suffix")
+    if suffix:
+        return suffix
+    stage = detail.get("stage")
+    if stage and stage not in ORDINARY_STAGES:
+        return stage
+    return None
+
+# Bride les appels `get_card` en parallèle par extension : purement réseau (aucun accès à
+# `session`, qui n'est pas sûr en usage concurrent), les upserts en base restent séquentiels.
+# Même ordre de grandeur que `pricing.service.TCGDEX_CONCURRENCY` — décisif pour tenir un import
+# complet (~20 000 cartes) sur le lien à ~250 ko/s de chimera (mission risque réseau).
+TCGDEX_CARD_FETCH_CONCURRENCY = 8
+
+
+async def _fetch_card_details(
+    tcgdex: TcgdexClient, lang: str, card_ids: list[str], concurrency: int
+) -> dict[str, dict | Exception]:
+    semaphore = asyncio.Semaphore(concurrency)
+
+    async def _one(card_id: str) -> tuple[str, dict | Exception]:
+        async with semaphore:
+            try:
+                return card_id, await tcgdex.get_card(lang, card_id)
+            except Exception as exc:  # noqa: BLE001 — une carte en échec ne doit pas arrêter l'import
+                return card_id, exc
+
+    results = await asyncio.gather(*(_one(card_id) for card_id in card_ids))
+    return dict(results)
 
 
 async def _upsert_set(
@@ -75,7 +114,7 @@ async def _upsert_card(
     card.weaknesses = detail.get("weaknesses")
     card.resistances = detail.get("resistances")
     card.retreat_cost = detail.get("retreat")
-    card.rule_suffix = detail.get("suffix")
+    card.rule_marker = _rule_marker(detail)
     card.variants = detail.get("variants")
     await session.flush()
     return card, created
@@ -174,10 +213,16 @@ async def import_catalogue(
                     report["errors"].append(f"rapprochement {tcgdex_set_id} : {exc}")
                     number_to_ptcg_id = None
 
-            for card_summary in fr_detail.get("cards", []):
-                tcgdex_card_id = card_summary["id"]
+            card_ids = [card_summary["id"] for card_summary in fr_detail.get("cards", [])]
+            card_details = await _fetch_card_details(
+                tcgdex, primary_lang, card_ids, TCGDEX_CARD_FETCH_CONCURRENCY
+            )
+
+            for tcgdex_card_id in card_ids:
                 try:
-                    card_detail = await tcgdex.get_card(primary_lang, tcgdex_card_id)
+                    card_detail = card_details[tcgdex_card_id]
+                    if isinstance(card_detail, Exception):
+                        raise card_detail
                     card, card_created = await _upsert_card(
                         session, set_row, tcgdex_card_id, card_detail
                     )

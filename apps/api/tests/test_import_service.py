@@ -12,7 +12,7 @@ migration `b671eb503fa3`) et passe avec.
 
 from sqlalchemy import select
 
-from pbm_api.catalog.import_service import import_catalogue
+from pbm_api.catalog.import_service import _rule_marker, import_catalogue
 from pbm_api.catalog.ptcg_client import PtcgUnavailableError
 from pbm_api.models import Card, CardName, Set
 
@@ -54,6 +54,7 @@ FR_CARD_DETAILS = {
         "weaknesses": [{"type": "Eau", "value": "×2"}],
         "resistances": [{"type": "Combat", "value": "-30"}],
         "retreat": 2,
+        "stage": "Niveau 2",
         "suffix": "ex",
         "variants": {
             "firstEdition": False,
@@ -164,7 +165,7 @@ async def test_import_catalogue_fills_completeness_fields(db_session):
     assert card.weaknesses == [{"type": "Eau", "value": "×2"}]
     assert card.resistances == [{"type": "Combat", "value": "-30"}]
     assert card.retreat_cost == 2
-    assert card.rule_suffix == "ex"
+    assert card.rule_marker == "ex"
     assert card.variants == {
         "firstEdition": False,
         "holo": True,
@@ -179,7 +180,16 @@ async def test_import_catalogue_fills_completeness_fields(db_session):
         await db_session.execute(select(Card).where(Card.tcgdex_id == "sv03.5-025"))
     ).scalar_one()
     assert other.weaknesses is None
-    assert other.rule_suffix is None
+    assert other.rule_marker is None
+
+
+def test_rule_marker_uses_stage_when_no_suffix():
+    """VMAX/VSTAR n'ont pas de `suffix` chez TCGdex, la règle est portée par `stage` seul
+    (constaté en direct le 2026-09-19 sur `swsh4-21`, Astronelle VMAX)."""
+    assert _rule_marker({"suffix": None, "stage": "VMAX"}) == "VMAX"
+    assert _rule_marker({"suffix": "ex", "stage": "Niveau 2"}) == "ex"
+    assert _rule_marker({"suffix": None, "stage": "Base"}) is None
+    assert _rule_marker({"suffix": None, "stage": None}) is None
 
 
 async def test_import_catalogue_is_idempotent(db_session):

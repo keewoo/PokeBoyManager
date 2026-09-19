@@ -80,8 +80,10 @@ class Card(Base, TimestampMixin):
     weaknesses: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     resistances: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     retreat_cost: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    # Règle spéciale portée par le nom (ex/V/VMAX/GX...), telle qu'exposée par TCGdex (`suffix`).
-    rule_suffix: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # Marqueur de règle spéciale (ex/GX/V/VMAX/VSTAR/BREAK...) : TCGdex `suffix` si présent
+    # (ex, GX — la carte garde un stade d'évolution ordinaire), sinon `stage` quand il porte
+    # lui-même la règle (VMAX/VSTAR n'ont pas de `suffix`, voir catalog/import_service.py).
+    rule_marker: Mapped[str | None] = mapped_column(String(32), nullable=True)
     # Variantes existantes pour cette carte (ex: {"normal": false, "holo": true, "reverse": false,
     # "firstEdition": false, "wPromo": false}), telles qu'exposées par TCGdex (`variants`).
     variants: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
