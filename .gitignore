@@ -11,5 +11,6 @@ coverage/
 *.tsbuildinfo
 packages/api-client/openapi.json
 apps/api/data/photos/
+apps/api/var/
 apps/web/playwright-report/
 apps/web/test-results/

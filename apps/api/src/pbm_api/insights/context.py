@@ -17,6 +17,14 @@ _TIMEOUT_SECONDS = 10.0
 # Texte brut envoyé au modèle par page — un extrait suffit très largement pour trois à cinq
 # anecdotes, et limite le coût du prompt (mission point 2, appel unique par carte).
 _EXTRACT_CHARS_LIMIT = 6000
+# User-Agent identifié (mission `v4-insights-batch`, risque « débit raisonnable ») : les deux
+# wikis sont des services communautaires sans clé, un agent générique masquerait qui les
+# sollicite — utilisé ici et par la collecte à la demande (`pbm_api.insights.service`), qui
+# partage cette même classe. Pas d'URL publique ni de contact ici : le projet n'a encore aucun
+# domaine réel (D2/D8 hors périmètre, voir CLAUDE.md) — inventer une adresse serait plus trompeur
+# pour les opérateurs de ces wikis qu'un simple nom de projet. ASCII strict : un en-tête HTTP
+# n'accepte pas les caractères accentués (`UnicodeEncodeError` à la construction du client sinon).
+_USER_AGENT = "PokeBoyManager/dev (private app in development, no public URL yet)"
 
 
 class ContextPage(BaseModel):
@@ -31,7 +39,9 @@ class MediaWikiClient:
 
     def __init__(self, api_url: str, http_client: httpx.AsyncClient | None = None) -> None:
         self._api_url = api_url
-        self._client = http_client or httpx.AsyncClient(timeout=_TIMEOUT_SECONDS)
+        self._client = http_client or httpx.AsyncClient(
+            timeout=_TIMEOUT_SECONDS, headers={"User-Agent": _USER_AGENT}
+        )
         self._owns_client = http_client is None
 
     async def aclose(self) -> None:

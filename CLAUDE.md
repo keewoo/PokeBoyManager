@@ -73,7 +73,11 @@ optionnel) : `DATABASE_URL`, `REDIS_URL`, `S3_ENDPOINT_URL`/`S3_ACCESS_KEY`/`S3_
 le lien de téléchargement d'export envoyé par e-mail pointe dessus), `AI_KEY_ENCRYPTION_KEY`
 (coffre de clés IA, lot `v1-byok` — clé maître AES-256 en base64, 32 octets ; chiffre/déchiffre
 les clés des utilisateurs, à définir par variable d'environnement hors dépôt pour tout
-déploiement).
+déploiement), `PLATFORM_ANTHROPIC_API_KEY`/`INSIGHTS_BUDGET_EUR`/`INSIGHTS_BATCH_MODEL`/
+`INSIGHTS_BATCH_CHUNK_SIZE` (insights par lots, lot `v4-insights-batch` — clé PLATEFORME
+distincte de toute clé d'utilisateur et plafond de dépense cumulé, vides/nuls par défaut : sans
+eux, `scripts/run_insights_batch.py` refuse de dépenser quoi que ce soit ; à fournir par JF hors
+dépôt, D4).
 Chaque lot pointe sa propre base/bucket/préfixe — ne jamais réutiliser ceux d'un autre lot sur
 l'infra partagée (`pbm-shared`). `apps/web` lit `NEXT_PUBLIC_API_URL` (défaut
 `http://localhost:8000`) et `NEXT_PUBLIC_SESSION_COOKIE_NAME` (défaut `pbm_session`, doit
@@ -254,6 +258,54 @@ main). e2e Playwright de conformité à la maquette :
 « déjà identifié » est semé directement en base par `apps/api/scripts/seed_validation_e2e.py`
 (même forme que `_simulate_worker`) ; seul l'écran de validation est exercé par le navigateur, pas
 le pipeline de reconnaissance réel.
+
+## Insights par lots (lot `v4-insights-batch`)
+
+Pré-génération, pour TOUTE carte du catalogue, de ce que `v4-anecdotes`/`v4-jeu` généraient
+jusqu'ici à la demande (« autant tout prendre dès le premier tir », JF 19/09) — un seul appel
+Anthropic par carte (Message Batches API, -50 %, `pbm_api.insights_batch.anthropic_batches`)
+rend ensemble anecdotes sourcées FR + EN et étude en jeu (`pbm_api.insights_batch.
+combined_generation.CombinedCardInsightExtraction`), écrit dans le même `card_insights` que les
+routes à la demande — celles-ci deviennent un repli automatique pour une carte pas encore
+couverte (leur logique de cache existante suffit, aucun changement côté `v4-anecdotes`/`v4-jeu`).
+Anecdotes EN dans une colonne dédiée `card_insights.anecdotes_en` (même forme que `anecdotes`) :
+mélanger les deux langues dans la liste déjà exposée par `GET /cards/{id}/insights` aurait fait
+apparaître du texte anglais sans prévenir sur un produit francophone ; non exposée par une route
+pour l'instant.
+
+Orchestration (`pbm_api.insights_batch.runner.run_once`, appelé par
+`scripts/run_insights_batch.py`, jamais depuis une route HTTP) : sélection idempotente (une
+carte sans `CardInsight`, ou dont les anecdotes ou l'étude en jeu manquent encore, reste
+candidate — jamais de re-dépense sur une fiche déjà utilisable), soumission d'un lot Anthropic
+borné par `INSIGHTS_BATCH_CHUNK_SIZE` (défaut 100, très en-deçà de la limite réelle de 100 000
+requêtes/256 Mo), sondage puis application idempotente des résultats. Clé **plateforme**
+(`PLATFORM_ANTHROPIC_API_KEY`, jamais une clé d'`ai_credentials`) et budget cumulé
+(`INSIGHTS_BUDGET_EUR`) lus depuis `pbm_api.config.Settings` — absents par défaut (dev),
+`run_once` refuse alors de dépenser quoi que ce soit plutôt que de se replier silencieusement ;
+D4 : à fournir par JF hors dépôt avant tout passage réel. Coût réel converti en EUR via
+`pbm_api.pricing.exchange_rates` (même taux BCE que `v2-prix`) — un taux manquant bloque la
+soumission (jamais un coût traité comme gratuit). Reprise : `var/insights_batch/ledger.json`
+(non versionné) porte la dépense cumulée et le lot Anthropic en cours ; un script interrompu
+entre soumission et récupération reprend ce même lot au lieu d'en resoumettre un second.
+
+Tarifs (`pbm_api.insights_batch.pricing`, vérifiés le 20/09/2026 sur claude.com/pricing +
+platform.claude.com/docs/en/build-with-claude/batch-processing, déjà remisés -50 % Batch) :
+Haiku 4.5 (modèle par défaut du lot, le moins cher) 0,50 $/2,50 $ le Mtok entrée/sortie,
+Sonnet 5 1 $/5 $. Mesure sur 100 cartes représentatives : `uv run python
+scripts/measure_insights_batch_cost.py` (contexte wiki réel, `run_once(dry_run=True)` — aucun
+appel Anthropic réel possible sur chimera, D4 ; coût ESTIMÉ par une heuristique
+caractères/jeton documentée dans `pbm_api.insights_batch.runner`, jamais facturé) ; `--live`
+relance ce même script pour la mesure réelle dès que la clé plateforme existera. User-Agent
+identifié ajouté à `pbm_api.insights.context.MediaWikiClient` (risque « débit raisonnable » de
+ce lot) — profite aussi à la collecte à la demande de `v4-anecdotes`, qui partage la classe.
+
+Tests : `apps/api/tests/test_insights_batch_runner.py` (orchestration bout en bout, budget,
+reprise, rejet d'anecdote hors contexte, idempotence — réponses enregistrées, aucune clé IA
+réelle), `test_insights_batch_anthropic_client.py` (client Message Batches, réponses
+enregistrées), `test_insights_batch_pricing.py`, `test_insights_batch_combined_generation.py`.
+Pas de route HTTP dans ce lot (script/cron interne) : aucun test d'accès croisé utilisateur
+propre à ajouter, `card_insights` reste le même cache partagé sans notion de propriétaire déjà
+couvert par les tests de `v4-anecdotes`/`v4-jeu`.
 
 ## Règles de la flotte applicables ici (résumé de `~/.claude/CLAUDE.md`)
 

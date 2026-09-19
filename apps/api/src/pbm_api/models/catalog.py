@@ -186,6 +186,13 @@ class CardInsight(Base):
     # dont les anecdotes n'ont jamais été générées ne doit pas empêcher leur génération, et
     # inversement).
     anecdotes: Mapped[dict | None] = mapped_column(JSONB(none_as_null=True), nullable=True)
+    # Anecdotes en anglais (mission `v4-insights-batch` point 1 : « anecdotes sourcées FR + EN »
+    # en un seul appel) — colonne séparée plutôt qu'un item `{"language": "en", ...}` mêlé à
+    # `anecdotes` : la fiche existante (`GET /cards/{id}/insights`, `AnecdoteOut`) n'affiche que
+    # du français, mélanger les langues dans la même liste aurait fait apparaître du texte
+    # anglais sans prévenir sur un produit grand public francophone. Non exposée par une route
+    # pour l'instant (aucun écran ne les consomme encore) ; même forme que `anecdotes`.
+    anecdotes_en: Mapped[dict | None] = mapped_column(JSONB(none_as_null=True), nullable=True)
     in_game_study: Mapped[str | None] = mapped_column(Text, nullable=True)
     source_model: Mapped[str | None] = mapped_column(String(64), nullable=True)
     generated_at: Mapped[datetime | None] = mapped_column(nullable=True)

@@ -56,5 +56,34 @@ class Settings(BaseSettings):
     upload_max_size_bytes: int = 20 * 1024 * 1024
     upload_max_files_per_batch: int = 30
 
+    # --- Pré-génération par lots des anecdotes/étude en jeu (lot v4-insights-batch) ---
+    # Clé PLATEFORME distincte de toute clé d'utilisateur (D4 révisée, 19/09) — jamais une clé
+    # de `ai_credentials`. Vide par défaut : sans elle, `insights_batch.runner` refuse de
+    # soumettre un lot réel (fermé par défaut, jamais un envoi silencieux à vide). À fournir par
+    # JF hors dépôt (variable d'environnement) avant tout passage réel.
+    platform_anthropic_api_key: str = ""
+    # Plafond de dépense en euros pour l'ensemble des passages cumulés (suivi dans
+    # `var/insights_batch/ledger.json`, voir `pbm_api.insights_batch.ledger`) — 0 = aucun
+    # passage réel autorisé (valeur de dev). À fournir par JF (décision D4, "budget à
+    # plafonner").
+    insights_budget_eur: float = 0.0
+    # Modèle Anthropic par défaut du lot : Haiku 4.5, le moins cher des deux tarifs vérifiés le
+    # 20/09/2026 sur claude.com/pricing (0,50 $/2,50 $ le Mtok en entrée/sortie une fois la
+    # remise Batch de 50 % appliquée, contre 1 $/5 $ pour Sonnet 5) — un texte d'anecdotes/étude
+    # en jeu ne demande pas le modèle le plus capable, et le catalogue complet se compte en
+    # dizaines de milliers de cartes.
+    insights_batch_model: str = "claude-haiku-4-5"
+    # Nombre de cartes par lot Anthropic soumis en une fois — très en-deçà de la limite réelle
+    # (100 000 requêtes ou 256 Mo, vérifié le 20/09/2026 sur platform.claude.com/docs) : garde
+    # chaque lot rapide à traiter et à reprendre, et fait coïncider la taille d'un lot avec la
+    # mesure de coût sur 100 cartes exigée par la mission.
+    insights_batch_chunk_size: int = 100
+    # Intervalle et nombre max de sondages du statut d'un lot Anthropic (`processing_status`) —
+    # la doc indique la plupart des lots terminés en moins d'une heure ; 90×20s = 30 min avant
+    # d'abandonner et de laisser reprendre le lot au prochain lancement (`results_url` reste
+    # valable, l'identifiant du lot est repris depuis le fichier de reprise).
+    insights_batch_poll_interval_seconds: int = 20
+    insights_batch_poll_max_attempts: int = 90
+
 
 settings = Settings()
