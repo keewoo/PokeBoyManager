@@ -273,7 +273,8 @@
       "date": "2026-10-05",
       "quoi": "Sans clé IA personnelle : reconnaissance désactivée (saisie manuelle seulement) ou quota d'essai offert sur une clé plateforme (coût à plafonner).",
       "debloque": [
-        "v1-byok"
+        "v1-byok",
+        "v4-insights-batch"
       ]
     },
     {
@@ -1341,6 +1342,49 @@
       ],
       "taches_na": {
         "maquette": "affiché par la fiche"
+      }
+    },
+    {
+      "id": "v4-insights-batch",
+      "vague": "V4",
+      "piste": "C",
+      "couloir": "CH2",
+      "debut": "2026-11-06",
+      "fin": "2026-11-12",
+      "priorite": "P1",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "Pré-générer histoire et étude en jeu de TOUTES les cartes, en un seul passage par carte",
+      "gain": "Décision de JF (19/09) : « autant tout prendre dès le premier tir » — plus aucun appel IA à l'ouverture d'une fiche ; chaque carte est traitée une fois, toutes ses informations d'un coup.",
+      "fonctionnalites": "Traitement par lots (Message Batches API d'Anthropic, moitié prix, asynchrone) : pour chaque carte, UN appel qui rend ensemble anecdotes sourcées FR + EN, synthèse d'usage en jeu et note de jouabilité ; reprise, plafond de dépense, rapport de coût réel ; relance incrémentale pour les nouvelles extensions.",
+      "risques": "Coût : mesuré sur 100 cartes AVANT le passage complet, extrapolé, et plafonné par un budget explicite de JF ; sources (Poképédia/Bulbapedia) récupérées par leur API MediaWiki avec un débit raisonnable et un User-Agent identifié ; aucune anecdote sans source ; une clé PLATEFORME distincte de toute clé d'utilisateur.",
+      "tenants": "Anecdotes et étude en jeu à la demande (v4-anecdotes, v4-jeu), catalogue complet ; clé plateforme et budget (D4 révisée).",
+      "aboutissants": "Fiche carte instantanée pour toutes les cartes ; l'IA de l'utilisateur ne sert plus qu'à identifier et estimer l'état.",
+      "dependances": [
+        "v4-jeu",
+        "v2-catalogue-complet"
+      ],
+      "decision": "D4",
+      "refs": [
+        "Note de JF du 19/09 : « évitons de solliciter 20× l'IA pour récupérer des infos ad hoc »"
+      ],
+      "mission": [
+        "Pipeline `insights_batch` : collecte du contexte sourcé par carte (MediaWiki API, cache local), puis requêtes Message Batches (un appel par carte : anecdotes FR + EN + étude en jeu, sortie structurée), import idempotent dans `card_insights` avec version du prompt et du modèle.",
+        "Clé plateforme lue depuis `PLATFORM_ANTHROPIC_API_KEY` (jamais une clé d'utilisateur), plafond `INSIGHTS_BUDGET_EUR` : le traitement s'arrête proprement avant de le dépasser et le dit.",
+        "Mesure sur 100 cartes représentatives : coût réel, durée, taux d'anecdotes rejetées faute de source ; extrapolation au catalogue complet dans le compte rendu.",
+        "Les routes à la demande (v4-anecdotes, v4-jeu) deviennent un repli pour une carte pas encore traitée — la fiche ne déclenche plus d'appel si l'insight existe.",
+        "Tests avec réponses enregistrées ; aucun appel réel en CI."
+      ],
+      "livrables": [
+        "pipeline par lots testé",
+        "mesure de coût sur 100 cartes et extrapolation",
+        "plafond de budget vérifié"
+      ],
+      "taches_na": {
+        "maquette": "back-end",
+        "release_uat": "appliqué au déploiement",
+        "release_prod": "appliqué au déploiement"
       }
     },
     {

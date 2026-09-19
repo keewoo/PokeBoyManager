@@ -2015,6 +2015,62 @@
       },
       "journal": [],
       "compte_rendu": {}
+    },
+    "v4-insights-batch": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : back-end",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "na",
+          "preuve": "sans objet : appliqué au déploiement",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "na",
+          "preuve": "sans objet : appliqué au déploiement",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
     }
   },
   "decisions_prises": {
@@ -2034,9 +2090,9 @@
       "quand": "2026-09-19T19:59+0200"
     },
     "D4": {
-      "prise": "DÉFAUT PROVISOIRE du pilote (à confirmer par JF) : sans clé IA personnelle, reconnaissance désactivée ; ajout manuel par recherche catalogue toujours possible. Aucune clé plateforme.",
+      "prise": "RÉVISÉE par JF le 19/09 : « autant tout prendre dès le premier tir » — une clé IA PLATEFORME sert à pré-générer l'histoire et l'étude en jeu de toutes les cartes (lot v4-insights-batch, budget plafonné). Sans clé personnelle, la reconnaissance reste désactivée (ajout manuel possible). À FOURNIR par JF : la clé plateforme (distincte de celle d'Aymeric) et le budget maximal.",
       "par": "JF",
-      "quand": "2026-09-19T19:59+0200"
+      "quand": "2026-09-19T21:36+0200"
     },
     "D7": {
       "prise": "DÉFAUT PROVISOIRE (recommandation devAI du 19/09, à confirmer par JF) : photos sur le disque local du serveur (/srv/pokeboy/<env>/data/photos) au lancement ; l'application garde une interface de stockage à deux implémentations (disque local en UAT/PROD, S3/MinIO en dev) ; UpCloud Object Storage à chiffrer si le volume l'exige. Photos conservées jusqu'à suppression.",

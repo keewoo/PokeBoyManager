@@ -41,6 +41,9 @@ recalcule jamais une information que la base possède :
 - anecdotes et étude en jeu sont générées **une fois par carte** et partagées entre tous les
   utilisateurs (`card_insights`) ; la partie déterministe (légalités, attaques, règles) vient du
   catalogue sans IA ;
+- **un seul appel par carte, dès le premier tir** (JF, 19/09) : à la reconnaissance, un appel rend
+  ensemble l'identification et l'état ; pour le catalogue, un passage par lots (clé plateforme,
+  budget plafonné) rend en une fois l'histoire et l'étude en jeu de chaque carte ;
 - seule l'évolution du prix change avec le temps, et c'est le relevé quotidien qui la fournit.
 
 ## Données (v1)
