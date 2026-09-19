@@ -1901,21 +1901,21 @@
       "compte_rendu": {}
     },
     "v4-jeu": {
-      "statut": "en_cours",
+      "statut": "integre",
       "machine": "chimera",
       "branche": "roadmap/v4-jeu",
       "debut_reel": "2026-09-19",
-      "fin_reelle": null,
+      "fin_reelle": "2026-09-19",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 5e1a365e9 intégré dans main — voir docs/roadmap/comptes-rendus/v4-jeu.md",
+          "maj": "2026-09-19T23:14+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 5e1a365e9 intégré dans main — voir docs/roadmap/comptes-rendus/v4-jeu.md",
+          "maj": "2026-09-19T23:14+0200"
         },
         "securite": {
           "etat": "a_faire",
@@ -1943,14 +1943,14 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 5e1a365e9 intégré dans main — voir docs/roadmap/comptes-rendus/v4-jeu.md",
+          "maj": "2026-09-19T23:14+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 5e1a365e9 intégré dans main — voir docs/roadmap/comptes-rendus/v4-jeu.md",
+          "maj": "2026-09-19T23:14+0200"
         }
       },
       "journal": [
@@ -1959,9 +1959,37 @@
           "machine": "chimera",
           "evenement": "démarré",
           "detail": "roadmap/v4-jeu"
+        },
+        {
+          "quand": "2026-09-19T23:14+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit 5e1a365e9"
         }
       ],
-      "compte_rendu": {},
+      "compte_rendu": {
+        "resume": "`GET /cards/{card_id}/in-game-study` combine trois sources indépendantes sur la fiche carte, onglet « En jeu » :",
+        "livrables": [
+          "`apps/api/src/pbm_api/ingame/rules.py` — `legalities_of`/`prize_rule_of`, purement",
+          "`apps/api/src/pbm_api/ingame/tournaments.py` — `LimitlessTcgClient` (pages HTML publiques,",
+          "`apps/api/src/pbm_api/ingame/tournaments_job.py` — `refresh_tournament_presence`, patron",
+          "`apps/api/src/pbm_api/ingame/generation.py`/`service.py` — synthèse IA (`AIProvider.extract`",
+          "`apps/api/src/pbm_api/routers/in_game_study.py` — la route, câblée dans `main.py`.",
+          "`apps/api/src/pbm_api/models/catalog.py` — `CardTournamentPresence` (nouvelle table) ;",
+          "`apps/api/migrations/versions/5e8f243e399f_...py` — table + colonnes, aller-retour",
+          "`apps/api/src/pbm_api/worker.py` — `weekly_tournament_presence_task`, cron Lundi 08:00"
+        ],
+        "preuves": [],
+        "ecarts": [
+          "Aucune réduction de périmètre : les trois points de la mission (légalités/règles,",
+          "La mission envisageait explicitement que la présence en tournoi puisse être « sinon section"
+        ],
+        "reste": [
+          "`v4-fiche` : brancher l'onglet « En jeu » sur `GET /cards/{card_id}/in-game-study` (front",
+          "Revalider le taux de rapprochement Limitless TCG (18/20 sur cet échantillon, dont les 2",
+          "Historiser la présence en tournoi (actuellement un seul relevé écrasé chaque semaine,"
+        ]
+      },
       "attente": null
     },
     "v4-dashboard": {
@@ -2703,7 +2731,7 @@
       ],
       "compte_rendu": {},
       "attente": {
-        "quand": "2026-09-19T23:14+0200",
+        "quand": "2026-09-19T23:15+0200",
         "raisons": [
           "lot arrêté par l'ordonnanceur : code de sortie 0, 3 lignes de journal"
         ]
