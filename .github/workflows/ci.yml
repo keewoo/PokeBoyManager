@@ -104,3 +104,81 @@ jobs:
 
       - working-directory: apps/api
         run: uv run pytest -q
+
+  e2e:
+    name: e2e — parcours auth (Playwright)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: pbm
+          POSTGRES_PASSWORD: pbm
+          POSTGRES_DB: pbm_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pbm"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      mailpit:
+        image: axllent/mailpit:latest
+        ports:
+          - 1025:1025
+          - 8025:8025
+    env:
+      E2E_DATABASE_URL: postgresql+asyncpg://pbm:pbm@localhost:5432/pbm_e2e
+      REDIS_URL: redis://localhost:6379/0
+      SMTP_HOST: localhost
+      SMTP_PORT: 1025
+      MAILPIT_UI_PORT: "8025"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.4.2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: "0.12.13"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pnpm install --frozen-lockfile
+
+      - working-directory: apps/api
+        run: uv sync --locked
+
+      - working-directory: apps/api
+        run: uv run alembic upgrade head
+
+      - working-directory: apps/web
+        run: pnpm exec playwright install --with-deps chromium
+
+      - working-directory: apps/web
+        run: pnpm exec playwright test
+
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 7

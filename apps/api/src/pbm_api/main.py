@@ -1,5 +1,7 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
+from pbm_api.config import settings
 from pbm_api.routers.ai_keys import router as ai_keys_router
 from pbm_api.routers.auth import router as auth_router
 from pbm_api.routers.health import router as health_router
@@ -11,6 +13,18 @@ install_api_key_redaction()
 
 app = FastAPI(title="PokeBoyManager API")
 install_validation_error_redaction(app)
+
+# `apps/web` et `apps/api` sont deux origines distinctes (ports différents en local, sous-
+# domaines distincts en UAT/PROD) : sans CORS, le navigateur bloque tout fetch, y compris les
+# routes d'authentification. `allow_credentials` est nécessaire pour que le cookie de session
+# parte avec la requête ; il impose une liste d'origines explicite (jamais `*`).
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[settings.app_public_url],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(health_router)
 app.include_router(auth_router)

@@ -1,10 +1,11 @@
-import { EmptyState } from "@/components/empty-state";
+import { Suspense } from "react";
+
+import { ConnexionForm } from "./connexion-form";
 
 export default function ConnexionPage() {
   return (
-    <EmptyState
-      title="Connexion"
-      description="Le formulaire de connexion arrive avec le lot v1-auth."
-    />
+    <Suspense>
+      <ConnexionForm />
+    </Suspense>
   );
 }

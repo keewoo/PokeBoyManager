@@ -73,7 +73,18 @@ clés IA, lot `v1-byok` — clé maître AES-256 en base64, 32 octets ; chiffre/
 des utilisateurs, à définir par variable d'environnement hors dépôt pour tout déploiement).
 Chaque lot pointe sa propre base/bucket/préfixe — ne jamais réutiliser ceux d'un autre lot sur
 l'infra partagée (`pbm-shared`). `apps/web` lit `NEXT_PUBLIC_API_URL` (défaut
-`http://localhost:8000`).
+`http://localhost:8000`) et `NEXT_PUBLIC_SESSION_COOKIE_NAME` (défaut `pbm_session`, doit
+rester alignée avec `SESSION_COOKIE_NAME` côté API : le middleware de garde de route ne lit que
+la présence de ce cookie, `apps/web/src/middleware.ts`). `apps/api` accepte les requêtes
+cross-origin du front (`CORSMiddleware`, origine = `APP_PUBLIC_URL`, `allow_credentials=True`
+pour le cookie de session) — obligatoire dès qu'ils tournent sur des ports/domaines différents.
+
+Pages d'authentification (lot `v1-pages-auth`) : `/inscription`, `/connexion`,
+`/mot-de-passe-oublie`, `/verifier?token=…`, `/reinitialiser?token=…` — ces deux derniers
+chemins doivent rester alignés avec les liens envoyés par e-mail
+(`pbm_api.auth.service.register_user`/`request_password_reset`). e2e Playwright du parcours
+inscription → vérification → connexion : `apps/web/e2e/auth.spec.ts` (`pnpm --filter @pbm/web
+test:e2e`, nécessite Mailpit ; navigateurs déjà en cache sur chimera).
 
 ## Coffre de clés IA (lot `v1-byok`)
 

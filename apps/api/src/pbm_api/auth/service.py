@@ -85,7 +85,7 @@ async def register_user(
     raw_token = await _issue_email_token(db, user, EmailTokenKind.verify_email)
     await db.commit()
 
-    link = f"{settings.app_public_url}/verifier-email?token={raw_token}"
+    link = f"{settings.app_public_url}/verifier?token={raw_token}"
     await email_sender.send(
         normalized,
         VERIFY_EMAIL_SUBJECT,
@@ -166,7 +166,7 @@ async def request_password_reset(
     raw_token = await _issue_email_token(db, user, EmailTokenKind.reset_password)
     await db.commit()
 
-    link = f"{settings.app_public_url}/reinitialiser-mot-de-passe?token={raw_token}"
+    link = f"{settings.app_public_url}/reinitialiser?token={raw_token}"
     await email_sender.send(
         normalized,
         RESET_PASSWORD_SUBJECT,

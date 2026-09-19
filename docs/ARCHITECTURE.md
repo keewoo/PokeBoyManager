@@ -78,6 +78,13 @@ logout,verify-email,forgot,reset}` (`apps/api/src/pbm_api/routers/auth.py`).
   via SMTP (`pbm_api.email` — Mailpit en dev, D5 provisoire pour le fournisseur en ligne).
 - Anti-énumération : réponse identique côté `/auth/register` et `/auth/forgot` que l'e-mail
   soit déjà pris/connu ou non.
+- **Pages** (lot `v1-pages-auth`) : `/inscription`, `/connexion`, `/mot-de-passe-oublie`,
+  `/verifier?token=…`, `/reinitialiser?token=…` — les liens envoyés par e-mail pointent sur ces
+  deux derniers chemins. Garde de route middleware Next.js (`apps/web/src/middleware.ts`) sur
+  les pages privées (`/collection`, `/ajouter`, `/carte/*`, `/profil`) : redirection
+  `/connexion?next=…` sur simple absence du cookie de session (l'API reste la seule à faire
+  autorité en cas de session expirée/révoquée). `apps/api` doit exposer `CORSMiddleware` pour
+  ces appels (front et API sur des origines distinctes, y compris en local).
 
 ## Catalogue (lot `v2-catalogue`)
 

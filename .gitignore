@@ -10,3 +10,5 @@ coverage/
 .DS_Store
 *.tsbuildinfo
 packages/api-client/openapi.json
+apps/web/playwright-report/
+apps/web/test-results/
