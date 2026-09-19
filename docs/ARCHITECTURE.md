@@ -32,22 +32,31 @@ flowchart LR
 ```mermaid
 erDiagram
   users ||--o{ sessions : ""
+  users ||--o{ email_tokens : "vérification, reset"
   users ||--o{ ai_credentials : "chiffrées"
   users ||--o{ uploads : ""
-  uploads ||--o{ detections : "1 photo → N cartes"
   users ||--o{ collection_items : ""
+  users ||--o{ jobs : "travaux déclenchés (optionnel)"
+  uploads ||--o{ detections : "1 photo → N cartes"
+  detections |o--o{ collection_items : "origine (optionnel)"
   cards ||--o{ collection_items : "exemplaire de"
   sets ||--o{ cards : ""
   cards ||--o{ card_names : "par langue"
   cards ||--o{ card_prices_daily : "source × variante × jour"
-  cards ||--o{ card_insights : "anecdotes, étude en jeu"
-  detections }o--|| cards : "candidat retenu"
+  cards ||--o| card_insights : "anecdotes, étude en jeu"
+  detections }o--o| cards : "candidat retenu (optionnel)"
 ```
 
 - **Carte** (`cards`) = l'objet du catalogue, partagé. **Exemplaire** (`collection_items`) = ce que
   possède un utilisateur : langue, variante, état estimé, prix d'achat, photo, date d'ajout.
 - `card_prices_daily` : une ligne par carte × source × variante × jour ; la courbe de valeur commence au
   premier relevé (historique rétroactif selon D3).
+- `jobs` : file arq (reconnaissance, import catalogue, relevé de prix) ; `user_id` nul pour les
+  travaux système (ex : relevé de prix quotidien).
+
+Migration Alembic initiale : `apps/api/migrations/versions/5e0d551b788e_initial_schema.py`
+(lot `v0-schema`). Modèles SQLAlchemy : `apps/api/src/pbm_api/models/`. Seed de démonstration
+(un utilisateur, trois extensions, neuf cartes) : `apps/api/src/pbm_api/seed.py`.
 
 ## Coffre de clés IA
 
