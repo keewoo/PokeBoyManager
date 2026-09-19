@@ -73,6 +73,7 @@ function uploadDetail(overrides: Partial<Awaited<ReturnType<typeof getUpload>>> 
           },
         ],
         condition: null,
+        identification_method: "ia" as const,
       },
     ],
     ...overrides,

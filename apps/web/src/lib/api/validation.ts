@@ -51,6 +51,9 @@ export type Detection = {
   extraction: CardExtraction | null;
   candidates: IdentificationCandidate[] | null;
   condition: ConditionAssessment | null;
+  // "visuel" (index visuel, aucun appel IA), "ia", "aucun" ou `null` (pas encore traitée) —
+  // lot `v3-identification-visuelle`, sert au badge « reconnue sans IA ».
+  identification_method: "visuel" | "ia" | "aucun" | null;
 };
 
 export type JobStatus = "queued" | "running" | "succeeded" | "failed";

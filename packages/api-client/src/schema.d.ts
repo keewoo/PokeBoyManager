@@ -964,6 +964,8 @@ export interface components {
             condition: {
                 [key: string]: unknown;
             } | null;
+            /** Identification Method */
+            identification_method: string | null;
         };
         /**
          * DetectionStatus

@@ -148,6 +148,9 @@ export function DetectionCard({
           </span>
           {detection.status === "validated" && <Badge variant="success">validée</Badge>}
           {detection.status === "rejected" && <Badge variant="danger">rejetée</Badge>}
+          {detection.identification_method === "visuel" && (
+            <Badge variant="success">reconnue sans IA</Badge>
+          )}
           {detection.condition?.counterfeit_suspected && (
             <Badge variant="danger">contrefaçon probable</Badge>
           )}
