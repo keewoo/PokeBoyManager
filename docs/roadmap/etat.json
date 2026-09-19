@@ -1672,21 +1672,21 @@
       "attente": null
     },
     "v4-collection": {
-      "statut": "en_cours",
+      "statut": "integre",
       "machine": "chimera",
       "branche": "roadmap/v4-collection",
       "debut_reel": "2026-09-20",
-      "fin_reelle": null,
+      "fin_reelle": "2026-09-20",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit a7e8f4477 intégré dans main — voir docs/roadmap/comptes-rendus/v4-collection.md",
+          "maj": "2026-09-20T01:12+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit a7e8f4477 intégré dans main — voir docs/roadmap/comptes-rendus/v4-collection.md",
+          "maj": "2026-09-20T01:12+0200"
         },
         "securite": {
           "etat": "a_faire",
@@ -1714,14 +1714,14 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit a7e8f4477 intégré dans main — voir docs/roadmap/comptes-rendus/v4-collection.md",
+          "maj": "2026-09-20T01:12+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit a7e8f4477 intégré dans main — voir docs/roadmap/comptes-rendus/v4-collection.md",
+          "maj": "2026-09-20T01:12+0200"
         }
       },
       "journal": [
@@ -1730,9 +1730,40 @@
           "machine": "chimera",
           "evenement": "démarré",
           "detail": "roadmap/v4-collection"
+        },
+        {
+          "quand": "2026-09-20T01:12+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit a7e8f4477"
         }
       ],
-      "compte_rendu": {},
+      "compte_rendu": {
+        "resume": "Page collection : grille filtrable/triable/paginée avec agrégats de valeur, ajout manuel d'une carte sans photo, mesure de performance à 5 000 exemplaires. `GET /me/collection` (filtres extension/série/rareté/type/langue/variante/état/valeur min-max/date d'ajout/doublons/ contrefaçons, tri, pagination par curseur, agrégats — nombre, valeur totale, variation 7/30 j) ; `GET /me/collection/facets` (valeurs de filtre disponibles, scopées à l'utilisateur) ; `POST /me/collection` (ajout manuel, recherche catalogue) ; `PATCH`/`DELETE /me/collection/{item}`. Front `/collection` : panneau de filtres (tiroir sur mobile), recherche + tri, grille de cartes, pagination « Charger plus », état dans l'URL (partageable, retour arrière fonctionnel).",
+        "livrables": [
+          "`apps/api/src/pbm_api/collection/` (nouveau module) :",
+          "`service.py` — `list_collection` (filtres SQL bon marché + valorisation en masse + tri/",
+          "`schemas.py` — `CollectionListItem/Aggregates/Response`, `CollectionFacets`,",
+          "`errors.py` — `CollectionItemNotFoundError` (jamais un 403 : pas de fuite d'existence).",
+          "`apps/api/src/pbm_api/routers/collection.py` — étendu : `GET`/`POST /me/collection`, `GET",
+          "`apps/api/src/pbm_api/pricing/valuation.py` — `bulk_item_values`, `bulk_item_values_multi`,",
+          "`apps/api/scripts/measure_collection_performance.py` — sème 5 000 exemplaires (50 extensions",
+          "`apps/api/tests/test_collection_routes.py` (nouveau, 19 tests) — voir « Tests »."
+        ],
+        "preuves": [],
+        "ecarts": [
+          "**Pas de suite Playwright pour ce lot** (contrairement à `v3-validation`, qui en a une) :",
+          "**`value_change_30d_pct` ajouté après coup** (deuxième commit backend), pas dans la même passe"
+        ],
+        "reste": [
+          "Normaliser `Card.rarity`/`condition_grade` vers les taxonomies fixes de",
+          "Corriger l'environnement Playwright de chimera à la racine (`sudo apt-get install -y libnspr4",
+          "`Cross-Origin-Resource-Policy` manquant sur `GET /img/cards/{id}` (`routers/images.py`) :",
+          "Si la collection dépasse largement 5 000-10 000 exemplaires pour un même utilisateur, le choix",
+          "Paramètre `currency` non exposé sur `GET /me/collection` (contrairement à la route de détail",
+          "Aucune UI d'édition/suppression d'un exemplaire depuis la grille (l'API `PATCH`/`DELETE`"
+        ]
+      },
       "attente": null
     },
     "v4-ranking": {
@@ -1911,10 +1942,10 @@
       "attente": null
     },
     "v4-fiche": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
+      "statut": "en_cours",
+      "machine": "chimera",
+      "branche": "roadmap/v4-fiche",
+      "debut_reel": "2026-09-20",
       "fin_reelle": null,
       "taches": {
         "dev": {
@@ -1963,8 +1994,16 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-20T01:14+0200",
+          "machine": "chimera",
+          "evenement": "démarré",
+          "detail": "roadmap/v4-fiche"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": null
     },
     "v4-jeu": {
       "statut": "integre",
