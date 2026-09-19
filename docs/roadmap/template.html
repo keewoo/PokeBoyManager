@@ -9,7 +9,7 @@
   --orange:#FF7A1A; --orange-deep:#C85E0E; --night:#16233E; --on-night:#F4EFE4;
   --p0:#B8321F; --p0-bg:#F8E1DB; --p1:#C85E0E; --p1-bg:#FCEBDA; --p2:#2C66D9; --p2-bg:#E9EFFB; --p3:#7C766A; --p3-bg:#EDE8DC;
   --devai:#2C66D9; --chimera:#6B4FC8; --jf:#8E887B;
-  --s-livre:#1E7A57; --s-livre-bg:#DDF0E6; --s-uat:#2C66D9; --s-uat-bg:#E3ECFB; --s-go:#6B4FC8; --s-go-bg:#ECE6FA;
+  --s-livre:#1E7A57; --s-livre-bg:#DDF0E6; --s-int:#3E7A1E; --s-int-bg:#E6F2D9; --s-uat:#2C66D9; --s-uat-bg:#E3ECFB; --s-go:#6B4FC8; --s-go-bg:#ECE6FA;
   --s-cours:#0E7486; --s-cours-bg:#DCEFF2; --s-att:#C85E0E; --s-att-bg:#FCEBDA; --s-bloq:#B8321F; --s-bloq-bg:#F8E1DB; --s-faire:#8E887B; --s-faire-bg:#EDE8DC;
   --shadow:0 1px 2px rgba(27,27,27,.05),0 10px 26px -18px rgba(27,27,27,.25);
 }
@@ -19,7 +19,7 @@
   --orange:#FF9A4D; --orange-deep:#FFB27A; --night:#F1ECE1; --on-night:#0F1728;
   --p0:#FF8A73; --p0-bg:#3A1C1A; --p1:#FFB066; --p1-bg:#3A2616; --p2:#8FB2F5; --p2-bg:#1C2D52; --p3:#AFA89A; --p3-bg:#262E3F;
   --devai:#7FA6F2; --chimera:#B39CF0; --jf:#8F9AB2;
-  --s-livre:#6FD3A6; --s-livre-bg:#123A2B; --s-uat:#8FB2F5; --s-uat-bg:#1C2D52; --s-go:#B39CF0; --s-go-bg:#2A2150;
+  --s-livre:#6FD3A6; --s-livre-bg:#123A2B; --s-int:#A6D98A; --s-int-bg:#1E3314; --s-uat:#8FB2F5; --s-uat-bg:#1C2D52; --s-go:#B39CF0; --s-go-bg:#2A2150;
   --s-cours:#6FC8D6; --s-cours-bg:#0F3540; --s-att:#FFB066; --s-att-bg:#3A2616; --s-bloq:#FF8A73; --s-bloq-bg:#3A1C1A; --s-faire:#8F9AB2; --s-faire-bg:#262E3F;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 26px -18px rgba(0,0,0,.6);
 }}
@@ -29,7 +29,7 @@
   --orange:#FF9A4D; --orange-deep:#FFB27A; --night:#F1ECE1; --on-night:#0F1728;
   --p0:#FF8A73; --p0-bg:#3A1C1A; --p1:#FFB066; --p1-bg:#3A2616; --p2:#8FB2F5; --p2-bg:#1C2D52; --p3:#AFA89A; --p3-bg:#262E3F;
   --devai:#7FA6F2; --chimera:#B39CF0; --jf:#8F9AB2;
-  --s-livre:#6FD3A6; --s-livre-bg:#123A2B; --s-uat:#8FB2F5; --s-uat-bg:#1C2D52; --s-go:#B39CF0; --s-go-bg:#2A2150;
+  --s-livre:#6FD3A6; --s-livre-bg:#123A2B; --s-int:#A6D98A; --s-int-bg:#1E3314; --s-uat:#8FB2F5; --s-uat-bg:#1C2D52; --s-go:#B39CF0; --s-go-bg:#2A2150;
   --s-cours:#6FC8D6; --s-cours-bg:#0F3540; --s-att:#FFB066; --s-att-bg:#3A2616; --s-bloq:#FF8A73; --s-bloq-bg:#3A1C1A; --s-faire:#8F9AB2; --s-faire-bg:#262E3F;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 26px -18px rgba(0,0,0,.6);
 }
@@ -64,7 +64,7 @@ section.rs{margin-top:38px}
 .sechead p{color:var(--body);font-size:13.5px;max-width:72ch}
 .pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap}
 .P0{background:var(--p0-bg);color:var(--p0)} .P1{background:var(--p1-bg);color:var(--p1)} .P2{background:var(--p2-bg);color:var(--p2)} .P3{background:var(--p3-bg);color:var(--p3)}
-.st-livre{background:var(--s-livre-bg);color:var(--s-livre)} .st-livre_uat{background:var(--s-uat-bg);color:var(--s-uat)} .st-attente_go_prod{background:var(--s-go-bg);color:var(--s-go)}
+.st-livre{background:var(--s-livre-bg);color:var(--s-livre)} .st-integre{background:var(--s-int-bg);color:var(--s-int)} .kpi.st-integre .n{color:var(--s-int)} .st-livre_uat{background:var(--s-uat-bg);color:var(--s-uat)} .st-attente_go_prod{background:var(--s-go-bg);color:var(--s-go)}
 .st-en_cours{background:var(--s-cours-bg);color:var(--s-cours)} .st-attente_validation{background:var(--s-att-bg);color:var(--s-att)} .st-bloque{background:var(--s-bloq-bg);color:var(--s-bloq)} .st-a_faire{background:var(--s-faire-bg);color:var(--s-faire)}
 
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
@@ -551,8 +551,8 @@ const TODAY = new Date().toISOString().slice(0, 10);
 const machClass = m => m === 'JF / externe' ? 'JF' : m;
 const stPill = s => `<span class="pill st-${s}">${esc(ST[s])}</span>`;
 const ETAT_LIB = {a_faire:'à faire', en_cours:'en cours', fait:'fait', na:'sans objet', bloque:'bloqué', attente_validation:'attente validation'};
-const ORDER = ['a_faire','en_cours','attente_validation','bloque','livre_uat','attente_go_prod','livre'];
-const STC = {livre:'var(--s-livre)', livre_uat:'var(--s-uat)', attente_go_prod:'var(--s-go)', en_cours:'var(--s-cours)', attente_validation:'var(--s-att)', bloque:'var(--s-bloq)', a_faire:'var(--s-faire)'};
+const ORDER = ['a_faire','en_cours','attente_validation','bloque','integre','livre_uat','attente_go_prod','livre'];
+const STC = {integre:'var(--s-int)', livre:'var(--s-livre)', livre_uat:'var(--s-uat)', attente_go_prod:'var(--s-go)', en_cours:'var(--s-cours)', attente_validation:'var(--s-att)', bloque:'var(--s-bloq)', a_faire:'var(--s-faire)'};
 const NT = D.taches.length;
 
 $('#gen').textContent = D.genere.replace('T', ' ').slice(0, 16);
@@ -566,9 +566,9 @@ D.items.forEach(i => cnt[E[i.id].statut]++);
 $('#kpis').innerHTML = ORDER.slice().reverse().map(s => `<div class="kpi st-${s}"><span class="n">${cnt[s]}</span><span class="l">${esc(ST[s])}</span></div>`).join('');
 $('#jalons').innerHTML = D.meta.jalons.map((j, k) => {
   const set = D.items.filter(i => k === 0 ? i.fin <= J1 : (i.fin > J1 && i.fin <= J2));
-  const done = set.filter(i => E[i.id].statut === 'livre').length;
+  const done = set.filter(i => ['livre', 'integre', 'livre_uat', 'attente_go_prod'].includes(E[i.id].statut)).length;
   const pct = set.length ? Math.round(done / set.length * 100) : 0;
-  return `<article class="jal ${k === 0 ? 'first' : ''}"><span class="date">${fr(j.date)} · ${esc(j.nom)}</span><div class="big">${done}<small>/ ${set.length} livrés (${pct} %)</small></div><div class="prog" role="img" aria-label="${pct} % livrés"><i style="width:${pct}%"></i></div><p>${md(j.quoi)}</p></article>`;
+  return `<article class="jal ${k === 0 ? 'first' : ''}"><span class="date">${fr(j.date)} · ${esc(j.nom)}</span><div class="big">${done}<small>/ ${set.length} intégrés ou livrés (${pct} %)</small></div><div class="prog" role="img" aria-label="${pct} % livrés"><i style="width:${pct}%"></i></div><p>${md(j.quoi)}</p></article>`;
 }).join('');
 
 (function(){
@@ -664,8 +664,8 @@ function card(i){
 $('#detail').innerHTML = D.vagues.map(v => {
   const its = D.items.filter(i => i.vague === v.id).sort((a, b) => PR[a.priorite] - PR[b.priorite] || a.debut.localeCompare(b.debut));
   if (!its.length) return '';
-  const done = its.filter(i => E[i.id].statut === 'livre').length;
-  return `<div class="wave-block"><div class="head"><h2>${v.id} — ${esc(v.nom)}</h2><span class="dates">${fr(v.debut)} → ${fr(v.fin)} · ${done}/${its.length} livrés</span></div><p class="these">${md(v.these)} <b>Gain :</b> ${md(v.gain)}</p><div class="cards">${its.map(card).join('')}</div></div>`;
+  const done = its.filter(i => ['livre', 'integre', 'livre_uat', 'attente_go_prod'].includes(E[i.id].statut)).length;
+  return `<div class="wave-block"><div class="head"><h2>${v.id} — ${esc(v.nom)}</h2><span class="dates">${fr(v.debut)} → ${fr(v.fin)} · ${done}/${its.length} intégrés ou livrés</span></div><p class="these">${md(v.these)} <b>Gain :</b> ${md(v.gain)}</p><div class="cards">${its.map(card).join('')}</div></div>`;
 }).join('');
 
 const ev = [];

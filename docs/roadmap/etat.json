@@ -1,21 +1,21 @@
 {
   "etats": {
     "v0-flotte": {
-      "statut": "a_faire",
+      "statut": "livre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
-      "fin_reelle": null,
+      "fin_reelle": "2026-09-19",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "outillage en place, voir compte rendu",
+          "maj": "2026-09-19T23:09+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "outillage en place, voir compte rendu",
+          "maj": "2026-09-19T23:09+0200"
         },
         "securite": {
           "etat": "na",
@@ -28,9 +28,9 @@
           "maj": null
         },
         "doc_tech": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "outillage en place, voir compte rendu",
+          "maj": "2026-09-19T23:09+0200"
         },
         "release_uat": {
           "etat": "na",
@@ -43,18 +43,70 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "outillage en place, voir compte rendu",
+          "maj": "2026-09-19T23:09+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "outillage en place, voir compte rendu",
+          "maj": "2026-09-19T23:09+0200"
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-19T23:09+0200",
+          "machine": "?",
+          "evenement": "statut → livre",
+          "detail": ""
+        },
+        {
+          "quand": "2026-09-19T23:09+0200",
+          "machine": "?",
+          "evenement": "compte rendu publié",
+          "detail": ""
+        },
+        {
+          "quand": "2026-09-19T23:09+0200",
+          "machine": "?",
+          "evenement": "tâche dev → fait",
+          "detail": "outillage en place, voir compte rendu"
+        },
+        {
+          "quand": "2026-09-19T23:09+0200",
+          "machine": "?",
+          "evenement": "tâche tests → fait",
+          "detail": "outillage en place, voir compte rendu"
+        },
+        {
+          "quand": "2026-09-19T23:09+0200",
+          "machine": "?",
+          "evenement": "tâche compte_rendu → fait",
+          "detail": "outillage en place, voir compte rendu"
+        },
+        {
+          "quand": "2026-09-19T23:09+0200",
+          "machine": "?",
+          "evenement": "tâche backlog → fait",
+          "detail": "outillage en place, voir compte rendu"
+        },
+        {
+          "quand": "2026-09-19T23:09+0200",
+          "machine": "?",
+          "evenement": "tâche doc_tech → fait",
+          "detail": "outillage en place, voir compte rendu"
+        }
+      ],
+      "compte_rendu": {
+        "resume": "Fait par le pilote le 19/09 : dépôt relais ~/dev/pokeboy.git + clone ~/dev/pokeboy sur chimera (WSL upgreg), Node 24 + pnpm, clé de dépôt générée (non autorisée sur GitHub : le jeton de devAI rend 403 — synchronisation GitHub assurée par le relais devAI), clone ~/dev/pokeboy sur devAI, ordonnanceur de lots et relais launchd ai.upgreg.pbm-relais.",
+        "livrables": [],
+        "preuves": [],
+        "ecarts": [],
+        "reste": [
+          "Ajout par JF de la clé de dépôt de chimera dans GitHub (Deploy keys) pour supprimer le relais."
+        ]
+      },
+      "attente": null
     },
     "v0-monorepo": {
       "statut": "a_faire",

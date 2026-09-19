@@ -345,6 +345,7 @@
     "en_cours": "En cours",
     "attente_validation": "Attente validation",
     "bloque": "Bloqué",
+    "integre": "Intégré (main)",
     "livre_uat": "Livré UAT",
     "attente_go_prod": "Attente GO PROD",
     "livre": "Livré"

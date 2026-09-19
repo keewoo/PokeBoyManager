@@ -14,7 +14,7 @@ _Un dépôt vide : avant toute fonctionnalité, il faut le squelette, la base, l
 
 | Lot | Prio | Titre | Couloir | Prévu | Dépend de | Décision | Statut | Prompt |
 |---|---|---|---|---|---|---|---|---|
-| `v0-flotte` | P0 | Équiper la flotte pour PokeBoyManager (clones, clés de dépôt, fleet-run) | DA2 (devAI) | 21 sept. → 22 sept. | — | — | À faire | [prompt](prompts/v0-flotte.md) |
+| `v0-flotte` | P0 | Équiper la flotte pour PokeBoyManager (clones, clés de dépôt, fleet-run) | DA2 (devAI) | 21 sept. → 22 sept. | — | — | Livré | [prompt](prompts/v0-flotte.md) |
 | `v0-monorepo` | P0 | Monorepo, environnement local Docker et CI | DA1 (devAI) | 22 sept. → 23 sept. | — | D1 | À faire | [prompt](prompts/v0-monorepo.md) |
 | `v0-schema` | P0 | Modèle de données PostgreSQL v1 et migrations Alembic | DA1 (devAI) | 24 sept. → 25 sept. | v0-monorepo | — | À faire | [prompt](prompts/v0-schema.md) |
 | `v0-design-system` | P1 | Design system et squelette des pages (d'après la maquette) | CH1 (chimera) | 24 sept. → 29 sept. | v0-monorepo | — | À faire | [prompt](prompts/v0-design-system.md) |

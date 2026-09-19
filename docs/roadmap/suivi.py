@@ -336,6 +336,83 @@ def decision(a) -> int:
     return 0
 
 
+# ---------------------------------------------------------------- synchro (ordonnanceur de chimera)
+def _cr_depuis_fichier(chemin: Path) -> dict:
+    """Extrait résumé et « reste à faire » du compte rendu écrit par le lot."""
+    if not chemin.exists():
+        return {}
+    txt = chemin.read_text(encoding="utf-8")
+    sections, cur = {}, None
+    for ligne in txt.splitlines():
+        if ligne.startswith("## "):
+            cur = ligne[3:].strip().lower()
+            sections[cur] = []
+        elif cur is not None:
+            sections[cur].append(ligne)
+    def sec(*mots):
+        for k, v in sections.items():
+            if any(m in k for m in mots):
+                return v
+        return []
+    resume = " ".join(l.strip() for l in "\n".join(sec("résumé", "resume")).strip().split("\n\n")[0].splitlines()).strip()
+    puces = lambda lignes: [l.strip()[2:].strip() for l in lignes if l.strip().startswith(("- ", "* "))][:8]
+    return {"resume": resume[:1200], "livrables": puces(sec("livrable"))[:8], "preuves": [],
+            "ecarts": puces(sec("écart", "ecart")), "reste": puces(sec("reste"))}
+
+
+def synchro(a) -> int:
+    """Reporte dans etat.json l'état réel des lots de chimera (fichiers .done/.failed/.blocked, pid vivants)."""
+    plan, etat = charger()
+    avant = json.dumps(etat, sort_keys=True)
+    st, logs = Path(a.etat_dir).expanduser(), Path(a.logs).expanduser()
+    for it in plan["items"]:
+        i, e = it["id"], etat["etats"][it["id"]]
+        if e["statut"] in ("livre", "livre_uat", "attente_go_prod"):
+            continue
+        done, bad = st / f"{i}.done", [st / f"{i}.failed", st / f"{i}.blocked"]
+        pid = logs / f"pbm-{i}.pid"
+        vivant = False
+        if pid.exists():
+            try:
+                import os
+                os.kill(int(pid.read_text().strip()), 0)
+                vivant = True
+            except (OSError, ValueError):
+                vivant = False
+        lance = st / f"{i}.launched"
+        if done.exists():
+            sha = done.read_text().strip()[:9]
+            quand = dt.datetime.fromtimestamp(done.stat().st_mtime).astimezone()
+            if e["statut"] != "integre":
+                e.update(statut="integre", machine="chimera", branche=f"roadmap/{i}", attente=None,
+                         fin_reelle=quand.date().isoformat(),
+                         debut_reel=e["debut_reel"] or dt.datetime.fromtimestamp(lance.stat().st_mtime).date().isoformat() if lance.exists() else e["debut_reel"])
+                e["journal"].append({"quand": quand.strftime("%Y-%m-%dT%H:%M%z"), "machine": "chimera",
+                                     "evenement": "intégré dans main", "detail": f"commit {sha}"})
+            for t in ("dev", "tests", "compte_rendu", "backlog"):
+                if e["taches"][t]["etat"] != "na":
+                    e["taches"][t] = {"etat": "fait", "preuve": f"commit {sha} intégré dans main — voir docs/roadmap/comptes-rendus/{i}.md", "maj": quand.strftime("%Y-%m-%dT%H:%M%z")}
+            cr = _cr_depuis_fichier(RACINE / "docs/roadmap/comptes-rendus" / f"{i}.md")
+            if cr.get("resume"):
+                e["compte_rendu"] = cr
+        elif any(b.exists() for b in bad) and not vivant:
+            raison = next(b.read_text().strip() for b in bad if b.exists())
+            if e["statut"] != "bloque":
+                e["journal"].append({"quand": maintenant(), "machine": "chimera", "evenement": "arrêté", "detail": raison})
+            e.update(statut="bloque", machine="chimera", attente={"quand": maintenant(), "raisons": [f"lot arrêté par l'ordonnanceur : {raison}"]})
+        elif vivant or lance.exists():
+            if e["statut"] != "en_cours":
+                e["journal"].append({"quand": maintenant(), "machine": "chimera", "evenement": "démarré", "detail": f"roadmap/{i}"})
+            e.update(statut="en_cours", machine="chimera", branche=f"roadmap/{i}", attente=None,
+                     debut_reel=e["debut_reel"] or (dt.datetime.fromtimestamp(lance.stat().st_mtime).date().isoformat() if lance.exists() else dt.date.today().isoformat()))
+    if json.dumps(etat, sort_keys=True) != avant:
+        sauver(etat)
+        print("etat.json mis à jour")
+    else:
+        print("rien de changé")
+    return 0
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     s = p.add_subparsers(dest="cmd", required=True)
@@ -348,6 +425,7 @@ def main() -> int:
     for k in ("livrable", "preuve", "ecart", "reste"):
         x.add_argument(f"--{k}", action="append")
     x.set_defaults(f=compte_rendu)
+    x = s.add_parser("synchro"); x.add_argument("--etat-dir", default="~/dev/pbm-state"); x.add_argument("--logs", default="~/dev/logs"); x.set_defaults(f=synchro)
     x = s.add_parser("decision"); x.add_argument("id"); x.add_argument("texte"); x.set_defaults(f=decision)
     a = p.parse_args()
     return a.f(a)
