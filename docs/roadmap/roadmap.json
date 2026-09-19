@@ -4,7 +4,7 @@
     "date": "2026-09-19",
     "horizon": [
       "2026-09-21",
-      "2027-03-31"
+      "2027-04-10"
     ],
     "gel": null,
     "repo": "https://github.com/keewoo/PokeBoyManager",
@@ -41,7 +41,7 @@
         "quoi": "Revue de sécurité passée, export/suppression des données, e2e verts en CI, PROD servie sur son domaine avec sauvegardes."
       },
       {
-        "date": "2027-03-19",
+        "date": "2027-03-26",
         "nom": "Jeu jouable",
         "quoi": "Deux joueurs s'affrontent en ligne avec leurs propres cartes — y compris cartes Dresseur, talents et états spéciaux : decks construits depuis sa collection (ou proposés par son IA), file d'attente privée, partie au tour par tour sur un plateau d'arène, reprise après un F5."
       }
@@ -232,7 +232,7 @@
       "id": "V7",
       "nom": "Jouer avec ses cartes",
       "debut": "2026-11-30",
-      "fin": "2027-03-19",
+      "fin": "2027-03-26",
       "these": "Après le MVP : construire des decks avec SES cartes (l'IA peut en proposer un selon les types voulus), puis s'affronter à deux, en ligne, au tour par tour, sur un plateau graphique — avec sa propre photo ou l'image officielle de chaque carte.",
       "gain": "La collection ne se regarde plus, elle se joue."
     }
@@ -2129,6 +2129,46 @@
       "taches_na": {}
     },
     {
+      "id": "v7-effets-visuels",
+      "vague": "V7",
+      "piste": "J",
+      "couloir": "CH4",
+      "debut": "2027-03-15",
+      "fin": "2027-03-26",
+      "priorite": "P1",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "Décors d'arène et animations de jeu (évolution, attaques spéciales, K.O.)",
+      "gain": "Demande de JF (19/09) : une partie doit être belle à regarder — c'est ce qui donne envie d'en refaire une.",
+      "fonctionnalites": "Choix du décor du plateau parmi plusieurs arènes (ville, forêt, volcan, bord de mer, salle de tournoi), mémorisé par joueur ; animations : évolution, attaque simple, attaque de carte spéciale (ex/GX/V/VMAX) avec mise en scène, mise K.O., prise de récompense, début et fin de tour.",
+      "risques": "Décors **originaux** inspirés des ambiances du jeu, jamais des visuels officiels repris (propriété intellectuelle). Les animations ne doivent ni retarder le jeu ni masquer une information : chacune est courte (moins d'une seconde, sauf la mise en scène d'attaque spéciale), interruptible, et l'état du plateau est déjà à jour dessous. `prefers-reduced-motion` respecté (tout se joue alors en fondu court). Budget : 60 images par seconde sur un téléphone de milieu de gamme, mesuré.",
+      "tenants": "Plateau de jeu, déroulé de la partie.",
+      "aboutissants": "—",
+      "dependances": [
+        "v7-plateau"
+      ],
+      "decision": null,
+      "refs": [
+        "Maquette du jeu : sélecteur de décor et démonstrations d'animation"
+      ],
+      "mission": [
+        "Cinq décors originaux (CSS et SVG, pas d'images lourdes), sélecteur dans la partie, mémorisé par joueur ; contraste vérifié : les cartes et les compteurs restent lisibles sur chacun.",
+        "Animations jouées à partir des événements du serveur (jamais décidées par le client) : évolution, attaque, attaque spéciale, K.O., prise de récompense.",
+        "Mise en scène des attaques de cartes spéciales (ex, GX, V, VMAX) : zoom sur la carte, effet lié au type, retour au plateau ; passable d'un clic.",
+        "Respect de `prefers-reduced-motion`, file d'animations (jamais deux en même temps), et reprise correcte si le joueur rafraîchit pendant une animation.",
+        "Mesure des images par seconde sur mobile et du poids ajouté à la page."
+      ],
+      "livrables": [
+        "cinq décors",
+        "animations d'évolution, d'attaque, d'attaque spéciale et de K.O.",
+        "mesure des images par seconde"
+      ],
+      "taches_na": {
+        "securite": "rendu visuel"
+      }
+    },
+    {
       "vague": "V7",
       "piste": "J",
       "id": "v7-anti-triche",
@@ -2164,12 +2204,47 @@
       }
     },
     {
+      "id": "v7-stats-joueur",
+      "vague": "V7",
+      "piste": "J",
+      "couloir": "CH1",
+      "debut": "2027-03-15",
+      "fin": "2027-03-19",
+      "priorite": "P1",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 2,
+      "titre": "Statistiques du joueur : parties, victoires, adversaires, decks",
+      "gain": "Demande de JF (19/09) : une fois qu'on joue, on veut savoir où on en est — et revoir ses parties.",
+      "fonctionnalites": "Parties jouées, victoires et défaites, pourcentage de victoires, série en cours et meilleure série, adversaire le plus fréquent et bilan face à lui, deck le plus joué et deck le plus gagnant, durée moyenne d'une partie, cartes les plus souvent au K.O. adverse ; historique des parties avec date, adversaire, deck, résultat et journal rejouable.",
+      "risques": "Les statistiques se calculent depuis le journal d'audit des parties (source unique), jamais depuis des compteurs mis à jour à la main qui dérivent. Chiffres visibles par le seul joueur (l'adversaire n'y accède pas) : test d'accès croisé.",
+      "tenants": "Parties terminées et journal d'audit.",
+      "aboutissants": "—",
+      "dependances": [
+        "v7-partie-ui"
+      ],
+      "decision": null,
+      "refs": [
+        "Maquette du jeu : écran Mon profil de joueur"
+      ],
+      "mission": [
+        "Agrégats calculés en base depuis les parties terminées (vue matérialisée rafraîchie en fin de partie), route `GET /me/jeu/stats` filtrée par `user_id`.",
+        "Écran « Mon profil de joueur » conforme à la maquette : chiffres clés, courbe des résultats, bilan par adversaire et par deck.",
+        "Historique des parties : liste filtrable, ouverture du journal d'une partie (rejouable coup par coup).",
+        "Tests : agrégats justes sur un jeu de parties connues, accès croisé refusé."
+      ],
+      "livrables": [
+        "statistiques et historique des parties"
+      ],
+      "taches_na": {}
+    },
+    {
       "vague": "V7",
       "piste": "J",
       "id": "v7-e2e-jeu",
       "couloir": "CH3",
-      "debut": "2027-03-15",
-      "fin": "2027-03-19",
+      "debut": "2027-03-22",
+      "fin": "2027-03-26",
       "priorite": "P1",
       "taille": "M",
       "complexite": 3,

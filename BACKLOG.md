@@ -7,7 +7,7 @@
 
 - **2026-11-06 — MVP en UAT** : Parcours complet en UAT : inscription → clé IA → photo → reconnaissance → validation → collection filtrée → fiche carte avec courbe de valeur, anecdotes et étude en jeu.
 - **2026-11-20 — En ligne** : Revue de sécurité passée, export/suppression des données, e2e verts en CI, PROD servie sur son domaine avec sauvegardes.
-- **2027-03-19 — Jeu jouable** : Deux joueurs s'affrontent en ligne avec leurs propres cartes — y compris cartes Dresseur, talents et états spéciaux : decks construits depuis sa collection (ou proposés par son IA), file d'attente privée, partie au tour par tour sur un plateau d'arène, reprise après un F5.
+- **2027-03-26 — Jeu jouable** : Deux joueurs s'affrontent en ligne avec leurs propres cartes — y compris cartes Dresseur, talents et états spéciaux : decks construits depuis sa collection (ou proposés par son IA), file d'attente privée, partie au tour par tour sur un plateau d'arène, reprise après un F5.
 
 ## V0 — Fondations (21 sept. → 29 sept.)
 
@@ -95,7 +95,7 @@ _Ce qui rend le produit meilleur que la concurrence, une fois le socle en servic
 | `v6-import-export` | P3 | Import/export CSV et liste de souhaits | DA1 (devAI) | 23 nov. → 27 nov. | v5-prod | — | À faire | [prompt](prompts/v6-import-export.md) |
 | `v6-gradation` | P3 | Cartes gradées (PSA, PCA, CGC) | CH3 (chimera) | 30 nov. → 4 déc. | v5-prod | — | À faire | [prompt](prompts/v6-gradation.md) |
 
-## V7 — Jouer avec ses cartes (30 nov. → 19 mars)
+## V7 — Jouer avec ses cartes (30 nov. → 26 mars)
 
 _Après le MVP : construire des decks avec SES cartes (l'IA peut en proposer un selon les types voulus), puis s'affronter à deux, en ligne, au tour par tour, sur un plateau graphique — avec sa propre photo ou l'image officielle de chaque carte._
 
@@ -112,7 +112,9 @@ _Après le MVP : construire des decks avec SES cartes (l'IA peut en proposer un 
 | `v7-plateau` | P0 | Plateau de jeu graphique | CH4 (chimera) | 22 févr. → 5 mars | v7-temps-reel, v7-images-jeu | — | À faire | [prompt](prompts/v7-plateau.md) |
 | `v7-anti-triche` | P1 | Autorité du serveur et anti-triche | DA1 (devAI) | 22 févr. → 26 févr. | v7-temps-reel | — | À faire | [prompt](prompts/v7-anti-triche.md) |
 | `v7-partie-ui` | P0 | Déroulé d'une partie : file d'attente, tours, journal, fin de partie | CH4 (chimera) | 8 mars → 12 mars | v7-plateau | — | À faire | [prompt](prompts/v7-partie-ui.md) |
-| `v7-e2e-jeu` | P1 | Partie complète jouée automatiquement, à deux navigateurs | CH3 (chimera) | 15 mars → 19 mars | v7-partie-ui | — | À faire | [prompt](prompts/v7-e2e-jeu.md) |
+| `v7-effets-visuels` | P1 | Décors d'arène et animations de jeu (évolution, attaques spéciales, K.O.) | CH4 (chimera) | 15 mars → 26 mars | v7-plateau | — | À faire | [prompt](prompts/v7-effets-visuels.md) |
+| `v7-stats-joueur` | P1 | Statistiques du joueur : parties, victoires, adversaires, decks | CH1 (chimera) | 15 mars → 19 mars | v7-partie-ui | — | À faire | [prompt](prompts/v7-stats-joueur.md) |
+| `v7-e2e-jeu` | P1 | Partie complète jouée automatiquement, à deux navigateurs | CH3 (chimera) | 22 mars → 26 mars | v7-partie-ui | — | À faire | [prompt](prompts/v7-e2e-jeu.md) |
 
 ## Décisions de JF
 
