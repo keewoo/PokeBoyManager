@@ -1,4 +1,4 @@
-# Lot `v7-regles-moteur` — Moteur de règles du jeu, côté serveur, rejouable et testé
+# Lot `v7-regles-moteur` — Moteur de règles du jeu (socle) : zones, tour, attaques, récompenses
 
 > Prompt GÉNÉRÉ depuis `docs/roadmap/roadmap.json` par `docs/roadmap/suivi.py build` — ne pas éditer à la main.
 > Suivi : `docs/roadmap/ROADMAP.html` (onglets Roadmap et Maquette) · processus : `docs/roadmap/PROCESSUS.md`.
@@ -76,11 +76,11 @@ Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_va
 2. Implémenter les actions légales d'un tour et la résolution des attaques (dégâts, faiblesse ×2, résistance, KO, récompenses) ; toute action illégale est refusée avec sa raison.
 3. Rejouabilité : rejouer le journal reconstruit exactement le même état (test de propriété).
 4. Couverture : au moins 150 cas de règles, dont les cas limites (plus de cartes à piocher = défaite, banc plein, retraite sans énergie, KO simultané).
-5. Interface claire pour la v2 (dresseurs, talents, états spéciaux) sans réécriture.
+5. Interface d'effets (pile d'effets, déclencheurs, fenêtres d'interruption) prête pour le lot `v7-regles-cartes` : Dresseur, talents et états spéciaux s'y branchent sans toucher au socle.
 
 ## 4. Risques & pièges
 
-Périmètre (D9) : dresseurs, talents et états spéciaux ne sont PAS dans la v1 — le moteur doit être écrit pour les accueillir sans être réécrit. Un moteur de règles se teste par des centaines de cas : chaque règle a son test, et toute partie est rejouable depuis son journal d'actions.
+Le socle doit être écrit pour accueillir les effets de cartes (Dresseur, talents, états spéciaux) **sans réécriture** : toute modification d'état passe par des effets nommés et journalisés, jamais par du code au fil de l'eau. Un moteur de règles se teste par des centaines de cas ; toute partie est rejouable depuis son journal d'actions.
 
 ## 5. Livrables — définition de « fini »
 

@@ -3,7 +3,7 @@
 > Prompt GÉNÉRÉ depuis `docs/roadmap/roadmap.json` par `docs/roadmap/suivi.py build` — ne pas éditer à la main.
 > Suivi : `docs/roadmap/ROADMAP.html` (onglets Roadmap et Maquette) · processus : `docs/roadmap/PROCESSUS.md`.
 
-**P0** · piste Jeu — decks et parties · couloir **DA1** — API, comptes & données (**devAI**) · prévu du 11 janv. au 15 janv. · jalon **En ligne** · taille M · complexité 3/5 · difficulté 3/5
+**P0** · piste Jeu — decks et parties · couloir **DA1** — API, comptes & données (**devAI**) · prévu du 8 févr. au 12 févr. · jalon **En ligne** · taille M · complexité 3/5 · difficulté 3/5
 
 ## A. Où tourne cette session ? — à trancher AVANT tout le reste
 
@@ -66,7 +66,7 @@ Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_va
 **Aboutissants — ce que ça ouvre.** Partie en temps réel.
 
 **Dépend de :**
-- `v7-regles-moteur` — Moteur de règles du jeu, côté serveur, rejouable et testé
+- `v7-regles-cartes` — Cartes Dresseur, talents et états spéciaux
 - `v7-decks-api` — Decks : création, légalité et sauvegarde, uniquement avec ses cartes
 
 **Décision D11** (avant le 9 janv.) : Cadre du jeu en ligne (propriété intellectuelle) : partie privée entre comptes invités seulement, ou file d'attente ouverte à tous les inscrits ? Sans revenu ni publicité dans les deux cas. — lis la décision prise dans `etat.json` (`decisions_prises`) et applique-la à la lettre.

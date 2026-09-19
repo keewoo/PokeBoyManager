@@ -3,7 +3,7 @@
 > Prompt GÉNÉRÉ depuis `docs/roadmap/roadmap.json` par `docs/roadmap/suivi.py build` — ne pas éditer à la main.
 > Suivi : `docs/roadmap/ROADMAP.html` (onglets Roadmap et Maquette) · processus : `docs/roadmap/PROCESSUS.md`.
 
-**P1** · piste Jeu — decks et parties · couloir **DA1** — API, comptes & données (**devAI**) · prévu du 25 janv. au 29 janv. · jalon **En ligne** · taille M · complexité 3/5 · difficulté 3/5
+**P1** · piste Jeu — decks et parties · couloir **DA1** — API, comptes & données (**devAI**) · prévu du 22 févr. au 26 févr. · jalon **En ligne** · taille M · complexité 3/5 · difficulté 3/5
 
 ## A. Où tourne cette session ? — à trancher AVANT tout le reste
 

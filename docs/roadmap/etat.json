@@ -3494,6 +3494,62 @@
       },
       "journal": [],
       "compte_rendu": {}
+    },
+    "v7-regles-cartes": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : back-end",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
     }
   },
   "decisions_prises": {
@@ -3541,6 +3597,11 @@
       "prise": "JF le 19/09 (« clairement ») : jeu en ligne PRIVÉ — file d'attente réservée aux comptes invités, pas d'ouverture publique, aucun revenu ni publicité. Les cartes jouables restent celles que le joueur possède.",
       "par": "JF",
       "quand": "2026-09-19T23:41+0200"
+    },
+    "D9": {
+      "prise": "JF le 19/09 : NON à un périmètre réduit — les cartes Dresseur (Objets, Supporters, Stades, Outils), les talents et les états spéciaux font partie de la première version du jeu. Découpage : un socle de moteur (zones, tour, attaques, récompenses) puis un lot dédié aux effets de cartes, avec une règle stricte — un effet non implémenté n'est jamais approximé, la carte est refusée dans le deck et le dit.",
+      "par": "JF",
+      "quand": "2026-09-19T23:42+0200"
     }
   }
 }

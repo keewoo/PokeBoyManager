@@ -3,7 +3,7 @@
 > Prompt GÉNÉRÉ depuis `docs/roadmap/roadmap.json` par `docs/roadmap/suivi.py build` — ne pas éditer à la main.
 > Suivi : `docs/roadmap/ROADMAP.html` (onglets Roadmap et Maquette) · processus : `docs/roadmap/PROCESSUS.md`.
 
-**P0** · piste Jeu — decks et parties · couloir **CH4** — Front — photos, validation & fiche carte (**chimera**) · prévu du 9 févr. au 13 févr. · jalon **En ligne** · taille M · complexité 3/5 · difficulté 2/5
+**P0** · piste Jeu — decks et parties · couloir **CH4** — Front — photos, validation & fiche carte (**chimera**) · prévu du 8 mars au 12 mars · jalon **En ligne** · taille M · complexité 3/5 · difficulté 2/5
 
 ## A. Où tourne cette session ? — à trancher AVANT tout le reste
 

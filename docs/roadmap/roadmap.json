@@ -4,7 +4,7 @@
     "date": "2026-09-19",
     "horizon": [
       "2026-09-21",
-      "2027-02-28"
+      "2027-03-31"
     ],
     "gel": null,
     "repo": "https://github.com/keewoo/PokeBoyManager",
@@ -41,9 +41,9 @@
         "quoi": "Revue de sécurité passée, export/suppression des données, e2e verts en CI, PROD servie sur son domaine avec sauvegardes."
       },
       {
-        "date": "2027-02-20",
+        "date": "2027-03-19",
         "nom": "Jeu jouable",
-        "quoi": "Deux joueurs s'affrontent en ligne avec leurs propres cartes : decks construits depuis sa collection (ou proposés par son IA), file d'attente, partie au tour par tour sur un plateau graphique, reprise après un F5."
+        "quoi": "Deux joueurs s'affrontent en ligne avec leurs propres cartes — y compris cartes Dresseur, talents et états spéciaux : decks construits depuis sa collection (ou proposés par son IA), file d'attente privée, partie au tour par tour sur un plateau d'arène, reprise après un F5."
       }
     ],
     "risques_calendrier": [
@@ -232,7 +232,7 @@
       "id": "V7",
       "nom": "Jouer avec ses cartes",
       "debut": "2026-11-30",
-      "fin": "2027-02-20",
+      "fin": "2027-03-19",
       "these": "Après le MVP : construire des decks avec SES cartes (l'IA peut en proposer un selon les types voulus), puis s'affronter à deux, en ligne, au tour par tour, sur un plateau graphique — avec sa propre photo ou l'image officielle de chaque carte.",
       "gain": "La collection ne se regarde plus, elle se joue."
     }
@@ -340,7 +340,8 @@
       "date": "2026-11-27",
       "quoi": "Périmètre des règles v1 du moteur de jeu : proposition — Pokémon de base et évolutions, énergies, attaques, faiblesse/résistance, retraite, banc, récompenses, conditions de victoire ; dresseurs, talents et états spéciaux en v2.",
       "debloque": [
-        "v7-regles-moteur"
+        "v7-regles-moteur",
+        "v7-regles-cartes"
       ]
     },
     {
@@ -1787,10 +1788,10 @@
       "taille": "L",
       "complexite": 5,
       "difficulte": 4,
-      "titre": "Moteur de règles du jeu, côté serveur, rejouable et testé",
+      "titre": "Moteur de règles du jeu (socle) : zones, tour, attaques, récompenses",
       "gain": "Le cœur du jeu : sans un moteur qui applique les règles et fait autorité, il n'y a ni partie honnête ni reprise après coupure.",
       "fonctionnalites": "État complet d'une partie (zones : actif, banc, main, pioche, défausse, récompenses, énergies attachées), déroulé d'un tour (pioche, pose, évolution, énergie, attaque, retraite), dégâts avec faiblesse et résistance, mises KO, récompenses, conditions de victoire, abandon.",
-      "risques": "Périmètre (D9) : dresseurs, talents et états spéciaux ne sont PAS dans la v1 — le moteur doit être écrit pour les accueillir sans être réécrit. Un moteur de règles se teste par des centaines de cas : chaque règle a son test, et toute partie est rejouable depuis son journal d'actions.",
+      "risques": "Le socle doit être écrit pour accueillir les effets de cartes (Dresseur, talents, états spéciaux) **sans réécriture** : toute modification d'état passe par des effets nommés et journalisés, jamais par du code au fil de l'eau. Un moteur de règles se teste par des centaines de cas ; toute partie est rejouable depuis son journal d'actions.",
       "tenants": "Cartes, attaques et faiblesses déjà en base (catalogue complet) ; D9.",
       "aboutissants": "File d'attente, temps réel, plateau, parties.",
       "dependances": [],
@@ -1803,7 +1804,7 @@
         "Implémenter les actions légales d'un tour et la résolution des attaques (dégâts, faiblesse ×2, résistance, KO, récompenses) ; toute action illégale est refusée avec sa raison.",
         "Rejouabilité : rejouer le journal reconstruit exactement le même état (test de propriété).",
         "Couverture : au moins 150 cas de règles, dont les cas limites (plus de cartes à piocher = défaite, banc plein, retraite sans énergie, KO simultané).",
-        "Interface claire pour la v2 (dresseurs, talents, états spéciaux) sans réécriture."
+        "Interface d'effets (pile d'effets, déclencheurs, fenêtres d'interruption) prête pour le lot `v7-regles-cartes` : Dresseur, talents et états spéciaux s'y branchent sans toucher au socle."
       ],
       "livrables": [
         "moteur pur + journal rejouable",
@@ -1827,7 +1828,7 @@
       "titre": "Decks : création, légalité et sauvegarde, uniquement avec ses cartes",
       "gain": "Un joueur construit ses decks à partir de sa collection réelle — c'est ce qui rend le jeu personnel.",
       "fonctionnalites": "Plusieurs decks par joueur, nom, duplication, suppression ; contrôle de légalité (60 cartes, maximum 4 exemplaires d'une même carte par son nom) ; **Énergies de base fournies en quantité illimitée**, **Énergies spéciales traitées comme des cartes ordinaires** (il faut les posséder et la règle des 4 s'applique) ; un deck ne peut contenir que des exemplaires possédés, et signale ce qui manque.",
-      "risques": "Une carte vendue ou supprimée de la collection casse un deck existant : le deck reste lisible mais devient injouable, avec la raison affichée.",
+      "risques": "Une carte vendue ou supprimée de la collection casse un deck existant : le deck reste lisible mais devient injouable, avec la raison affichée. Une carte dont l'effet n'est pas encore pris en charge par le moteur (`v7-regles-cartes`) est refusée dans un deck, en l'expliquant.",
       "tenants": "Collection, moteur de règles ; D10.",
       "aboutissants": "Constructeur de deck, proposition par l'IA, file d'attente.",
       "dependances": [
@@ -1842,6 +1843,47 @@
       ],
       "livrables": [
         "API decks + légalité testée"
+      ],
+      "taches_na": {
+        "maquette": "back-end"
+      }
+    },
+    {
+      "id": "v7-regles-cartes",
+      "vague": "V7",
+      "piste": "J",
+      "couloir": "DA1",
+      "debut": "2027-01-11",
+      "fin": "2027-02-05",
+      "priorite": "P0",
+      "taille": "L",
+      "complexite": 5,
+      "difficulte": 5,
+      "titre": "Cartes Dresseur, talents et états spéciaux",
+      "gain": "Décision de JF (19/09) : le jeu doit se jouer pour de vrai — sans Dresseurs ni talents, ce n'est pas le JCC Pokémon.",
+      "fonctionnalites": "Objets, Supporters (un par tour), Stades, Outils ; talents (déclenchés, passifs, une fois par tour) ; états spéciaux (Empoisonné, Brûlé, Endormi, Paralysé, Confus) avec leur résolution entre les tours ; effets d'attaque (soin, défausse, pioche, recherche, changement de Pokémon actif, protection).",
+      "risques": "Chaque carte a son texte : on ne peut pas tout implémenter d'un coup pour 21 900 cartes. **Un effet non implémenté n'est jamais approximé** : la carte est marquée « non prise en charge en jeu » et le contrôle de légalité du deck la refuse en l'expliquant. La couverture se mesure et progresse par familles d'effets.",
+      "tenants": "Socle du moteur, catalogue complet (textes des cartes en base).",
+      "aboutissants": "Decks réellement jouables, parties complètes.",
+      "dependances": [
+        "v7-regles-moteur"
+      ],
+      "decision": "D9",
+      "refs": [
+        "Règles officielles du JCC Pokémon"
+      ],
+      "mission": [
+        "Registre d'effets : un identifiant d'effet par comportement (pioche, soin, recherche, défausse, changement de position, protection, condition), et une table qui relie chaque carte du catalogue à ses effets.",
+        "Analyse des textes du catalogue pour rattacher automatiquement les cartes aux effets connus, avec revue manuelle des cas ambigus ; ce qui n'est pas reconnu reste « non pris en charge ».",
+        "États spéciaux et leur résolution entre les tours ; règles des Supporters (un par tour), des Stades (un seul en jeu) et des Outils (un par Pokémon).",
+        "Talents : déclenchés, passifs, une fois par tour ; fenêtres d'interruption gérées par le socle.",
+        "Couverture mesurée : part des cartes du catalogue jouables, et 100 % des cartes des decks de test ; au moins 200 tests d'effets.",
+        "Le contrôle de légalité d'un deck refuse toute carte non prise en charge, en le disant clairement."
+      ],
+      "livrables": [
+        "registre d'effets + rattachement des cartes",
+        "couverture chiffrée",
+        "≥ 200 tests d'effets"
       ],
       "taches_na": {
         "maquette": "back-end"
@@ -1952,8 +1994,8 @@
       "piste": "J",
       "id": "v7-file-attente",
       "couloir": "DA1",
-      "debut": "2027-01-11",
-      "fin": "2027-01-15",
+      "debut": "2027-02-08",
+      "fin": "2027-02-12",
       "priorite": "P0",
       "taille": "M",
       "complexite": 3,
@@ -1965,7 +2007,7 @@
       "tenants": "Moteur de règles, decks ; D11.",
       "aboutissants": "Partie en temps réel.",
       "dependances": [
-        "v7-regles-moteur",
+        "v7-regles-cartes",
         "v7-decks-api"
       ],
       "decision": "D11",
@@ -1987,8 +2029,8 @@
       "piste": "J",
       "id": "v7-temps-reel",
       "couloir": "DA1",
-      "debut": "2027-01-18",
-      "fin": "2027-01-22",
+      "debut": "2027-02-15",
+      "fin": "2027-02-19",
       "priorite": "P0",
       "taille": "M",
       "complexite": 4,
@@ -2022,8 +2064,8 @@
       "piste": "J",
       "id": "v7-plateau",
       "couloir": "CH4",
-      "debut": "2027-01-26",
-      "fin": "2027-02-06",
+      "debut": "2027-02-22",
+      "fin": "2027-03-05",
       "priorite": "P0",
       "taille": "L",
       "complexite": 4,
@@ -2057,8 +2099,8 @@
       "piste": "J",
       "id": "v7-partie-ui",
       "couloir": "CH4",
-      "debut": "2027-02-09",
-      "fin": "2027-02-13",
+      "debut": "2027-03-08",
+      "fin": "2027-03-12",
       "priorite": "P0",
       "taille": "M",
       "complexite": 3,
@@ -2091,8 +2133,8 @@
       "piste": "J",
       "id": "v7-anti-triche",
       "couloir": "DA1",
-      "debut": "2027-01-25",
-      "fin": "2027-01-29",
+      "debut": "2027-02-22",
+      "fin": "2027-02-26",
       "priorite": "P1",
       "taille": "M",
       "complexite": 3,
@@ -2126,8 +2168,8 @@
       "piste": "J",
       "id": "v7-e2e-jeu",
       "couloir": "CH3",
-      "debut": "2027-02-16",
-      "fin": "2027-02-20",
+      "debut": "2027-03-15",
+      "fin": "2027-03-19",
       "priorite": "P1",
       "taille": "M",
       "complexite": 3,

@@ -66,7 +66,7 @@ Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_va
 **Aboutissants — ce que ça ouvre.** Constructeur de deck, proposition par l'IA, file d'attente.
 
 **Dépend de :**
-- `v7-regles-moteur` — Moteur de règles du jeu, côté serveur, rejouable et testé
+- `v7-regles-moteur` — Moteur de règles du jeu (socle) : zones, tour, attaques, récompenses
 
 **Décision D10** (avant le 18 déc.) : Un deck n'utilise que les cartes possédées — faut-il faire une exception pour les Énergies de base (illimitées, comme dans les decks papier) ? Proposition : oui, les Énergies de base sont fournies. — lis la décision prise dans `etat.json` (`decisions_prises`) et applique-la à la lettre.
 
@@ -78,7 +78,7 @@ Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_va
 
 ## 4. Risques & pièges
 
-Une carte vendue ou supprimée de la collection casse un deck existant : le deck reste lisible mais devient injouable, avec la raison affichée.
+Une carte vendue ou supprimée de la collection casse un deck existant : le deck reste lisible mais devient injouable, avec la raison affichée. Une carte dont l'effet n'est pas encore pris en charge par le moteur (`v7-regles-cartes`) est refusée dans un deck, en l'expliquant.
 
 ## 5. Livrables — définition de « fini »
 
