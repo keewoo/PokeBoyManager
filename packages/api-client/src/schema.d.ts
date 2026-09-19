@@ -421,6 +421,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/uploads/{upload_id}/detections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Detections
+         * @description Cartes détectées sur un envoi (mission `v3-detection`) : préalable à la validation
+         *     humaine (identification, lot ultérieur).
+         */
+        get: operations["list_detections_uploads__upload_id__detections_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/{upload_id}/detections/{detection_id}/crop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Detection Crop */
+        get: operations["get_detection_crop_uploads__upload_id__detections__detection_id__crop_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/collection/{item_id}": {
         parameters: {
             query?: never;
@@ -691,6 +729,26 @@ export interface components {
             /** Password */
             password: string;
         };
+        /** DetectionResponse */
+        DetectionResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Reading Order */
+            reading_order: number;
+            status: components["schemas"]["DetectionStatus"];
+            /** Crop Url */
+            crop_url: string;
+            /** Candidates */
+            candidates: unknown[] | null;
+        };
+        /**
+         * DetectionStatus
+         * @enum {string}
+         */
+        DetectionStatus: "pending" | "validated" | "rejected";
         /** ForgotPasswordRequest */
         ForgotPasswordRequest: {
             /**
@@ -708,6 +766,16 @@ export interface components {
         HealthResponse: {
             /** Status */
             status: string;
+        };
+        /** ListDetectionsResponse */
+        ListDetectionsResponse: {
+            /**
+             * Upload Id
+             * Format: uuid
+             */
+            upload_id: string;
+            /** Detections */
+            detections: components["schemas"]["DetectionResponse"][];
         };
         /** LoginRequest */
         LoginRequest: {
@@ -1681,6 +1749,69 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CompleteUploadResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_detections_uploads__upload_id__detections_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                upload_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListDetectionsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_detection_crop_uploads__upload_id__detections__detection_id__crop_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                upload_id: string;
+                detection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
