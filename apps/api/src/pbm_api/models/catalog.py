@@ -73,12 +73,15 @@ class Card(Base, TimestampMixin):
     # y ajoute "/high.webp" ou "/low.webp" selon la définition demandée.
     image_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     illustrator: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    attacks: Mapped[list | None] = mapped_column(JSONB, nullable=True)
-    abilities: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    # `none_as_null=True` partout : sans lui, assigner l'attribut Python `None` écrit un scalaire
+    # JSON `null` en base, pas un SQL NULL — `IS NOT NULL` (complétude, recherche de trous) le
+    # compterait alors à tort comme renseigné (constaté en écrivant le rapport de complétude).
+    attacks: Mapped[list | None] = mapped_column(JSONB(none_as_null=True), nullable=True)
+    abilities: Mapped[list | None] = mapped_column(JSONB(none_as_null=True), nullable=True)
     legal_standard: Mapped[bool | None] = mapped_column(nullable=True)
     legal_expanded: Mapped[bool | None] = mapped_column(nullable=True)
-    weaknesses: Mapped[list | None] = mapped_column(JSONB, nullable=True)
-    resistances: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    weaknesses: Mapped[list | None] = mapped_column(JSONB(none_as_null=True), nullable=True)
+    resistances: Mapped[list | None] = mapped_column(JSONB(none_as_null=True), nullable=True)
     retreat_cost: Mapped[int | None] = mapped_column(Integer, nullable=True)
     # Marqueur de règle spéciale (ex/GX/V/VMAX/VSTAR/BREAK...) : TCGdex `suffix` si présent
     # (ex, GX — la carte garde un stade d'évolution ordinaire), sinon `stage` quand il porte
@@ -86,7 +89,7 @@ class Card(Base, TimestampMixin):
     rule_marker: Mapped[str | None] = mapped_column(String(32), nullable=True)
     # Variantes existantes pour cette carte (ex: {"normal": false, "holo": true, "reverse": false,
     # "firstEdition": false, "wPromo": false}), telles qu'exposées par TCGdex (`variants`).
-    variants: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    variants: Mapped[dict | None] = mapped_column(JSONB(none_as_null=True), nullable=True)
     # Identifiants externes pour le rapprochement (v2-catalogue) — voir catalog/reconciliation.py.
     tcgdex_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     ptcg_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
@@ -176,13 +179,13 @@ class CardInsight(Base):
         unique=True,
         nullable=False,
     )
-    anecdotes: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     # `generated_at`/`cached_until`/`source_model` (ci-dessus) datent le cache des anecdotes ;
     # l'étude en jeu (`v4-jeu`) a son propre triplet ci-dessous, volontairement distinct — les
     # deux synthèses sont générées à des moments différents et ne doivent jamais réinitialiser
     # la fraîcheur l'une de l'autre (un `card_insights` déjà "frais" pour l'étude en jeu mais
     # dont les anecdotes n'ont jamais été générées ne doit pas empêcher leur génération, et
     # inversement).
+    anecdotes: Mapped[dict | None] = mapped_column(JSONB(none_as_null=True), nullable=True)
     in_game_study: Mapped[str | None] = mapped_column(Text, nullable=True)
     source_model: Mapped[str | None] = mapped_column(String(64), nullable=True)
     generated_at: Mapped[datetime | None] = mapped_column(nullable=True)
