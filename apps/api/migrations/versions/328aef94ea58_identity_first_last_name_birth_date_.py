@@ -1,7 +1,7 @@
 """identity: first/last name, birth date, terms acceptance, forced password change
 
 Revision ID: 328aef94ea58
-Revises: 2e56ba32d5ed
+Revises: 054d503ae627
 Create Date: 2026-09-19 22:43:10.164796
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = '328aef94ea58'
-down_revision: str | Sequence[str] | None = '2e56ba32d5ed'
+down_revision: str | Sequence[str] | None = '054d503ae627'
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

@@ -9,6 +9,7 @@ collection et passe une fois le fichier ajouté.
 
 import json
 import uuid
+from datetime import date, datetime
 
 import cv2
 import pytest
@@ -87,7 +88,14 @@ async def storage():
 
 
 async def _make_upload(db_session, storage, image_bytes: bytes) -> tuple[Upload, User]:
-    user = User(email=f"ident-{uuid.uuid4()}@example.com", password_hash="x")
+    user = User(
+        email=f"ident-{uuid.uuid4()}@example.com",
+        password_hash="x",
+        last_name="Test",
+        birth_date=date(2000, 1, 1),
+        terms_version="test",
+        terms_accepted_at=datetime(2000, 1, 1),
+    )
     db_session.add(user)
     await db_session.flush()
 
