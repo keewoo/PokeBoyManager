@@ -153,6 +153,30 @@ consigne « script d'essai manuel avec vraie clé » du CONTEXTE D'EXÉCUTION co
 reconnaissance par IA, pas ce lot) ; recherche de motifs de clé sur les fichiers ajoutés → aucun
 résultat.
 
+## Fusion vers `main` — conflit de dépendances résolu et vérifié
+
+Au rebase sur `origin/main` (qui avait avancé : `v1-auth`, `v1-accueil`, `v0-design-system`
+fusionnés entre-temps), conflits textuels attendus et résolus sans difficulté sur
+`pyproject.toml`/`main.py`/`conftest.py`/`uv.lock` (additions des deux côtés, pas de logique
+partagée modifiée). Un conflit plus substantiel est apparu **après** résolution textuelle :
+`v1-auth` épingle `redis>=8.1.0`, `arq` (jusqu'à sa dernière version publiée, 0.28.0) épingle
+encore `redis[hiredis]<6,>=4.2.0` — `uv lock` refusait de résoudre. Plutôt que d'affaiblir la
+contrainte de `v1-auth` (dont je ne connais pas les raisons — potentiellement une fonctionnalité
+redis-py 8.x utilisée ailleurs) ou d'abandonner `arq` (choix documenté dans
+`docs/ARCHITECTURE.md`), j'ai ajouté `[tool.uv] override-dependencies = ["redis>=8.1.0"]` dans
+`apps/api/pyproject.toml` : la contrainte amont d'arq est probablement juste obsolète (le client
+`redis.asyncio` qu'il utilise n'a pas changé de forme). **Vérifié en conditions réelles avant de
+pousser**, pas seulement supposé : `uv sync` a bien installé `redis==8.1.0`, un job a été mis en
+file (`enqueue_job`) puis traité par `arq … --burst` contre le Redis réel de l'infra partagée
+(sorti proprement, `exit=0`, job exécuté en 10,1 s) — si l'API `redis.asyncio` avait changé de
+forme entre 5.x et 8.x, ça aurait échoué ici plutôt qu'en production.
+
+En cours de route, un job resté bloqué en re-tentative (`pbm:v2-catalogue:queue`, reliquat de
+l'essai « mode incrémental » interrompu plus haut) a été identifié et purgé (`redis-cli del`,
+clé unique de ce préfixe) avant le test de non-régression ci-dessus — sans ce nettoyage, le test
+`--burst` restait bloqué à attendre le délai de nouvelle tentative (588 s) plutôt que de traiter
+le nouveau job.
+
 ## Choix techniques faits (autonomes, dans le cadre de `docs/ARCHITECTURE.md`)
 
 - **Légalités, illustrateur, attaques/talents lus directement sur TCGdex**, pas via Pokémon TCG
