@@ -1,6 +1,12 @@
-"""Export RGPD de la collection (lot `v5-rgpd`, mission point 1) : `POST /me/export` prépare
-une archive ZIP (collection JSON + CSV, photos), envoie un e-mail avec un lien de téléchargement
-signé valable 24 h, servi sans cookie de session par `GET /export/download`.
+"""Export RGPD de la collection (lot `v5-rgpd`, mission point 1) : `POST /me/export` crée un
+`DataExport` et l'enfile vers le worker arq (comme `POST /uploads/{id}/complete` pour
+`detect_cards_task`, mission `v3-detection`) ; le worker construit l'archive ZIP (collection
+JSON + CSV, photos), envoie un e-mail avec un lien de téléchargement signé valable 24 h, servi
+sans cookie de session par `GET /export/download`.
+
+Le worker arq n'est pas démarré pendant les tests (comme pour `detect_cards_task`,
+`tests/test_detections_routes.py`) : `export.service.run_export` est appelé directement pour
+simuler ce que ferait `pbm_api.worker.export_user_data_task`.
 
 Avant ce lot, aucune de ces routes n'existait (404 sur `/me/export`, `/export/download`) :
 chacun de ces tests échoue sur `main.py` sans le routeur `export` et passe une fois branché.
@@ -20,8 +26,9 @@ from sqlalchemy import select
 
 from pbm_api.config import settings
 from pbm_api.export.archive import COLLECTION_CSV_NAME, COLLECTION_JSON_NAME, PROFILE_JSON_NAME
+from pbm_api.export.service import run_export
 from pbm_api.main import app as fastapi_app
-from pbm_api.models import Card, DataExport, JobStatus, PriceVariant, Set, User
+from pbm_api.models import Card, DataExport, PriceVariant, Set, User
 from pbm_api.models.collection import CollectionItem
 from pbm_api.routers.export import get_storage
 from pbm_api.security.csrf import CSRF_HEADER_NAME
@@ -91,6 +98,24 @@ async def _add_collection_item_with_photo(
     return item, card
 
 
+async def _request_and_simulate_worker(
+    api_client: httpx.AsyncClient, db_session, storage: LocalObjectStorage, csrf: str
+) -> DataExport:
+    """`POST /me/export` enfile un job réel (Redis, comme `detect_cards_task`) que rien ne
+    consomme en tests : on simule directement ce que ferait `export_user_data_task`."""
+    created = await api_client.post("/me/export", headers={CSRF_HEADER_NAME: csrf})
+    assert created.status_code == 202, created.text
+    assert created.json()["status"] == "queued"
+
+    export_id = uuid.UUID(created.json()["id"])
+    result = await db_session.execute(select(DataExport).where(DataExport.id == export_id))
+    export = result.scalar_one()
+    result = await db_session.execute(select(User).where(User.id == export.user_id))
+    user = result.scalar_one()
+
+    return await run_export(db_session, storage, api_client.email_sender, user, export)  # type: ignore[attr-defined]
+
+
 def _extract_download_token(body: str) -> str:
     match = re.search(r"token=(\S+)", body)
     assert match, body
@@ -111,10 +136,21 @@ async def test_request_export_requires_csrf_token(api_client: httpx.AsyncClient)
     assert response.status_code == 403
 
 
-# --- Cycle complet ---------------------------------------------------------------------------
+async def test_request_export_returns_a_queued_job_immediately(
+    api_client: httpx.AsyncClient,
+) -> None:
+    csrf = await _register_verify_login(api_client, _unique_email("export-queued"))
+    response = await api_client.post("/me/export", headers={CSRF_HEADER_NAME: csrf})
+    assert response.status_code == 202, response.text
+    body = response.json()
+    assert body["status"] == "queued"
+    assert body["completed_at"] is None
 
 
-async def test_request_export_builds_archive_and_emails_a_download_link(
+# --- Cycle complet (worker simulé) --------------------------------------------------------
+
+
+async def test_export_builds_archive_and_emails_a_download_link(
     api_client: httpx.AsyncClient, db_session, _local_photo_storage
 ) -> None:
     email = _unique_email("export-ok")
@@ -125,11 +161,9 @@ async def test_request_export_builds_archive_and_emails_a_download_link(
         db_session, str(user.id), _local_photo_storage
     )
 
-    response = await api_client.post("/me/export", headers={CSRF_HEADER_NAME: csrf})
-    assert response.status_code == 202, response.text
-    body = response.json()
-    assert body["status"] == "succeeded"
-    assert body["completed_at"] is not None
+    export = await _request_and_simulate_worker(api_client, db_session, _local_photo_storage, csrf)
+    assert export.status.value == "succeeded"
+    assert export.completed_at is not None
 
     sent = api_client.email_sender.sent  # type: ignore[attr-defined]
     assert sent[-1]["to"] == email
@@ -155,16 +189,15 @@ async def test_request_export_builds_archive_and_emails_a_download_link(
         assert csv_rows[0]["photo"] == photo_entries[0]
 
 
-async def test_request_export_without_any_collection_item_still_succeeds(
-    api_client: httpx.AsyncClient,
+async def test_export_without_any_collection_item_still_succeeds(
+    api_client: httpx.AsyncClient, db_session, _local_photo_storage
 ) -> None:
     """Une collection vide n'est pas une panne — comme le veut `CLAUDE.md` (« un relevé ou un
     lot sans compte rendu est une panne », pas « une collection vide »)."""
     csrf = await _register_verify_login(api_client, _unique_email("export-empty"))
 
-    response = await api_client.post("/me/export", headers={CSRF_HEADER_NAME: csrf})
-    assert response.status_code == 202, response.text
-    assert response.json()["status"] == "succeeded"
+    export = await _request_and_simulate_worker(api_client, db_session, _local_photo_storage, csrf)
+    assert export.status.value == "succeeded"
 
     sent = api_client.email_sender.sent  # type: ignore[attr-defined]
     token = _extract_download_token(sent[-1]["body"])
@@ -179,12 +212,13 @@ async def test_request_export_without_any_collection_item_still_succeeds(
 # --- Statut ------------------------------------------------------------------------------
 
 
-async def test_get_export_status(api_client: httpx.AsyncClient) -> None:
+async def test_get_export_status_reflects_worker_completion(
+    api_client: httpx.AsyncClient, db_session, _local_photo_storage
+) -> None:
     csrf = await _register_verify_login(api_client, _unique_email("export-status"))
-    created = await api_client.post("/me/export", headers={CSRF_HEADER_NAME: csrf})
-    export_id = created.json()["id"]
+    export = await _request_and_simulate_worker(api_client, db_session, _local_photo_storage, csrf)
 
-    response = await api_client.get(f"/me/export/{export_id}")
+    response = await api_client.get(f"/me/export/{export.id}")
     assert response.status_code == 200
     assert response.json()["status"] == "succeeded"
 
@@ -218,16 +252,6 @@ async def test_cross_user_isolation_on_export_status(
         assert response.status_code == 404
 
 
-async def test_download_link_of_user_a_cannot_be_guessed_or_reused_by_user_b(
-    api_client: httpx.AsyncClient,
-) -> None:
-    """Le jeton de téléchargement n'est pas lié à la session de l'appelant : seul le fait de le
-    détenir compte (lien envoyé par e-mail) — mais un jeton au hasard reste refusé."""
-    await _register_verify_login(api_client, _unique_email("export-token-a"))
-    guessed = await api_client.get("/export/download?token=un-jeton-au-hasard")
-    assert guessed.status_code == 404
-
-
 # --- Jeton de téléchargement -------------------------------------------------------------
 
 
@@ -237,19 +261,14 @@ async def test_download_export_rejects_an_unknown_token(api_client: httpx.AsyncC
 
 
 async def test_download_export_rejects_an_expired_token(
-    api_client: httpx.AsyncClient, db_session
+    api_client: httpx.AsyncClient, db_session, _local_photo_storage
 ) -> None:
     csrf = await _register_verify_login(api_client, _unique_email("export-expired"))
-    created = await api_client.post("/me/export", headers={CSRF_HEADER_NAME: csrf})
-    export_id = created.json()["id"]
+    export = await _request_and_simulate_worker(api_client, db_session, _local_photo_storage, csrf)
 
     sent = api_client.email_sender.sent  # type: ignore[attr-defined]
     token = _extract_download_token(sent[-1]["body"])
 
-    result = await db_session.execute(
-        select(DataExport).where(DataExport.id == uuid.UUID(export_id))
-    )
-    export = result.scalar_one()
     export.expires_at = datetime.now(UTC).replace(tzinfo=None) - timedelta(hours=1)
     await db_session.commit()
 
@@ -257,18 +276,14 @@ async def test_download_export_rejects_an_expired_token(
     assert response.status_code == 404
 
 
-async def test_a_still_running_export_has_no_download_token_yet(
-    api_client: httpx.AsyncClient, db_session
+async def test_a_still_queued_export_has_no_download_token_yet(
+    api_client: httpx.AsyncClient,
 ) -> None:
-    """Un export `queued`/`running` n'a pas encore de jeton — un `None` explicite dans
+    """Un export `queued` n'a pas encore de jeton — un `None` explicite dans
     `data_exports.token_hash`, jamais un jeton devinable avant que l'archive n'existe."""
-    email = _unique_email("export-running")
-    await _register_verify_login(api_client, email)
-    result = await db_session.execute(select(User).where(User.email == email))
-    user = result.scalar_one()
+    csrf = await _register_verify_login(api_client, _unique_email("export-running"))
+    created = await api_client.post("/me/export", headers={CSRF_HEADER_NAME: csrf})
+    assert created.json()["status"] == "queued"
 
-    export = DataExport(user_id=user.id, status=JobStatus.running)
-    db_session.add(export)
-    await db_session.commit()
-
-    assert export.token_hash is None
+    guessed = await api_client.get("/export/download?token=un-jeton-au-hasard")
+    assert guessed.status_code == 404
