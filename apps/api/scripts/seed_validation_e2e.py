@@ -19,7 +19,6 @@ import asyncio
 import sys
 import uuid
 
-import cv2
 import numpy as np
 from sqlalchemy import select
 
