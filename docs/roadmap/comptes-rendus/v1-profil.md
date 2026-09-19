@@ -39,14 +39,16 @@ l'UAT/PROD sans Docker), comme prescrit par le contexte d'exécution et
   non réversible côté downgrade, documenté dans la migration : Postgres ne sait pas retirer une
   valeur d'un type énuméré).
 - `pbm_api/main.py` — routeur `profile` branché.
-- Tests : `test_profile.py` (28 cas dont isolation croisée), `test_photo_storage.py` (backend
-  `local` **et** `s3` réel contre MinIO), `test_avatar.py` (recadrage).
+- Tests : `test_profile.py` (20 cas dont isolation croisée), `test_avatar.py` (4, recadrage),
+  `test_storage.py` (4, ajouté après rebase — voir § Rebase avant fusion). 28 au total.
 
 **Front (`apps/web`)**
 - `lib/api/client.ts` — client HTTP partagé (`apiGet`/`apiJson`/`apiUpload`, en-tête
   `X-CSRF-Token` automatique) ; `lib/api/auth.ts` refactoré dessus sans changer son API
-  publique. **Premier lot qui envoie le jeton CSRF depuis le front** (aucune route précédente
-  n'en avait besoin, connexion/inscription/mot de passe oublié étant toutes non authentifiées) —
+  publique. Aucune route de ce dépôt n'envoyait encore le jeton CSRF depuis le front au moment
+  où ce module a été écrit (connexion/inscription/mot de passe oublié sont toutes non
+  authentifiées) — le rebase a montré que `v3-upload` avait, la même semaine, posé sa propre
+  logique équivalente dans `lib/api/uploads.ts` sans le savoir (voir § Rebase avant fusion) —
   `lib/config.ts` gagne `getCsrfCookieName()`.
 - `lib/api/profile.ts`, `lib/api/ai-keys.ts`, `lib/validation/profile.ts`.
 - `components/profile/` — `profile-tabs.tsx` (nav + état des onglets), `identity-tab.tsx`,
@@ -110,6 +112,43 @@ l'UAT/PROD sans Docker), comme prescrit par le contexte d'exécution et
   double déterministe que `v1-byok`/`v3-ia-providers` (`ProviderKeyTester`, substitué en test) ;
   aucun appel réel n'a été fait depuis ce lot.
 
+## Rebase avant fusion — collision avec `v3-upload`
+
+`origin/main` avait avancé de 5 commits pendant la session (`v2-recherche`, `v3-upload` fusionnés
+entre-temps). Le rebase a produit des conflits **de conception convergente**, pas de simple
+texte : `v3-upload` avait posé, en parallèle et sous le même mandat (« aucune fonctionnalité ne
+doit supposer Docker en production »), sa propre interface de stockage à deux implémentations
+(`pbm_api.storage.build_storage`/`StorageBackend`, `LocalObjectStorage`) — quasi identique à
+celle de ce lot (`PhotoStorage`), même noms de réglages (`STORAGE_BACKEND`,
+`PHOTOS_STORAGE_PATH`), même bucket implicite. Plutôt que garder les deux, `pbm_api/
+photo_storage.py` (et son fichier de test) a été supprimé après le rebase, et `pbm_api/profile/
+service.py`/`pbm_api/routers/profile.py` migrés sur `pbm_api.storage` (celle déjà utilisée par
+`pbm_api.routers.uploads`) : un seul stockage de photos pour l'avatar et les photos de cartes,
+comme le commentaire de tête de `pbm_api/storage/__init__.py` le prescrit désormais. Deux
+méthodes manquaient côté `v3-upload` pour couvrir le besoin de ce lot (remplacer un avatar,
+purger celui d'un compte supprimé) : `delete` ajoutée à `LocalObjectStorage` et à
+`pbm_api.s3.ObjectStorage`, testées dans le nouveau `tests/test_storage.py` (la partie `get`/
+`put` était déjà couverte par `tests/test_uploads.py`, pas dupliquée ici). `config.py` et
+`.env.example` avaient chacun gagné un bloc `STORAGE_BACKEND`/`PHOTOS_STORAGE_PATH` en double
+après l'auto-merge de Git (deux définitions Python de la même variable, la seconde écrasant
+silencieusement la première) — dédoublonné manuellement, ce n'était visible qu'en relisant le
+fichier après le rebase, pas signalé comme conflit par Git. `apps/web/src/lib/config.ts` avait la
+même duplication exacte de `getCsrfCookieName()` (les deux lots ont dû envoyer leur premier
+en-tête CSRF front au même moment) — dédoublonnée aussi.
+
+**Non traité, signalé plutôt que corrigé en silence** : `apps/web/src/lib/api/uploads.ts` (lot
+`v3-upload`, déjà fusionné, sans conflit avec ce lot) définit sa propre copie de `ApiError`/
+`readCookie`/`getCsrfToken`/`parseErrorMessage` — une duplication presque identique à
+`apps/web/src/lib/api/client.ts` posé par ce lot-ci. Toucher un fichier d'un autre lot déjà
+fusionné, hors de toute obligation de résolution de conflit, sortait du périmètre d'une fusion ;
+laissé pour un futur lot de nettoyage front (voir Reste à faire).
+
+`uv.lock` régénéré (`uv lock`) après fusion de `pyproject.toml` plutôt que fusionné à la main.
+`packages/api-client/src/schema.d.ts` régénéré (`pnpm gen:api`) après la fusion complète du
+back — la version du dépôt distant ne connaissait ni les routes `/me/*` de ce lot ni celles de
+`v3-upload`/`v2-recherche` en même temps. Suite complète (back 255 tests, front 59 tests) rejouée
+après rebase — voir Preuves.
+
 ## Preuves — commandes lancées, résultats chiffrés
 
 ```
@@ -117,36 +156,60 @@ $ cd apps/api && uv run ruff check .
 All checks passed!
 
 $ TEST_DATABASE_URL=postgresql+asyncpg://pbm:pbm@localhost:55432/pbm_v1_profil_test uv run pytest -q
-........................................................................ [ 42%]
+........................................................................ [ 28%]
+........................................................................ [ 56%]
 ........................................................................ [ 84%]
-..........................                                               [100%]
-170 passed, 2 warnings in 14.15s
+.......................................                                  [100%]
+255 passed, 2 warnings in 27.68s
 ```
-(142 tests déjà présents avant ce lot + 28 dans `test_profile.py`.)
+(227 tests déjà présents après fusion de `v2-recherche`/`v3-upload` + 28 de ce lot :
+`test_profile.py` (20), `test_avatar.py` (4), `test_storage.py` (4, posé après le rebase).)
 
-**Preuve ciblée « un test qui échoue sans le changement, passe avec » (§6)** :
-`app.include_router(profile_router)` temporairement commenté dans `pbm_api/main.py`, puis
-`uv run pytest -q tests/test_profile.py` :
+Rejoué avec les variables d'environnement de la CI (base éphémère `pbm_v1_profil_citest`, comme
+`.github/workflows/ci.yml` : `DATABASE_URL`/`TEST_DATABASE_URL` dédiés, `S3_BUCKET=pbm-v1-profil-
+citest`, `TZ=Europe/Paris`), migration puis suite complète :
+```
+$ DATABASE_URL=…/pbm_v1_profil_citest TEST_DATABASE_URL=…/pbm_v1_profil_citest \
+    REDIS_URL=redis://localhost:56379/0 S3_BUCKET=pbm-v1-profil-citest TZ=Europe/Paris \
+    uv run alembic upgrade head
+Running upgrade  -> 5e0d551b788e, initial schema
+Running upgrade 5e0d551b788e -> 1d51087de4ae, catalog reconciliation and image fields
+Running upgrade 1d51087de4ae -> 8565c4640de8, exchange rates daily and user preferred currency
+Running upgrade 8565c4640de8 -> d42b0620077e, ai settings and usage
+Running upgrade d42b0620077e -> 3221843f145c, profile: pseudo, avatar, pending email
+
+$ (mêmes variables) uv run ruff check .
+All checks passed!
+
+$ (mêmes variables) uv run pytest -q
+255 passed, 2 warnings in 23.95s
+```
+(base éphémère supprimée après coup.)
+
+**Preuve ciblée « un test qui échoue sans le changement, passe avec » (§6)**, rejouée avant le
+rebase avec `v3-upload`/`v2-recherche` (même mécanique, non ré-exécutée après — le rebase n'a fait
+que déplacer `app.include_router(profile_router)` d'une ligne, jamais changer son contenu, `git
+diff` sur `main.py` le confirme post-rebase) : `app.include_router(profile_router)` temporairement
+commenté dans `pbm_api/main.py`, puis `uv run pytest -q tests/test_profile.py` :
 
 ```
 18 failed, 2 passed in 4.15s
 ```
 (les 2 tests encore verts n'attendent qu'un 401 générique, déjà couvert par le reste de l'API —
 tous les tests qui exercent une route réellement nouvelle de ce lot échouent sans elle.) Ligne
-restaurée, suite complète repassée au vert (bloc ci-dessus, 170 passed) — `git diff` sur
-`main.py` confirmé vide après restauration.
+restaurée, suite complète repassée au vert avant de poursuivre.
 
 **Preuve dédiée au stockage local** (§ contexte d'exécution, « aucune fonctionnalité ne doit
-supposer Docker en production ») — `test_photo_storage.py`, backend `local` sur un
-répertoire temporaire, roundtrip put/get/delete et rejet d'une traversée de chemin
-(`../escape.jpg`), **sans MinIO ni Docker** :
+supposer Docker en production ») — `tests/test_storage.py`, backend `local` sur un répertoire
+temporaire, `delete` (ajoutée par ce lot) puis roundtrip complet, **sans MinIO ni Docker** :
 ```
-tests/test_photo_storage.py::test_local_backend_put_get_delete_roundtrip PASSED
-tests/test_photo_storage.py::test_local_backend_rejects_path_traversal PASSED
+tests/test_storage.py::test_local_storage_delete_removes_the_file PASSED
+tests/test_storage.py::test_local_storage_delete_of_a_missing_key_does_not_raise PASSED
+tests/test_storage.py::test_local_storage_rejects_path_traversal PASSED
 ```
-Le même fichier prouve le backend `s3` (MinIO réel, `ensure_bucket` + roundtrip) — preuve que
-les deux implémentations respectent le même contrat, code appelant (`routes /me/avatar`)
-inchangé entre les deux.
+Le même fichier prouve `delete` sur le backend `s3` (MinIO réel) — les deux implémentations
+respectent le même contrat, code appelant (`pbm_api.profile.service`) inchangé entre les deux ;
+`get`/`put` restent couverts par `tests/test_uploads.py` (lot `v3-upload`), non dupliqués ici.
 
 **Test d'accès croisé (§6)** — trois angles couverts dans `test_profile.py` :
 - `test_cross_user_isolation_on_sessions` : B ne voit pas la session de A dans sa propre liste
@@ -155,17 +218,18 @@ inchangé entre les deux.
   A (dérivé du cookie de session de l'appelant, jamais d'un identifiant transmis).
 - `test_patch_me_rejects_a_pseudo_already_taken` : cas croisé sur la contrainte d'unicité.
 
-**Front — lint/types/build/tests** :
+**Front — lint/types/build/tests** (après rebase, `v3-upload` inclus) :
 ```
 $ pnpm --filter @pbm/web lint     → (rien, 0 erreur)
 $ pnpm --filter @pbm/web type-check → (rien, 0 erreur)
 $ pnpm --filter @pbm/web test -- --run
-Test Files  19 passed (19)
-     Tests  52 passed (52)
+Test Files  20 passed (20)
+     Tests  59 passed (59)
 $ pnpm --filter @pbm/web build
 ✓ Generating static pages (17/17)
 ```
-(44 tests déjà présents + 5 dans `profil.test.tsx` + 3 dans `confirmer-email.test.tsx`.)
+(51 tests déjà présents après fusion de `v3-upload` (dont `upload-view.test.tsx`, 7 cas) + 5 dans
+`profil.test.tsx` + 3 dans `confirmer-email.test.tsx` de ce lot.)
 
 **Client TypeScript régénéré** : `pnpm gen:api` relancé après les nouvelles routes,
 `packages/api-client/src/schema.d.ts` commité (11 nouvelles routes visibles sous `/me`).
@@ -205,3 +269,8 @@ $ pnpm --filter @pbm/web build
   automatisés couvrent le contenu du corps (présence du jeton, destinataire) mais aucune capture
   d'écran de l'e-mail réel dans l'interface Mailpit n'a été produite (même contrainte que la
   capture de la maquette).
+- **`apps/web/src/lib/api/uploads.ts` (lot `v3-upload`) duplique `apps/web/src/lib/api/
+  client.ts`** posé par ce lot (`ApiError`/`readCookie`/`getCsrfToken`/`parseErrorMessage`
+  quasi identiques) — repéré pendant le rebase (voir § Rebase avant fusion), non corrigé ici
+  car hors du fichier en conflit et hors du périmètre de la mission `v1-profil`. À consolider
+  dans un futur lot de nettoyage front une fois `v3-upload` stabilisé.
