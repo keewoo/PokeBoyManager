@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pbm_api.ai.errors import UnsupportedImageFormatError
 from pbm_api.auth.dependencies import get_current_session, get_current_user, require_csrf
 from pbm_api.auth.errors import (
+    InvalidBirthDateError,
     InvalidCredentialsError,
     InvalidTokenError,
     PasswordCompromisedError,
@@ -38,7 +39,7 @@ from pbm_api.profile.schemas import (
     MessageResponse,
     ProfileResponse,
     SessionResponse,
-    UpdatePseudoRequest,
+    UpdateProfileRequest,
 )
 from pbm_api.security.compromised import CompromisedPasswordChecker, get_compromised_checker
 from pbm_api.storage import StorageBackend, build_storage
@@ -55,6 +56,7 @@ def get_storage() -> StorageBackend:
 
 
 PSEUDO_TAKEN_MESSAGE = "Ce pseudo est déjà utilisé."
+INVALID_BIRTH_DATE_MESSAGE = "Date de naissance invalide."
 UNSUPPORTED_IMAGE_MESSAGE = "Format d'image non reconnu (JPEG ou PNG attendus)."
 AVATAR_TOO_LARGE_MESSAGE = "Photo trop volumineuse (5 Mo maximum)."
 AVATAR_NOT_FOUND_MESSAGE = "Aucun avatar enregistré."
@@ -82,6 +84,9 @@ def _to_profile_response(user: User) -> ProfileResponse:
         pending_email=user.pending_email,
         pseudo=user.pseudo,
         has_avatar=user.avatar_key is not None,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        birth_date=user.birth_date,
     )
 
 
@@ -102,15 +107,24 @@ async def get_profile(current_user: User = Depends(get_current_user)) -> Profile
 
 @router.patch("", response_model=ProfileResponse)
 async def update_profile(
-    payload: UpdatePseudoRequest,
+    payload: UpdateProfileRequest,
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
     _csrf: None = Depends(require_csrf),
 ) -> ProfileResponse:
     try:
-        user = await service.update_pseudo(db, current_user, payload.pseudo)
+        user = await service.update_identity(
+            db,
+            current_user,
+            payload.pseudo,
+            payload.first_name,
+            payload.last_name,
+            payload.birth_date,
+        )
     except PseudoAlreadyTakenError:
         raise HTTPException(status.HTTP_409_CONFLICT, PSEUDO_TAKEN_MESSAGE) from None
+    except InvalidBirthDateError:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, INVALID_BIRTH_DATE_MESSAGE) from None
     return _to_profile_response(user)
 
 

@@ -4,12 +4,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pbm_api.auth import service
 from pbm_api.auth.dependencies import get_current_session, get_current_user, require_csrf
 from pbm_api.auth.errors import (
+    InvalidBirthDateError,
     InvalidCredentialsError,
     InvalidTokenError,
     PasswordCompromisedError,
     PasswordTooShortError,
+    TermsNotAcceptedError,
     TokenAlreadyUsedError,
     TokenExpiredError,
+    UnderageWithoutParentalConsentError,
 )
 from pbm_api.auth.schemas import (
     ForgotPasswordRequest,
@@ -41,6 +44,12 @@ TOO_MANY_ATTEMPTS_MESSAGE = "Trop de tentatives. Réessayez plus tard."
 PASSWORD_TOO_SHORT_MESSAGE = "Le mot de passe doit contenir au moins 10 caractères."
 PASSWORD_COMPROMISED_MESSAGE = (
     "Ce mot de passe apparaît dans une fuite de données connue : choisissez-en un autre."
+)
+TERMS_NOT_ACCEPTED_MESSAGE = "Tu dois accepter les conditions pour créer un compte."
+INVALID_BIRTH_DATE_MESSAGE = "Date de naissance invalide."
+UNDERAGE_MESSAGE = (
+    "L'inscription libre est réservée aux 15 ans et plus. En dessous, un parent peut demander "
+    "la création du compte."
 )
 INVALID_TOKEN_MESSAGE = "Jeton invalide."
 TOKEN_EXPIRED_MESSAGE = "Ce lien a expiré."
@@ -85,8 +94,22 @@ async def register(
 ) -> MessageResponse:
     try:
         await service.register_user(
-            db, payload.email, payload.password, compromised_checker, email_sender
+            db,
+            payload.email,
+            payload.password,
+            payload.first_name,
+            payload.last_name,
+            payload.birth_date,
+            payload.accept_terms,
+            compromised_checker,
+            email_sender,
         )
+    except TermsNotAcceptedError:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, TERMS_NOT_ACCEPTED_MESSAGE) from None
+    except InvalidBirthDateError:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, INVALID_BIRTH_DATE_MESSAGE) from None
+    except UnderageWithoutParentalConsentError:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, UNDERAGE_MESSAGE) from None
     except PasswordTooShortError:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, PASSWORD_TOO_SHORT_MESSAGE) from None
     except PasswordCompromisedError:
@@ -141,7 +164,10 @@ async def login(
 
     _set_auth_cookies(response, raw_session_token)
     return UserResponse(
-        id=str(user.id), email=user.email, email_verified=user.email_verified_at is not None
+        id=str(user.id),
+        email=user.email,
+        email_verified=user.email_verified_at is not None,
+        must_change_password=user.must_change_password,
     )
 
 

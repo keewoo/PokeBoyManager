@@ -6,7 +6,7 @@ valeur d'un exemplaire et d'une collection.
 """
 
 import uuid
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
 from pbm_api.models import Card, CardPriceDaily, PriceSource, PriceVariant, Set, User
@@ -43,7 +43,14 @@ async def _make_card(db_session) -> Card:
 
 
 async def _make_user(db_session) -> User:
-    user = User(email=f"user-{uuid.uuid4()}@example.com", password_hash="x")
+    user = User(
+        email=f"user-{uuid.uuid4()}@example.com",
+        password_hash="x",
+        last_name="Test",
+        birth_date=date(2000, 1, 1),
+        terms_version="test",
+        terms_accepted_at=datetime(2000, 1, 1),
+    )
     db_session.add(user)
     await db_session.flush()
     return user

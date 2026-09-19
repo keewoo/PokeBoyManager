@@ -5,7 +5,7 @@ vierge (`relation "..." does not exist`) et passe une fois `alembic upgrade head
 """
 
 import uuid
-from datetime import date
+from datetime import date, datetime
 
 import pytest
 from sqlalchemy import text
@@ -143,7 +143,14 @@ async def test_user_id_columns_are_foreign_keys_with_index(db_session):
 
 
 async def test_delete_user_cascades_to_collection_items(db_session):
-    user = User(email=f"cascade-{uuid.uuid4()}@example.com", password_hash="x")
+    user = User(
+        email=f"cascade-{uuid.uuid4()}@example.com",
+        password_hash="x",
+        last_name="Test",
+        birth_date=date(2000, 1, 1),
+        terms_version="test",
+        terms_accepted_at=datetime(2000, 1, 1),
+    )
     db_session.add(user)
     card = await _make_set_and_card(db_session, "cascade")
     await db_session.flush()

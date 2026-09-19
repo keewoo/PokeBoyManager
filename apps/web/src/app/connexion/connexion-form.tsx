@@ -40,8 +40,12 @@ export function ConnexionForm() {
   async function onSubmit(values: LoginFormValues) {
     setServerError(null);
     try {
-      await login(values.email, values.password);
-      router.push(next);
+      const user = await login(values.email, values.password);
+      if (user.must_change_password) {
+        router.push("/profil?onglet=securite&mot-de-passe-a-changer=1");
+      } else {
+        router.push(next);
+      }
       router.refresh();
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {

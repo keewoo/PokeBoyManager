@@ -6,7 +6,7 @@ Avant ce lot, aucune de ces routes n'existait (404 sur `/auth/*`) : chacun de ce
 
 import re
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 import httpx
 
@@ -17,6 +17,9 @@ from pbm_api.security.csrf import CSRF_HEADER_NAME
 from pbm_api.security.tokens import generate_opaque_token, hash_token
 
 PASSWORD = "correct horse battery staple"
+# Champs d'identité obligatoires à l'inscription (lot v1-identite) — voir aussi
+# `test_identity.py` pour les tests qui portent spécifiquement sur ces validations.
+IDENTITY_FIELDS = {"last_name": "Dresseur", "birth_date": "2000-01-01", "accept_terms": True}
 
 
 def _unique_email(label: str) -> str:
@@ -29,10 +32,14 @@ def _extract_token(body: str) -> str:
     return match.group(1)
 
 
+def _register_payload(email: str, password: str = PASSWORD, **overrides: object) -> dict:
+    return {"email": email, "password": password, **IDENTITY_FIELDS, **overrides}
+
+
 async def _register_and_verify(
     client: httpx.AsyncClient, email: str, password: str = PASSWORD
 ) -> None:
-    response = await client.post("/auth/register", json={"email": email, "password": password})
+    response = await client.post("/auth/register", json=_register_payload(email, password))
     assert response.status_code == 202, response.text
     sent = client.email_sender.sent  # type: ignore[attr-defined]
     token = _extract_token(sent[-1]["body"])
@@ -45,9 +52,7 @@ async def _register_and_verify(
 
 async def test_register_sends_verification_email(api_client: httpx.AsyncClient) -> None:
     email = _unique_email("register")
-    response = await api_client.post(
-        "/auth/register", json={"email": email, "password": PASSWORD}
-    )
+    response = await api_client.post("/auth/register", json=_register_payload(email))
 
     assert response.status_code == 202
     sent = api_client.email_sender.sent  # type: ignore[attr-defined]
@@ -60,8 +65,8 @@ async def test_register_does_not_create_duplicate_or_leak_that_email_exists(
     api_client: httpx.AsyncClient, db_session
 ) -> None:
     email = _unique_email("dupe")
-    first = await api_client.post("/auth/register", json={"email": email, "password": PASSWORD})
-    second = await api_client.post("/auth/register", json={"email": email, "password": PASSWORD})
+    first = await api_client.post("/auth/register", json=_register_payload(email))
+    second = await api_client.post("/auth/register", json=_register_payload(email))
 
     assert first.status_code == second.status_code == 202
     assert first.json() == second.json()
@@ -78,7 +83,7 @@ async def test_register_does_not_create_duplicate_or_leak_that_email_exists(
 
 async def test_register_rejects_password_too_short(api_client: httpx.AsyncClient) -> None:
     response = await api_client.post(
-        "/auth/register", json={"email": _unique_email("short"), "password": "short1"}
+        "/auth/register", json=_register_payload(_unique_email("short"), "short1")
     )
     assert response.status_code == 400
     assert not api_client.email_sender.sent  # type: ignore[attr-defined]
@@ -87,7 +92,7 @@ async def test_register_rejects_password_too_short(api_client: httpx.AsyncClient
 async def test_register_rejects_compromised_password(api_client: httpx.AsyncClient) -> None:
     api_client.compromised_checker._compromised = frozenset({PASSWORD})  # type: ignore[attr-defined]
     response = await api_client.post(
-        "/auth/register", json={"email": _unique_email("pwned"), "password": PASSWORD}
+        "/auth/register", json=_register_payload(_unique_email("pwned"))
     )
     assert response.status_code == 400
     assert "fuite" in response.json()["detail"].lower()
@@ -114,9 +119,7 @@ async def test_verify_email_rejects_unknown_token(api_client: httpx.AsyncClient)
 
 async def test_verify_email_rejects_reused_token(api_client: httpx.AsyncClient) -> None:
     email = _unique_email("reuse")
-    response = await api_client.post(
-        "/auth/register", json={"email": email, "password": PASSWORD}
-    )
+    response = await api_client.post("/auth/register", json=_register_payload(email))
     assert response.status_code == 202
     token = _extract_token(api_client.email_sender.sent[-1]["body"])  # type: ignore[attr-defined]
 
@@ -131,7 +134,14 @@ async def test_verify_email_rejects_reused_token(api_client: httpx.AsyncClient) 
 async def test_verify_email_rejects_expired_token(
     api_client: httpx.AsyncClient, db_session
 ) -> None:
-    user = User(email=_unique_email("expired"), password_hash="x")
+    user = User(
+        email=_unique_email("expired"),
+        password_hash="x",
+        last_name="Test",
+        birth_date=date(2000, 1, 1),
+        terms_version="test",
+        terms_accepted_at=datetime(2000, 1, 1),
+    )
     db_session.add(user)
     await db_session.flush()
 
@@ -192,13 +202,9 @@ async def test_login_rotates_session_on_each_successful_login(
     email = _unique_email("rotate")
     await _register_and_verify(api_client, email)
 
-    first_login = await api_client.post(
-        "/auth/login", json={"email": email, "password": PASSWORD}
-    )
+    first_login = await api_client.post("/auth/login", json={"email": email, "password": PASSWORD})
     first_cookie = api_client.cookies.get(settings.session_cookie_name)
-    second_login = await api_client.post(
-        "/auth/login", json={"email": email, "password": PASSWORD}
-    )
+    second_login = await api_client.post("/auth/login", json={"email": email, "password": PASSWORD})
     second_cookie = api_client.cookies.get(settings.session_cookie_name)
 
     assert first_login.status_code == second_login.status_code == 200
@@ -279,9 +285,7 @@ async def test_logout_only_revokes_the_caller_session_not_another_users(
         httpx.AsyncClient(transport=transport, base_url="https://testserver") as client_b,
     ):
         await client_a.post("/auth/login", json={"email": email_a, "password": PASSWORD})
-        login_b = await client_b.post(
-            "/auth/login", json={"email": email_b, "password": PASSWORD}
-        )
+        login_b = await client_b.post("/auth/login", json={"email": email_b, "password": PASSWORD})
         user_b_id = uuid.UUID(login_b.json()["id"])
 
         csrf_a = client_a.cookies.get(settings.csrf_cookie_name)
@@ -312,9 +316,7 @@ async def test_forgot_password_gives_identical_response_known_or_unknown_email(
     api_client.email_sender.sent.clear()  # type: ignore[attr-defined]
 
     known = await api_client.post("/auth/forgot", json={"email": email})
-    unknown = await api_client.post(
-        "/auth/forgot", json={"email": _unique_email("ghost-forgot")}
-    )
+    unknown = await api_client.post("/auth/forgot", json={"email": _unique_email("ghost-forgot")})
 
     assert known.status_code == unknown.status_code == 200
     assert known.json() == unknown.json()
@@ -344,9 +346,7 @@ async def test_reset_password_updates_password_and_revokes_all_sessions(
     replay = await api_client.post("/auth/logout", headers={CSRF_HEADER_NAME: old_csrf})
     assert replay.status_code == 401
 
-    old_login = await api_client.post(
-        "/auth/login", json={"email": email, "password": PASSWORD}
-    )
+    old_login = await api_client.post("/auth/login", json={"email": email, "password": PASSWORD})
     assert old_login.status_code == 401
 
     new_login = await api_client.post(
@@ -376,7 +376,14 @@ async def test_reset_password_rejects_reused_token(api_client: httpx.AsyncClient
 async def test_reset_password_rejects_expired_token(
     api_client: httpx.AsyncClient, db_session
 ) -> None:
-    user = User(email=_unique_email("reset-expired"), password_hash="x")
+    user = User(
+        email=_unique_email("reset-expired"),
+        password_hash="x",
+        last_name="Test",
+        birth_date=date(2000, 1, 1),
+        terms_version="test",
+        terms_accepted_at=datetime(2000, 1, 1),
+    )
     db_session.add(user)
     await db_session.flush()
 
@@ -406,7 +413,5 @@ async def test_reset_password_rejects_short_or_compromised_password(
     await api_client.post("/auth/forgot", json={"email": email})
     token = _extract_token(api_client.email_sender.sent[-1]["body"])  # type: ignore[attr-defined]
 
-    response = await api_client.post(
-        "/auth/reset", json={"token": token, "password": "short1"}
-    )
+    response = await api_client.post("/auth/reset", json={"token": token, "password": "short1"})
     assert response.status_code == 400

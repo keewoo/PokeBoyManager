@@ -5,15 +5,47 @@ import { z } from "zod";
 // qu'indiquer une robustesse, jamais garantir l'absence de fuite.
 export const PASSWORD_MIN_LENGTH = 10;
 
+// En dessous, l'inscription libre est refusée côté API (RGPD art. 8) — même règle que
+// `pbm_api.legal.MINIMUM_AGE_YEARS`.
+export const MINIMUM_REGISTRATION_AGE = 15;
+
 export const emailSchema = z.string().trim().min(1, "L'e-mail est requis.").email("Adresse e-mail invalide.");
 
 export const passwordSchema = z
   .string()
   .min(PASSWORD_MIN_LENGTH, `Le mot de passe doit contenir au moins ${PASSWORD_MIN_LENGTH} caractères.`);
 
+export const lastNameSchema = z.string().trim().min(1, "Le nom est requis.").max(100);
+export const firstNameSchema = z.string().trim().max(100).optional();
+
+function isAtLeast(birthDate: string, years: number): boolean {
+  const dob = new Date(birthDate);
+  if (Number.isNaN(dob.getTime())) return false;
+  const today = new Date();
+  const cutoff = new Date(today.getFullYear() - years, today.getMonth(), today.getDate());
+  return dob <= cutoff;
+}
+
+export const birthDateSchema = z
+  .string()
+  .min(1, "La date de naissance est requise.")
+  .refine((value) => new Date(value) < new Date(), {
+    message: "La date de naissance doit être dans le passé.",
+  });
+
+export const registrationBirthDateSchema = birthDateSchema.refine(
+  (value) => isAtLeast(value, MINIMUM_REGISTRATION_AGE),
+  {
+    message: `L'inscription libre est réservée aux ${MINIMUM_REGISTRATION_AGE} ans et plus.`,
+  }
+);
+
 export const registerSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
+  firstName: firstNameSchema,
+  lastName: lastNameSchema,
+  birthDate: registrationBirthDateSchema,
   cgu: z.boolean().refine((value) => value, {
     message: "Tu dois accepter les conditions pour continuer.",
   }),

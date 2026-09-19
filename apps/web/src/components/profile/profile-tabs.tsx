@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { AiTab } from "@/components/profile/ai-tab";
@@ -21,7 +22,12 @@ const TABS = [
 type TabId = (typeof TABS)[number]["id"];
 
 export function ProfileTabs() {
-  const [activeTab, setActiveTab] = useState<TabId>("id");
+  const searchParams = useSearchParams();
+  // Redirection post-connexion (`must_change_password`, voir `ConnexionForm`) : ouvre
+  // directement l'onglet Sécurité avec un rappel visible.
+  const forcePasswordChange = searchParams.get("mot-de-passe-a-changer") === "1";
+  const initialTab: TabId = searchParams.get("onglet") === "securite" ? "sec" : "id";
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,7 +69,7 @@ export function ProfileTabs() {
               {activeTab === "id" && (
                 <IdentityTab profile={profile} onProfileChange={setProfile} />
               )}
-              {activeTab === "sec" && <SecurityTab />}
+              {activeTab === "sec" && <SecurityTab forcePasswordChange={forcePasswordChange} />}
               {activeTab === "ia" && <AiTab />}
               {activeTab === "data" && <DataTab />}
             </>

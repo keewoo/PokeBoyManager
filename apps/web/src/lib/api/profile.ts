@@ -11,8 +11,20 @@ export function getProfile(): Promise<ProfileResponse> {
   return apiGet<ProfileResponse>("/me");
 }
 
-export function updatePseudo(pseudo: string): Promise<ProfileResponse> {
-  return apiJson<ProfileResponse>("PATCH", "/me", { pseudo });
+export type UpdateIdentityPayload = {
+  pseudo: string;
+  firstName?: string;
+  lastName: string;
+  birthDate: string;
+};
+
+export function updateIdentity(payload: UpdateIdentityPayload): Promise<ProfileResponse> {
+  return apiJson<ProfileResponse>("PATCH", "/me", {
+    pseudo: payload.pseudo,
+    first_name: payload.firstName || null,
+    last_name: payload.lastName,
+    birth_date: payload.birthDate,
+  });
 }
 
 export function uploadAvatar(file: File): Promise<ProfileResponse> {

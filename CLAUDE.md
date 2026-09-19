@@ -172,6 +172,20 @@ scripts/measure_identification_rate.py` (mise au point, `report.json`) ; essai m
 vraie clé : `uv run python scripts/test_identification_manual.py <provider> <clé>` depuis
 `apps/api`. Détail : `docs/ARCHITECTURE.md` § « Reconnaissance ».
 
+## Identité du compte (lot `v1-identite`)
+
+`users` porte prénom (facultatif), nom, date de naissance, version/horodatage des conditions
+acceptées et `must_change_password`. Validations dans `pbm_api.auth.service` (inscription) et
+`pbm_api.profile.service` (`PATCH /me`) : date de naissance passée, conditions obligatoires, âge
+minimum 15 ans réservé à l'inscription libre (RGPD art. 8) — contournable seulement par la
+commande d'administration (consentement du parent porté par JF) :
+```
+uv run python -m pbm_api.admin create-user --email … --pseudo … --last-name … \
+  --birth-date AAAA-MM-JJ --accept-terms [--password-stdin] [--must-change-password]
+```
+Mot de passe lu sur l'entrée standard ou généré et affiché une seule fois — jamais en argument ni
+journalisé. Détail : `docs/ARCHITECTURE.md` § « Identité du compte ».
+
 ## Règles de la flotte applicables ici (résumé de `~/.claude/CLAUDE.md`)
 
 - On construit sur chimera (32 Go, 16 threads) et on ne construit jamais sur la machine qui sert.

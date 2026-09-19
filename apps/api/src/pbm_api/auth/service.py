@@ -4,21 +4,25 @@ Aucune route ne reçoit d'identifiant utilisateur du client : toute lecture/écr
 part d'un jeton (session, e-mail) ou d'un e-mail fourni, jamais d'un `user_id` en entrée.
 """
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.auth.errors import (
+    InvalidBirthDateError,
     InvalidCredentialsError,
     InvalidTokenError,
     PasswordCompromisedError,
     PasswordTooShortError,
+    TermsNotAcceptedError,
     TokenAlreadyUsedError,
     TokenExpiredError,
+    UnderageWithoutParentalConsentError,
 )
 from pbm_api.config import settings
 from pbm_api.email import EmailSender
+from pbm_api.legal import CURRENT_TERMS_VERSION, MINIMUM_AGE_YEARS
 from pbm_api.models import EmailToken, EmailTokenKind, Session, User
 from pbm_api.security.compromised import CompromisedPasswordChecker
 from pbm_api.security.passwords import hash_password, is_password_long_enough, verify_password
@@ -48,6 +52,24 @@ async def _check_password_policy(
         raise PasswordCompromisedError
 
 
+def age_years(birth_date: date, *, today: date | None = None) -> int:
+    """Âge en années révolues à `today` (par défaut : aujourd'hui)."""
+    reference = today or date.today()
+    years = reference.year - birth_date.year
+    had_birthday = (reference.month, reference.day) >= (birth_date.month, birth_date.day)
+    return years if had_birthday else years - 1
+
+
+def _check_birth_date(birth_date: date, *, enforce_minimum_age: bool) -> None:
+    """Commun à l'inscription libre et à `PATCH /me`. `enforce_minimum_age` est désactivé pour
+    la création par l'administrateur (consentement du parent porté par JF, cf. mission
+    `v1-identite` § Risques)."""
+    if birth_date >= date.today():
+        raise InvalidBirthDateError
+    if enforce_minimum_age and age_years(birth_date) < MINIMUM_AGE_YEARS:
+        raise UnderageWithoutParentalConsentError
+
+
 async def _issue_email_token(
     db: AsyncSession, user: User, kind: EmailTokenKind
 ) -> str:
@@ -67,10 +89,22 @@ async def register_user(
     db: AsyncSession,
     email: str,
     password: str,
+    first_name: str | None,
+    last_name: str,
+    birth_date: date,
+    accept_terms: bool,
     compromised_checker: CompromisedPasswordChecker,
     email_sender: EmailSender,
 ) -> None:
-    """Toujours la même issue observable, que l'e-mail soit déjà pris ou non (anti-énumération)."""
+    """Toujours la même issue observable, que l'e-mail soit déjà pris ou non (anti-énumération).
+
+    Les erreurs de validation d'identité (date de naissance, âge minimum, conditions) sont
+    levées avant cette vérification anti-énumération : elles ne révèlent rien sur un compte
+    existant, seulement sur la saisie du formulaire.
+    """
+    if not accept_terms:
+        raise TermsNotAcceptedError
+    _check_birth_date(birth_date, enforce_minimum_age=True)
     await _check_password_policy(password, compromised_checker)
 
     normalized = normalize_email(email)
@@ -78,7 +112,16 @@ async def register_user(
     if existing.scalar_one_or_none() is not None:
         return
 
-    user = User(email=normalized, password_hash=hash_password(password))
+    now = _utc_now_naive()
+    user = User(
+        email=normalized,
+        password_hash=hash_password(password),
+        first_name=first_name,
+        last_name=last_name,
+        birth_date=birth_date,
+        terms_version=CURRENT_TERMS_VERSION,
+        terms_accepted_at=now,
+    )
     db.add(user)
     await db.flush()
 

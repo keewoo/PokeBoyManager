@@ -888,6 +888,15 @@ export interface components {
             pseudo: string | null;
             /** Has Avatar */
             has_avatar: boolean;
+            /** First Name */
+            first_name: string | null;
+            /** Last Name */
+            last_name: string;
+            /**
+             * Birth Date
+             * Format: date
+             */
+            birth_date: string;
         };
         /** RegisterRequest */
         RegisterRequest: {
@@ -898,6 +907,17 @@ export interface components {
             email: string;
             /** Password */
             password: string;
+            /** First Name */
+            first_name?: string | null;
+            /** Last Name */
+            last_name: string;
+            /**
+             * Birth Date
+             * Format: date
+             */
+            birth_date: string;
+            /** Accept Terms */
+            accept_terms: boolean;
         };
         /** ReportCardInsightRequest */
         ReportCardInsightRequest: {
@@ -927,10 +947,19 @@ export interface components {
             /** Current */
             current: boolean;
         };
-        /** UpdatePseudoRequest */
-        UpdatePseudoRequest: {
+        /** UpdateProfileRequest */
+        UpdateProfileRequest: {
             /** Pseudo */
             pseudo: string;
+            /** First Name */
+            first_name?: string | null;
+            /** Last Name */
+            last_name: string;
+            /**
+             * Birth Date
+             * Format: date
+             */
+            birth_date: string;
         };
         /** UploadFileRequest */
         UploadFileRequest: {
@@ -970,6 +999,8 @@ export interface components {
             email: string;
             /** Email Verified */
             email_verified: boolean;
+            /** Must Change Password */
+            must_change_password: boolean;
         };
         /** ValidationError */
         ValidationError: {
@@ -1519,7 +1550,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UpdatePseudoRequest"];
+                "application/json": components["schemas"]["UpdateProfileRequest"];
             };
         };
         responses: {

@@ -7,8 +7,24 @@ export { ApiError } from "@/lib/api/client";
 export type MessageResponse = components["schemas"]["MessageResponse"];
 export type UserResponse = components["schemas"]["UserResponse"];
 
-export function registerAccount(email: string, password: string): Promise<MessageResponse> {
-  return apiJson<MessageResponse>("POST", "/auth/register", { email, password });
+export type RegisterAccountPayload = {
+  email: string;
+  password: string;
+  firstName?: string;
+  lastName: string;
+  birthDate: string;
+  acceptTerms: boolean;
+};
+
+export function registerAccount(payload: RegisterAccountPayload): Promise<MessageResponse> {
+  return apiJson<MessageResponse>("POST", "/auth/register", {
+    email: payload.email,
+    password: payload.password,
+    first_name: payload.firstName || null,
+    last_name: payload.lastName,
+    birth_date: payload.birthDate,
+    accept_terms: payload.acceptTerms,
+  });
 }
 
 export function verifyEmail(token: string): Promise<MessageResponse> {

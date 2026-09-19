@@ -47,7 +47,12 @@ describe("ConnexionPage", () => {
 
   it("redirige vers /next après une connexion réussie", async () => {
     searchParamsValue = "next=/collection";
-    vi.mocked(login).mockResolvedValue({ id: "1", email: "dresseur@example.fr", email_verified: true });
+    vi.mocked(login).mockResolvedValue({
+      id: "1",
+      email: "dresseur@example.fr",
+      email_verified: true,
+      must_change_password: false,
+    });
     const user = userEvent.setup();
     render(<ConnexionPage />);
 
@@ -60,7 +65,12 @@ describe("ConnexionPage", () => {
 
   it("ignore une URL absolue dans `next` (protection open-redirect)", async () => {
     searchParamsValue = "next=" + encodeURIComponent("https://evil.example/phish");
-    vi.mocked(login).mockResolvedValue({ id: "1", email: "dresseur@example.fr", email_verified: true });
+    vi.mocked(login).mockResolvedValue({
+      id: "1",
+      email: "dresseur@example.fr",
+      email_verified: true,
+      must_change_password: false,
+    });
     const user = userEvent.setup();
     render(<ConnexionPage />);
 
@@ -69,5 +79,25 @@ describe("ConnexionPage", () => {
     await user.click(screen.getByRole("button", { name: /se connecter/i }));
 
     await waitFor(() => expect(push).toHaveBeenCalledWith("/"));
+  });
+
+  it("redirige vers l'onglet Sécurité du profil quand le mot de passe doit être changé", async () => {
+    searchParamsValue = "next=/collection";
+    vi.mocked(login).mockResolvedValue({
+      id: "1",
+      email: "dresseur@example.fr",
+      email_verified: true,
+      must_change_password: true,
+    });
+    const user = userEvent.setup();
+    render(<ConnexionPage />);
+
+    await user.type(screen.getByLabelText(/e-mail/i), "dresseur@example.fr");
+    await user.type(screen.getByLabelText(/mot de passe/i), "un-mot-de-passe");
+    await user.click(screen.getByRole("button", { name: /se connecter/i }));
+
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith("/profil?onglet=securite&mot-de-passe-a-changer=1")
+    );
   });
 });

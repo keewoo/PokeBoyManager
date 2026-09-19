@@ -31,7 +31,16 @@ def _unique_email(label: str) -> str:
 
 
 async def _register_verify_login(client: httpx.AsyncClient, email: str) -> str:
-    response = await client.post("/auth/register", json={"email": email, "password": PASSWORD})
+    response = await client.post(
+        "/auth/register",
+        json={
+            "email": email,
+            "password": PASSWORD,
+            "last_name": "Dresseur",
+            "birth_date": "2000-01-01",
+            "accept_terms": True,
+        },
+    )
     assert response.status_code == 202, response.text
     sent = client.email_sender.sent  # type: ignore[attr-defined]
     match = re.search(r"token=(\S+)", sent[-1]["body"])

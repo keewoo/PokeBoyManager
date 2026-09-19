@@ -105,6 +105,28 @@ logout,verify-email,forgot,reset}` (`apps/api/src/pbm_api/routers/auth.py`).
   autorité en cas de session expirée/révoquée). `apps/api` doit exposer `CORSMiddleware` pour
   ces appels (front et API sur des origines distinctes, y compris en local).
 
+### Identité du compte (lot `v1-identite`)
+
+`users` porte prénom (facultatif), nom, date de naissance, version des conditions
+acceptées/horodatage (`pbm_api.legal.CURRENT_TERMS_VERSION`) et un indicateur de changement de
+mot de passe forcé (`must_change_password`). Validés à l'inscription (`POST /auth/register`) et à
+l'édition (`PATCH /me`) : date de naissance dans le passé, conditions obligatoires, **âge minimum
+de 15 ans réservé à l'inscription libre** (RGPD art. 8 — en dessous, seul un compte créé par
+l'administrateur, consentement du parent porté par JF, peut couvrir le cas ; `PATCH /me` n'a pas
+cette contrainte, un compte existant reste éditable). Réponse de connexion (`UserResponse.
+must_change_password`) : le front redirige alors vers l'onglet Sécurité du profil au lieu de la
+page demandée — `pbm_api.profile.service.change_password` remet l'indicateur à `False` après le
+premier changement réussi.
+
+Commande d'administration (jamais exposée en HTTP) :
+```
+uv run python -m pbm_api.admin create-user --email … --pseudo … --last-name … \
+  --birth-date AAAA-MM-JJ --accept-terms [--first-name …] [--password-stdin] \
+  [--must-change-password]
+```
+Crée un compte déjà vérifié ; le mot de passe vient de l'entrée standard ou est généré et affiché
+une seule fois — jamais en argument de commande ni journalisé.
+
 ## Catalogue (lot `v2-catalogue`)
 
 - Source : [TCGdex](https://api.tcgdex.net) (FR + EN, sans clé) pour `sets`/`cards`/`card_names`,

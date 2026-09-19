@@ -1,8 +1,8 @@
 import enum
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import Enum, ForeignKey, LargeBinary, String, UniqueConstraint, func
+from sqlalchemy import Boolean, Date, Enum, ForeignKey, LargeBinary, String, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -38,6 +38,20 @@ class User(Base, TimestampMixin):
         Enum(AiProvider, name="ai_provider"), nullable=True
     )
     ai_default_model: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    # Identité (lot v1-identite) — prénom facultatif, le reste requis pour toute création de
+    # compte (inscription libre ou `pbm_api.admin create-user`). `terms_version`/
+    # `terms_accepted_at` datent l'acceptation des CGU ; aucune ligne `users` n'existe avant ce
+    # lot, donc ces colonnes sont NOT NULL sans avoir besoin de valeur de repli.
+    first_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    last_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    birth_date: Mapped[date] = mapped_column(Date, nullable=False)
+    terms_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    terms_accepted_at: Mapped[datetime] = mapped_column(nullable=False)
+    # Changement de mot de passe forcé à la prochaine connexion (compte créé par l'admin avec
+    # un mot de passe temporaire) — remis à `False` par `pbm_api.profile.service.change_password`.
+    must_change_password: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="false"
+    )
 
 
 class Session(Base):

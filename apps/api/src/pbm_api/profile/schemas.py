@@ -1,13 +1,16 @@
 import re
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 PSEUDO_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
 
 
-class UpdatePseudoRequest(BaseModel):
+class UpdateProfileRequest(BaseModel):
     pseudo: str = Field(min_length=3, max_length=32)
+    first_name: str | None = Field(default=None, max_length=100)
+    last_name: str = Field(min_length=1, max_length=100)
+    birth_date: date
 
     @field_validator("pseudo")
     @classmethod
@@ -24,6 +27,9 @@ class ProfileResponse(BaseModel):
     pending_email: str | None
     pseudo: str | None
     has_avatar: bool
+    first_name: str | None
+    last_name: str
+    birth_date: date
 
 
 class ChangeEmailRequest(BaseModel):

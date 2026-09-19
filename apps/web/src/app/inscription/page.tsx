@@ -25,14 +25,21 @@ export default function InscriptionPage() {
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { email: "", password: "", cgu: false },
+    defaultValues: { email: "", password: "", firstName: "", lastName: "", birthDate: "", cgu: false },
   });
   const password = watch("password");
 
   async function onSubmit(values: RegisterFormValues) {
     setServerError(null);
     try {
-      await registerAccount(values.email, values.password);
+      await registerAccount({
+        email: values.email,
+        password: values.password,
+        firstName: values.firstName,
+        lastName: values.lastName,
+        birthDate: values.birthDate,
+        acceptTerms: values.cgu,
+      });
       setSubmitted(true);
     } catch (error) {
       setServerError(
@@ -65,6 +72,36 @@ export default function InscriptionPage() {
     >
       <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)} noValidate>
         {serverError && <FormNotice variant="error">{serverError}</FormNotice>}
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="firstName">
+            Prénom <span className="font-normal text-muted-foreground">(facultatif)</span>
+          </Label>
+          <Input id="firstName" autoComplete="given-name" {...register("firstName")} />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="lastName">Nom</Label>
+          <Input
+            id="lastName"
+            autoComplete="family-name"
+            aria-invalid={!!errors.lastName}
+            {...register("lastName")}
+          />
+          {errors.lastName && <p className="text-xs text-danger">{errors.lastName.message}</p>}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="birthDate">Date de naissance</Label>
+          <Input
+            id="birthDate"
+            type="date"
+            autoComplete="bday"
+            aria-invalid={!!errors.birthDate}
+            {...register("birthDate")}
+          />
+          {errors.birthDate && <p className="text-xs text-danger">{errors.birthDate.message}</p>}
+        </div>
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="email">E-mail</Label>

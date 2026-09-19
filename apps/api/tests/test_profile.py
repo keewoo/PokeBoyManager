@@ -24,6 +24,9 @@ from pbm_api.storage.local import LocalObjectStorage
 
 PASSWORD = "correct horse battery staple"
 NEW_PASSWORD = "another horse battery staple 2"
+# Champs d'identité obligatoires à l'inscription (lot v1-identite) — valeurs neutres pour les
+# tests qui ne portent pas sur ces validations elles-mêmes (voir `test_identity.py`).
+IDENTITY_FIELDS = {"last_name": "Dresseur", "birth_date": "2000-01-01", "accept_terms": True}
 
 
 def _unique_email(label: str) -> str:
@@ -39,7 +42,9 @@ def _jpeg_bytes(width: int = 600, height: int = 300) -> bytes:
 
 async def _register_verify_login(client: httpx.AsyncClient, email: str) -> str:
     """Inscrit, vérifie et connecte un utilisateur ; renvoie le jeton CSRF de sa session."""
-    response = await client.post("/auth/register", json={"email": email, "password": PASSWORD})
+    response = await client.post(
+        "/auth/register", json={"email": email, "password": PASSWORD, **IDENTITY_FIELDS}
+    )
     assert response.status_code == 202, response.text
     sent = client.email_sender.sent  # type: ignore[attr-defined]
     match = re.search(r"token=(\S+)", sent[-1]["body"])
@@ -76,7 +81,9 @@ async def test_patch_me_sets_the_pseudo(api_client: httpx.AsyncClient) -> None:
     csrf = await _register_verify_login(api_client, _unique_email("profil-pseudo"))
 
     response = await api_client.patch(
-        "/me", json={"pseudo": "dresseur_jf"}, headers={CSRF_HEADER_NAME: csrf}
+        "/me",
+        json={"pseudo": "dresseur_jf", "last_name": "Dresseur", "birth_date": "2000-01-01"},
+        headers={CSRF_HEADER_NAME: csrf},
     )
 
     assert response.status_code == 200, response.text
@@ -85,7 +92,11 @@ async def test_patch_me_sets_the_pseudo(api_client: httpx.AsyncClient) -> None:
 
 async def test_patch_me_rejects_a_pseudo_already_taken(api_client: httpx.AsyncClient) -> None:
     csrf_a = await _register_verify_login(api_client, _unique_email("profil-pseudo-a"))
-    await api_client.patch("/me", json={"pseudo": "sacha"}, headers={CSRF_HEADER_NAME: csrf_a})
+    await api_client.patch(
+        "/me",
+        json={"pseudo": "sacha", "last_name": "Dresseur", "birth_date": "2000-01-01"},
+        headers={CSRF_HEADER_NAME: csrf_a},
+    )
 
     transport = httpx.ASGITransport(app=fastapi_app)
     async with httpx.AsyncClient(transport=transport, base_url="https://testserver") as client_b:
@@ -93,14 +104,18 @@ async def test_patch_me_rejects_a_pseudo_already_taken(api_client: httpx.AsyncCl
         csrf_b = await _register_verify_login(client_b, _unique_email("profil-pseudo-b"))
 
         response = await client_b.patch(
-            "/me", json={"pseudo": "sacha"}, headers={CSRF_HEADER_NAME: csrf_b}
+            "/me",
+            json={"pseudo": "sacha", "last_name": "Dresseur", "birth_date": "2000-01-01"},
+            headers={CSRF_HEADER_NAME: csrf_b},
         )
         assert response.status_code == 409
 
 
 async def test_patch_me_requires_csrf_token(api_client: httpx.AsyncClient) -> None:
     await _register_verify_login(api_client, _unique_email("profil-pseudo-nocsrf"))
-    response = await api_client.patch("/me", json={"pseudo": "sacha"})
+    response = await api_client.patch(
+        "/me", json={"pseudo": "sacha", "last_name": "Dresseur", "birth_date": "2000-01-01"}
+    )
     assert response.status_code == 403
 
 
@@ -170,9 +185,7 @@ async def test_confirm_email_change_applies_the_new_address_and_notifies_the_old
     csrf = await _register_verify_login(api_client, old_email)
     new_email = _unique_email("profil-email-confirm-new")
 
-    await api_client.post(
-        "/me/email", json={"email": new_email}, headers={CSRF_HEADER_NAME: csrf}
-    )
+    await api_client.post("/me/email", json={"email": new_email}, headers={CSRF_HEADER_NAME: csrf})
     sent = api_client.email_sender.sent  # type: ignore[attr-defined]
     match = re.search(r"token=(\S+)", sent[-1]["body"])
     assert match
@@ -264,9 +277,7 @@ async def test_change_password_revokes_other_sessions(
     email = _unique_email("profil-pwd-revoke")
     csrf = await _register_verify_login(api_client, email)
 
-    other_login = await api_client.post(
-        "/auth/login", json={"email": email, "password": PASSWORD}
-    )
+    other_login = await api_client.post("/auth/login", json={"email": email, "password": PASSWORD})
     assert other_login.status_code == 200
     # La connexion a fait tourner le cookie de session (et donc celui du CSRF, son HMAC) :
     # reprendre celui de la session désormais active, pas celui capturé avant.
@@ -274,8 +285,10 @@ async def test_change_password_revokes_other_sessions(
     result = await db_session.execute(select(User).where(User.email == email))
     user = result.scalar_one()
     sessions_before = (
-        await db_session.execute(select(Session).where(Session.user_id == user.id))
-    ).scalars().all()
+        (await db_session.execute(select(Session).where(Session.user_id == user.id)))
+        .scalars()
+        .all()
+    )
     assert len(sessions_before) == 2
 
     await api_client.post(
@@ -285,8 +298,10 @@ async def test_change_password_revokes_other_sessions(
     )
 
     sessions_after = (
-        await db_session.execute(select(Session).where(Session.user_id == user.id))
-    ).scalars().all()
+        (await db_session.execute(select(Session).where(Session.user_id == user.id)))
+        .scalars()
+        .all()
+    )
     assert len(sessions_after) == 1
 
 
@@ -510,9 +525,7 @@ async def test_delete_account_does_not_touch_another_users_photos_or_rows(
 # --- Isolation entre utilisateurs (test d'accès croisé) ---------------------------------------
 
 
-async def test_cross_user_isolation_on_sessions(
-    api_client: httpx.AsyncClient, db_session
-) -> None:
+async def test_cross_user_isolation_on_sessions(api_client: httpx.AsyncClient, db_session) -> None:
     """B ne voit ni ne peut révoquer les sessions de A, même en devinant leur identifiant —
     comme `test_cross_user_isolation_on_ai_keys` (lot v1-byok)."""
     csrf_a = await _register_verify_login(api_client, _unique_email("iso-sessions-a"))
@@ -541,7 +554,9 @@ async def test_cross_user_isolation_on_pseudo_update(api_client: httpx.AsyncClie
     fourni par le client, seulement du cookie de session de l'appelant."""
     csrf_a = await _register_verify_login(api_client, _unique_email("iso-pseudo-a"))
     await api_client.patch(
-        "/me", json={"pseudo": "gardien_a"}, headers={CSRF_HEADER_NAME: csrf_a}
+        "/me",
+        json={"pseudo": "gardien_a", "last_name": "Dresseur", "birth_date": "2000-01-01"},
+        headers={CSRF_HEADER_NAME: csrf_a},
     )
 
     transport = httpx.ASGITransport(app=fastapi_app)
@@ -549,7 +564,9 @@ async def test_cross_user_isolation_on_pseudo_update(api_client: httpx.AsyncClie
         client_b.email_sender = api_client.email_sender  # type: ignore[attr-defined]
         csrf_b = await _register_verify_login(client_b, _unique_email("iso-pseudo-b"))
         await client_b.patch(
-            "/me", json={"pseudo": "gardien_b"}, headers={CSRF_HEADER_NAME: csrf_b}
+            "/me",
+            json={"pseudo": "gardien_b", "last_name": "Dresseur", "birth_date": "2000-01-01"},
+            headers={CSRF_HEADER_NAME: csrf_b},
         )
 
     profile_a = await api_client.get("/me")

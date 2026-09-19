@@ -4,12 +4,16 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 
 import ProfilPage from "@/app/profil/page";
 
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(""),
+}));
+
 vi.mock("@/lib/api/profile", async () => {
   const actual = await vi.importActual<typeof import("@/lib/api/profile")>("@/lib/api/profile");
   return {
     ...actual,
     getProfile: vi.fn(),
-    updatePseudo: vi.fn(),
+    updateIdentity: vi.fn(),
     requestEmailChange: vi.fn(),
     listSessions: vi.fn(),
     changePassword: vi.fn(),
@@ -48,6 +52,9 @@ const PROFILE = {
   pending_email: null,
   pseudo: "dresseur_jf",
   has_avatar: false,
+  first_name: null,
+  last_name: "Dresseur",
+  birth_date: "2000-01-01",
 };
 
 const SESSION = {
@@ -65,7 +72,7 @@ describe("ProfilPage", () => {
 
     vi.mocked(profileApi.getProfile).mockReset().mockResolvedValue(PROFILE);
     vi.mocked(profileApi.listSessions).mockReset().mockResolvedValue([SESSION]);
-    vi.mocked(profileApi.updatePseudo).mockReset();
+    vi.mocked(profileApi.updateIdentity).mockReset();
     vi.mocked(profileApi.requestEmailChange).mockReset();
     vi.mocked(profileApi.changePassword).mockReset();
 
@@ -86,7 +93,7 @@ describe("ProfilPage", () => {
 
   it("enregistre un nouveau pseudo via PATCH /me", async () => {
     const profileApi = await import("@/lib/api/profile");
-    vi.mocked(profileApi.updatePseudo).mockResolvedValue({ ...PROFILE, pseudo: "sacha" });
+    vi.mocked(profileApi.updateIdentity).mockResolvedValue({ ...PROFILE, pseudo: "sacha" });
     const user = userEvent.setup();
     render(<ProfilPage />);
 
@@ -95,7 +102,14 @@ describe("ProfilPage", () => {
     await user.type(pseudoInput, "sacha");
     await user.click(screen.getByRole("button", { name: /enregistrer/i }));
 
-    await waitFor(() => expect(profileApi.updatePseudo).toHaveBeenCalledWith("sacha"));
+    await waitFor(() =>
+      expect(profileApi.updateIdentity).toHaveBeenCalledWith({
+        pseudo: "sacha",
+        firstName: "",
+        lastName: "Dresseur",
+        birthDate: "2000-01-01",
+      })
+    );
   });
 
   it("passe à l'onglet Sécurité et liste les sessions actives", async () => {

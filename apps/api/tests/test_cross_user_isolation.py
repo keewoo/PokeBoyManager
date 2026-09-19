@@ -8,6 +8,7 @@ posera les routes de collection.
 """
 
 import uuid
+from datetime import date, datetime
 
 from sqlalchemy import select
 
@@ -16,8 +17,18 @@ from pbm_api.models.collection import CollectionItem
 
 
 async def test_collection_query_scoped_by_user_id_excludes_other_users(db_session):
-    user_a = User(email=f"user-a-{uuid.uuid4()}@example.com", password_hash="x")
-    user_b = User(email=f"user-b-{uuid.uuid4()}@example.com", password_hash="x")
+    identity_defaults = {
+        "last_name": "Test",
+        "birth_date": date(2000, 1, 1),
+        "terms_version": "test",
+        "terms_accepted_at": datetime(2000, 1, 1),
+    }
+    user_a = User(
+        email=f"user-a-{uuid.uuid4()}@example.com", password_hash="x", **identity_defaults
+    )
+    user_b = User(
+        email=f"user-b-{uuid.uuid4()}@example.com", password_hash="x", **identity_defaults
+    )
     db_session.add_all([user_a, user_b])
 
     set_row = Set(code=f"iso-{uuid.uuid4().hex[:8]}", name="Set isolation")

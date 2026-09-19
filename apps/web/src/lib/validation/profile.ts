@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { emailSchema, passwordSchema } from "@/lib/validation/auth";
+import { birthDateSchema, emailSchema, firstNameSchema, lastNameSchema, passwordSchema } from "@/lib/validation/auth";
 
 // Même règle que `pbm_api.profile.schemas.UpdatePseudoRequest` côté API.
 export const pseudoSchema = z
@@ -13,6 +13,11 @@ export const pseudoSchema = z
 export const identitySchema = z.object({
   pseudo: pseudoSchema,
   email: emailSchema,
+  firstName: firstNameSchema,
+  lastName: lastNameSchema,
+  // Pas de contrainte d'âge minimum ici : elle ne s'applique qu'à l'inscription libre
+  // (voir `pbm_api.profile.service.update_identity`).
+  birthDate: birthDateSchema,
 });
 export type IdentityFormValues = z.infer<typeof identitySchema>;
 

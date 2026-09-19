@@ -46,7 +46,16 @@ def _unique_email(label: str) -> str:
 
 
 async def _register_verify_login(client: httpx.AsyncClient, email: str) -> str:
-    response = await client.post("/auth/register", json={"email": email, "password": PASSWORD})
+    response = await client.post(
+        "/auth/register",
+        json={
+            "email": email,
+            "password": PASSWORD,
+            "last_name": "Dresseur",
+            "birth_date": "2000-01-01",
+            "accept_terms": True,
+        },
+    )
     assert response.status_code == 202, response.text
     sent = client.email_sender.sent  # type: ignore[attr-defined]
     match = re.search(r"token=(\S+)", sent[-1]["body"])
@@ -130,9 +139,7 @@ def _bulbapedia_client(*, empty: bool = False) -> MediaWikiClient:
             title="Charizard-Test", url=BULBAPEDIA_PAGE_URL, text="English sourced anecdote."
         )
     )
-    return MediaWikiClient(
-        BULBAPEDIA_API_URL, http_client=httpx.AsyncClient(transport=transport)
-    )
+    return MediaWikiClient(BULBAPEDIA_API_URL, http_client=httpx.AsyncClient(transport=transport))
 
 
 class FakeAIProvider:
@@ -171,9 +178,7 @@ def _clear_dependency_overrides():
 
 
 def _override_wikis(*, empty: bool = False) -> None:
-    fastapi_app.dependency_overrides[get_pokepedia_client] = lambda: _pokepedia_client(
-        empty=empty
-    )
+    fastapi_app.dependency_overrides[get_pokepedia_client] = lambda: _pokepedia_client(empty=empty)
     fastapi_app.dependency_overrides[get_bulbapedia_client] = lambda: _bulbapedia_client(
         empty=empty
     )
@@ -331,9 +336,7 @@ async def test_second_user_reads_the_shared_cache_without_owning_a_key(
 # --- Bouton « Signaler une erreur » ---------------------------------------------------------
 
 
-async def test_report_card_insight_requires_csrf(
-    api_client: httpx.AsyncClient, db_session
-) -> None:
+async def test_report_card_insight_requires_csrf(api_client: httpx.AsyncClient, db_session) -> None:
     await _register_verify_login(api_client, _unique_email("insights-report-csrf"))
     card = await _make_card(db_session)
 

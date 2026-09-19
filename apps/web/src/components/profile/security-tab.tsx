@@ -13,7 +13,11 @@ import { ApiError } from "@/lib/api/client";
 import { changePassword, listSessions, revokeSession, type SessionResponse } from "@/lib/api/profile";
 import { changePasswordSchema, type ChangePasswordFormValues } from "@/lib/validation/profile";
 
-export function SecurityTab() {
+export type SecurityTabProps = {
+  forcePasswordChange?: boolean;
+};
+
+export function SecurityTab({ forcePasswordChange = false }: SecurityTabProps) {
   const [serverError, setServerError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [sessions, setSessions] = useState<SessionResponse[] | null>(null);
@@ -78,6 +82,11 @@ export function SecurityTab() {
     <div className="flex max-w-xl flex-col gap-6">
       <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4">
         <h3 className="font-heading text-base font-bold text-foreground">Mot de passe</h3>
+        {forcePasswordChange && (
+          <FormNotice variant="error">
+            Ton compte a été créé avec un mot de passe temporaire : change-le avant de continuer.
+          </FormNotice>
+        )}
         <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)} noValidate>
           {serverError && <FormNotice variant="error">{serverError}</FormNotice>}
           {notice && <FormNotice variant="success">{notice}</FormNotice>}

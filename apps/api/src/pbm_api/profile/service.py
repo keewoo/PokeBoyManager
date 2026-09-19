@@ -5,7 +5,7 @@ d'un identifiant fourni par le client.
 """
 
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pbm_api.ai.errors import UnsupportedImageFormatError
 from pbm_api.ai.images import detect_media_type
 from pbm_api.auth.errors import (
+    InvalidBirthDateError,
     InvalidCredentialsError,
     InvalidTokenError,
     PasswordCompromisedError,
@@ -54,14 +55,30 @@ def _utc_now_naive() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
 
 
-async def update_pseudo(db: AsyncSession, user: User, pseudo: str) -> User:
+async def update_identity(
+    db: AsyncSession,
+    user: User,
+    pseudo: str,
+    first_name: str | None,
+    last_name: str,
+    birth_date: date,
+) -> User:
     existing = await db.execute(
         select(User).where(User.pseudo == pseudo, User.id != user.id)
     )
     if existing.scalar_one_or_none() is not None:
         raise PseudoAlreadyTakenError
 
+    # Pas de contrôle d'âge minimum ici : celui-ci ne s'applique qu'à l'inscription libre
+    # (`pbm_api.auth.service.register_user`) — un compte existant (y compris créé par
+    # l'administrateur pour un mineur, consentement du parent porté par JF) reste éditable.
+    if birth_date >= date.today():
+        raise InvalidBirthDateError
+
     user.pseudo = pseudo
+    user.first_name = first_name
+    user.last_name = last_name
+    user.birth_date = birth_date
     await db.commit()
     return user
 
@@ -178,6 +195,7 @@ async def change_password(
         raise PasswordCompromisedError
 
     user.password_hash = hash_password(new_password)
+    user.must_change_password = False
 
     # Rotation : toute autre session est révoquée (la session courante, déjà authentifiée
     # par ce même mot de passe, est conservée — contrairement à la réinitialisation "mot de

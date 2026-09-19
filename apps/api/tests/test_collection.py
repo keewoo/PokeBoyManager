@@ -26,7 +26,16 @@ def _unique_email(label: str) -> str:
 async def _register_verify_login(client: httpx.AsyncClient, email: str) -> str:
     """Inscrit, vérifie et connecte un utilisateur ; renvoie son id (la session/le cookie CSRF
     sont déjà posés sur `client` par le login, comme `test_uploads._register_verify_login`)."""
-    response = await client.post("/auth/register", json={"email": email, "password": PASSWORD})
+    response = await client.post(
+        "/auth/register",
+        json={
+            "email": email,
+            "password": PASSWORD,
+            "last_name": "Dresseur",
+            "birth_date": "2000-01-01",
+            "accept_terms": True,
+        },
+    )
     assert response.status_code == 202, response.text
     sent = client.email_sender.sent  # type: ignore[attr-defined]
     match = re.search(r"token=(\S+)", sent[-1]["body"])

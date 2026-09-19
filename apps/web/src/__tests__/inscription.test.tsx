@@ -15,7 +15,7 @@ describe("InscriptionPage", () => {
     vi.mocked(registerAccount).mockReset();
   });
 
-  it("refuse la soumission sans e-mail, mot de passe ni acceptation des CGU", async () => {
+  it("refuse la soumission sans e-mail, mot de passe, nom, date de naissance ni acceptation des CGU", async () => {
     const user = userEvent.setup();
     render(<InscriptionPage />);
 
@@ -23,6 +23,8 @@ describe("InscriptionPage", () => {
 
     expect(await screen.findByText(/adresse e-mail invalide|l'e-mail est requis/i)).toBeInTheDocument();
     expect(screen.getByText(/au moins 10 caractères/i)).toBeInTheDocument();
+    expect(screen.getByText(/le nom est requis/i)).toBeInTheDocument();
+    expect(screen.getByText(/date de naissance est requise/i)).toBeInTheDocument();
     expect(screen.getByText(/tu dois accepter les conditions/i)).toBeInTheDocument();
     expect(registerAccount).not.toHaveBeenCalled();
   });
@@ -32,12 +34,23 @@ describe("InscriptionPage", () => {
     const user = userEvent.setup();
     render(<InscriptionPage />);
 
-    await user.type(screen.getByLabelText(/e-mail/i), "dresseur@example.fr");
+    await user.type(screen.getByLabelText(/^nom$/i), "Ketchum");
+    await user.type(screen.getByLabelText(/date de naissance/i), "2000-01-01");
+    await user.type(screen.getByLabelText(/^e-mail$/i), "dresseur@example.fr");
     await user.type(screen.getByLabelText(/mot de passe/i), "un-mot-de-passe-solide");
     await user.click(screen.getByLabelText(/j'accepte les conditions/i));
     await user.click(screen.getByRole("button", { name: /créer mon espace/i }));
 
-    await waitFor(() => expect(registerAccount).toHaveBeenCalledWith("dresseur@example.fr", "un-mot-de-passe-solide"));
+    await waitFor(() =>
+      expect(registerAccount).toHaveBeenCalledWith({
+        email: "dresseur@example.fr",
+        password: "un-mot-de-passe-solide",
+        firstName: "",
+        lastName: "Ketchum",
+        birthDate: "2000-01-01",
+        acceptTerms: true,
+      })
+    );
     expect(await screen.findByText(/vérifie ta boîte mail/i)).toBeInTheDocument();
   });
 
@@ -47,7 +60,9 @@ describe("InscriptionPage", () => {
     const user = userEvent.setup();
     render(<InscriptionPage />);
 
-    await user.type(screen.getByLabelText(/e-mail/i), "dresseur@example.fr");
+    await user.type(screen.getByLabelText(/^nom$/i), "Ketchum");
+    await user.type(screen.getByLabelText(/date de naissance/i), "2000-01-01");
+    await user.type(screen.getByLabelText(/^e-mail$/i), "dresseur@example.fr");
     await user.type(screen.getByLabelText(/mot de passe/i), "xxxxxxxxxxxxx");
     await user.click(screen.getByLabelText(/j'accepte les conditions/i));
     await user.click(screen.getByRole("button", { name: /créer mon espace/i }));

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiError } from "@/lib/api/client";
-import { requestEmailChange, updatePseudo, type ProfileResponse } from "@/lib/api/profile";
+import { requestEmailChange, updateIdentity, type ProfileResponse } from "@/lib/api/profile";
 import { identitySchema, type IdentityFormValues } from "@/lib/validation/profile";
 
 export type IdentityTabProps = {
@@ -27,7 +27,13 @@ export function IdentityTab({ profile, onProfileChange }: IdentityTabProps) {
     formState: { errors, isSubmitting },
   } = useForm<IdentityFormValues>({
     resolver: zodResolver(identitySchema),
-    defaultValues: { pseudo: profile.pseudo ?? "", email: profile.email },
+    defaultValues: {
+      pseudo: profile.pseudo ?? "",
+      email: profile.email,
+      firstName: profile.first_name ?? "",
+      lastName: profile.last_name,
+      birthDate: profile.birth_date,
+    },
   });
 
   const initials = (profile.pseudo || profile.email).slice(0, 2).toUpperCase();
@@ -37,8 +43,18 @@ export function IdentityTab({ profile, onProfileChange }: IdentityTabProps) {
     setNotice(null);
     try {
       let updated = profile;
-      if (values.pseudo !== (profile.pseudo ?? "")) {
-        updated = await updatePseudo(values.pseudo);
+      const identityChanged =
+        values.pseudo !== (profile.pseudo ?? "") ||
+        values.firstName !== (profile.first_name ?? "") ||
+        values.lastName !== profile.last_name ||
+        values.birthDate !== profile.birth_date;
+      if (identityChanged) {
+        updated = await updateIdentity({
+          pseudo: values.pseudo,
+          firstName: values.firstName,
+          lastName: values.lastName,
+          birthDate: values.birthDate,
+        });
       }
       if (values.email !== profile.email) {
         await requestEmailChange(values.email);
@@ -71,6 +87,30 @@ export function IdentityTab({ profile, onProfileChange }: IdentityTabProps) {
           <Label htmlFor="pseudo">Pseudo</Label>
           <Input id="pseudo" aria-invalid={!!errors.pseudo} {...register("pseudo")} />
           {errors.pseudo && <p className="text-xs text-danger">{errors.pseudo.message}</p>}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="firstName">
+            Prénom <span className="font-normal text-muted-foreground">(facultatif)</span>
+          </Label>
+          <Input id="firstName" {...register("firstName")} />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="lastName">Nom</Label>
+          <Input id="lastName" aria-invalid={!!errors.lastName} {...register("lastName")} />
+          {errors.lastName && <p className="text-xs text-danger">{errors.lastName.message}</p>}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="birthDate">Date de naissance</Label>
+          <Input
+            id="birthDate"
+            type="date"
+            aria-invalid={!!errors.birthDate}
+            {...register("birthDate")}
+          />
+          {errors.birthDate && <p className="text-xs text-danger">{errors.birthDate.message}</p>}
         </div>
 
         <div className="flex flex-col gap-1.5">

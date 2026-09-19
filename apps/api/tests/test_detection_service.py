@@ -8,6 +8,7 @@ passe une fois le fichier ajouté.
 
 import json
 import uuid
+from datetime import date, datetime
 
 import cv2
 import numpy as np
@@ -63,7 +64,14 @@ async def storage():
 
 
 async def _make_upload(db_session, storage, image_bytes: bytes) -> Upload:
-    user = User(email=f"det-{uuid.uuid4()}@example.com", password_hash="x")
+    user = User(
+        email=f"det-{uuid.uuid4()}@example.com",
+        password_hash="x",
+        last_name="Test",
+        birth_date=date(2000, 1, 1),
+        terms_version="test",
+        terms_accepted_at=datetime(2000, 1, 1),
+    )
     db_session.add(user)
     await db_session.flush()
 

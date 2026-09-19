@@ -104,6 +104,9 @@ async def run_export(
         profile = {
             "email": user.email,
             "pseudo": user.pseudo,
+            "prenom": user.first_name,
+            "nom": user.last_name,
+            "date_de_naissance": user.birth_date.isoformat(),
             "compte_cree_le": user.created_at.isoformat(),
         }
         archive_bytes = build_archive(profile, rows, photos, generated_at)

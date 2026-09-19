@@ -27,3 +27,16 @@ class TokenExpiredError(Exception):
 
 class TokenAlreadyUsedError(Exception):
     pass
+
+
+class TermsNotAcceptedError(Exception):
+    """Case « J'accepte les conditions » non cochée."""
+
+
+class InvalidBirthDateError(Exception):
+    """Date de naissance absente ou dans le futur."""
+
+
+class UnderageWithoutParentalConsentError(Exception):
+    """Moins de 15 ans sur l'inscription libre — RGPD art. 8 : seul un compte créé par
+    l'administrateur (consentement du parent porté par JF) peut couvrir ce cas."""
