@@ -17,7 +17,7 @@ from pbm_api.models.collection import (
     Upload,
     UploadStatus,
 )
-from pbm_api.models.jobs import Job, JobStatus
+from pbm_api.models.jobs import DataExport, Job, JobStatus
 from pbm_api.models.pricing import ExchangeRateDaily
 from pbm_api.models.users import AiCredential, AiProvider, EmailToken, EmailTokenKind, Session, User
 
@@ -45,5 +45,6 @@ __all__ = [
     "CollectionItem",
     "Job",
     "JobStatus",
+    "DataExport",
     "ExchangeRateDaily",
 ]

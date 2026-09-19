@@ -17,7 +17,9 @@ from pbm_api.catalog.tcgdex_client import TcgdexClient
 from pbm_api.config import settings
 from pbm_api.db import async_session_factory
 from pbm_api.detection.service import run_detection_for_upload
-from pbm_api.models import Job, JobStatus, Upload
+from pbm_api.email import get_email_sender
+from pbm_api.export.service import run_export
+from pbm_api.models import DataExport, Job, JobStatus, Upload, User
 from pbm_api.pricing.exchange_rates import EcbClient, store_daily_rates
 from pbm_api.pricing.service import collect_daily_prices
 from pbm_api.ranking.service import refresh_card_value_rank
@@ -198,12 +200,36 @@ async def detect_cards_task(ctx: dict, job_id: str) -> dict:
     return await _run_detect_cards(job_id)
 
 
+async def _run_export(export_id: str) -> dict:
+    async with async_session_factory() as session:
+        export = await session.get(DataExport, uuid.UUID(export_id))
+        if export is None:
+            # Comme `_run_detect_cards` : ne peut arriver qu'entre l'enfilage et l'exécution
+            # (aucune suppression de `DataExport` n'existe hors suppression du compte).
+            raise LookupError(f"export {export_id} introuvable")
+
+        user = await session.get(User, export.user_id)
+        if user is None:
+            raise LookupError(f"utilisateur {export.user_id} introuvable")
+
+        storage = build_storage()
+        export = await run_export(session, storage, get_email_sender(), user, export)
+        return {"status": export.status.value}
+
+
+async def export_user_data_task(ctx: dict, export_id: str) -> dict:
+    """Export RGPD de la collection (mission `v5-rgpd` point 1) : un `DataExport` par demande
+    (`POST /me/export`), archive ZIP + lien de téléchargement signé envoyé par e-mail."""
+    return await _run_export(export_id)
+
+
 class WorkerSettings:
     functions = [
         import_catalogue_task,
         daily_prices_task,
         daily_exchange_rates_task,
         detect_cards_task,
+        export_user_data_task,
     ]
     cron_jobs = [
         cron(weekly_incremental_import, weekday=0, hour=6, minute=0),

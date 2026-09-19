@@ -7,6 +7,7 @@ from pbm_api.routers.auth import router as auth_router
 from pbm_api.routers.card_insights import router as card_insights_router
 from pbm_api.routers.catalog import router as catalog_router
 from pbm_api.routers.collection import router as collection_router
+from pbm_api.routers.export import router as export_router
 from pbm_api.routers.health import router as health_router
 from pbm_api.routers.images import router as images_router
 from pbm_api.routers.profile import router as profile_router
@@ -40,3 +41,4 @@ app.include_router(profile_router)
 app.include_router(uploads_router)
 app.include_router(collection_router)
 app.include_router(card_insights_router)
+app.include_router(export_router)

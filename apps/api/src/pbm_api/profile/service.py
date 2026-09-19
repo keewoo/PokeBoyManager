@@ -23,7 +23,16 @@ from pbm_api.auth.errors import (
 from pbm_api.auth.service import normalize_email
 from pbm_api.config import settings
 from pbm_api.email import EmailSender
-from pbm_api.models import EmailToken, EmailTokenKind, Session, User
+from pbm_api.models import (
+    CollectionItem,
+    DataExport,
+    Detection,
+    EmailToken,
+    EmailTokenKind,
+    Session,
+    Upload,
+    User,
+)
 from pbm_api.profile.avatar import ALLOWED_MEDIA_TYPES, process_avatar
 from pbm_api.profile.errors import (
     AvatarNotFoundError,
@@ -201,16 +210,53 @@ async def revoke_session(db: AsyncSession, user: User, session_id: uuid.UUID) ->
     await db.commit()
 
 
+async def _storage_keys_to_purge(db: AsyncSession, user: User) -> list[str]:
+    """Toutes les clés de stockage d'un utilisateur — risque documenté du lot `v5-rgpd`
+    (« suppression incomplète : photos dans le stockage objet ») : la ligne en base disparaît
+    par cascade, mais l'objet dans le stockage ne suit pas une contrainte SQL et doit être
+    effacé explicitement, ici, avant que l'identifiant du propriétaire ne disparaisse."""
+    keys: list[str] = []
+    if user.avatar_key is not None:
+        keys.append(user.avatar_key)
+
+    collection_photos = await db.execute(
+        select(CollectionItem.photo_s3_key).where(
+            CollectionItem.user_id == user.id, CollectionItem.photo_s3_key.is_not(None)
+        )
+    )
+    keys.extend(collection_photos.scalars().all())
+
+    uploads = await db.execute(select(Upload.s3_key).where(Upload.user_id == user.id))
+    keys.extend(uploads.scalars().all())
+
+    crops = await db.execute(
+        select(Detection.crop_s3_key)
+        .join(Upload, Upload.id == Detection.upload_id)
+        .where(Upload.user_id == user.id, Detection.crop_s3_key.is_not(None))
+    )
+    keys.extend(crops.scalars().all())
+
+    exports = await db.execute(
+        select(DataExport.storage_key).where(
+            DataExport.user_id == user.id, DataExport.storage_key.is_not(None)
+        )
+    )
+    keys.extend(exports.scalars().all())
+
+    return keys
+
+
 async def delete_account(
     db: AsyncSession, user: User, password: str, storage: StorageBackend
 ) -> None:
     if not verify_password(password, user.password_hash):
         raise InvalidCredentialsError
 
-    if user.avatar_key is not None:
-        await storage.delete(user.avatar_key)
+    for key in await _storage_keys_to_purge(db, user):
+        await storage.delete(key)
 
-    # Sessions, jetons d'e-mail et clés IA suivent par `ondelete="CASCADE"` (voir
-    # `pbm_api.models.users`) — un seul `DELETE` couvre tout le compte.
+    # Sessions, jetons d'e-mail, clés IA, exemplaires de collection, envois et exports suivent
+    # par `ondelete="CASCADE"` (voir `pbm_api.models`) — un seul `DELETE` couvre tout le compte
+    # côté base ; le stockage objet, lui, vient d'être purgé explicitement ci-dessus.
     await db.delete(user)
     await db.commit()

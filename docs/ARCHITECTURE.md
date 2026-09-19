@@ -301,6 +301,41 @@ collection personnelle, percentile de valeur dans l'extension.
   `v4-collection` (liste, filtres, `PATCH`/`DELETE`) et `v4-fiche` (données de catalogue
   enrichies) l'étendent sans revenir sur ce qui précède.
 
+## Export et suppression RGPD (lot `v5-rgpd`)
+
+Deux droits exposés depuis « Mon profil » → « Mes données » (`apps/web/src/components/profile/data-tab.tsx`).
+
+**Export** (`pbm_api/export/`) : `POST /me/export` crée un `DataExport` (`pbm_api/models/jobs.py`,
+statut `queued`/`running`/`succeeded`/`failed` — même énumération Python que `Job` mais un type
+Postgres `export_status` distinct, migration `2e56ba32d5ed`) puis l'enfile vers le worker arq
+(`pbm_api.queue.get_arq_pool`, même schéma que `detect_cards_task` posé par `v3-detection` en
+parallèle de ce lot — premier job du dépôt enfilé depuis une route HTTP, cf. § « Détection de
+cartes »). `pbm_api.worker.export_user_data_task` appelle `export.service.run_export`, qui fait
+le travail réel : le worker arq n'étant pas démarré pendant les tests (comme pour
+`detect_cards_task`), les tests appellent `run_export` directement pour simuler ce qu'il ferait.
+
+- `pbm_api/export/archive.py` construit le ZIP (`profil.json`, `collection.json`, `collection.csv`,
+  `photos/{item_id}.<ext>`) à partir de données déjà lues — aucune dépendance à FastAPI, SQLAlchemy
+  ni au stockage, testable seule.
+- `pbm_api/export/service.py` lit la collection de l'utilisateur (jointure `collection_items` ×
+  `cards` × `sets`, valeur courante via `pricing.valuation.item_value`), récupère les photos déjà
+  présentes dans le stockage (`CollectionItem.photo_s3_key` — absentes du ZIP si l'objet a disparu,
+  jamais d'échec pour ça), écrit l'archive sous `exports/{user_id}/{export_id}.zip`, génère un
+  jeton opaque (`security.tokens`, comme les jetons d'e-mail) valable 24 h et l'envoie par e-mail.
+- Le lien de téléchargement (`GET /export/download?token=…`) pointe sur `api_public_url`
+  directement — pas sur `app_public_url` (le front) — et ne dépend jamais du cookie de session : il
+  doit fonctionner ouvert depuis un autre navigateur que celui de la demande.
+- Un échec devient un `DataExport` en `failed` (message en base, jamais renvoyé au client — même
+  logique que `worker._run_import`), jamais une exception qui remonte en 500.
+
+**Suppression** (`pbm_api/profile/service.py::delete_account`, posée par `v1-profil`) : le mot de
+passe vérifié, la ligne `users` est supprimée et `ondelete="CASCADE"` purge sessions, jetons
+d'e-mail, clés IA, exemplaires de collection, envois (et leurs détections) et exports. Risque
+documenté du lot (« suppression incomplète : photos dans le stockage objet ») : une cascade SQL
+ne touche jamais un objet de stockage — `_storage_keys_to_purge` liste explicitement avatar,
+photos de collection, envois originaux, recadrages de détection et archives d'export avant le
+`DELETE`, purgés un par un (`storage.delete`, idempotent sur une clé déjà absente).
+
 ## Environnements
 
 | | Où | Comment |

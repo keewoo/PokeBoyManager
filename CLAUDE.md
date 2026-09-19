@@ -65,12 +65,15 @@ pnpm gen:api
 `apps/api` lit sa configuration via `pbm_api.config.Settings` (pydantic-settings, fichier `.env`
 optionnel) : `DATABASE_URL`, `REDIS_URL`, `S3_ENDPOINT_URL`/`S3_ACCESS_KEY`/`S3_SECRET_KEY`/
 `S3_BUCKET`/`S3_REGION`, `SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASSWORD`/`SMTP_FROM`,
-`SECRET_KEY`/`APP_PUBLIC_URL`/`SESSION_COOKIE_NAME`/`CSRF_COOKIE_NAME`/`SESSION_TTL_DAYS`/
-`EMAIL_TOKEN_TTL_MINUTES`/`LOGIN_RATE_LIMIT_MAX_ATTEMPTS`/`LOGIN_RATE_LIMIT_WINDOW_SECONDS`
-(comptes, lot `v1-auth` — `SECRET_KEY` signe les jetons CSRF, à définir par variable
-d'environnement en dehors du dépôt pour tout déploiement), `AI_KEY_ENCRYPTION_KEY` (coffre de
-clés IA, lot `v1-byok` — clé maître AES-256 en base64, 32 octets ; chiffre/déchiffre les clés
-des utilisateurs, à définir par variable d'environnement hors dépôt pour tout déploiement).
+`SECRET_KEY`/`APP_PUBLIC_URL`/`API_PUBLIC_URL`/`SESSION_COOKIE_NAME`/`CSRF_COOKIE_NAME`/
+`SESSION_TTL_DAYS`/`EMAIL_TOKEN_TTL_MINUTES`/`LOGIN_RATE_LIMIT_MAX_ATTEMPTS`/
+`LOGIN_RATE_LIMIT_WINDOW_SECONDS` (comptes, lot `v1-auth` — `SECRET_KEY` signe les jetons CSRF,
+à définir par variable d'environnement en dehors du dépôt pour tout déploiement ;
+`API_PUBLIC_URL`, lot `v5-rgpd`, est l'origine de l'API elle-même, distincte d'`APP_PUBLIC_URL` —
+le lien de téléchargement d'export envoyé par e-mail pointe dessus), `AI_KEY_ENCRYPTION_KEY`
+(coffre de clés IA, lot `v1-byok` — clé maître AES-256 en base64, 32 octets ; chiffre/déchiffre
+les clés des utilisateurs, à définir par variable d'environnement hors dépôt pour tout
+déploiement).
 Chaque lot pointe sa propre base/bucket/préfixe — ne jamais réutiliser ceux d'un autre lot sur
 l'infra partagée (`pbm-shared`). `apps/web` lit `NEXT_PUBLIC_API_URL` (défaut
 `http://localhost:8000`) et `NEXT_PUBLIC_SESSION_COOKIE_NAME` (défaut `pbm_session`, doit
@@ -131,6 +134,20 @@ Résultat consultable par `GET /uploads/{id}/detections` et `.../detections/{id}
 chimera) ; mise au point : `uv run python scripts/measure_detection_rate.py [--provider <p>
 --api-key <clé>]` depuis `apps/api`, écrit une image annotée de contrôle par photo. Détail :
 `docs/ARCHITECTURE.md` § « Reconnaissance ».
+
+## Export et suppression RGPD (lot `v5-rgpd`)
+
+Routes (`apps/api/src/pbm_api/routers/export.py`) : `POST /me/export` (session + CSRF) crée le
+`DataExport` et l'enfile vers le worker (`pbm_api.queue.get_arq_pool`, même schéma que
+`detect_cards_task` ci-dessus — `export_user_data_task` fait le travail réel), `GET
+/me/export/{id}` (statut), `GET /export/download?token=…` (sans session, jeton opaque valable
+24 h envoyé par e-mail — comme un jeton d'e-mail de `v1-auth`, jamais un cookie). Le ZIP
+(`pbm_api.export.archive`) contient `profil.json`, `collection.json`, `collection.csv` et
+`photos/` (exemplaires avec `photo_s3_key`) ; aucune clé IA n'y figure jamais (elles ne sont de
+toute façon jamais déchiffrables hors de leur usage fournisseur). La suppression de compte
+(`pbm_api.profile.service.delete_account`, posée par `v1-profil`) purge désormais aussi les
+objets de stockage (photos de collection, envois, recadrages de détection, archives d'export)
+avant le `DELETE` en cascade — pas seulement l'avatar.
 
 ## Règles de la flotte applicables ici (résumé de `~/.claude/CLAUDE.md`)
 

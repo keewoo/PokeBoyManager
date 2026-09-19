@@ -10,11 +10,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiError } from "@/lib/api/client";
 import { deleteAccount } from "@/lib/api/profile";
+import { requestExport } from "@/lib/api/export";
 import { deleteAccountSchema, type DeleteAccountFormValues } from "@/lib/validation/profile";
 
 export function DataTab() {
   const [confirming, setConfirming] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [exportPending, setExportPending] = useState(false);
+  const [exportMessage, setExportMessage] = useState<{ variant: "success" | "error"; text: string } | null>(
+    null
+  );
   const {
     register,
     handleSubmit,
@@ -36,17 +41,44 @@ export function DataTab() {
     }
   }
 
+  async function onRequestExport() {
+    setExportPending(true);
+    setExportMessage(null);
+    try {
+      const result = await requestExport();
+      setExportMessage(
+        result.status === "succeeded"
+          ? {
+              variant: "success",
+              text: "Ton export est prêt : tu vas recevoir un e-mail avec le lien de téléchargement (valable 24 heures).",
+            }
+          : {
+              variant: "error",
+              text: "L'export n'a pas pu être préparé. Réessaie dans un instant.",
+            }
+      );
+    } catch (error) {
+      setExportMessage({
+        variant: "error",
+        text: error instanceof ApiError ? error.message : "Impossible de préparer cet export.",
+      });
+    } finally {
+      setExportPending(false);
+    }
+  }
+
   return (
     <div className="flex max-w-xl flex-col gap-6 rounded-xl border border-border bg-card p-4">
       <div className="flex flex-col gap-2">
         <h3 className="font-heading text-base font-bold text-foreground">Exporter mes données</h3>
         <p className="text-sm text-muted-foreground">
-          Collection (JSON et CSV) et photos d&apos;origine, dans un fichier ZIP. Arrive avec le
-          lot RGPD (v5-rgpd).
+          Collection (JSON et CSV) et photos d&apos;origine, dans un fichier ZIP. Le lien arrive
+          par e-mail et reste valable 24 heures.
         </p>
+        {exportMessage && <FormNotice variant={exportMessage.variant}>{exportMessage.text}</FormNotice>}
         <div>
-          <Button type="button" variant="outline" disabled title="Bientôt disponible">
-            Préparer l&apos;export
+          <Button type="button" variant="outline" onClick={onRequestExport} disabled={exportPending}>
+            {exportPending ? "Préparation…" : "Préparer l'export"}
           </Button>
         </div>
       </div>

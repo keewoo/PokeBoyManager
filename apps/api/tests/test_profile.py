@@ -16,7 +16,8 @@ from sqlalchemy import select
 
 from pbm_api.config import settings
 from pbm_api.main import app as fastapi_app
-from pbm_api.models import Session, User
+from pbm_api.models import Card, Session, Set, User
+from pbm_api.models.collection import CollectionItem
 from pbm_api.routers.profile import get_storage
 from pbm_api.security.csrf import CSRF_HEADER_NAME
 from pbm_api.storage.local import LocalObjectStorage
@@ -362,6 +363,148 @@ async def test_delete_account_removes_the_user_and_clears_cookies(
 
     still_authenticated = await api_client.get("/me")
     assert still_authenticated.status_code == 401
+
+
+async def _seed_full_user_footprint(
+    db_session, storage: LocalObjectStorage, user_id: uuid.UUID
+) -> dict[str, str]:
+    """Peuple toutes les données personnelles d'un utilisateur pour la suppression RGPD
+    (lot `v5-rgpd`, mission point 2) : clé IA, exemplaire de collection avec photo, envoi
+    avec sa détection, export déjà préparé. Renvoie les clés de stockage à vérifier après coup."""
+    from pbm_api.ai.service import upsert_key
+    from pbm_api.models import AiProvider, Detection, DetectionStatus, Upload, UploadStatus
+
+    result = await db_session.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one()
+    await upsert_key(db_session, user, AiProvider.anthropic, "sk-ant-api03-" + "a" * 40)
+
+    set_row = Set(code=f"del-{uuid.uuid4().hex[:8]}", name="Extension suppression")
+    db_session.add(set_row)
+    await db_session.flush()
+    card = Card(set_id=set_row.id, number="9", name="Carte suppression", rarity="rare")
+    db_session.add(card)
+    await db_session.flush()
+
+    photo_key = f"collection/{uuid.uuid4()}.jpg"
+    await storage.put(photo_key, b"photo-collection", "image/jpeg")
+    item = CollectionItem(
+        user_id=user_id, card_id=card.id, language="fr", photo_s3_key=photo_key
+    )
+    db_session.add(item)
+
+    upload_key = f"uploads/{user_id}/{uuid.uuid4()}/original"
+    await storage.put(upload_key, b"photo-envoi", "image/jpeg")
+    upload = Upload(user_id=user_id, s3_key=upload_key, status=UploadStatus.processed)
+    db_session.add(upload)
+    await db_session.flush()
+
+    crop_key = f"uploads/{user_id}/{upload.id}/crop-0"
+    await storage.put(crop_key, b"photo-decoupee", "image/jpeg")
+    db_session.add(
+        Detection(
+            upload_id=upload.id, bbox={"x": 0, "y": 0, "w": 1, "h": 1}, crop_s3_key=crop_key,
+            status=DetectionStatus.pending,
+        )
+    )
+    await db_session.commit()
+
+    return {"photo": photo_key, "upload": upload_key, "crop": crop_key}
+
+
+async def test_delete_account_purges_photos_from_storage(
+    api_client: httpx.AsyncClient, db_session, _local_photo_storage: LocalObjectStorage
+) -> None:
+    """Risque documenté du lot `v5-rgpd` (« suppression incomplète : photos dans le stockage
+    objet ») : ce test échoue tant que `delete_account` n'efface que l'avatar."""
+    email = _unique_email("profil-delete-photos")
+    csrf = await _register_verify_login(api_client, email)
+    result = await db_session.execute(select(User).where(User.email == email))
+    user = result.scalar_one()
+    storage = _local_photo_storage
+    keys = await _seed_full_user_footprint(db_session, storage, user.id)
+
+    response = await api_client.request(
+        "DELETE", "/me", json={"password": PASSWORD}, headers={CSRF_HEADER_NAME: csrf}
+    )
+    assert response.status_code == 204
+
+    for key in keys.values():
+        assert await storage.get(key) is None, f"objet non purgé : {key}"
+
+
+async def test_delete_account_leaves_no_row_tied_to_the_user_id(
+    api_client: httpx.AsyncClient, db_session, _local_photo_storage: LocalObjectStorage
+) -> None:
+    """Mission point 2 : « test qui vérifie qu'il ne reste aucune ligne liée au `user_id` »."""
+    from pbm_api.models import AiCredential, Detection, Upload
+
+    email = _unique_email("profil-delete-rows")
+    csrf = await _register_verify_login(api_client, email)
+    result = await db_session.execute(select(User).where(User.email == email))
+    user = result.scalar_one()
+    await _seed_full_user_footprint(db_session, _local_photo_storage, user.id)
+
+    await api_client.request(
+        "DELETE", "/me", json={"password": PASSWORD}, headers={CSRF_HEADER_NAME: csrf}
+    )
+
+    assert (
+        await db_session.execute(select(Session).where(Session.user_id == user.id))
+    ).scalar_one_or_none() is None
+    assert (
+        await db_session.execute(select(AiCredential).where(AiCredential.user_id == user.id))
+    ).scalar_one_or_none() is None
+    assert (
+        await db_session.execute(
+            select(CollectionItem).where(CollectionItem.user_id == user.id)
+        )
+    ).scalar_one_or_none() is None
+    uploads = (
+        await db_session.execute(select(Upload).where(Upload.user_id == user.id))
+    ).scalars().all()
+    assert uploads == []
+    assert (
+        await db_session.execute(
+            select(Detection).join(Upload, Upload.id == Detection.upload_id).where(
+                Upload.user_id == user.id
+            )
+        )
+    ).scalar_one_or_none() is None
+
+
+async def test_delete_account_does_not_touch_another_users_photos_or_rows(
+    api_client: httpx.AsyncClient, db_session, _local_photo_storage: LocalObjectStorage
+) -> None:
+    """Test d'accès croisé (section 6) adapté à la suppression : effacer le compte B ne doit
+    ni supprimer les objets de stockage ni les lignes de A."""
+    email_a = _unique_email("profil-delete-iso-a")
+    csrf_a = await _register_verify_login(api_client, email_a)
+    result = await db_session.execute(select(User).where(User.email == email_a))
+    user_a = result.scalar_one()
+    storage = _local_photo_storage
+    keys_a = await _seed_full_user_footprint(db_session, storage, user_a.id)
+
+    transport = httpx.ASGITransport(app=fastapi_app)
+    async with httpx.AsyncClient(transport=transport, base_url="https://testserver") as client_b:
+        client_b.email_sender = api_client.email_sender  # type: ignore[attr-defined]
+        email_b = _unique_email("profil-delete-iso-b")
+        csrf_b = await _register_verify_login(client_b, email_b)
+        result_b = await db_session.execute(select(User).where(User.email == email_b))
+        user_b = result_b.scalar_one()
+        await _seed_full_user_footprint(db_session, storage, user_b.id)
+
+        response = await client_b.request(
+            "DELETE", "/me", json={"password": PASSWORD}, headers={CSRF_HEADER_NAME: csrf_b}
+        )
+        assert response.status_code == 204
+
+    for key in keys_a.values():
+        assert await storage.get(key) is not None, f"objet de A effacé à tort : {key}"
+    still_there = await db_session.execute(select(User).where(User.id == user_a.id))
+    assert still_there.scalar_one_or_none() is not None
+    # A reste connecté et peut toujours consulter son profil.
+    profile_a = await api_client.get("/me", headers={CSRF_HEADER_NAME: csrf_a})
+    assert profile_a.status_code == 200
 
 
 # --- Isolation entre utilisateurs (test d'accès croisé) ---------------------------------------

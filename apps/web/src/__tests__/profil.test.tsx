@@ -19,6 +19,14 @@ vi.mock("@/lib/api/profile", async () => {
   };
 });
 
+vi.mock("@/lib/api/export", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/api/export")>("@/lib/api/export");
+  return {
+    ...actual,
+    requestExport: vi.fn(),
+  };
+});
+
 vi.mock("@/lib/api/ai-keys", async () => {
   const actual = await vi.importActual<typeof import("@/lib/api/ai-keys")>("@/lib/api/ai-keys");
   return {
@@ -122,5 +130,24 @@ describe("ProfilPage", () => {
 
     await user.click(screen.getByRole("button", { name: "Supprimer mon compte" }));
     expect(screen.getByLabelText(/mot de passe/i)).toBeInTheDocument();
+  });
+
+  it("prépare un export et annonce l'e-mail avec le lien de téléchargement", async () => {
+    const exportApi = await import("@/lib/api/export");
+    vi.mocked(exportApi.requestExport).mockResolvedValue({
+      id: "e1",
+      status: "succeeded",
+      requested_at: new Date().toISOString(),
+      completed_at: new Date().toISOString(),
+    });
+    const user = userEvent.setup();
+    render(<ProfilPage />);
+
+    await screen.findByDisplayValue("dresseur_jf");
+    await user.click(screen.getByRole("button", { name: "Mes données" }));
+    await user.click(screen.getByRole("button", { name: "Préparer l'export" }));
+
+    expect(exportApi.requestExport).toHaveBeenCalled();
+    expect(await screen.findByText(/lien de téléchargement/i)).toBeInTheDocument();
   });
 });

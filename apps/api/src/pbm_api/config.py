@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     # en UAT/PROD (signe les jetons CSRF, dérivés du cookie de session).
     secret_key: str = "dev-only-change-me-in-production"
     app_public_url: str = "http://localhost:3000"
+    # Origine de l'API elle-même (lot v5-rgpd) : le lien de téléchargement d'export envoyé par
+    # e-mail pointe directement dessus (pas de session requise, juste le jeton signé dans l'URL)
+    # — `app_public_url` désigne `apps/web`, une origine distincte.
+    api_public_url: str = "http://localhost:8000"
 
     session_cookie_name: str = "pbm_session"
     csrf_cookie_name: str = "pbm_csrf"

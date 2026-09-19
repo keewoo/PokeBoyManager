@@ -421,44 +421,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/uploads/{upload_id}/detections": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Detections
-         * @description Cartes détectées sur un envoi (mission `v3-detection`) : préalable à la validation
-         *     humaine (identification, lot ultérieur).
-         */
-        get: operations["list_detections_uploads__upload_id__detections_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/uploads/{upload_id}/detections/{detection_id}/crop": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Detection Crop */
-        get: operations["get_detection_crop_uploads__upload_id__detections__detection_id__crop_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/me/collection/{item_id}": {
         parameters: {
             query?: never;
@@ -476,24 +438,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/cards/{card_id}/insights": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Card Insights */
-        get: operations["get_card_insights_cards__card_id__insights_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/cards/{card_id}/insights/report": {
+    "/me/export": {
         parameters: {
             query?: never;
             header?: never;
@@ -502,8 +447,42 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Report Card Insights */
-        post: operations["report_card_insights_cards__card_id__insights_report_post"];
+        /** Request Export */
+        post: operations["request_export_me_export_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/export/{export_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Export */
+        get: operations["get_export_me_export__export_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/export/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Export */
+        get: operations["download_export_export_download_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -579,31 +558,10 @@ export interface components {
             /** Estimated Cost Eur */
             estimated_cost_eur: string;
         };
-        /** AnecdoteOut */
-        AnecdoteOut: {
-            /** Text */
-            text: string;
-            /** Source Url */
-            source_url: string;
-        };
         /** Body_upload_avatar_me_avatar_post */
         Body_upload_avatar_me_avatar_post: {
             /** File */
             file: string;
-        };
-        /** CardInsightsResponse */
-        CardInsightsResponse: {
-            /**
-             * Card Id
-             * Format: uuid
-             */
-            card_id: string;
-            /** Status */
-            status: string;
-            /** Anecdotes */
-            anecdotes: components["schemas"]["AnecdoteOut"][];
-            /** Generated At */
-            generated_at: string | null;
         };
         /** CardSearchResult */
         CardSearchResult: {
@@ -729,26 +687,22 @@ export interface components {
             /** Password */
             password: string;
         };
-        /** DetectionResponse */
-        DetectionResponse: {
+        /** ExportResponse */
+        ExportResponse: {
             /**
              * Id
              * Format: uuid
              */
             id: string;
-            /** Reading Order */
-            reading_order: number;
-            status: components["schemas"]["DetectionStatus"];
-            /** Crop Url */
-            crop_url: string;
-            /** Candidates */
-            candidates: unknown[] | null;
+            status: components["schemas"]["JobStatus"];
+            /**
+             * Requested At
+             * Format: date-time
+             */
+            requested_at: string;
+            /** Completed At */
+            completed_at: string | null;
         };
-        /**
-         * DetectionStatus
-         * @enum {string}
-         */
-        DetectionStatus: "pending" | "validated" | "rejected";
         /** ForgotPasswordRequest */
         ForgotPasswordRequest: {
             /**
@@ -767,16 +721,11 @@ export interface components {
             /** Status */
             status: string;
         };
-        /** ListDetectionsResponse */
-        ListDetectionsResponse: {
-            /**
-             * Upload Id
-             * Format: uuid
-             */
-            upload_id: string;
-            /** Detections */
-            detections: components["schemas"]["DetectionResponse"][];
-        };
+        /**
+         * JobStatus
+         * @enum {string}
+         */
+        JobStatus: "queued" | "running" | "succeeded" | "failed";
         /** LoginRequest */
         LoginRequest: {
             /**
@@ -821,11 +770,6 @@ export interface components {
             email: string;
             /** Password */
             password: string;
-        };
-        /** ReportCardInsightRequest */
-        ReportCardInsightRequest: {
-            /** Reason */
-            reason?: string | null;
         };
         /** ResetPasswordRequest */
         ResetPasswordRequest: {
@@ -1762,69 +1706,6 @@ export interface operations {
             };
         };
     };
-    list_detections_uploads__upload_id__detections_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                upload_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListDetectionsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_detection_crop_uploads__upload_id__detections__detection_id__crop_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                upload_id: string;
-                detection_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     get_collection_item_me_collection__item_id__get: {
         parameters: {
             query?: never;
@@ -1856,12 +1737,32 @@ export interface operations {
             };
         };
     };
-    get_card_insights_cards__card_id__insights_get: {
+    request_export_me_export_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportResponse"];
+                };
+            };
+        };
+    };
+    get_export_me_export__export_id__get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                card_id: string;
+                export_id: string;
             };
             cookie?: never;
         };
@@ -1873,7 +1774,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CardInsightsResponse"];
+                    "application/json": components["schemas"]["ExportResponse"];
                 };
             };
             /** @description Validation Error */
@@ -1887,27 +1788,25 @@ export interface operations {
             };
         };
     };
-    report_card_insights_cards__card_id__insights_report_post: {
+    download_export_export_download_get: {
         parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                card_id: string;
+            query: {
+                token: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ReportCardInsightRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
-            204: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": unknown;
+                };
             };
             /** @description Validation Error */
             422: {

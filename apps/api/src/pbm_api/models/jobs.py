@@ -40,3 +40,28 @@ class Job(Base, TimestampMixin):
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(nullable=True)
     finished_at: Mapped[datetime | None] = mapped_column(nullable=True)
+
+
+class DataExport(Base, TimestampMixin):
+    """Export RGPD de la collection d'un utilisateur (lot `v5-rgpd`) : suivi comme un `Job`
+    (statut, erreur) mais avec ses propres champs de téléchargement — un jeton opaque distinct
+    de la session (le lien part par e-mail, potentiellement ouvert dans un autre navigateur),
+    à durée de vie propre (24 h), jamais réutilisable au-delà.
+    """
+
+    __tablename__ = "data_exports"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    status: Mapped[JobStatus] = mapped_column(
+        Enum(JobStatus, name="export_status"), nullable=False, default=JobStatus.queued
+    )
+    storage_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    token_hash: Mapped[str | None] = mapped_column(String(128), unique=True, nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(nullable=True)
