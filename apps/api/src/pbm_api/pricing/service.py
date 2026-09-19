@@ -64,26 +64,37 @@ async def _upsert_price(
 
 
 async def _collect_cardmarket(
-    session: AsyncSession, tcgdex: TcgdexClient, cards: list, day: date, report: dict
+    session: AsyncSession,
+    tcgdex: TcgdexClient,
+    cards: list,
+    day: date,
+    report: dict,
+    progress_callback: Any = None,
 ) -> None:
     semaphore = asyncio.Semaphore(TCGDEX_CONCURRENCY)
+    done = 0
+    total = len(cards)
 
     async def _one(card: Any) -> None:
+        nonlocal done
         async with semaphore:
             try:
                 detail = await tcgdex.get_card("en", card.tcgdex_id)
             except Exception as exc:  # noqa: BLE001 — une carte en échec ne stoppe pas le relevé
                 logger.warning("Échec relevé cardmarket %s : %s", card.tcgdex_id, exc)
                 report["errors"].append(f"cardmarket {card.tcgdex_id} : {exc}")
-                return
-            pricing = (detail.get("pricing") or {}).get("cardmarket")
-            if not pricing:
-                return
-            for variant, prices in extract_cardmarket_prices(pricing).items():
-                await _upsert_price(
-                    session, card.id, PriceSource.cardmarket, variant, day, "EUR", prices
-                )
-                report["prices_written_cardmarket"] += 1
+            else:
+                pricing = (detail.get("pricing") or {}).get("cardmarket")
+                if pricing:
+                    for variant, prices in extract_cardmarket_prices(pricing).items():
+                        await _upsert_price(
+                            session, card.id, PriceSource.cardmarket, variant, day, "EUR", prices
+                        )
+                        report["prices_written_cardmarket"] += 1
+            finally:
+                done += 1
+                if progress_callback is not None:
+                    progress_callback(done, total)
 
     await asyncio.gather(*(_one(card) for card in cards))
 
@@ -126,7 +137,10 @@ async def collect_daily_prices(
     tcgdex: TcgdexClient,
     ptcg: PtcgClient | None,
     day: date | None = None,
+    progress_callback: Any = None,
 ) -> dict[str, Any]:
+    """`progress_callback(done, total)` optionnel, appelé après chaque carte Cardmarket traitée —
+    observabilité d'un relevé complet (~20 000 cartes), sans changer le comportement si omis."""
     day = day or datetime.now(UTC).date()
     cards = (await session.execute(select(Card.id, Card.tcgdex_id, Card.ptcg_id))).all()
 
@@ -141,7 +155,9 @@ async def collect_daily_prices(
         "errors": [],
     }
 
-    await _collect_cardmarket(session, tcgdex, [c for c in cards if c.tcgdex_id], day, report)
+    await _collect_cardmarket(
+        session, tcgdex, [c for c in cards if c.tcgdex_id], day, report, progress_callback
+    )
     await _collect_tcgplayer(session, ptcg, [c for c in cards if c.ptcg_id], day, report)
     await session.commit()
 
