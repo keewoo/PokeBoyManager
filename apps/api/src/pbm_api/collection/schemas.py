@@ -39,6 +39,7 @@ class CollectionListItem(BaseModel):
     acquired_at: date | None
     value_eur: Decimal | None
     value_change_30d_eur: Decimal | None
+    value_change_30d_pct: Decimal | None
     is_duplicate: bool
 
 

@@ -44,6 +44,14 @@ ITEM_NOT_FOUND_MESSAGE = "exemplaire introuvable"
 CARD_NOT_FOUND_MESSAGE = "carte introuvable au catalogue"
 
 
+def _pct_change(current: Decimal | None, past: Decimal | None) -> Decimal | None:
+    """`None` si l'une des deux valeurs manque, ou si la valeur de référence est nulle (variation
+    en pourcentage d'une base à zéro non définie) — jamais un pourcentage inventé."""
+    if current is None or past is None or past == 0:
+        return None
+    return (current - past) / past * 100
+
+
 def _to_list_item(
     row: service.CollectionRow,
     values_eur: dict[uuid.UUID, Decimal | None],
@@ -71,6 +79,7 @@ def _to_list_item(
         acquired_at=row.item.acquired_at,
         value_eur=value,
         value_change_30d_eur=(value - past) if value is not None and past is not None else None,
+        value_change_30d_pct=_pct_change(value, past),
         is_duplicate=row.is_duplicate,
     )
 
@@ -203,6 +212,7 @@ async def _single_item_response(
         value_change_30d_eur=(
             value - past_value if value is not None and past_value is not None else None
         ),
+        value_change_30d_pct=_pct_change(value, past_value),
         is_duplicate=is_duplicate,
     )
 

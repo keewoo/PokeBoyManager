@@ -6,7 +6,7 @@ manuel, correction et suppression d'un exemplaire. Avant ce lot, aucune de ces r
 
 import re
 import uuid
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 
 import httpx
@@ -138,6 +138,23 @@ async def test_list_collection_returns_items_with_value_and_aggregates(api_clien
     assert body["aggregates"]["items_priced"] == 1
     assert body["aggregates"]["total_value_eur"] == "10.0000"
     assert body["next_cursor"] is None
+
+
+async def test_list_collection_item_reports_30d_value_change(api_client, db_session):
+    user_id, _csrf = await _register_verify_login(api_client, _unique_email("coll-30d"))
+    card = await _make_card(db_session, name="Mewtwo")
+    await _add_price(db_session, card, trend=Decimal("20"), day=TODAY - timedelta(days=30))
+    await _add_price(db_session, card, trend=Decimal("30"), day=TODAY)
+    await _add_item(db_session, uuid.UUID(user_id), card, condition_grade="mint")
+
+    response = await api_client.get("/me/collection")
+
+    assert response.status_code == 200, response.text
+    row = response.json()["items"][0]
+    assert row["value_eur"] == "30.0000"
+    assert row["value_change_30d_eur"] == "10.0000"
+    # (30 - 20) / 20 * 100 = 50 % : jamais un pourcentage inventé quand la base est connue.
+    assert Decimal(row["value_change_30d_pct"]) == Decimal("50")
 
 
 async def test_list_collection_is_isolated_by_user(api_client, db_session):
