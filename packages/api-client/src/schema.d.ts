@@ -562,6 +562,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/cards/{card_id}/in-game-study": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get In Game Study */
+        get: operations["get_in_game_study_cards__card_id__in_game_study_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -839,11 +856,38 @@ export interface components {
             /** Status */
             status: string;
         };
+        /** InGameStudyResponse */
+        InGameStudyResponse: {
+            /**
+             * Card Id
+             * Format: uuid
+             */
+            card_id: string;
+            legalities: components["schemas"]["LegalitiesOut"];
+            prize_rule: components["schemas"]["PrizeRuleOut"];
+            /** Attacks */
+            attacks: {
+                [key: string]: unknown;
+            }[] | null;
+            /** Abilities */
+            abilities: {
+                [key: string]: unknown;
+            }[] | null;
+            tournament_presence: components["schemas"]["TournamentPresenceOut"];
+            study: components["schemas"]["StudyOut"];
+        };
         /**
          * JobStatus
          * @enum {string}
          */
         JobStatus: "queued" | "running" | "succeeded" | "failed";
+        /** LegalitiesOut */
+        LegalitiesOut: {
+            /** Standard */
+            standard: boolean | null;
+            /** Expanded */
+            expanded: boolean | null;
+        };
         /** ListDetectionsResponse */
         ListDetectionsResponse: {
             /**
@@ -874,6 +918,15 @@ export interface components {
          * @enum {string}
          */
         PriceVariant: "normal" | "holo" | "reverse_holo" | "first_edition";
+        /** PrizeRuleOut */
+        PrizeRuleOut: {
+            /** Applies */
+            applies: boolean;
+            /** Prizes Taken */
+            prizes_taken: number | null;
+            /** Label */
+            label: string;
+        };
         /** ProfileResponse */
         ProfileResponse: {
             /** Id */
@@ -946,6 +999,37 @@ export interface components {
             created_at: string;
             /** Current */
             current: boolean;
+        };
+        /** StudyOut */
+        StudyOut: {
+            /** Status */
+            status: string;
+            /** Text */
+            text: string | null;
+            /** Generated At */
+            generated_at: string | null;
+        };
+        /** TournamentDeckOut */
+        TournamentDeckOut: {
+            /** Deck Name */
+            deck_name: string;
+            /** Tournament Name */
+            tournament_name: string;
+            /** Tournament Url */
+            tournament_url: string | null;
+            /** Placement */
+            placement: string;
+        };
+        /** TournamentPresenceOut */
+        TournamentPresenceOut: {
+            /** Status */
+            status: string;
+            /** Source Url */
+            source_url: string | null;
+            /** Checked At */
+            checked_at: string | null;
+            /** Decks */
+            decks: components["schemas"]["TournamentDeckOut"][];
         };
         /** UpdateProfileRequest */
         UpdateProfileRequest: {
@@ -2097,6 +2181,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_in_game_study_cards__card_id__in_game_study_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                card_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InGameStudyResponse"];
                 };
             };
             /** @description Validation Error */

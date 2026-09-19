@@ -289,7 +289,52 @@ passe par `pbm_api.ai.factory.create_provider(provider, api_key)`.
   sourcée ne se périme pas), négatif 1 jour (une carte sans contexte aujourd'hui peut en trouver
   un demain — jamais un échec permanent silencieux).
 - `in_game_study` (étude en jeu, même table `card_insights`) : hors périmètre de ce lot, laissé
-  `NULL`.
+  `NULL` — voir § « Étude d'utilisation en jeu (lot `v4-jeu`) ».
+
+## Étude d'utilisation en jeu (lot `v4-jeu`)
+
+`GET /cards/{card_id}/in-game-study` (`apps/api/src/pbm_api/routers/in_game_study.py`) combine
+trois sources indépendantes, sur le principe « la base sait, l'IA reconnaît » :
+
+- **Légalités et règle des Prix** (`pbm_api.ingame.rules`, mission point 1) : déterministe,
+  recalculée à chaque appel (gratuite, jamais mise en cache) depuis `Card.legal_standard`/
+  `legal_expanded` (catalogue TCGdex) et le suffixe du nom de la carte (`ex`/`V`/`VSTAR`/`GX`
+  prennent 2 Prix, `VMAX` en prend 3, une carte Pokémon sans suffixe 1 Prix, hors Pokémon
+  « non applicable ») — la vraie règle du jeu, jamais une IA.
+- **Présence en tournoi** (`pbm_api.ingame.tournaments`/`tournaments_job`, mission point 2),
+  source publique Limitless TCG (`robots.txt` sans restriction). Aucun identifiant partagé avec
+  notre catalogue : le rapprochement se fait par **date de sortie de l'extension** (`Set.
+  release_date`, identique quelle que soit la source), départagée par le nom en cas
+  d'ambiguïté, puis vérifiée une seconde fois par le nom anglais affiché en titre de la page
+  trouvée — sans cette double vérification, une carte homonyme d'une autre édition afficherait
+  la présence en tournoi d'une **autre** carte (risque de la mission : « ne jamais inventer un
+  résultat de tournoi », un rapprochement faux serait pire qu'une absence de donnée ; preuve
+  réelle du filtre : `scripts/prove_ingame_20_cards.py`, "Charizard ex" ASC/22 correctement
+  rejeté — la page existe bien mais titre "Mega Charizard Y ex", pas la carte demandée). Relevé
+  **hebdomadaire** par le job arq `weekly_tournament_presence_task` (cron Lundi 08:00, décalé du
+  relevé de prix pour ne pas cumuler les deux fenêtres réseau), jamais à la demande (site tiers,
+  courtoisie et lenteur du lien de chimera) : bridé aux cartes légales dans au moins un format,
+  concurrence 1. Un blocage explicite (HTTP 403/429, `LimitlessBlockedError`) interrompt le
+  relevé en cours plutôt que d'insister ; la table `card_tournament_presence` (une ligne par
+  carte, `status` "checked"/"unavailable") reste alors sur son dernier état connu — jamais une
+  carte "probable" affichée entre-temps (mission : « si ses conditions le permettent ; sinon
+  section masquée »).
+- **Synthèse IA** (`pbm_api.ingame.generation`/`service`, mission point 3) : même patron de
+  cache partagé que les anecdotes (`get_or_create_in_game_study`, verrou consultatif Postgres
+  dédié — espace de nom différent de celui des anecdotes, les deux ne se bloquent jamais l'une
+  l'autre), stockée dans `card_insights.in_game_study` avec son propre triplet de fraîcheur
+  (`game_study_generated_at`/`game_study_cached_until`/`game_study_source_model`, distinct de
+  celui des anecdotes : les deux synthèses ne doivent jamais réinitialiser la fraîcheur l'une de
+  l'autre). Cache positif 30 jours (plus court que les anecdotes : la méta tournoi bouge chaque
+  semaine) — **régénérée si le dernier relevé de tournoi est plus récent que la dernière
+  synthèse**, pour ne jamais figer une étude sur une présence en tournoi obsolète. D4 (pas de
+  clé IA) : contrairement aux anecdotes, ne masque que la synthèse (`study.status ==
+  "no_ai_key"`) — légalités, règle des Prix et présence en tournoi restent visibles, elles ne
+  dépendent d'aucune clé.
+
+Essais manuels (aucune clé IA réelle sur chimera) : `scripts/test_ingame_manual.py` (trajet
+complet avec une vraie clé), `scripts/prove_ingame_20_cards.py` (preuve du livrable sur 20
+cartes réelles, réseau réel vers Limitless TCG, synthèse simulée).
 
 ## Prix (lot `v2-prix`)
 
