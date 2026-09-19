@@ -69,7 +69,7 @@ _Une fois les cartes connues, on les parcourt, on les filtre, on les valorise, e
 | `v4-anecdotes` | P1 | Histoire et anecdotes de la carte (sourcées) | CH2 (chimera) | 28 oct. → 30 oct. | v3-ia-providers, v2-catalogue | — | Intégré (main) | [prompt](prompts/v4-anecdotes.md) |
 | `v4-fiche` | P0 | Fiche carte : image officielle, ma photo, état, valeur dans le temps, histoire | CH4 (chimera) | 2 nov. → 5 nov. | v4-collection, v4-ranking, v4-anecdotes, v3-etat | — | En cours | [prompt](prompts/v4-fiche.md) |
 | `v4-jeu` | P2 | Étude d'utilisation en jeu (légalité, attaques, présence en tournoi) | CH2 (chimera) | 2 nov. → 5 nov. | v4-anecdotes | — | Intégré (main) | [prompt](prompts/v4-jeu.md) |
-| `v4-dashboard` | P1 | Accueil connecté : valeur de la collection, hausses et baisses, derniers ajouts | CH1 (chimera) | 2 nov. → 3 nov. | v4-collection | — | À faire | [prompt](prompts/v4-dashboard.md) |
+| `v4-dashboard` | P1 | Accueil connecté : valeur de la collection, hausses et baisses, derniers ajouts | CH1 (chimera) | 2 nov. → 3 nov. | v4-collection | — | En cours | [prompt](prompts/v4-dashboard.md) |
 | `v4-insights-batch` | P1 | Pré-générer histoire et étude en jeu de TOUTES les cartes, en un seul passage par carte | CH2 (chimera) | 6 nov. → 12 nov. | v4-jeu, v2-catalogue-complet | D4 | Intégré (main) | [prompt](prompts/v4-insights-batch.md) |
 
 ## V5 — En ligne (26 oct. → 20 nov.)
