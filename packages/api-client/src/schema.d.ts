@@ -421,6 +421,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/collection/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Collection Item */
+        get: operations["get_collection_item_me_collection__item_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -537,6 +554,51 @@ export interface components {
             /** New Password */
             new_password: string;
         };
+        /** CollectionItemDetail */
+        CollectionItemDetail: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Card Id
+             * Format: uuid
+             */
+            card_id: string;
+            /**
+             * Set Id
+             * Format: uuid
+             */
+            set_id: string;
+            /** Language */
+            language: string;
+            variant: components["schemas"]["PriceVariant"];
+            /** Condition Grade */
+            condition_grade: string | null;
+            /** Purchase Price */
+            purchase_price: string | null;
+            /** Purchase Currency */
+            purchase_currency: string | null;
+            /** Acquired At */
+            acquired_at: string | null;
+            /** Value Eur */
+            value_eur: string | null;
+            ranking: components["schemas"]["CollectionItemRanking"];
+        };
+        /** CollectionItemRanking */
+        CollectionItemRanking: {
+            /** Rarity Rank */
+            rarity_rank: number | null;
+            /** Rarity Group Size */
+            rarity_group_size: number | null;
+            /** Value Percentile */
+            value_percentile: number | null;
+            /** Collection Rank */
+            collection_rank: number | null;
+            /** Collection Rank Total */
+            collection_rank_total: number;
+        };
         /** CompleteUploadResponse */
         CompleteUploadResponse: {
             /**
@@ -607,6 +669,11 @@ export interface components {
             /** Message */
             message: string;
         };
+        /**
+         * PriceVariant
+         * @enum {string}
+         */
+        PriceVariant: "normal" | "holo" | "reverse_holo" | "first_edition";
         /** ProfileResponse */
         ProfileResponse: {
             /** Id */
@@ -1554,6 +1621,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CompleteUploadResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_collection_item_me_collection__item_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionItemDetail"];
                 };
             };
             /** @description Validation Error */
