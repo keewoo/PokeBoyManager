@@ -17,17 +17,18 @@ async def test_find_cached_returns_none_on_empty_cache(db_session):
 
 
 async def test_find_cached_hits_on_exact_phash(db_session):
-    await store_cache(db_session, 42, _EXTRACTION, _CANDIDATES, "numero_extension")
+    await store_cache(db_session, 42, _EXTRACTION, _CANDIDATES, "numero_extension", method="visuel")
 
     hit = await find_cached(db_session, 42)
 
     assert hit is not None
     assert hit.candidates == _CANDIDATES
     assert hit.tier == "numero_extension"
+    assert hit.method == "visuel"
 
 
 async def test_find_cached_hits_within_hamming_threshold(db_session):
-    await store_cache(db_session, 0, _EXTRACTION, _CANDIDATES, "nom_flou")
+    await store_cache(db_session, 0, _EXTRACTION, _CANDIDATES, "nom_flou", method="ia")
 
     close_bits = (1 << HAMMING_THRESHOLD) - 1  # HAMMING_THRESHOLD bits différents de 0
     hit = await find_cached(db_session, close_bits)
@@ -36,7 +37,7 @@ async def test_find_cached_hits_within_hamming_threshold(db_session):
 
 
 async def test_find_cached_misses_beyond_hamming_threshold(db_session):
-    await store_cache(db_session, 0, _EXTRACTION, _CANDIDATES, "nom_flou")
+    await store_cache(db_session, 0, _EXTRACTION, _CANDIDATES, "nom_flou", method="ia")
 
     far_bits = (1 << (HAMMING_THRESHOLD + 8)) - 1  # bien plus de bits différents que le seuil
     hit = await find_cached(db_session, far_bits)
@@ -49,6 +50,8 @@ async def test_store_cache_handles_negative_signed_phash(db_session):
     `pbm_api.identification.fingerprint._to_signed64`) — le cache doit la stocker et la
     retrouver sans erreur de conversion."""
     negative_phash = -(2**62)
-    await store_cache(db_session, negative_phash, _EXTRACTION, _CANDIDATES, "numero_extension")
+    await store_cache(
+        db_session, negative_phash, _EXTRACTION, _CANDIDATES, "numero_extension", method="ia"
+    )
 
     assert await find_cached(db_session, negative_phash) is not None
