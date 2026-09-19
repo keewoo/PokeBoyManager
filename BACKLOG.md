@@ -55,7 +55,7 @@ _Le cœur du produit : une photo (une carte ou un classeur de neuf) devient une 
 | `v3-identification` | P0 | Identifier chaque carte et la rapprocher du catalogue (top 3 avec confiance) | CH2 (chimera) | 16 oct. → 22 oct. | v3-detection, v2-recherche | — | Intégré (main) | [prompt](prompts/v3-identification.md) |
 | `v3-identification-visuelle` | P1 | Identifier sans IA : comparer chaque carte détectée aux images officielles de la base | CH3 (chimera) | 23 oct. → 29 oct. | v3-identification, v2-catalogue-complet | — | À faire | [prompt](prompts/v3-identification-visuelle.md) |
 | `v3-validation` | P0 | Écran de validation : vérifier, corriger et ajouter les cartes reconnues | CH4 (chimera) | 23 oct. → 27 oct. | v3-identification, v3-upload | — | En cours | [prompt](prompts/v3-validation.md) |
-| `v3-etat` | P1 | Estimation de l'état de la carte (centrage, coins, bords, surface) | CH2 (chimera) | 23 oct. → 27 oct. | v3-identification | — | En cours | [prompt](prompts/v3-etat.md) |
+| `v3-etat` | P1 | Estimation de l'état de la carte (centrage, coins, bords, surface) | CH2 (chimera) | 23 oct. → 27 oct. | v3-identification | — | Intégré (main) | [prompt](prompts/v3-etat.md) |
 
 ## V4 — La collection et ses fiches (26 oct. → 6 nov.)
 

@@ -1550,21 +1550,21 @@
       "attente": null
     },
     "v3-etat": {
-      "statut": "en_cours",
+      "statut": "integre",
       "machine": "chimera",
       "branche": "roadmap/v3-etat",
       "debut_reel": "2026-09-19",
-      "fin_reelle": null,
+      "fin_reelle": "2026-09-19",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 69ffd9552 intégré dans main — voir docs/roadmap/comptes-rendus/v3-etat.md",
+          "maj": "2026-09-19T23:32+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 69ffd9552 intégré dans main — voir docs/roadmap/comptes-rendus/v3-etat.md",
+          "maj": "2026-09-19T23:32+0200"
         },
         "securite": {
           "etat": "a_faire",
@@ -1592,14 +1592,14 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 69ffd9552 intégré dans main — voir docs/roadmap/comptes-rendus/v3-etat.md",
+          "maj": "2026-09-19T23:32+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 69ffd9552 intégré dans main — voir docs/roadmap/comptes-rendus/v3-etat.md",
+          "maj": "2026-09-19T23:32+0200"
         }
       },
       "journal": [
@@ -1608,9 +1608,38 @@
           "machine": "chimera",
           "evenement": "démarré",
           "detail": "roadmap/v3-etat"
+        },
+        {
+          "quand": "2026-09-19T23:32+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit 69ffd9552"
         }
       ],
-      "compte_rendu": {},
+      "compte_rendu": {
+        "resume": "Centrage mesuré par OpenCV sur le recadrage déjà en stockage (`pbm_api.state.centering`, jamais d'appel IA) + coins/bords/surface demandés dans le **même appel** `AIProvider.extract` que l'identification (`CardExtraction` étendue, `v3-identification`) — jamais un second appel IA, conformément au principe cadre et à la piste explicitement laissée par le compte rendu de `v3-identification` (« étendre `CardExtraction`/`extract_card` avec les champs d'état »). Les deux sources se combinent en un palier global (le plus sévère l'emporte), mappé sur l'abréviation Cardmarket (MT/NM/EX/GD/LP/PL/PO) et une note /10 dérivée directement de `pbm_api.pricing.valuation.CONDITION_MULTIPLIERS` déjà posé par un lot antérieur — pas un second barème. Contrefaçon probable : signal explicite de l'IA + contrôle déterministe (carte perçue « gold »/métal alors que la rareté catalogue de la carte rapprochée ne le confirme pas), qui neutralise la valeur à zéro dans `pbm_api.pricing.valuation.item_value`. Chaîné après l'identification dans le même job `detect_cards` — pas un job de plus.",
+        "livrables": [
+          "`apps/api/src/pbm_api/state/` (nouveau module) :",
+          "`grades.py` — `ConditionGrade` (7 paliers, alignés sur les clés de `CONDITION_MULTIPLIERS`,",
+          "`centering.py` — `measure_centering` : bordure détectée par contraste Lab + seuillage Otsu,",
+          "`counterfeit.py` — `assess_counterfeit` : signal IA + contrôle « gold non confirmé par la",
+          "`service.py` — `run_state_estimation_for_upload` : orchestration DB/stockage, indépendante",
+          "`synthetic.py` — recadrages synthétiques à marges connues (mise au point/tests du centrage,",
+          "`apps/api/src/pbm_api/identification/schemas.py` — `CardExtraction` étendue :",
+          "`apps/api/src/pbm_api/identification/extraction.py` — `PROMPT` étendu (état + contrefaçon),"
+        ],
+        "preuves": [],
+        "ecarts": [
+          "**Jeu de centrage synthétique, pas de vraies cartes photographiées** (voir « Mise au point du",
+          "**Coins/bords/surface jamais évalués par un vrai fournisseur IA** (mission : « aucune clé IA",
+          "**Aucune route de création d'exemplaire à brancher sur `Detection.condition_assessment`** (lot"
+        ],
+        "reste": [
+          "Lot `v4-collection`/`v4-fiche` : à la création d'un `CollectionItem` depuis une `Detection`",
+          "Vraie campagne de photos + clé IA réelle pour mesurer la précision du centrage sur de vraies",
+          "Seuils de centrage (55/45 → 80/20) et mots-clés de rareté « gold »/« secret »/« hyper »/"
+        ]
+      },
       "attente": null
     },
     "v4-collection": {
@@ -2731,7 +2760,7 @@
       ],
       "compte_rendu": {},
       "attente": {
-        "quand": "2026-09-19T23:32+0200",
+        "quand": "2026-09-19T23:33+0200",
         "raisons": [
           "lot arrêté par l'ordonnanceur : code de sortie 0, 3 lignes de journal"
         ]
