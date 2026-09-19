@@ -54,6 +54,7 @@ _Le cœur du produit : une photo (une carte ou un classeur de neuf) devient une 
 | `v3-ia-providers` | P0 | Couche fournisseurs IA unique (Anthropic, Google, OpenAI) | CH2 (chimera) | 8 oct. → 9 oct. | v1-byok | — | À faire | [prompt](prompts/v3-ia-providers.md) |
 | `v3-detection` | P0 | Détecter et découper chaque carte d'une photo (1 à N, classeur 3×3) | CH2 (chimera) | 12 oct. → 15 oct. | v3-ia-providers | — | À faire | [prompt](prompts/v3-detection.md) |
 | `v3-identification` | P0 | Identifier chaque carte et la rapprocher du catalogue (top 3 avec confiance) | CH2 (chimera) | 16 oct. → 22 oct. | v3-detection, v2-recherche | — | À faire | [prompt](prompts/v3-identification.md) |
+| `v3-identification-visuelle` | P1 | Identifier sans IA : comparer chaque carte détectée aux images officielles de la base | CH3 (chimera) | 23 oct. → 29 oct. | v3-identification, v2-catalogue-complet | — | À faire | [prompt](prompts/v3-identification-visuelle.md) |
 | `v3-validation` | P0 | Écran de validation : vérifier, corriger et ajouter les cartes reconnues | CH4 (chimera) | 23 oct. → 27 oct. | v3-identification, v3-upload | — | À faire | [prompt](prompts/v3-validation.md) |
 | `v3-etat` | P1 | Estimation de l'état de la carte (centrage, coins, bords, surface) | CH2 (chimera) | 23 oct. → 27 oct. | v3-identification | — | À faire | [prompt](prompts/v3-etat.md) |
 

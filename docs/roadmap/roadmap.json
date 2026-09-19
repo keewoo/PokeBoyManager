@@ -1090,6 +1090,47 @@
       }
     },
     {
+      "id": "v3-identification-visuelle",
+      "vague": "V3",
+      "piste": "I",
+      "couloir": "CH3",
+      "debut": "2026-10-23",
+      "fin": "2026-10-29",
+      "priorite": "P1",
+      "taille": "M",
+      "complexite": 4,
+      "difficulte": 4,
+      "titre": "Identifier sans IA : comparer chaque carte détectée aux images officielles de la base",
+      "gain": "La plupart des cartes sont reconnues sans aucun appel IA, y compris sur une photo de classeur (chaque carte est d'abord découpée) ; l'IA n'intervient que si la comparaison hésite — et alors avec 2-3 candidats seulement.",
+      "fonctionnalites": "Index d'empreintes visuelles de toutes les images officielles (zone d'illustration + carte entière) ; pour chaque recadrage redressé : plus proches voisins, score, décision « reconnue sans IA » au-delà d'un seuil ; sinon l'IA tranche entre les candidats et estime l'état dans le même appel.",
+      "risques": "Même illustration pour plusieurs cartes (réimpressions, reverse, versions FR/EN, promos) : la comparaison visuelle donne un groupe, pas une carte — le numéro et la langue départagent (lecture OCR locale légère, sinon IA) ; pochettes et reflets dégradent le score : seuil calibré sur le jeu de photos réelles ; taille de l'index (≈ 20 000 × 2 langues) : empreintes compactes, pas de modèle lourd sur le serveur de 4 Go.",
+      "tenants": "Détection et redressement (v3-detection), identification par IA (v3-identification), images officielles de toutes les cartes (v2-catalogue-complet).",
+      "aboutissants": "Coût IA par photo divisé ; reconnaissance possible même sans clé IA pour les cartes non ambiguës (à confirmer avec D4).",
+      "dependances": [
+        "v3-identification",
+        "v2-catalogue-complet"
+      ],
+      "decision": null,
+      "refs": [
+        "Idée validée par JF le 19/09 : « bonne idée, à mettre dans le MVP et la roadmap »"
+      ],
+      "mission": [
+        "Construire l'index : télécharger les images officielles basse définition de toutes les cartes (hors serveur de PROD : sur devAI ou chimera), calculer des empreintes perceptuelles robustes (pHash/dHash sur la zone d'illustration et la carte entière, éventuellement un descripteur couleur), stocker en base (`card_visual_index`) et dans la graine du catalogue.",
+        "Recherche : pour chaque recadrage, top 5 par distance, score calibré ; groupe « même illustration » résolu par le numéro lu (OCR local léger du bas de carte) quand c'est possible.",
+        "Intégration dans le pipeline existant, dans cet ordre : cache d'empreinte (photo déjà vue) → comparaison visuelle → IA seulement si ambiguïté, avec les candidats visuels dans le même appel que l'estimation d'état.",
+        "Mesure sur le jeu de 100 cartes étiquetées de v3-identification (dont les 9 de la photo de référence) : part reconnue sans IA, précision top-1 sans IA, appels IA économisés ; seuil choisi pour ne pas dégrader la précision.",
+        "Ressources : temps de recherche < 200 ms par carte et empreinte mémoire compatible avec le serveur de 4 Go (mesurées)."
+      ],
+      "livrables": [
+        "index visuel de toutes les cartes",
+        "part reconnue sans IA et précision mesurées",
+        "pipeline cache → visuel → IA"
+      ],
+      "taches_na": {
+        "maquette": "back-end ; le badge « reconnue sans IA » est affiché par l'écran de validation"
+      }
+    },
+    {
       "id": "v3-validation",
       "vague": "V3",
       "piste": "I",
