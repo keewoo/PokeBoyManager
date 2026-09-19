@@ -5,6 +5,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import AjouterPage from "@/app/ajouter/page";
 import { ApiError, completeUpload, createUploads, hasAnyAiKey, putRawBytes } from "@/lib/api/uploads";
 
+const push = vi.fn();
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push, refresh: vi.fn() }),
+}));
+
 vi.mock("@/lib/api/uploads", async () => {
   const actual = await vi.importActual<typeof import("@/lib/api/uploads")>("@/lib/api/uploads");
   return {
@@ -28,6 +34,7 @@ describe("Page /ajouter", () => {
     vi.mocked(createUploads).mockReset();
     vi.mocked(putRawBytes).mockReset();
     vi.mocked(completeUpload).mockReset();
+    push.mockReset();
   });
 
   it("affiche un message et un lien vers le profil sans clé IA configurée (D4)", async () => {
@@ -117,6 +124,11 @@ describe("Page /ajouter", () => {
     await waitFor(() => expect(putRawBytes).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(completeUpload).toHaveBeenCalledWith("11111111-1111-1111-1111-111111111111"));
     expect(await screen.findByText(/envoyée/i)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith(
+        "/ajouter/validation?uploads=11111111-1111-1111-1111-111111111111"
+      )
+    );
   });
 
   it("affiche une erreur par photo si l'envoi échoue", async () => {

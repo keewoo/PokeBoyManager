@@ -443,6 +443,65 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/uploads/{upload_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Upload
+         * @description État + détections d'un envoi (mission `v3-validation` point 1) : chargement initial de
+         *     l'écran de validation, avant de bascule sur le flux SSE pour la suite de la progression.
+         */
+        get: operations["get_upload_uploads__upload_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/{upload_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stream Upload Events */
+        get: operations["stream_upload_events_uploads__upload_id__events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/{upload_id}/confirm-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm All Detections
+         * @description « Tout ajouter » (mission point 2) : ajoute à la collection les détections dont le
+         *     premier candidat est présélectionné, laisse `pending` (dans `skipped`) tout le reste.
+         */
+        post: operations["confirm_all_detections_uploads__upload_id__confirm_all_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/uploads/{upload_id}/detections/{detection_id}/crop": {
         parameters: {
             query?: never;
@@ -454,6 +513,40 @@ export interface paths {
         get: operations["get_detection_crop_uploads__upload_id__detections__detection_id__crop_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/detections/{detection_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Detection */
+        post: operations["confirm_detection_detections__detection_id__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/detections/{detection_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject Detection */
+        post: operations["reject_detection_detections__detection_id__reject_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -778,6 +871,57 @@ export interface components {
             /** Job Id */
             job_id: string | null;
         };
+        /** ConfirmAllResponse */
+        ConfirmAllResponse: {
+            /**
+             * Upload Id
+             * Format: uuid
+             */
+            upload_id: string;
+            /** Confirmed */
+            confirmed: string[];
+            /** Skipped */
+            skipped: string[];
+        };
+        /** ConfirmDetectionRequest */
+        ConfirmDetectionRequest: {
+            /**
+             * Card Id
+             * Format: uuid
+             */
+            card_id: string;
+            /**
+             * Language
+             * @default fr
+             */
+            language: string;
+            /** @default normal */
+            variant: components["schemas"]["PriceVariant"];
+            /**
+             * Quantity
+             * @default 1
+             */
+            quantity: number;
+            /** Condition Grade */
+            condition_grade?: string | null;
+            /** Purchase Price */
+            purchase_price?: number | string | null;
+            /** Purchase Currency */
+            purchase_currency?: string | null;
+            /** Acquired At */
+            acquired_at?: string | null;
+        };
+        /** ConfirmDetectionResponse */
+        ConfirmDetectionResponse: {
+            /**
+             * Detection Id
+             * Format: uuid
+             */
+            detection_id: string;
+            status: components["schemas"]["DetectionStatus"];
+            /** Collection Item Ids */
+            collection_item_ids: string[];
+        };
         /** ConfirmEmailChangeRequest */
         ConfirmEmailChangeRequest: {
             /** Token */
@@ -972,6 +1116,15 @@ export interface components {
             /** Accept Terms */
             accept_terms: boolean;
         };
+        /** RejectDetectionResponse */
+        RejectDetectionResponse: {
+            /**
+             * Detection Id
+             * Format: uuid
+             */
+            detection_id: string;
+            status: components["schemas"]["DetectionStatus"];
+        };
         /** ReportCardInsightRequest */
         ReportCardInsightRequest: {
             /** Reason */
@@ -1044,6 +1197,25 @@ export interface components {
              * Format: date
              */
             birth_date: string;
+        };
+        /**
+         * UploadDetailResponse
+         * @description `GET /uploads/{id}` (mission `v3-validation` point 1) : état de l'envoi et de sa
+         *     reconnaissance — chargement initial de l'écran de validation, et forme des instantanés du
+         *     flux SSE `GET /uploads/{id}/events`.
+         */
+        UploadDetailResponse: {
+            /**
+             * Upload Id
+             * Format: uuid
+             */
+            upload_id: string;
+            status: components["schemas"]["UploadStatus"];
+            job_status: components["schemas"]["JobStatus"] | null;
+            /** Job Error */
+            job_error: string | null;
+            /** Detections */
+            detections: components["schemas"]["DetectionResponse"][];
         };
         /** UploadFileRequest */
         UploadFileRequest: {
@@ -1985,6 +2157,99 @@ export interface operations {
             };
         };
     };
+    get_upload_uploads__upload_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                upload_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_upload_events_uploads__upload_id__events_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                upload_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_all_detections_uploads__upload_id__confirm_all_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                upload_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfirmAllResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_detection_crop_uploads__upload_id__detections__detection_id__crop_get: {
         parameters: {
             query?: never;
@@ -2004,6 +2269,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_detection_detections__detection_id__confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                detection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmDetectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfirmDetectionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reject_detection_detections__detection_id__reject_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                detection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RejectDetectionResponse"];
                 };
             };
             /** @description Validation Error */

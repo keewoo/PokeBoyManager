@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { FormNotice } from "@/components/auth/form-notice";
@@ -50,6 +51,7 @@ function formatEuros(value: number): string {
 }
 
 export function UploadView() {
+  const router = useRouter();
   const [aiKeyStatus, setAiKeyStatus] = useState<"loading" | "missing" | "ready">("loading");
   const [items, setItems] = useState<UploadItem[]>([]);
   const [batchError, setBatchError] = useState<string | null>(null);
@@ -137,6 +139,7 @@ export function UploadView() {
       return;
     }
 
+    const completedUploadIds: string[] = [];
     for (const [item, target] of readyItems.map((item, index) => [item, targets[index]] as const)) {
       if (!target) continue;
       setItems((prev) =>
@@ -147,7 +150,8 @@ export function UploadView() {
         setItems((prev) =>
           prev.map((current) => (current.id === item.id ? { ...current, status: "processing" } : current))
         );
-        await completeUpload(target.upload_id);
+        const completed = await completeUpload(target.upload_id);
+        if (completed.recognition_enabled) completedUploadIds.push(completed.upload_id);
         setItems((prev) =>
           prev.map((current) => (current.id === item.id ? { ...current, status: "done" } : current))
         );
@@ -162,6 +166,9 @@ export function UploadView() {
     }
 
     setIsLaunching(false);
+    if (completedUploadIds.length > 0) {
+      router.push(`/ajouter/validation?uploads=${completedUploadIds.join(",")}`);
+    }
   }
 
   if (aiKeyStatus === "loading") {
