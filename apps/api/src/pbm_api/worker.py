@@ -20,6 +20,8 @@ from pbm_api.detection.service import run_detection_for_upload
 from pbm_api.email import get_email_sender
 from pbm_api.export.service import run_export
 from pbm_api.identification.service import run_identification_for_upload
+from pbm_api.ingame.tournaments import LimitlessTcgClient
+from pbm_api.ingame.tournaments_job import refresh_tournament_presence
 from pbm_api.models import DataExport, Job, JobStatus, Upload, User
 from pbm_api.pricing.exchange_rates import EcbClient, store_daily_rates
 from pbm_api.pricing.service import collect_daily_prices
@@ -29,6 +31,7 @@ from pbm_api.storage import build_storage
 JOB_TYPE = "import_catalogue"
 PRICE_JOB_TYPE = "daily_prices"
 EXCHANGE_RATE_JOB_TYPE = "daily_exchange_rates"
+TOURNAMENT_PRESENCE_JOB_TYPE = "weekly_tournament_presence"
 
 
 def _now_naive_utc() -> datetime:
@@ -232,6 +235,40 @@ async def export_user_data_task(ctx: dict, export_id: str) -> dict:
     return await _run_export(export_id)
 
 
+async def _run_weekly_tournament_presence() -> dict:
+    async with async_session_factory() as session:
+        job = Job(
+            type=TOURNAMENT_PRESENCE_JOB_TYPE, status=JobStatus.running, started_at=_now_naive_utc()
+        )
+        session.add(job)
+        await session.commit()
+
+        async with httpx.AsyncClient(
+            timeout=20.0, headers={"User-Agent": "PokeBoyManager/1.0 (+https://pokeboy.life)"}
+        ) as limitless_http:
+            client = LimitlessTcgClient(http_client=limitless_http)
+            try:
+                report = await refresh_tournament_presence(session, client)
+                job.status = JobStatus.succeeded
+                job.result = report
+            except Exception as exc:
+                # Un blocage du site (403/429, `LimitlessBlockedError`) ou toute autre panne
+                # devient un Job en échec — la section reste "unavailable" côté fiche jusqu'au
+                # prochain relevé, jamais une carte "probable" (mission point 2).
+                job.status = JobStatus.failed
+                job.error = str(exc)
+                report = {"error": str(exc)}
+            job.finished_at = _now_naive_utc()
+            await session.commit()
+    return report
+
+
+async def weekly_tournament_presence_task(ctx: dict) -> dict:
+    """Relevé hebdomadaire de présence en tournoi (mission `v4-jeu` point 2), source publique
+    Limitless TCG — bridé aux cartes légales dans au moins un format."""
+    return await _run_weekly_tournament_presence()
+
+
 class WorkerSettings:
     functions = [
         import_catalogue_task,
@@ -239,11 +276,16 @@ class WorkerSettings:
         daily_exchange_rates_task,
         detect_cards_task,
         export_user_data_task,
+        weekly_tournament_presence_task,
     ]
     cron_jobs = [
         cron(weekly_incremental_import, weekday=0, hour=6, minute=0),
         cron(daily_prices_task, hour=6, minute=0),
         cron(daily_exchange_rates_task, hour=6, minute=0),
+        # Décalé du reste (Lundi 06:00) pour ne pas cumuler le relevé de prix (tout le
+        # catalogue) et le relevé de tournoi (site tiers plus lent, concurrence=1) sur la même
+        # fenêtre — chimera comme Limitless TCG restent réactifs pendant les deux.
+        cron(weekly_tournament_presence_task, weekday=0, hour=8, minute=0),
     ]
     redis_settings = RedisSettings.from_dsn(settings.redis_url)
     queue_name = f"{settings.redis_prefix}queue"

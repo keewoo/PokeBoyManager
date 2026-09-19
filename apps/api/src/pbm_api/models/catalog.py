@@ -167,10 +167,55 @@ class CardInsight(Base):
         nullable=False,
     )
     anecdotes: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    # `generated_at`/`cached_until`/`source_model` (ci-dessus) datent le cache des anecdotes ;
+    # l'étude en jeu (`v4-jeu`) a son propre triplet ci-dessous, volontairement distinct — les
+    # deux synthèses sont générées à des moments différents et ne doivent jamais réinitialiser
+    # la fraîcheur l'une de l'autre (un `card_insights` déjà "frais" pour l'étude en jeu mais
+    # dont les anecdotes n'ont jamais été générées ne doit pas empêcher leur génération, et
+    # inversement).
     in_game_study: Mapped[str | None] = mapped_column(Text, nullable=True)
     source_model: Mapped[str | None] = mapped_column(String(64), nullable=True)
     generated_at: Mapped[datetime | None] = mapped_column(nullable=True)
     cached_until: Mapped[datetime | None] = mapped_column(nullable=True)
+    game_study_source_model: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    game_study_generated_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    game_study_cached_until: Mapped[datetime | None] = mapped_column(nullable=True)
+
+
+class TournamentPresenceStatus(enum.StrEnum):
+    # Carte rapprochée sans ambiguïté sur Limitless TCG — `decks` peut être vide (carte
+    # légitimement absente des tournois relevés, une information réelle en soi).
+    checked = "checked"
+    # Rapprochement impossible (extension/numéro non trouvés côté Limitless, ou site bloqué à
+    # ce relevé) — mission point 2 : "sinon section masquée", jamais une carte "probable".
+    unavailable = "unavailable"
+
+
+class CardTournamentPresence(Base):
+    """Présence en tournoi (mission `v4-jeu` point 2) — cache partagé entre utilisateurs, une
+    ligne par carte, alimentée par le relevé périodique (`pbm_api.worker.weekly_tournament_
+    presence_task`), jamais à la demande (site tiers, courtoisie réseau)."""
+
+    __tablename__ = "card_tournament_presence"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    card_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("cards.id", ondelete="CASCADE"),
+        unique=True,
+        nullable=False,
+    )
+    status: Mapped[TournamentPresenceStatus] = mapped_column(
+        Enum(TournamentPresenceStatus, name="tournament_presence_status"), nullable=False
+    )
+    source_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    # Liste de {"deck_name", "tournament_name", "tournament_url", "placement"} — jamais
+    # réinterprétée, affichée telle quelle avec sa source et sa date de relevé (risque de la
+    # mission : "ne jamais inventer un résultat de tournoi").
+    decks: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    checked_at: Mapped[datetime] = mapped_column(nullable=False)
 
 
 class CardInsightReport(Base):

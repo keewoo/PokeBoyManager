@@ -13,7 +13,7 @@ from pbm_api.security.rate_limit import get_redis
 
 TEST_DATABASE_URL = os.environ.get(
     "TEST_DATABASE_URL",
-    "postgresql+asyncpg://pbm:pbm@localhost:55432/pbm_v3_detection_test",
+    "postgresql+asyncpg://pbm:pbm@localhost:55432/pbm_v4_jeu_test",
 )
 
 

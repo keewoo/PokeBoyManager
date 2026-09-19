@@ -10,6 +10,7 @@ from pbm_api.routers.collection import router as collection_router
 from pbm_api.routers.export import router as export_router
 from pbm_api.routers.health import router as health_router
 from pbm_api.routers.images import router as images_router
+from pbm_api.routers.in_game_study import router as in_game_study_router
 from pbm_api.routers.profile import router as profile_router
 from pbm_api.routers.uploads import router as uploads_router
 from pbm_api.security.log_filter import install_api_key_redaction
@@ -42,3 +43,4 @@ app.include_router(uploads_router)
 app.include_router(collection_router)
 app.include_router(card_insights_router)
 app.include_router(export_router)
+app.include_router(in_game_study_router)

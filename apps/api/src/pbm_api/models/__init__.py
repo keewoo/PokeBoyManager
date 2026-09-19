@@ -6,9 +6,11 @@ from pbm_api.models.catalog import (
     CardInsightReport,
     CardName,
     CardPriceDaily,
+    CardTournamentPresence,
     PriceSource,
     PriceVariant,
     Set,
+    TournamentPresenceStatus,
 )
 from pbm_api.models.collection import (
     CollectionItem,
@@ -39,6 +41,8 @@ __all__ = [
     "PriceVariant",
     "CardInsight",
     "CardInsightReport",
+    "CardTournamentPresence",
+    "TournamentPresenceStatus",
     "Upload",
     "UploadStatus",
     "Detection",
