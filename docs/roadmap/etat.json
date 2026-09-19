@@ -1983,9 +1983,9 @@
       "quand": "2026-09-19T19:59+0200"
     },
     "D7": {
-      "prise": "DÉFAUT PROVISOIRE du pilote (à confirmer par JF) : stockage S3 compatible (MinIO en dev) ; photos d'origine conservées jusqu'à suppression par l'utilisateur ou du compte.",
+      "prise": "DÉFAUT PROVISOIRE (recommandation devAI du 19/09, à confirmer par JF) : photos sur le disque local du serveur (/srv/pokeboy/<env>/data/photos) au lancement ; l'application garde une interface de stockage à deux implémentations (disque local en UAT/PROD, S3/MinIO en dev) ; UpCloud Object Storage à chiffrer si le volume l'exige. Photos conservées jusqu'à suppression.",
       "par": "JF",
-      "quand": "2026-09-19T19:59+0200"
+      "quand": "2026-09-19T20:34+0200"
     },
     "D6": {
       "prise": "DÉFAUT PROVISOIRE du pilote (à confirmer par JF) : les trois classements — rang de rareté, rang de valeur dans la collection, percentile de valeur dans l'extension.",
