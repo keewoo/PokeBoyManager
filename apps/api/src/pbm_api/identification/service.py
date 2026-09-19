@@ -107,11 +107,15 @@ async def run_identification_for_upload(
                     await record_usage(db, user, usage)
                 elif not had_extraction_before:
                     cache_hits += 1
+            # Commit par détection, pas un seul à la fin de la boucle : le flux SSE de
+            # progression (lot `v3-validation`) lit la même ligne au fil de l'eau, et un job
+            # interrompu (clé épuisée, voir le risque du lot) garde les cartes déjà identifiées
+            # au lieu de tout reperdre.
+            await db.commit()
     finally:
         if ai_provider is not None:
             await ai_provider.aclose()
 
-    await db.commit()
     return IdentificationRunSummary(
         identified_count=identified, cache_hits=cache_hits, ai_calls=ai_calls
     )

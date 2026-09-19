@@ -74,6 +74,9 @@ async def run_detection_for_upload(
                 status=DetectionStatus.pending,
             )
         )
+        # Commit par carte, pas un seul à la fin : le flux SSE de progression (lot
+        # `v3-validation`) voit les détections apparaître au fil de l'eau, et un job interrompu
+        # après quelques cartes garde celles déjà découpées.
+        await db.commit()
 
-    await db.commit()
     return DetectionRunSummary(detections_count=len(result.quads), method=result.method)

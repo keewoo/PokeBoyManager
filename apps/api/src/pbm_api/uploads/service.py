@@ -96,7 +96,9 @@ async def _build_upload_target(
     )
 
 
-async def _get_owned_upload(db: AsyncSession, user: User, upload_id: uuid.UUID) -> Upload:
+async def get_owned_upload(db: AsyncSession, user: User, upload_id: uuid.UUID) -> Upload:
+    """Publique (pas `_`) : réutilisée par `pbm_api.validation.service` (lot `v3-validation`)
+    pour les mêmes garanties d'appartenance sur `confirm-all` et le flux SSE de progression."""
     result = await db.execute(
         select(Upload).where(Upload.id == upload_id, Upload.user_id == user.id)
     )
@@ -134,7 +136,7 @@ async def complete_upload(
     arq_pool: ArqRedis,
     upload_id: uuid.UUID,
 ) -> tuple[Upload, Job | None]:
-    upload = await _get_owned_upload(db, user, upload_id)
+    upload = await get_owned_upload(db, user, upload_id)
     if upload.status != UploadStatus.pending:
         raise UploadAlreadyProcessedError
 
@@ -180,7 +182,7 @@ async def complete_upload(
 async def list_detections(db: AsyncSession, user: User, upload_id: uuid.UUID) -> list[Detection]:
     """Détections d'un envoi (mission `v3-detection`) : l'appartenance de l'envoi à `user`
     borne toute la requête, jamais un `upload_id` seul fourni par l'appelant."""
-    await _get_owned_upload(db, user, upload_id)
+    await get_owned_upload(db, user, upload_id)
     result = await db.execute(select(Detection).where(Detection.upload_id == upload_id))
     detections = list(result.scalars().all())
     # Tri par ordre de lecture (mission point 1), pas par insertion : plus fiable qu'un
@@ -190,6 +192,29 @@ async def list_detections(db: AsyncSession, user: User, upload_id: uuid.UUID) ->
     return detections
 
 
+async def get_latest_recognition_job(db: AsyncSession, upload_id: uuid.UUID) -> Job | None:
+    """Le job `detect_cards` le plus récent pour cet envoi (mission `v3-validation` point 1,
+    `GET /uploads/{id}` et le flux SSE) : c'est son statut, pas celui de `Upload` (qui ne
+    reflète que le traitement de l'image brute, terminé avant même que le job soit mis en
+    file), qui donne la progression réelle de la reconnaissance."""
+    result = await db.execute(
+        select(Job)
+        .where(Job.type == JOB_TYPE, Job.payload["upload_id"].astext == str(upload_id))
+        .order_by(Job.created_at.desc())
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_upload_detail(
+    db: AsyncSession, user: User, upload_id: uuid.UUID
+) -> tuple[Upload, Job | None, list[Detection]]:
+    upload = await get_owned_upload(db, user, upload_id)
+    job = await get_latest_recognition_job(db, upload_id)
+    detections = await list_detections(db, user, upload_id)
+    return upload, job, detections
+
+
 async def get_detection_crop(
     db: AsyncSession,
     storage: StorageBackend,
@@ -197,7 +222,7 @@ async def get_detection_crop(
     upload_id: uuid.UUID,
     detection_id: uuid.UUID,
 ) -> bytes:
-    await _get_owned_upload(db, user, upload_id)
+    await get_owned_upload(db, user, upload_id)
     result = await db.execute(
         select(Detection).where(Detection.id == detection_id, Detection.upload_id == upload_id)
     )

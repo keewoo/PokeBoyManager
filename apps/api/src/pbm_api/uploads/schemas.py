@@ -3,6 +3,7 @@ import uuid
 from pydantic import BaseModel, Field
 
 from pbm_api.models.collection import DetectionStatus, UploadStatus
+from pbm_api.models.jobs import JobStatus
 
 
 class UploadFileRequest(BaseModel):
@@ -47,4 +48,18 @@ class DetectionResponse(BaseModel):
 
 class ListDetectionsResponse(BaseModel):
     upload_id: uuid.UUID
+    detections: list[DetectionResponse]
+
+
+class UploadDetailResponse(BaseModel):
+    """`GET /uploads/{id}` (mission `v3-validation` point 1) : état de l'envoi et de sa
+    reconnaissance — chargement initial de l'écran de validation, et forme des instantanés du
+    flux SSE `GET /uploads/{id}/events`."""
+
+    upload_id: uuid.UUID
+    status: UploadStatus
+    # `None` : aucune clé IA au moment de l'envoi (D4), la reconnaissance n'a jamais été mise en
+    # file — l'ajout manuel reste possible mais il n'y a rien à valider ici.
+    job_status: JobStatus | None
+    job_error: str | None
     detections: list[DetectionResponse]

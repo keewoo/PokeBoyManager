@@ -19,7 +19,7 @@ from pbm_api.models.collection import (
     Upload,
     UploadStatus,
 )
-from pbm_api.models.identification import IdentificationCache
+from pbm_api.models.identification import IdentificationCache, IdentificationCorrection
 from pbm_api.models.jobs import DataExport, Job, JobStatus
 from pbm_api.models.pricing import ExchangeRateDaily
 from pbm_api.models.users import AiCredential, AiProvider, EmailToken, EmailTokenKind, Session, User
@@ -49,6 +49,7 @@ __all__ = [
     "DetectionStatus",
     "CollectionItem",
     "IdentificationCache",
+    "IdentificationCorrection",
     "Job",
     "JobStatus",
     "DataExport",

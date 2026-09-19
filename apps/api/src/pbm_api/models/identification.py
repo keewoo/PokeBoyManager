@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import BigInteger, Index, String
+from sqlalchemy import BigInteger, ForeignKey, Index, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -28,3 +28,32 @@ class IdentificationCache(Base, TimestampMixin):
     extraction: Mapped[dict] = mapped_column(JSONB, nullable=False)
     candidates: Mapped[list] = mapped_column(JSONB, nullable=False)
     tier: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
+class IdentificationCorrection(Base, TimestampMixin):
+    """Une ligne par décision humaine sur une détection (lot `v3-validation`, mission point 3) :
+    le candidat proposé en premier par `pbm_api.identification.reconciliation` (`None` si aucun
+    candidat n'a été trouvé) contre celui réellement retenu (`None` = rejetée, aucune carte ne
+    correspondait). C'est le jeu de régression de l'identification — mesurer plus tard le taux de
+    correction, jamais consulté par le produit lui-même."""
+
+    __tablename__ = "identification_corrections"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    detection_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("detections.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    proposed_card_id: Mapped[uuid.UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("cards.id", ondelete="SET NULL"), nullable=True
+    )
+    chosen_card_id: Mapped[uuid.UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("cards.id", ondelete="SET NULL"), nullable=True
+    )
