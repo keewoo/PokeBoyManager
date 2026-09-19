@@ -894,6 +894,51 @@
       }
     },
     {
+      "id": "v2-catalogue-complet",
+      "vague": "V2",
+      "piste": "K",
+      "couloir": "CH3",
+      "debut": "2026-10-12",
+      "fin": "2026-10-14",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "Base de référence complète : toutes les cartes, toutes leurs infos, tous les prix — avant la première photo",
+      "gain": "Principe posé par JF le 19/09 : tout ce qui est connu d'une carte vit dans NOTRE base, dès le départ. L'IA ne sert plus qu'à identifier la carte et estimer son état ; une carte déjà connue ne recoûte rien.",
+      "fonctionnalites": "Import complet FR + EN de toutes les extensions (extension, numéro, rareté, type, PV, illustrateur, attaques, talents, faiblesses, résistances, retraite, légalités, dates de sortie, URL d'images officielles, correspondance Pokémon TCG API) ; premier relevé de prix de TOUTES les cartes, puis relevé quotidien de toutes ; rapport de complétude ; « graine » du catalogue réutilisable pour chaque base (dev, UAT, PROD).",
+      "risques": "Volume (~20 000 cartes × 2 langues) sur le lien lent de chimera : import par extension, reprise, et mesure de la durée ; APIs tierces instables (500/502 déjà vus) : reprise sans perte ; ne jamais annoncer « complet » sans le rapport de complétude.",
+      "tenants": "Import du catalogue (échantillon), relevé des prix, recherche.",
+      "aboutissants": "Identification (rapprochement sur une base complète), fiche carte instantanée, déploiement (la PROD démarre avec toutes les cartes et leurs prix).",
+      "dependances": [
+        "v2-prix",
+        "v2-recherche"
+      ],
+      "decision": null,
+      "refs": [
+        "Note de JF du 19/09 : « l'IA n'a plus qu'à identifier + estimer l'état »"
+      ],
+      "mission": [
+        "Compléter l'import pour qu'une carte porte TOUT ce que la fiche affiche sans IA : faiblesses, résistances, coût de retraite, règles (ex/V/VMAX…), date de sortie de l'extension, logo et symbole d'extension, variantes existantes (normale, reverse, holo…) — migrations additives si besoin.",
+        "Lancer l'import COMPLET FR + EN dans une base de référence `pbm_catalogue_ref` (infra partagée) ; mesurer la durée ; reprendre les extensions en échec jusqu'à zéro échec ou échecs expliqués.",
+        "Lancer le relevé de prix sur TOUTES les cartes de cette base ; mesurer durée et nombre d'appels ; ajuster le parallélisme pour tenir largement dans la nuit en PROD.",
+        "Rapport de complétude `docs/catalogue/COMPLETUDE.md` : nombre d'extensions et de cartes par langue, % avec image, % avec `ptcg_id`, % avec au moins un prix, extensions non rapprochées, et la liste des trous restants.",
+        "Graine réutilisable : script `apps/api/scripts/catalogue_seed.sh export|import <DATABASE_URL>` (dump/restauration des seules tables du catalogue et des prix, idempotent) ; archive produite et rangée hors dépôt (`~/dev/pbm-artefacts/catalogue-<date>.dump` sur chimera) ; le déploiement l'utilisera pour peupler l'UAT et la PROD.",
+        "Tests : complétude minimale (seuils) sur un échantillon, idempotence de l'import complet, restauration de la graine dans une base vide."
+      ],
+      "livrables": [
+        "rapport de complétude chiffré",
+        "graine du catalogue + script d'import/export",
+        "durées mesurées de l'import complet et du relevé de prix complet"
+      ],
+      "taches_na": {
+        "maquette": "back-end",
+        "securite": "données publiques",
+        "release_uat": "appliqué par le déploiement",
+        "release_prod": "appliqué par le déploiement"
+      }
+    },
+    {
       "id": "v3-upload",
       "vague": "V3",
       "piste": "I",

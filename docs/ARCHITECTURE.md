@@ -27,6 +27,22 @@ flowchart LR
 | Photos | S3 (MinIO en local, Object Storage en ligne — D7) | envoi direct du navigateur, pas de fichier sur les serveurs web |
 | Monorepo | pnpm workspaces + uv ; client TS généré depuis l'OpenAPI | un seul contrat entre front et back |
 
+## Principe : la base sait, l'IA reconnaît (JF, 19/09/2026)
+
+Tout ce qui est connu d'une carte vit dans **notre base**, peuplé dès le départ pour **toutes** les
+cartes : données du catalogue (extension, numéro, rareté, attaques, talents, faiblesses,
+légalités, illustrateur, images officielles) et **prix relevés chaque jour pour toutes les cartes**,
+pas seulement celles possédées.
+
+L'IA de l'utilisateur ne sert qu'à deux choses : **identifier** la carte photographiée (la
+rapprocher d'une carte de la base) et **estimer son état** (propre à chaque exemplaire). Elle ne
+recalcule jamais une information que la base possède :
+- une photo déjà vue (même empreinte d'image) ne rappelle pas l'IA ;
+- anecdotes et étude en jeu sont générées **une fois par carte** et partagées entre tous les
+  utilisateurs (`card_insights`) ; la partie déterministe (légalités, attaques, règles) vient du
+  catalogue sans IA ;
+- seule l'évolution du prix change avec le temps, et c'est le relevé quotidien qui la fournit.
+
 ## Données (v1)
 
 ```mermaid
