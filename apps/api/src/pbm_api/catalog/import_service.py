@@ -204,8 +204,18 @@ async def import_catalogue(
 
             secondary_names: dict[str, dict[str, str]] = {}
             for lang in secondary_langs:
-                lang_detail = await tcgdex.get_set(lang, tcgdex_set_id)
-                secondary_names[lang] = {c["id"]: c["name"] for c in lang_detail.get("cards", [])}
+                try:
+                    lang_detail = await tcgdex.get_set(lang, tcgdex_set_id)
+                except Exception as exc:  # noqa: BLE001 — extension sans édition dans cette langue
+                    report["errors"].append(
+                        f"extension {tcgdex_set_id} : pas d'édition '{lang}' ({exc}) — "
+                        f"import poursuivi en {primary_lang} seul"
+                    )
+                    secondary_names[lang] = {}
+                else:
+                    secondary_names[lang] = {
+                        c["id"]: c["name"] for c in lang_detail.get("cards", [])
+                    }
 
             number_to_ptcg_id: dict[str, str] | None = None
             if ptcg is not None:

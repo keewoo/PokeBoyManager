@@ -118,6 +118,16 @@ class FakePtcgClient:
         return PTCG_CARDS_IN_SET
 
 
+class MissingSecondaryLangTcgdexClient(FakeTcgdexClient):
+    """Simule une extension sans édition anglaise (ex. `2013bw`, `2018sm-fr` : constaté le
+    2026-09-19, 404 permanent sur TCGdex — pas une panne réseau)."""
+
+    async def get_set(self, lang: str, set_id: str) -> dict:
+        if lang == "en":
+            raise RuntimeError("404 Not Found")
+        return await super().get_set(lang, set_id)
+
+
 class UnavailablePtcgClient:
     async def list_sets(self) -> list[dict]:
         raise PtcgUnavailableError("Pokémon TCG API indisponible après 3 tentatives (500)")
@@ -240,6 +250,28 @@ async def test_import_catalogue_continues_after_a_card_failure(db_session):
         await db_session.execute(select(Card).where(Card.tcgdex_id == "sv03.5-025"))
     ).scalar_one_or_none()
     assert missing_card is None
+
+
+async def test_import_catalogue_keeps_primary_lang_when_secondary_missing(db_session):
+    report = await import_catalogue(
+        db_session,
+        MissingSecondaryLangTcgdexClient(),
+        FakePtcgClient(),
+        languages=("fr", "en"),
+    )
+
+    assert report["cards_created"] == 2
+    assert any("pas d'édition 'en'" in e for e in report["errors"])
+    card = (
+        await db_session.execute(select(Card).where(Card.tcgdex_id == "sv03.5-006"))
+    ).scalar_one()
+    assert card is not None
+    en_name = (
+        await db_session.execute(
+            select(CardName).where(CardName.card_id == card.id, CardName.language == "en")
+        )
+    ).scalar_one_or_none()
+    assert en_name is None
 
 
 async def test_import_catalogue_incremental_skips_known_sets(db_session):
