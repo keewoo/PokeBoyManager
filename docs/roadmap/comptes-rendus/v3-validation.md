@@ -47,6 +47,33 @@ touchaient exactement les fichiers de ce lot :
   trois bases dédiées (`pbm_v3_validation`, `_test`, `_e2e`) recréées et remigrées de zéro pour
   vérifier la chaîne complète.
 
+⛔ **Incident pendant la fusion, corrigé dans la foulée** : entre le push du code de ce lot et le
+push du dernier commit (doc + compte rendu), `v2-catalogue-complet` a fusionné dans `origin/main`
+avec sa propre migration (`5310390bc9a5` + un merge `216ae1bf9f95`), **sans que je ne le
+détecte avant de pousser** — la fenêtre entre mon dernier `fetch` et mon `push` a suffi. Résultat :
+`main` s'est retrouvé un instant avec **deux têtes Alembic** (`216ae1bf9f95` et `d27e4efd0255`),
+ce qu'un `alembic upgrade head` ordinaire refuse (« Multiple head revisions are present »).
+Détecté en relançant la suite complète *après* le push (44 tests d'un coup en échec, tous liés à
+une colonne `cards.weaknesses` absente — signe d'un schéma désynchronisé, pas d'un vrai bug) ;
+corrigé par un second commit qui re-chaîne `d27e4efd0255` sur `216ae1bf9f95`, re-fetché/rebasé/
+repoussé sous le même verrou (`pbm-merge.lock`). Root cause de l'incident : la séquence de clôture
+attendue est *fetch → rebase → tests → push*, tout sous un seul verrou continu ; j'ai fait ça en
+plusieurs étapes distinctes (résolution de conflit manuelle entre les deux), avec une re-vérification
+complète seulement *après* le dernier push plutôt qu'immédiatement avant — un lot suivant qui
+fusionne dans cette fenêtre n'est alors détecté qu'après coup. **Leçon pour la prochaine session
+autonome sur ce dépôt** : quand un rebase demande une résolution manuelle (conflit réel, pas
+seulement les fichiers `Suivi` du pilote), refaire un tour `fetch && rebase && tests` juste avant
+le push final, même si rien ne semblait avoir bougé entre-temps — la fenêtre de quelques minutes
+suffit pour qu'un autre lot fusionne avec sa propre migration.
+
+Pendant cette relance complète, deux échecs **sans rapport avec l'incident ci-dessus** ont aussi
+été repérés dans `tests/test_catalogue_seed.py` (posé par `v2-catalogue-complet`, pas ce lot) :
+`pg_dump: command not found` — le binaire client PostgreSQL n'est pas installé sur chimera
+(seul le serveur, dans le conteneur Docker partagé, l'est). Non corrigé ici (hors périmètre de ce
+lot, nécessiterait `sudo apt-get install postgresql-client`, indisponible pour cette session) ;
+signalé pour que le pilote ou `v2-catalogue-complet` le sache — probablement sans effet en CI
+(l'image `ubuntu-latest` de GitHub Actions inclut `pg_dump` par défaut, à vérifier).
+
 ## Livrables
 
 - `apps/api/src/pbm_api/validation/` (nouveau module) :
