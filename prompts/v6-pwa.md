@@ -66,7 +66,7 @@ Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_va
 **Aboutissants — ce que ça ouvre.** —
 
 **Dépend de :**
-- `v5-prod` — Mise en PROD : domaine, sauvegardes, surveillance
+- `v5-prod` — Mise en PROD : domaine, sauvegardes, surveillance (sans UAT)
 
 ## 3. Mission
 
@@ -97,7 +97,7 @@ Grille de tâches du lot :
 - `securite` — Contrôle sécurité (isolation, secrets)
 - `maquette` — Conforme à la maquette
 - `doc_tech` — Doc technique (CLAUDE.md, docs/)
-- `release_uat` — Livré en UAT (preuve)
+- `release_uat` — Recette locale sur chimera
 - `release_prod` — Livré en PROD (preuve)
 - `backlog` — BACKLOG.md et état à jour
 - `compte_rendu` — Compte rendu dans le suivi

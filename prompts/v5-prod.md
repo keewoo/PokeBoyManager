@@ -1,4 +1,4 @@
-# Lot `v5-prod` — Mise en PROD : domaine, sauvegardes, surveillance
+# Lot `v5-prod` — Mise en PROD : domaine, sauvegardes, surveillance (sans UAT)
 
 > Prompt GÉNÉRÉ depuis `docs/roadmap/roadmap.json` par `docs/roadmap/suivi.py build` — ne pas éditer à la main.
 > Suivi : `docs/roadmap/ROADMAP.html` (onglets Roadmap et Maquette) · processus : `docs/roadmap/PROCESSUS.md`.
@@ -61,14 +61,13 @@ Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_va
 
 **Fonctionnalités.** PROD sur son domaine, inscription ouverte ou sur invitation (D8).
 
-**Tenants — ce qu'il faut avant.** Revue de sécurité, e2e verts, UAT stable ; D2, D8.
+**Tenants — ce qu'il faut avant.** Revue de sécurité, e2e verts, recette en local sur chimera ; D2, D8.
 
 **Aboutissants — ce que ça ouvre.** V6.
 
 **Dépend de :**
 - `v5-securite` — Revue de sécurité avant ouverture
 - `v5-e2e` — Parcours e2e Playwright en CI
-- `v1-uat` — Environnement UAT continu (images construites sur chimera, déployées par devAI)
 
 **Décision D8** (avant le 13 nov.) : Ouverture : sur invitation ou inscription libre ; nom public et mention « non affilié à Nintendo / The Pokémon Company ». — lis la décision prise dans `etat.json` (`decisions_prises`) et applique-la à la lettre.
 
@@ -81,7 +80,7 @@ Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_va
 
 ## 4. Risques & pièges
 
-Construire sur chimera, déployer par devAI : la PROD ne fait que tirer ses images. Sauvegarde non testée = pas de sauvegarde.
+Pas d'UAT (JF, 19/09) : la recette se fait en local sur chimera avant la mise en ligne, et la PROD n'a donc pas de filet intermédiaire — d'où des vérifications obligatoires après déploiement (parcours complet sur un compte de test, puis suppression de ce compte). Construire sur chimera, déployer par devAI : la PROD ne fait que tirer ses images. Sauvegarde non testée = pas de sauvegarde.
 
 ## 5. Livrables — définition de « fini »
 
@@ -106,7 +105,7 @@ Grille de tâches du lot :
 - `securite` — Contrôle sécurité (isolation, secrets)
 - `maquette` — Conforme à la maquette (sans objet : infra)
 - `doc_tech` — Doc technique (CLAUDE.md, docs/)
-- `release_uat` — Livré en UAT (preuve)
+- `release_uat` — Recette locale sur chimera
 - `release_prod` — Livré en PROD (preuve)
 - `backlog` — BACKLOG.md et état à jour
 - `compte_rendu` — Compte rendu dans le suivi

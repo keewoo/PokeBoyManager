@@ -103,7 +103,7 @@ Grille de tâches du lot :
 - `securite` — Contrôle sécurité (isolation, secrets)
 - `maquette` — Conforme à la maquette
 - `doc_tech` — Doc technique (CLAUDE.md, docs/)
-- `release_uat` — Livré en UAT (preuve) (sans objet : déployé avec la mise en PROD)
+- `release_uat` — Recette locale sur chimera (sans objet : déployé avec la mise en PROD)
 - `release_prod` — Livré en PROD (preuve) (sans objet : déployé avec la mise en PROD)
 - `backlog` — BACKLOG.md et état à jour
 - `compte_rendu` — Compte rendu dans le suivi

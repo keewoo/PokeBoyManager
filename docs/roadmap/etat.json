@@ -2882,9 +2882,9 @@
       "quand": "2026-09-19T19:59+0200"
     },
     "D2": {
-      "prise": "JF le 19/09 : UAT et PROD hébergées sur le même serveur que kailo.life (UpCloud « sites-and-crons », STARTER-2xCPU-4GB, de-fra1). Conséquences : images construites sur chimera et tirées par le serveur (aucun build sur place : 2 cœurs / 4 Go déjà partagés avec kailo.life et ACX) ; Caddy/proxy existant à étendre ; ressources à mesurer avant la PROD ; accès root absent sur cette machine à vérifier pour le lot v1-uat.",
+      "prise": "JF le 19/09 : PROD sur le même serveur que kailo.life (UpCloud « sites-and-crons », 5.22.213.226). **Pas d'UAT** (19/09, 23h15) : la recette se fait en local sur chimera, on déploie directement en PROD. Images construites sur chimera, serveur en pull + up -d (2 cœurs / 4 Go partagés avec kailo.life et ACX).",
       "par": "JF",
-      "quand": "2026-09-19T20:11+0200"
+      "quand": "2026-09-19T23:15+0200"
     }
   }
 }

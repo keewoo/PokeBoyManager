@@ -20,6 +20,7 @@
     ],
     "hypotheses": [
       "Six couloirs de développement : deux sur devAI (back-end, livraison), quatre sur chimera (front ×2, IA, catalogue & prix), plus le couloir JF. Un couloir porte un seul lot à la fois, dans son propre worktree.",
+      "**Pas d'environnement UAT** (JF, 19/09) : la recette se fait en local sur chimera, puis on déploie directement en PROD sur le serveur de kailo.life. Les bases et services `pokeboy_uat` déjà préparés restent en réserve.",
       "Le Mac de JF est un poste de travail : on y pilote, on n'y livre pas. Le déploiement UAT/PROD passe par devAI, les images se construisent sur chimera.",
       "Les images officielles ne sont chargées que depuis le catalogue (TCGdex / Pokémon TCG API), mises en cache chez nous ; la photo de l'utilisateur reste privée.",
       "Aucune IA « gratuite » implicite : la reconnaissance consomme la clé de l'utilisateur, sauf décision D4 contraire.",
@@ -256,7 +257,6 @@
       "date": "2026-10-02",
       "quoi": "Hébergement UAT/PROD : nouveau petit VPS UpCloud (compte kailo) ou machine `sites-and-crons` ; base PostgreSQL managée ou conteneur + sauvegardes.",
       "debloque": [
-        "v1-uat",
         "v5-prod"
       ]
     },
@@ -325,7 +325,7 @@
     },
     {
       "id": "release_uat",
-      "lib": "Livré en UAT (preuve)"
+      "lib": "Recette locale sur chimera"
     },
     {
       "id": "release_prod",
@@ -739,45 +739,6 @@
       "taches_na": {
         "release_uat": "déployé avec la mise en PROD",
         "release_prod": "déployé avec la mise en PROD"
-      }
-    },
-    {
-      "id": "v1-uat",
-      "vague": "V1",
-      "piste": "F",
-      "couloir": "DA2",
-      "debut": "2026-10-05",
-      "fin": "2026-10-09",
-      "priorite": "P1",
-      "taille": "M",
-      "complexite": 3,
-      "difficulte": 3,
-      "titre": "Environnement UAT continu (images construites sur chimera, déployées par devAI)",
-      "gain": "Chaque vague se recette en ligne dès qu'elle est prête, pas à la fin.",
-      "fonctionnalites": "`uat.<domaine>` : web, API, worker, Postgres, Redis, stockage ; TLS par Caddy.",
-      "risques": "Ne jamais construire sur la machine qui sert : images construites sur chimera et poussées dans un registre ; la machine UAT ne fait que `pull` + `up -d`.",
-      "tenants": "D2 (hébergement), schéma.",
-      "aboutissants": "Recette de chaque lot ; PROD (V5).",
-      "dependances": [
-        "v0-schema"
-      ],
-      "decision": "D2",
-      "refs": [
-        "~/.claude/CLAUDE.md § Règle d'or (construire ≠ servir)"
-      ],
-      "mission": [
-        "Dockerfiles `web` (Next.js standalone) et `api`/`worker` (python:3.12-slim), multi-étapes, utilisateur non root.",
-        "Registre d'images (GHCR privé) ; script de build sur chimera, script `deploy-uat.sh <tag>` sur devAI.",
-        "Serveur UAT selon D2 : Docker + Caddy, secrets dans un `.env` hors dépôt côté serveur, migrations Alembic jouées au déploiement (échec = déploiement en échec).",
-        "Preuve : `curl https://uat.…/health` et version servie = commit déployé."
-      ],
-      "livrables": [
-        "UAT servie en HTTPS",
-        "scripts de build et de déploiement documentés"
-      ],
-      "taches_na": {
-        "maquette": "infra",
-        "release_prod": "porté par v5-prod"
       }
     },
     {
@@ -1580,16 +1541,15 @@
       "taille": "M",
       "complexite": 3,
       "difficulte": 3,
-      "titre": "Mise en PROD : domaine, sauvegardes, surveillance",
+      "titre": "Mise en PROD : domaine, sauvegardes, surveillance (sans UAT)",
       "gain": "Le site est ouvert.",
       "fonctionnalites": "PROD sur son domaine, inscription ouverte ou sur invitation (D8).",
-      "risques": "Construire sur chimera, déployer par devAI : la PROD ne fait que tirer ses images. Sauvegarde non testée = pas de sauvegarde.",
-      "tenants": "Revue de sécurité, e2e verts, UAT stable ; D2, D8.",
+      "risques": "Pas d'UAT (JF, 19/09) : la recette se fait en local sur chimera avant la mise en ligne, et la PROD n'a donc pas de filet intermédiaire — d'où des vérifications obligatoires après déploiement (parcours complet sur un compte de test, puis suppression de ce compte). Construire sur chimera, déployer par devAI : la PROD ne fait que tirer ses images. Sauvegarde non testée = pas de sauvegarde.",
+      "tenants": "Revue de sécurité, e2e verts, recette en local sur chimera ; D2, D8.",
       "aboutissants": "V6.",
       "dependances": [
         "v5-securite",
-        "v5-e2e",
-        "v1-uat"
+        "v5-e2e"
       ],
       "decision": "D8",
       "refs": [],
