@@ -2760,7 +2760,7 @@
       ],
       "compte_rendu": {},
       "attente": {
-        "quand": "2026-09-19T23:33+0200",
+        "quand": "2026-09-19T23:34+0200",
         "raisons": [
           "lot arrêté par l'ordonnanceur : code de sortie 0, 3 lignes de journal"
         ]
