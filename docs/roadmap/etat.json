@@ -2698,10 +2698,10 @@
       "attente": null
     },
     "v2-catalogue-complet": {
-      "statut": "bloque",
+      "statut": "en_cours",
       "machine": "chimera",
-      "branche": null,
-      "debut_reel": null,
+      "branche": "roadmap/v2-catalogue-complet",
+      "debut_reel": "2026-09-19",
       "fin_reelle": null,
       "taches": {
         "dev": {
@@ -2756,15 +2756,16 @@
           "machine": "chimera",
           "evenement": "arrêté",
           "detail": "code de sortie 0, 3 lignes de journal"
+        },
+        {
+          "quand": "2026-09-19T23:35+0200",
+          "machine": "chimera",
+          "evenement": "démarré",
+          "detail": "roadmap/v2-catalogue-complet"
         }
       ],
       "compte_rendu": {},
-      "attente": {
-        "quand": "2026-09-19T23:34+0200",
-        "raisons": [
-          "lot arrêté par l'ordonnanceur : code de sortie 0, 3 lignes de journal"
-        ]
-      }
+      "attente": null
     },
     "v4-insights-batch": {
       "statut": "a_faire",
