@@ -1,1 +1,119 @@
 @import "tailwindcss";
+
+:root {
+  --background: #e9ecf1;
+  --foreground: #12151b;
+  --card: #ffffff;
+  --card-foreground: #12151b;
+  --popover: #ffffff;
+  --popover-foreground: #12151b;
+  --primary: #d93a1e;
+  --primary-foreground: #ffffff;
+  --secondary: #f5f6f9;
+  --secondary-foreground: #12151b;
+  --muted: #f5f6f9;
+  --muted-foreground: #7d8494;
+  --accent: #f5f6f9;
+  --accent-foreground: #12151b;
+  --destructive: #b3261e;
+  --destructive-foreground: #ffffff;
+  --border: #d9dde5;
+  --input: #d9dde5;
+  --ring: #2f6fe0;
+  --gold: #a87a0c;
+  --gold-foreground: #a87a0c;
+  --gold-background: #fbf1d5;
+  --success: #177a4b;
+  --success-foreground: #177a4b;
+  --success-background: #dff3e8;
+  --danger: #b3261e;
+  --danger-foreground: #b3261e;
+  --danger-background: #fbe3e0;
+  --screen: #1b2029;
+  --radius: 0.75rem;
+
+  --font-sans: var(--font-instrument-sans), -apple-system, "Segoe UI", sans-serif;
+  --font-heading: var(--font-bricolage), var(--font-sans);
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+  --font-pixel: var(--font-press-start), monospace;
+}
+
+[data-theme="dark"] {
+  --background: #0c0f14;
+  --foreground: #eef0f4;
+  --card: #161a22;
+  --card-foreground: #eef0f4;
+  --popover: #161a22;
+  --popover-foreground: #eef0f4;
+  --primary: #f0583b;
+  --primary-foreground: #160906;
+  --secondary: #1c212b;
+  --secondary-foreground: #eef0f4;
+  --muted: #1c212b;
+  --muted-foreground: #8a91a0;
+  --accent: #1c212b;
+  --accent-foreground: #eef0f4;
+  --destructive: #ff8a7e;
+  --destructive-foreground: #3a1714;
+  --border: #2a303c;
+  --input: #2a303c;
+  --ring: #7aa6ff;
+  --gold: #e7b84a;
+  --gold-foreground: #e7b84a;
+  --gold-background: #2e2511;
+  --success: #5dd39a;
+  --success-foreground: #5dd39a;
+  --success-background: #10301f;
+  --danger: #ff8a7e;
+  --danger-foreground: #ff8a7e;
+  --danger-background: #3a1714;
+  --screen: #0a0c10;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-gold-background: var(--gold-background);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-background: var(--success-background);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-danger-background: var(--danger-background);
+  --color-screen: var(--screen);
+
+  --font-sans: var(--font-sans);
+  --font-heading: var(--font-heading);
+  --font-mono: var(--font-mono);
+  --font-pixel: var(--font-pixel);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
