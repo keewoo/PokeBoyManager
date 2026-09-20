@@ -35,6 +35,10 @@ export function login(email: string, password: string): Promise<UserResponse> {
   return apiJson<UserResponse>("POST", "/auth/login", { email, password });
 }
 
+export function logout(): Promise<void> {
+  return apiJson<void>("POST", "/auth/logout");
+}
+
 export function forgotPassword(email: string): Promise<MessageResponse> {
   return apiJson<MessageResponse>("POST", "/auth/forgot", { email });
 }

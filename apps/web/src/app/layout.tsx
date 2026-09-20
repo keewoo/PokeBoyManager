@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import {
   Bricolage_Grotesque,
   Instrument_Sans,
@@ -8,6 +8,7 @@ import {
 } from "next/font/google";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { AppShell } from "@/components/app-shell";
+import { getSessionCookieName } from "@/lib/config";
 import "./globals.css";
 
 const instrumentSans = Instrument_Sans({
@@ -58,6 +59,12 @@ export default async function RootLayout({
   // sur `script-src`.
   const nonce = (await headers()).get("x-nonce") ?? undefined;
 
+  // Même source de vérité que la garde de route (`middleware.ts`) et la page d'accueil
+  // (`app/page.tsx`) : la présence du cookie de session, lu côté serveur (il est httpOnly).
+  // `router.refresh()` après connexion/déconnexion re-rend ce layout — l'en-tête suit
+  // toujours l'état réel (correctif `pbm-hotfix-fallback-ia-confiance`).
+  const hasSession = (await cookies()).has(getSessionCookieName());
+
   return (
     <html lang="fr" suppressHydrationWarning>
       <head>
@@ -67,7 +74,7 @@ export default async function RootLayout({
         className={`${instrumentSans.variable} ${bricolageGrotesque.variable} ${jetbrainsMono.variable} ${pressStart2P.variable} font-sans antialiased`}
       >
         <ThemeProvider>
-          <AppShell>{children}</AppShell>
+          <AppShell hasSession={hasSession}>{children}</AppShell>
         </ThemeProvider>
       </body>
     </html>

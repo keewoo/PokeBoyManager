@@ -1,20 +1,49 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 
 import { ThemeToggle } from "@/components/theme-toggle";
+import { logout } from "@/lib/api/auth";
 import { cn } from "@/lib/utils";
 
+// Liens réservés aux connectés : les proposer à un visiteur (« Profil » sur la page d'accueil
+// sans session) l'envoyait sur la garde de route, qui le renvoyait vers /connexion — le menu
+// mentait sur l'état réel (correctif `pbm-hotfix-fallback-ia-confiance`).
 const NAV_LINKS = [
-  { href: "/", label: "Accueil" },
-  { href: "/collection", label: "Collection" },
-  { href: "/ajouter", label: "Ajouter" },
-  { href: "/profil", label: "Profil" },
+  { href: "/", label: "Accueil", requiresSession: false },
+  { href: "/collection", label: "Collection", requiresSession: true },
+  { href: "/ajouter", label: "Ajouter", requiresSession: true },
+  { href: "/profil", label: "Profil", requiresSession: true },
 ];
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  hasSession = false,
+  children,
+}: {
+  hasSession?: boolean;
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  // L'état vient du serveur (cookie de session lu par `app/layout.tsx`, même source que la
+  // garde de route `middleware.ts`) : jamais deviné côté client — le cookie est httpOnly. La
+  // connexion (`connexion-form.tsx`) fait déjà `router.refresh()`, qui re-rend le layout et
+  // donc cet en-tête ; la déconnexion ci-dessous fait de même.
+  async function handleLogout() {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      await logout();
+    } finally {
+      setIsLoggingOut(false);
+      router.push("/");
+      router.refresh();
+    }
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -27,7 +56,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </Link>
 
         <nav className="ml-2 flex flex-wrap gap-1" aria-label="Navigation principale">
-          {NAV_LINKS.map((link) => {
+          {NAV_LINKS.filter((link) => hasSession || !link.requiresSession).map((link) => {
             const isActive = pathname === link.href;
             return (
               <Link
@@ -46,12 +75,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="ml-auto flex items-center gap-3">
-          <Link href="/connexion" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-            Connexion
-          </Link>
-          <Link href="/inscription" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-            Inscription
-          </Link>
+          {hasSession ? (
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="text-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-60"
+            >
+              {isLoggingOut ? "Déconnexion…" : "Déconnexion"}
+            </button>
+          ) : (
+            <>
+              <Link
+                href="/connexion"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground"
+              >
+                Connexion
+              </Link>
+              <Link
+                href="/inscription"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground"
+              >
+                Inscription
+              </Link>
+            </>
+          )}
           <ThemeToggle />
         </div>
       </header>
