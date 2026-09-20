@@ -513,6 +513,52 @@ laissé en l'état et pourquoi). Ce que ça change dans le code, pour les lots s
 - `/auth/register` est désormais limité en débit par IP (même `RateLimiter` que `/auth/login`/
   `/auth/forgot`, scope `register:ip`).
 
+## Parcours e2e complet (lot `v5-e2e`)
+
+`apps/web/e2e/parcours-complet.spec.ts` — inscription → vérification (Mailpit) → clé IA
+(simulée) → envoi de la photo de référence 3×3 → validation → collection filtrée → fiche carte.
+Contrairement à `validation.spec.ts`/`card-detail.spec.ts` (résultat semé directement en base,
+aucune clé IA réelle sur chimera), ce lot fait tourner le **vrai** pipeline de bout en bout : un
+vrai fichier envoyé par le navigateur, une vraie détection OpenCV, une vraie identification +
+rapprochement catalogue — seul l'aller-retour réseau vers le fournisseur IA est remplacé.
+
+`pbm_api.ai.simulated_provider.SimulatedProvider` (drapeau `AI_SIMULATED_PROVIDER`, faux par
+défaut, jamais en UAT/PROD) bascule `pbm_api.ai.factory.create_provider` dessus quel que soit le
+fournisseur demandé — un seul point de fabrication, comme la mission `v3-ia-providers` le
+prévoyait déjà. Il ne simule que `CardExtraction` (identification/état) en servant les neuf
+cartes de `pbm_api.seed.DEMO_CARDS` ; tout autre schéma (repli LLM de la détection, insights,
+étude en jeu) lève une erreur explicite plutôt qu'une réponse inventée. Faire tourner le vrai
+pipeline exige un worker arq réel : troisième entrée `webServer` de `playwright.config.ts`
+(`uv run arq pbm_api.worker.WorkerSettings`, même base/redis que l'API) — jusqu'ici aucune spec
+n'en avait besoin, le résultat de reconnaissance étant toujours semé directement.
+
+Photo de référence : `apps/api/scripts/generate_e2e_reference_photo.py` écrit un classeur 3×3
+propre (`pbm_api.detection.synthetic.make_binder_grid(glare=False)`) — OpenCV seul suffit à
+détecter les neuf cartes, aucun repli LLM n'est donc exercé. Catalogue : idempotent comme
+`pbm_api.seed` lui-même, `apps/api/scripts/seed_e2e_reference_catalog.py` sème aussi un
+historique de prix minimal et rafraîchit `card_value_rank` (sinon le classement de la fiche
+resterait vide pour des cartes fraîchement créées). En le relançant, un bogue latent de
+`pbm_api.seed.seed()` a été trouvé et corrigé : `User` exige `last_name`/`birth_date`/
+`terms_version`/`terms_accepted_at` depuis `v1-identite`, postérieur à ce module qui n'avait
+jamais été rejoué depuis.
+
+**Écart assumé** : les neuf recadrages du classeur synthétique sont visuellement indiscernables
+(`pbm_api.detection.synthetic.draw_card` est pensé pour la géométrie de détection, pas pour
+l'identification — même couleur, même cercle, quelle que soit la carte). Leur empreinte
+perceptuelle est donc identique, et `identification_cache` (une vraie fonctionnalité de
+production, pas un artefact de la simulation) résout les huit détections suivantes sans
+repasser par le fournisseur simulé après le premier appel : les neuf exemplaires confirmés sont
+neuf « Sarmuraï » (doublons), pas neuf cartes distinctes. Une diversité réelle demanderait des
+photos distinctes, indisponibles sur chimera (même contrainte que `v3-detection`). Le filtre de
+collection est quand même exercé dans les deux sens (une recherche qui trouve, une qui ne trouve
+rien) ; la fiche carte n'est vérifiée que sur ses onglets Valeur/État/Mes exemplaires — Histoire/
+En jeu appelleraient un vrai wiki + la clé IA (schémas que `SimulatedProvider` ne simule pas),
+déjà couverts sans réseau par `card-detail.spec.ts`.
+
+Test d'accès croisé propre à ce lot : un second utilisateur reçoit 404 sur `GET /uploads/{id}` et
+`GET /uploads/{id}/detections` de l'envoi réel du premier — isolation déjà couverte ailleurs sur
+un résultat *semé*, jamais encore sur un envoi/détections produits par le vrai pipeline.
+
 ## Règles de la flotte applicables ici (résumé de `~/.claude/CLAUDE.md`)
 
 - On construit sur chimera (32 Go, 16 threads) et on ne construit jamais sur la machine qui sert.

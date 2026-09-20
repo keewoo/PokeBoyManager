@@ -85,5 +85,13 @@ class Settings(BaseSettings):
     insights_batch_poll_interval_seconds: int = 20
     insights_batch_poll_max_attempts: int = 90
 
+    # --- Parcours e2e complet (lot v5-e2e) ---
+    # Faux par défaut, jamais à activer en UAT/PROD : bascule `pbm_api.ai.factory.create_provider`
+    # sur `pbm_api.ai.simulated_provider.SimulatedProvider` (aucun appel réseau, réponses
+    # déterministes) pour que l'e2e Playwright fasse tourner le vrai pipeline de reconnaissance
+    # (détection + identification, `pbm_api.worker.detect_cards_task`) sans clé IA réelle — aucune
+    # disponible sur chimera (voir CLAUDE.md).
+    ai_simulated_provider: bool = False
+
 
 settings = Settings()

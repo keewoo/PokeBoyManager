@@ -35,7 +35,10 @@ from pbm_api.ai.errors import (
 from pbm_api.ai.factory import create_provider
 from pbm_api.ai.gemini_provider import GeminiProvider
 from pbm_api.ai.openai_provider import OpenAiProvider
+from pbm_api.ai.simulated_provider import SimulatedProvider, UnsimulatedSchemaError
+from pbm_api.identification.schemas import CardExtraction
 from pbm_api.models import AiProvider
+from pbm_api.seed import DEMO_CARDS
 
 _ONE_PIXEL_PNG = bytes.fromhex(
     "89504e470d0a1a0a0000000d49484452000000010000000108020000009077"
@@ -404,3 +407,45 @@ async def test_gemini_extract_maps_unavailable_to_provider_overloaded_error() ->
 def test_create_provider_returns_the_matching_implementation(provider_enum, expected_class) -> None:
     provider = create_provider(provider_enum, "some-key")
     assert isinstance(provider, expected_class)
+
+
+# --- Fournisseur simulé (lot v5-e2e) ----------------------------------------------------------
+# Drapeau `AI_SIMULATED_PROVIDER`, faux par défaut (voir `pbm_api.config`) : bascule la fabrique
+# sur `SimulatedProvider` quel que soit le fournisseur demandé, pour que l'e2e Playwright fasse
+# tourner le vrai pipeline de reconnaissance sans clé IA réelle (aucune sur chimera). Preuve
+# ciblée : sans la branche ajoutée dans `create_provider`, ce test échoue (renvoie
+# `AnthropicProvider` au lieu de `SimulatedProvider`).
+
+
+@pytest.fixture
+def simulated_provider_enabled(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("pbm_api.ai.factory.settings.ai_simulated_provider", True)
+
+
+def test_create_provider_returns_simulated_when_flag_enabled(simulated_provider_enabled) -> None:
+    provider = create_provider(AiProvider.gemini, "some-key")
+
+    assert isinstance(provider, SimulatedProvider)
+    assert provider.PROVIDER == AiProvider.gemini
+
+
+async def test_simulated_provider_cycles_through_demo_cards(simulated_provider_enabled) -> None:
+    provider = create_provider(AiProvider.anthropic, "some-key")
+
+    first, usage = await provider.extract([_image()], CardExtraction, "Extrais la carte.")
+    second, _ = await provider.extract([_image()], CardExtraction, "Extrais la carte.")
+
+    assert first.set_code == DEMO_CARDS[0]["set_code"]
+    assert first.number == DEMO_CARDS[0]["number"]
+    assert second.set_code == DEMO_CARDS[1]["set_code"]
+    assert second.number == DEMO_CARDS[1]["number"]
+    assert usage.provider == AiProvider.anthropic
+    assert usage.input_tokens == 0
+    assert usage.output_tokens == 0
+
+
+async def test_simulated_provider_rejects_an_unsimulated_schema(simulated_provider_enabled) -> None:
+    provider = create_provider(AiProvider.anthropic, "some-key")
+
+    with pytest.raises(UnsimulatedSchemaError):
+        await provider.extract([_image()], _CardExtraction, "Extrais la carte.")

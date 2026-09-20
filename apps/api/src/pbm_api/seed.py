@@ -7,7 +7,7 @@ Usage : uv run python -m pbm_api.seed
 """
 
 import asyncio
-from datetime import date
+from datetime import UTC, date, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -129,7 +129,20 @@ DEMO_CARDS = [
 async def seed(session: AsyncSession) -> None:
     result = await session.execute(select(User).where(User.email == DEMO_USER_EMAIL))
     if result.scalar_one_or_none() is None:
-        session.add(User(email=DEMO_USER_EMAIL, password_hash="!disabled!"))
+        # `last_name`/`birth_date`/`terms_version`/`terms_accepted_at` sont NOT NULL depuis le
+        # lot `v1-identite` (migration `328aef94ea58`), postérieur à ce module — un compte
+        # « démo » désactivé (`password_hash`) porte les mêmes valeurs par défaut que
+        # `pbm_api.admin create-user` pour un consentement porté par JF.
+        session.add(
+            User(
+                email=DEMO_USER_EMAIL,
+                password_hash="!disabled!",
+                last_name="Démo",
+                birth_date=date(2000, 1, 1),
+                terms_version="demo",
+                terms_accepted_at=datetime.now(UTC).replace(tzinfo=None),
+            )
+        )
 
     sets_by_code: dict[str, Set] = {}
     for set_data in DEMO_SETS:
