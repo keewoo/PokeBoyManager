@@ -123,7 +123,12 @@ export function DetectionCard({
         detection.status === "rejected" && "opacity-40"
       )}
     >
-      <div className="grid grid-rows-2 gap-1">
+      {/* `self-start` + pile flex : sans ça, la cellule de grille s'étire sur toute la hauteur
+          de la carte de validation et `grid-rows-2` imposait cette hauteur aux <img> — avec
+          `object-cover`, chaque miniature était zoomée jusqu'à ne montrer qu'une bande de la
+          carte (miniatures « coupées » constatées en production). L'aspect 63/88 ne tient que
+          si la hauteur reste dérivée de la largeur. */}
+      <div className="flex flex-col gap-1 self-start">
         {/* eslint-disable-next-line @next/next/no-img-element -- image servie par l'API, pas next/image */}
         <img
           src={`${getApiBaseUrl()}${detection.crop_url}`}
@@ -136,6 +141,11 @@ export function DetectionCard({
             src={cardImageUrl(selected.card_id)}
             alt="Image officielle du candidat sélectionné"
             className="aspect-[63/88] w-full rounded object-cover"
+            onError={(event) => {
+              // Image officielle indisponible (404 du proxy /img/cards/{id}) : masquer plutôt
+              // que l'icône d'image cassée « ? » constatée en production.
+              event.currentTarget.style.display = "none";
+            }}
           />
         )}
       </div>
