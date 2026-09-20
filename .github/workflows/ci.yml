@@ -114,16 +114,15 @@ jobs:
       # empêcher le merge, pas seulement s'afficher.
       - name: pip-audit (dépendances Python)
         working-directory: apps/api
-        run: |
-          uv export --no-hashes --no-header -o /tmp/requirements.txt
-          grep -v '^-e ' /tmp/requirements.txt > /tmp/requirements-clean.txt
-          # `--no-deps` : auditer exactement les versions épinglées par `uv export` (toutes
-          # transitives comprises) SANS relancer une résolution pip. `pyproject.toml` déclare
-          # `override-dependencies = ["redis>=8.1.0"]` (arq 0.28.0 épingle encore `redis<6`, mais
-          # son client `redis.asyncio` fonctionne avec redis-py 8.1.0) : uv honore l'override, le
-          # résolveur pip de pip-audit ne le comprend pas et échoue en `ResolutionImpossible`. Le
-          # jeu audité reste identique (mêmes pins), seule l'étape de re-résolution est évitée.
-          uvx pip-audit --no-deps -r /tmp/requirements-clean.txt
+        # Audite l'environnement DÉJÀ installé par `uv sync --locked` ci-dessus — exactement le
+        # jeu de paquets qui part en PROD — plutôt qu'un fichier `requirements` réaudité par pip.
+        # `pyproject.toml` déclare `override-dependencies = ["redis>=8.1.0"]` (arq 0.28.0 épingle
+        # encore `redis<6`, mais son client `redis.asyncio` marche avec redis-py 8.1.0) : uv
+        # honore l'override, mais le mode `-r` de pip-audit relance une résolution pip (même avec
+        # `--no-deps`, un `pip install --dry-run` est fait) qui rejette l'override en
+        # `ResolutionImpossible`. Auditer l'environnement synchronisé évite toute re-résolution.
+        # `--skip-editable` saute le paquet local `pbm-api` (éditable, absent de PyPI).
+        run: uv run --with pip-audit pip-audit --skip-editable
 
       - working-directory: apps/api
         run: uv run alembic upgrade head
