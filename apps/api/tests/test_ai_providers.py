@@ -187,6 +187,29 @@ async def test_anthropic_extract_maps_529_to_provider_overloaded_error() -> None
         await provider.extract([_image()], _CardExtraction, "Extrais la carte.")
 
 
+async def test_anthropic_extract_maps_400_to_ai_provider_error_with_provider_message() -> None:
+    """Régression `pbm-hotfix-reconnaissance` : un 400 (ex. schéma de sortie structurée refusé)
+    doit porter le message exact d'Anthropic dans `user_message` — c'est ce texte qui atterrit
+    sur `Job.error` (`pbm_api.worker`) et doit rester exploitable, jamais réduit au seul code
+    HTTP (`Erreur inattendue du fournisseur (400).` ne dit rien de ce qui a cassé)."""
+    body = {
+        "type": "error",
+        "error": {
+            "type": "invalid_request_error",
+            "message": "output_config.format.schema: For 'number' type, properties maximum, "
+            "minimum are not supported",
+        },
+    }
+    transport = _RecordingTransport([_json_response(400, body)])
+    provider = AnthropicProvider("sk-ant-test", http_client=transport.client())
+
+    with pytest.raises(AIProviderError) as exc_info:
+        await provider.extract([_image()], _CardExtraction, "Extrais la carte.")
+
+    assert "properties maximum, minimum are not supported" in exc_info.value.user_message
+    assert "400" in exc_info.value.user_message
+
+
 async def test_anthropic_extract_maps_refusal_stop_reason_to_content_refused_error() -> None:
     transport = _RecordingTransport(
         [

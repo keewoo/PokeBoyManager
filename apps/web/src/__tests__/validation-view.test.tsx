@@ -156,4 +156,27 @@ describe("ValidationView", () => {
     await waitFor(() => expect(confirmAll).toHaveBeenCalledWith(UPLOAD_ID));
     await waitFor(() => expect(push).toHaveBeenCalledWith("/collection"));
   });
+
+  it("affiche le message du fournisseur IA quand le job de reconnaissance échoue sans détection (régression pbm-hotfix-reconnaissance)", async () => {
+    vi.mocked(getUpload).mockResolvedValue(
+      uploadDetail({
+        job_status: "failed",
+        job_error:
+          "Le fournisseur IA a refusé la requête (400) : output_config.format.schema: For " +
+          "'number' type, properties maximum, minimum are not supported",
+        detections: [],
+      })
+    );
+
+    render(<ValidationView uploadIds={[UPLOAD_ID]} />);
+
+    expect(await screen.findByText(/La reconnaissance a échoué/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/properties maximum, minimum are not supported/)
+    ).toBeInTheDocument();
+    // Jamais l'écran "rien à valider" qui a fait perdre du temps de diagnostic en PROD : il
+    // laisse croire qu'aucune photo n'a été envoyée, alors que la reconnaissance a réellement
+    // été tentée et a échoué.
+    expect(screen.queryByText("Rien à valider")).not.toBeInTheDocument();
+  });
 });

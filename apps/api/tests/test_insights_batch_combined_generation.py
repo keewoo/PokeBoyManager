@@ -8,6 +8,9 @@ risque hallucination (mission point 4) : le prompt doit répéter explicitement 
 citer une URL absente du contexte fourni, pour les anecdotes FR et EN à la fois.
 """
 
+import pytest
+from pydantic import ValidationError
+
 from pbm_api.insights.context import ContextPage
 from pbm_api.insights_batch.combined_generation import (
     COMBINED_JSON_SCHEMA,
@@ -19,8 +22,12 @@ from pbm_api.insights_batch.combined_generation import (
 def test_combined_schema_exposes_anecdotes_fr_en_and_game_study() -> None:
     properties = COMBINED_JSON_SCHEMA["properties"]
     assert set(properties) == {"anecdotes_fr", "anecdotes_en", "game_study"}
-    assert properties["anecdotes_fr"]["maxItems"] == 5
-    assert properties["anecdotes_en"]["maxItems"] == 5
+    # `maxItems` n'apparaît plus dans le schéma envoyé au fournisseur (régression
+    # `pbm-hotfix-reconnaissance` : Anthropic refuse `output_config.format` avec un 400 dès
+    # qu'une contrainte numérique/de longueur y figure) — la borne reste appliquée côté client
+    # par Pydantic, voir `test_combined_extraction_rejects_more_than_max_anecdotes` ci-dessous.
+    assert "maxItems" not in properties["anecdotes_fr"]
+    assert "maxItems" not in properties["anecdotes_en"]
     assert set(properties["game_study"]["properties"]) == {
         "role",
         "strengths",
@@ -28,6 +35,26 @@ def test_combined_schema_exposes_anecdotes_fr_en_and_game_study() -> None:
         "related_cards",
         "playability_note",
     }
+
+
+def test_combined_extraction_still_rejects_more_than_max_anecdotes_client_side() -> None:
+    """`maxItems` a disparu du schéma envoyé au fournisseur (ci-dessus) — la borne doit rester
+    appliquée par Pydantic à la réception, sinon la retirer du schéma serait une régression
+    silencieuse plutôt qu'un simple contournement de la limitation d'Anthropic."""
+    too_many = [{"text": f"Fait {i}.", "source_url": "https://example.test/fr"} for i in range(6)]
+    payload = {
+        "anecdotes_fr": too_many,
+        "anecdotes_en": [],
+        "game_study": {
+            "role": "Attaquant",
+            "strengths": "Rapide",
+            "weaknesses": "Fragile",
+            "related_cards": [],
+            "playability_note": "Correct",
+        },
+    }
+    with pytest.raises(ValidationError):
+        CombinedCardInsightExtraction.model_validate(payload)
 
 
 def test_combined_extraction_round_trips_from_json() -> None:

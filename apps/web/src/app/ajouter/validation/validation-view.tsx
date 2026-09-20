@@ -130,6 +130,13 @@ export function ValidationView({ uploadIds }: { uploadIds: string[] }) {
     const detail = uploads[id];
     return detail && (detail.job_status === "queued" || detail.job_status === "running");
   });
+  // Un job en échec (mission `pbm-hotfix-reconnaissance` : le fournisseur IA a refusé la
+  // requête, ou toute autre panne du pipeline de reconnaissance) doit se voir — jamais un écran
+  // silencieux qui laisse croire qu'il n'y avait simplement rien à reconnaître.
+  const failedUploads = uploadIds
+    .map((id) => uploads[id])
+    .filter((detail): detail is UploadDetail => Boolean(detail) && detail.job_status === "failed");
+  const failedJobError = failedUploads.find((detail) => detail.job_error)?.job_error ?? null;
 
   function selectedCardFor(detection: Detection): SelectedCard | null {
     const manual = manualCardsRef.current[detection.id];
@@ -251,6 +258,15 @@ export function ValidationView({ uploadIds }: { uploadIds: string[] }) {
   }
 
   if (uploadIds.length === 0 || merged.length === 0) {
+    if (failedJobError) {
+      return (
+        <EmptyState
+          title="La reconnaissance a échoué"
+          description={`Le fournisseur IA a signalé une erreur : ${failedJobError}`}
+          action={{ label: "Réessayer avec une nouvelle photo", href: "/ajouter" }}
+        />
+      );
+    }
     return (
       <EmptyState
         title="Rien à valider"
@@ -287,6 +303,14 @@ export function ValidationView({ uploadIds }: { uploadIds: string[] }) {
       {error && (
         <div className="mb-4">
           <FormNotice variant="error">{error}</FormNotice>
+        </div>
+      )}
+
+      {failedJobError && (
+        <div className="mb-4">
+          <FormNotice variant="error">
+            La reconnaissance a échoué sur une partie des photos : {failedJobError}
+          </FormNotice>
         </div>
       )}
 

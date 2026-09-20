@@ -11,6 +11,26 @@ from typing import Any
 
 from pydantic import BaseModel
 
+# Contraintes JSON Schema que Pydantic émet (`Field(ge=...)`, `min_length=...`, `max_length=...`
+# sur une liste) mais que la sortie structurée d'Anthropic refuse avec un 400 explicite
+# (« For 'number' type, properties maximum, minimum are not supported ») — constaté en PROD sur
+# `CardExtraction` (`identification/schemas.py`), qui n'avait jamais été exercé contre l'API
+# réelle avant `pbm-hotfix-reconnaissance` (toujours simulé jusque-là). Retirer ces clés du
+# schéma envoyé au fournisseur est sans danger : Pydantic revalide ces mêmes bornes côté client
+# à la réception (`AIProvider.extract`), donc la contrainte reste appliquée, juste plus tard.
+_UNSUPPORTED_CONSTRAINT_KEYS = (
+    "minimum",
+    "maximum",
+    "exclusiveMinimum",
+    "exclusiveMaximum",
+    "multipleOf",
+    "minLength",
+    "maxLength",
+    "minItems",
+    "maxItems",
+    "uniqueItems",
+)
+
 
 def to_strict_schema(model: type[BaseModel]) -> dict[str, Any]:
     """JSON Schema avec `$ref` repliés et `additionalProperties: false` partout — accepté par
@@ -41,6 +61,8 @@ def _resolve_refs(node: Any, defs: dict[str, Any]) -> Any:
 def _tighten(node: Any) -> None:
     if not isinstance(node, dict):
         return
+    for key in _UNSUPPORTED_CONSTRAINT_KEYS:
+        node.pop(key, None)
     if node.get("type") == "object" and "properties" in node:
         node["additionalProperties"] = False
         node["required"] = list(node["properties"].keys())
