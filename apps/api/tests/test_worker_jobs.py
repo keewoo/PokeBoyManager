@@ -9,6 +9,7 @@ un moteur créé sur la boucle courante et supprime ses lignes en fin de test.
 """
 
 import asyncio
+import logging
 import os
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -36,6 +37,14 @@ def _utc_now() -> datetime:
     """Naïf en UTC, comme `pbm_api.worker._now_naive_utc` (les colonnes `jobs.*_at` sont sans
     fuseau) — surtout pas `datetime.now()`, qui serait en heure de Paris (TZ des tests)."""
     return datetime.now(UTC).replace(tzinfo=None)
+
+
+def test_worker_import_enables_pbm_api_info_logging():
+    """Mission point 5 : importer le worker doit rendre visibles les logs INFO de `pbm_api`
+    (début/fin de chaque job). Sans ça, `journalctl` ne montrait que les démarrages du service."""
+    pbm_logger = logging.getLogger("pbm_api")
+    assert pbm_logger.isEnabledFor(logging.INFO)
+    assert any(getattr(handler, "_pbm_worker_handler", False) for handler in pbm_logger.handlers)
 
 
 # --- Reprise au démarrage : un job resté « running » trop longtemps repasse en échec ----------

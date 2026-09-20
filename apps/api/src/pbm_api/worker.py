@@ -40,6 +40,26 @@ from pbm_api.storage import build_storage
 
 logger = logging.getLogger(__name__)
 
+
+def _configure_worker_logging() -> None:
+    """arq ne configure QUE le logger `arq` (`arq.logs.default_log_config`) : le logger `pbm_api`
+    hérite sinon du niveau WARNING de la racine, et les logs INFO du worker — début et fin de
+    chaque job avec son identifiant (mission `pbm-parcours-validation` point 5) — n'atteignent
+    jamais `journalctl`. C'était le « diagnostic aveugle » signalé : le journal ne montrait que
+    les démarrages du service. On pose donc un handler INFO sur `pbm_api`, idempotent (exécuté à
+    l'import du module worker, avant qu'arq n'installe sa propre configuration en
+    `disable_existing_loggers=False` — qui laisse ce handler en place)."""
+    pbm_logger = logging.getLogger("pbm_api")
+    if not any(getattr(h, "_pbm_worker_handler", False) for h in pbm_logger.handlers):
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+        handler._pbm_worker_handler = True  # type: ignore[attr-defined]
+        pbm_logger.addHandler(handler)
+    pbm_logger.setLevel(logging.INFO)
+
+
+_configure_worker_logging()
+
 JOB_TYPE = "import_catalogue"
 PRICE_JOB_TYPE = "daily_prices"
 EXCHANGE_RATE_JOB_TYPE = "daily_exchange_rates"
