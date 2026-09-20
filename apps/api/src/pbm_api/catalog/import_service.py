@@ -8,9 +8,11 @@ perde pas le travail déjà fait.
 """
 
 import asyncio
+import ipaddress
 import logging
 from datetime import date
 from typing import Any
+from urllib.parse import urlsplit
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,6 +29,26 @@ from pbm_api.models import Card, CardName, Set
 logger = logging.getLogger(__name__)
 
 MAX_UNMATCHED_SAMPLE = 50
+
+
+def _is_safe_image_url(url: str) -> bool:
+    """Défense en profondeur contre un SSRF via `pbm_api.routers.images` (mission
+    `v5-securite`) : `GET /img/cards/{id}` fait chercher, côté serveur, `f"{image_url}/{size}.
+    webp"` à l'URL stockée ici. Rien aujourd'hui ne laisse un utilisateur influencer cette URL
+    (elle vient exclusivement de la réponse TCGdex, jamais d'une requête entrante) — mais si un
+    jour TCGdex renvoyait une URL détournée (compromission amont), ce contrôle l'empêche
+    d'atteindre le réseau interne. Volontairement pas une liste blanche stricte du domaine
+    `assets.tcgdex.net` : les doublures de test (`tests/test_import_service.py`) utilisent des
+    URL factices `https://x/...`, fidèles en forme mais pas en domaine — seuls le schéma et
+    l'absence d'IP privée/de boucle/de lien-local sont vérifiés."""
+    parts = urlsplit(url)
+    if parts.scheme != "https" or not parts.hostname:
+        return False
+    try:
+        ip = ipaddress.ip_address(parts.hostname)
+    except ValueError:
+        return True  # nom de domaine, pas une IP littérale — résolution laissée à httpx
+    return not (ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved)
 
 # Étapes d'évolution ordinaires (TCGdex `stage`, en français — seule langue dont on récupère le
 # détail complet de carte, voir `import_catalogue`) : tout `stage` en dehors de cette liste porte
@@ -105,7 +127,11 @@ async def _upsert_card(
     card.rarity = detail.get("rarity")
     card.supertype = detail.get("category")
     card.hp = detail.get("hp")
-    card.image_url = detail.get("image")
+    image_url = detail.get("image")
+    if image_url is not None and not _is_safe_image_url(image_url):
+        logger.warning("image_url rejetée pour %s (hôte suspect) : %s", tcgdex_card_id, image_url)
+        image_url = None
+    card.image_url = image_url
     card.illustrator = detail.get("illustrator")
     card.attacks = detail.get("attacks")
     card.abilities = detail.get("abilities")

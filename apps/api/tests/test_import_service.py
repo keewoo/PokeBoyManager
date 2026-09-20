@@ -12,7 +12,7 @@ migration `b671eb503fa3`) et passe avec.
 
 from sqlalchemy import select
 
-from pbm_api.catalog.import_service import _rule_marker, import_catalogue
+from pbm_api.catalog.import_service import _is_safe_image_url, _rule_marker, import_catalogue
 from pbm_api.catalog.ptcg_client import PtcgUnavailableError
 from pbm_api.models import Card, CardName, Set
 
@@ -200,6 +200,55 @@ def test_rule_marker_uses_stage_when_no_suffix():
     assert _rule_marker({"suffix": "ex", "stage": "Niveau 2"}) == "ex"
     assert _rule_marker({"suffix": None, "stage": "Base"}) is None
     assert _rule_marker({"suffix": None, "stage": None}) is None
+
+
+def test_is_safe_image_url_accepts_https_domain_names():
+    """La forme réelle (`assets.tcgdex.net`) et celle des doublures de test (`https://x/...`,
+    voir `FR_SET_DETAIL` ci-dessus) doivent toutes deux passer : seuls schéma et IP littérale
+    sont contrôlés, pas un domaine précis (mission `v5-securite`, SSRF en défense en
+    profondeur)."""
+    assert _is_safe_image_url("https://assets.tcgdex.net/fr/sv/sv03.5/006") is True
+    assert _is_safe_image_url("https://x/006") is True
+
+
+def test_is_safe_image_url_rejects_non_https_schemes():
+    assert _is_safe_image_url("http://assets.tcgdex.net/fr/sv/sv03.5/006") is False
+    assert _is_safe_image_url("file:///etc/passwd") is False
+    assert _is_safe_image_url("ftp://assets.tcgdex.net/006") is False
+
+
+def test_is_safe_image_url_rejects_private_and_link_local_and_loopback_ips():
+    """Le trio classique d'une cible SSRF interne : métadonnées cloud (lien-local), boucle
+    locale, réseau privé."""
+    assert _is_safe_image_url("https://169.254.169.254/latest/meta-data") is False
+    assert _is_safe_image_url("https://127.0.0.1/006") is False
+    assert _is_safe_image_url("https://10.0.0.5/006") is False
+
+
+def test_is_safe_image_url_rejects_url_without_host():
+    assert _is_safe_image_url("https:///006") is False
+
+
+class PoisonedImageUrlTcgdexClient(FakeTcgdexClient):
+    """Simule une réponse TCGdex compromise dont `image` pointerait vers le réseau interne."""
+
+    async def get_card(self, lang: str, card_id: str) -> dict:
+        detail = await super().get_card(lang, card_id)
+        if card_id == "sv03.5-006":
+            detail = {**detail, "image": "https://169.254.169.254/006"}
+        return detail
+
+
+async def test_import_catalogue_rejects_a_card_image_url_pointing_at_a_private_ip(db_session):
+    """Bout en bout (mission `v5-securite` point 2) : une réponse TCGdex compromise qui
+    pointerait `image` vers le réseau interne n'est jamais stockée telle quelle — la carte est
+    importée sans image plutôt qu'avec une URL que `GET /img/cards/{id}` irait interroger
+    côté serveur."""
+    await import_catalogue(db_session, PoisonedImageUrlTcgdexClient(), FakePtcgClient())
+
+    result = await db_session.execute(select(Card).where(Card.tcgdex_id == "sv03.5-006"))
+    card = result.scalar_one()
+    assert card.image_url is None
 
 
 async def test_import_catalogue_is_idempotent(db_session):
