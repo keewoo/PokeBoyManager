@@ -85,6 +85,13 @@ rester alignée avec `SESSION_COOKIE_NAME` côté API : le middleware de garde d
 la présence de ce cookie, `apps/web/src/middleware.ts`). `apps/api` accepte les requêtes
 cross-origin du front (`CORSMiddleware`, origine = `APP_PUBLIC_URL`, `allow_credentials=True`
 pour le cookie de session) — obligatoire dès qu'ils tournent sur des ports/domaines différents.
+`apps/web` lit aussi `NEXT_PUBLIC_UPLOAD_ORIGIN` (lot `v5-e2e`, doit rester alignée avec
+`S3_ENDPOINT_URL` côté API quand `STORAGE_BACKEND=s3` — vide/absente avec `STORAGE_BACKEND=local`) :
+la CSP `connect-src` du middleware (lot `v5-securite`) doit inclure l'origine du stockage objet,
+sinon le `PUT` présigné direct du navigateur vers MinIO est bloqué et **tout envoi de photo
+échoue** — trouvé en faisant tourner un vrai envoi par le navigateur pour la première fois
+(`parcours-complet.spec.ts`), jamais exercé avant par les e2e précédentes (résultat toujours semé
+directement en base).
 
 Pages d'authentification (lot `v1-pages-auth`) : `/inscription`, `/connexion`,
 `/mot-de-passe-oublie`, `/verifier?token=…`, `/reinitialiser?token=…` — ces deux derniers
@@ -558,6 +565,26 @@ déjà couverts sans réseau par `card-detail.spec.ts`.
 Test d'accès croisé propre à ce lot : un second utilisateur reçoit 404 sur `GET /uploads/{id}` et
 `GET /uploads/{id}/detections` de l'envoi réel du premier — isolation déjà couverte ailleurs sur
 un résultat *semé*, jamais encore sur un envoi/détections produits par le vrai pipeline.
+
+**Deux bogues trouvés en étant la première spec à exercer un vrai envoi de photo par le
+navigateur** (les e2e précédentes sèment leur résultat directement en base) :
+- La CSP `connect-src` du lot `v5-securite` (`apps/web/src/middleware.ts`) n'autorisait que
+  `'self'` et l'origine de l'API — pas celle du stockage objet. Avec `STORAGE_BACKEND=s3` (MinIO
+  en dev/CI), le navigateur dépose la photo brute par un `PUT` direct vers cette origine
+  (présignée, `pbm_api.s3.ObjectStorage.presign_put`) : la CSP le bloquait, et **tout envoi de
+  photo échouait silencieusement** (page affichant « L'envoi a échoué. », rien dans les journaux
+  serveur puisque la requête n'atteint jamais l'API). Corrigé par `NEXT_PUBLIC_UPLOAD_ORIGIN`
+  (voir plus haut) ajoutée à `connect-src` quand elle est définie.
+- `/auth/register` est limité en débit par IP depuis `v5-securite`
+  (`LOGIN_RATE_LIMIT_MAX_ATTEMPTS`/`_WINDOW_SECONDS`, un compteur Redis partagé avec `/auth/
+  login`/`/auth/forgot`). Toutes les specs e2e tournent depuis la même IP contre la même
+  instance API : `auth`+`validation`+`card-detail`+`parcours-complet` totalisaient déjà 5
+  inscriptions dans une CI qui repart de zéro — pile à la limite par défaut (5), sans marge pour
+  la moindre reprise (`retries: 1` en CI). `playwright.config.ts` relève `LOGIN_RATE_LIMIT_MAX_
+  ATTEMPTS` pour cette seule instance e2e (jamais en UAT/PROD) ; le second utilisateur du test
+  d'accès croisé de ce lot est en plus seedé directement en base
+  (`scripts/seed_e2e_second_user.py`) plutôt que par `/auth/register`, pour ne pas alourdir ce
+  compteur partagé.
 
 ## Règles de la flotte applicables ici (résumé de `~/.claude/CLAUDE.md`)
 

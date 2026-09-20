@@ -13,6 +13,37 @@ navigateur, une vraie détection OpenCV, une vraie identification + rapprochemen
 vrai worker arq. Seul l'aller-retour réseau vers le fournisseur IA est remplacé par un fournisseur
 simulé, jamais activé hors e2e.
 
+## Deux régressions trouvées et corrigées (rebase sur `v5-securite`)
+
+`parcours-complet.spec.ts` est la première spec e2e à faire réellement transiter une photo par le
+navigateur (les précédentes sèment leur résultat directement en base) — elle a immédiatement
+débusqué deux effets de bord du lot `v5-securite`, fusionné dans `main` pendant cette session :
+
+1. **CSP `connect-src` bloquait tout envoi de photo.** `apps/web/src/middleware.ts` n'autorisait
+   que `'self'` et l'origine de l'API. Avec `STORAGE_BACKEND=s3` (MinIO en dev/CI), le navigateur
+   dépose la photo brute par un `PUT` présigné **direct** vers l'origine du stockage objet —
+   jamais via l'API. La CSP le bloquait silencieusement (page affichant « L'envoi a échoué. »,
+   aucune trace côté serveur puisque la requête n'atteint jamais l'API). C'est un bogue réel de
+   `/ajouter` en dev/CI, pas un artefact d'e2e — invisible jusqu'ici car aucune spec ne faisait
+   transiter un vrai fichier par le navigateur. Corrigé par une nouvelle variable
+   `NEXT_PUBLIC_UPLOAD_ORIGIN` (`.env.example`, `apps/web/src/lib/config.ts`), ajoutée à
+   `connect-src` par `apps/web/src/middleware.ts` quand elle est définie (vide avec
+   `STORAGE_BACKEND=local`, où l'envoi passe par l'API elle-même, déjà couverte).
+2. **`/auth/register` limité en débit par IP, pile à la limite pour la suite e2e.** `v5-securite`
+   ajoute un compteur Redis partagé par IP pour `/auth/register`/`/auth/login`/`/auth/forgot`
+   (5 tentatives/900 s par défaut). Toutes les specs e2e tournent depuis la même IP contre la
+   même instance API : `auth`(1) + `validation`(1) + `card-detail`(2) + `parcours-complet`(1, si
+   son second utilisateur passait aussi par `/auth/register`) = 5 — exactement la limite, sans
+   marge pour la moindre reprise (`retries: 1` en CI). Corrigé sur deux fronts : le second
+   utilisateur du test d'accès croisé de ce lot est seedé directement en base
+   (`scripts/seed_e2e_second_user.py`, jamais via `/auth/register`) plutôt que d'ajouter une
+   6ᵉ inscription ; et `playwright.config.ts` relève `LOGIN_RATE_LIMIT_MAX_ATTEMPTS` pour cette
+   seule instance e2e (jamais en UAT/PROD), pour laisser de la marge aux reprises.
+
+Ces deux bogues auraient cassé la CI GitHub Actions dès la fusion de `v5-securite` sur une PR
+exerçant un vrai envoi — c'est-à-dire dès celle-ci. Trouvés et corrigés avant le push, avec preuve
+(voir ci-dessous).
+
 ## Livrables
 
 - `apps/api/src/pbm_api/ai/simulated_provider.py` — `SimulatedProvider(AIProvider)`, activé par le
@@ -36,25 +67,32 @@ simulé, jamais activé hors e2e.
   (migration `328aef94ea58`), postérieur à ce module jamais rejoué depuis — `seed()` échouait sur
   une contrainte NOT NULL. Corrigé avec les mêmes valeurs par défaut que
   `pbm_api.admin create-user` (consentement porté par JF).
+- `apps/web/src/lib/config.ts::getUploadOrigin` + `apps/web/src/middleware.ts` + `.env.example`
+  (`NEXT_PUBLIC_UPLOAD_ORIGIN`) — corrige le blocage CSP de l'envoi de photo (voir plus haut).
+- `apps/api/scripts/seed_e2e_second_user.py` — second utilisateur du test d'accès croisé, seedé
+  directement en base plutôt que via `/auth/register` (voir plus haut).
 - `CLAUDE.md` — section « Parcours e2e complet (lot v5-e2e) ».
 
 ## Preuves
 
-- `uv run pytest -q` (apps/api, `TZ=Europe/Paris`, `TEST_DATABASE_URL=…/pbm_v5_e2e_test`) :
-  **527 passed, 2 failed** — les 2 échecs (`test_catalogue_seed.py`, export/import) sont
-  `pg_dump: command not found`, un binaire PostgreSQL client absent de cette session chimera (rien
-  à voir avec ce lot ; CI l'installe via l'image officielle). `uv run ruff check .` : clean.
-- `apps/api/tests/test_ai_providers.py` : 27 passed (dont les 3 nouveaux, un échoue sans la
+- `uv run pytest -q` (apps/api, `TZ=Europe/Paris`, `TEST_DATABASE_URL=…/pbm_v5_e2e_test`, après
+  rebase sur `v5-securite`) : **544 passed, 2 failed** — les 2 échecs (`test_catalogue_seed.py`,
+  export/import) sont `pg_dump: command not found`, un binaire PostgreSQL client absent de cette
+  session chimera (rien à voir avec ce lot ; CI l'installe via l'image officielle).
+  `uv run ruff check .` : clean.
+- `apps/api/tests/test_ai_providers.py` : 30 passed (dont les 3 nouveaux, un échoue sans la
   branche ajoutée à `create_provider` : `test_create_provider_returns_simulated_when_flag_enabled`
   renverrait `AnthropicProvider` au lieu de `SimulatedProvider`).
-- `pnpm --filter @pbm/web lint|type-check|test|build` : clean, **81 passed** (vitest), build
-  Next.js réussi (18 routes).
-- `pnpm exec playwright test` (7 specs, `workers: 1`, worker arq + fournisseur simulé) :
-  **6 passed, 1 failed** — le seul échec est `auth.spec.ts` (case CGU instable sous charge), déjà
-  documenté comme pré-existant et sans rapport avec un lot précis dans
-  `docs/roadmap/comptes-rendus/v4-fiche.md`. `parcours-complet.spec.ts` seul, isolé (aucune charge
-  concurrente) : **1 passed** en 1,9 min, log worker arq :
-  `detections_count: 9, method: 'opencv', identified_count: 9`.
+- `pnpm --filter @pbm/web lint|type-check|test|build` : clean, **84 passed** (vitest), build
+  Next.js réussi.
+- `pnpm exec playwright test` (7 specs, `workers: 1`, worker arq + fournisseur simulé), après
+  correction des deux régressions ci-dessus : **7 passed en 1,8 min** (serveurs relancés à froid,
+  aucune réutilisation d'un build ne portant pas `NEXT_PUBLIC_UPLOAD_ORIGIN`). Log worker arq du
+  job de reconnaissance : `detections_count: 9, method: 'opencv', identified_count: 9`.
+  Avant ces deux corrections, la même suite échouait de façon reproductible (`parcours-complet.
+  spec.ts` seul, isolé, sans aucune charge concurrente) sur le `PUT` d'envoi bloqué par la CSP —
+  ce n'était pas un artefact de charge partagée chimera comme le sont les flakys ponctuels déjà
+  documentés par `v4-fiche`, mais une régression déterministe qui aurait aussi cassé la CI.
 - Test d'accès croisé propre à ce lot (dans `parcours-complet.spec.ts`) : un second utilisateur
   reçoit **404** sur `GET /uploads/{id}` et `GET /uploads/{id}/detections` de l'envoi réel du
   premier — jusqu'ici, l'isolation n'était exercée que sur un résultat *semé* directement en base
@@ -114,9 +152,11 @@ simulé, jamais activé hors e2e.
 - `test_catalogue_seed.py` (2 tests, pré-existants, hors périmètre de ce lot) échoue sur ce poste
   faute de `pg_dump` — non installé dans cette session chimera. Signalé, non corrigé (nécessiterait
   d'installer `postgresql-client`, hors périmètre e2e).
-- `auth.spec.ts` reste flaky sous charge concurrente sur chimera (case CGU) — pré-existant,
-  documenté par `v4-fiche`, confirmé de nouveau ici. `timeout: 60_000` réduit le bruit mais ne
-  l'élimine pas complètement ; la CI GitHub Actions fait foi.
+- `auth.spec.ts` avait déjà flakyé sous charge concurrente sur chimera (case CGU) pendant cette
+  session, comme documenté par `v4-fiche` — disparu une fois les deux régressions ci-dessus
+  corrigées et `workers: 1`/`timeout: 60_000` en place (dernière suite complète : 7/7, 1,8 min).
+  Pas de garantie que ça ne revienne jamais sous charge très élevée ; la CI GitHub Actions
+  (runner dédié) reste l'autorité finale, pas une suite verte sur chimera.
 
 ## Reste à faire
 

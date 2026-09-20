@@ -49,6 +49,15 @@ export default defineConfig({
         SMTP_HOST: process.env.SMTP_HOST || "localhost",
         SMTP_PORT: process.env.SMTP_PORT || "51025",
         APP_PUBLIC_URL: WEB_BASE_URL,
+        // Lot `v5-securite` limite désormais `/auth/register` (et `/auth/login`/`/auth/forgot`)
+        // à `LOGIN_RATE_LIMIT_MAX_ATTEMPTS` tentatives par IP sur `LOGIN_RATE_LIMIT_WINDOW_
+        // SECONDS` (5/900 s par défaut, `pbm_api.security.rate_limit.get_login_rate_limiter`,
+        // un seul compteur Redis partagé par les trois routes). Toutes les specs e2e tournent
+        // depuis la même IP (127.0.0.1) contre la même instance API : `auth`+`validation`+
+        // `card-detail`+`parcours-complet` totalisent déjà 5 inscriptions dans une CI qui
+        // repart de zéro — pile à la limite, sans marge pour la moindre reprise (`retries: 1`
+        // en CI). Relevé ici pour cette seule instance e2e, jamais en UAT/PROD.
+        LOGIN_RATE_LIMIT_MAX_ATTEMPTS: "50",
         // Lot `v5-e2e` (parcours complet) : bascule `pbm_api.ai.factory.create_provider` sur un
         // fournisseur simulé (aucun appel réseau, réponses déterministes) — jamais activé hors
         // e2e, aucune clé IA réelle disponible sur chimera. Sans effet sur les autres specs, qui
@@ -66,6 +75,11 @@ export default defineConfig({
       timeout: 180_000,
       env: {
         NEXT_PUBLIC_API_URL: API_BASE_URL,
+        // CSP `connect-src` (lot `v5-securite`) : sans l'origine du stockage objet, le `PUT`
+        // présigné direct du navigateur vers MinIO est bloqué et tout envoi de photo échoue
+        // (constaté par le lot `v5-e2e`, voir `src/middleware.ts`/`src/lib/config.ts`). Doit
+        // rester alignée avec `S3_ENDPOINT_URL` de l'entrée `webServer` API ci-dessus.
+        NEXT_PUBLIC_UPLOAD_ORIGIN: process.env.S3_ENDPOINT_URL || "http://localhost:59000",
       },
     },
     {

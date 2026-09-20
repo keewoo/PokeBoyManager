@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { getApiBaseUrl, getSessionCookieName } from "@/lib/config";
+import { getApiBaseUrl, getSessionCookieName, getUploadOrigin } from "@/lib/config";
 
 // Élargi (mission `v5-securite` point 2) : les en-têtes de sécurité ci-dessous doivent
 // s'appliquer à toute page, pas seulement aux routes protégées par session — seuls les
@@ -13,6 +13,14 @@ const PROTECTED_PATH_PREFIXES = ["/collection", "/ajouter", "/carte", "/profil"]
 
 function buildCsp(nonce: string): string {
   const apiOrigin = new URL(getApiBaseUrl()).origin;
+  // Avec `STORAGE_BACKEND=s3` (MinIO en dev/CI), le navigateur dépose la photo brute par un
+  // `PUT` direct vers l'origine du stockage objet, présignée par l'API (`pbm_api.uploads`,
+  // `pbm_api.s3.ObjectStorage.presign_put`) — jamais via l'API elle-même. Sans cette origine en
+  // `connect-src`, ce `PUT` est bloqué par la CSP et tout envoi de photo échoue
+  // (constaté par le lot `v5-e2e`, premier à exercer un vrai envoi depuis le navigateur).
+  // `null` avec `STORAGE_BACKEND=local` (UAT/PROD) : l'envoi passe alors par l'API elle-même,
+  // déjà couverte par `apiOrigin`.
+  const uploadOrigin = getUploadOrigin();
   // `script-src` par nonce (généré à chaque requête, voir plus bas) plutôt que `'self'` seul :
   // le layout racine (`src/app/layout.tsx`) pose un petit script inline pour choisir le thème
   // avant le premier rendu (éviter un flash clair/sombre) — un nonce laisse ce seul script
@@ -26,7 +34,7 @@ function buildCsp(nonce: string): string {
     `script-src 'self' 'nonce-${nonce}'`,
     "style-src 'self' 'unsafe-inline'",
     `img-src 'self' data: ${apiOrigin}`,
-    `connect-src 'self' ${apiOrigin}`,
+    `connect-src 'self' ${apiOrigin}${uploadOrigin ? ` ${uploadOrigin}` : ""}`,
     "font-src 'self'",
     "frame-ancestors 'none'",
     "base-uri 'self'",
