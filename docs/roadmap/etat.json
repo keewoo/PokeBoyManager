@@ -2098,21 +2098,21 @@
       "attente": null
     },
     "v4-dashboard": {
-      "statut": "en_cours",
+      "statut": "integre",
       "machine": "chimera",
       "branche": "roadmap/v4-dashboard",
       "debut_reel": "2026-09-20",
-      "fin_reelle": null,
+      "fin_reelle": "2026-09-20",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 388e1b32b intégré dans main — voir docs/roadmap/comptes-rendus/v4-dashboard.md",
+          "maj": "2026-09-20T09:46+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 388e1b32b intégré dans main — voir docs/roadmap/comptes-rendus/v4-dashboard.md",
+          "maj": "2026-09-20T09:46+0200"
         },
         "securite": {
           "etat": "a_faire",
@@ -2140,14 +2140,14 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 388e1b32b intégré dans main — voir docs/roadmap/comptes-rendus/v4-dashboard.md",
+          "maj": "2026-09-20T09:46+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 388e1b32b intégré dans main — voir docs/roadmap/comptes-rendus/v4-dashboard.md",
+          "maj": "2026-09-20T09:46+0200"
         }
       },
       "journal": [
@@ -2156,9 +2156,39 @@
           "machine": "chimera",
           "evenement": "démarré",
           "detail": "roadmap/v4-dashboard"
+        },
+        {
+          "quand": "2026-09-20T09:46+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit 388e1b32b"
         }
       ],
-      "compte_rendu": {},
+      "compte_rendu": {
+        "resume": "Accueil connecté (`/` pour un utilisateur avec session) : valeur totale de la collection et courbe sur 90 jours, cinq plus fortes variations sur 30 jours (triées par montant absolu, comme la maquette), cinq derniers ajouts, raccourci « Ajouter des photos ». `GET /me/dashboard` réutilise tel quel `pbm_api.pricing.valuation.bulk_item_values_multi` (posé par `v4-collection`) pour valoriser toute la collection en une seule requête `UNION ALL`/`DISTINCT ON` couvrant à la fois les points de la courbe et la référence 30 jours — jamais une requête de prix par exemplaire ni par date. `apps/web/src/app/page.tsx` bascule désormais entre l'accueil visiteur (`LandingPage`, extraite telle quelle de l'ancien contenu de la page) et l'accueil connecté (`DashboardView`) selon la présence du cookie de session, lue côté serveur (`cookies()`, Next 15) — jamais un flash de contenu visiteur pour un utilisateur connecté.",
+        "livrables": [
+          "`apps/api/src/pbm_api/dashboard/` (nouveau module) :",
+          "`service.py` — `get_dashboard` : une seule requête pour charger les exemplaires (jointure",
+          "`schemas.py` — `DashboardResponse`/`DashboardValuePoint`/`DashboardMoverCard`/",
+          "`apps/api/src/pbm_api/routers/dashboard.py` — `GET /me/dashboard` (session requise,",
+          "`apps/api/tests/test_dashboard_routes.py` (6 tests) — voir « Tests ».",
+          "`apps/web/src/lib/api/dashboard.ts` — client HTTP typé (`getDashboard`).",
+          "`apps/web/src/app/home-content.tsx` — bascule visiteur/connecté, isolée de `page.tsx` (Server",
+          "`apps/web/src/components/landing/landing-page.tsx` — ancien contenu de `page.tsx` (hero, 4"
+        ],
+        "preuves": [],
+        "ecarts": [
+          "Comme `v4-collection`, aucune suite Playwright durable pour ce lot (voir « Environnement",
+          "Travail de développement (routes, service, composants, tests) trouvé déjà fait au démarrage de"
+        ],
+        "reste": [
+          "`AppShell` (`apps/web/src/components/app-shell.tsx`, `v0-design-system`) ne bascule jamais son",
+          "`Cross-Origin-Resource-Policy` manquant sur `GET /img/cards/{id}` (`routers/images.py`) —",
+          "Corriger l'environnement Playwright de chimera à la racine (`sudo apt-get install -y libnspr4",
+          "Installer `postgresql-client` (`pg_dump`) sur chimera pour que `test_catalogue_seed.py` passe",
+          "Alertes de prix (V6, mentionné en « aboutissants ») — hors périmètre de ce lot."
+        ]
+      },
       "attente": null
     },
     "v5-rgpd": {
