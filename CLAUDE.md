@@ -484,6 +484,35 @@ formulaire s'est révélée instable à cliquer dans l'environnement Playwright 
 (`auth.spec.ts` échoue au même endroit, non lié à ce lot) ; seule la fiche elle-même reste
 exercée par le navigateur.
 
+## Revue de sécurité avant ouverture (lot `v5-securite`)
+
+Rapport complet : `docs/SECURITE.md` (accès croisé, en-têtes/cookies/CORS/débit/taille d'envoi,
+journaux, dépendances, SSRF, envoi de fichiers malveillants — ce qui a été testé, corrigé,
+laissé en l'état et pourquoi). Ce que ça change dans le code, pour les lots suivants :
+
+- `pbm_api.security.headers.SecurityHeadersMiddleware` (branché dans `main.py`) pose
+  `Content-Security-Policy`/`X-Frame-Options`/`X-Content-Type-Options`/`Referrer-Policy`/
+  `Permissions-Policy`/`Strict-Transport-Security` sur **toute** réponse de l'API — sauf
+  `/docs`/`/redoc`/`/openapi.json`, qui gardent les en-têtes défensifs mais pas la CSP stricte
+  (Swagger UI charge des scripts depuis un CDN). Toute nouvelle route en profite sans rien à
+  faire.
+- `apps/web/src/middleware.ts` pose la même famille d'en-têtes sur **toute** page (plus
+  seulement les quatre routes protégées par session) et génère un nonce CSP par requête,
+  transmis à `layout.tsx` via l'en-tête `x-nonce` (`headers()` de `next/headers`) — tout script
+  inline ajouté par un futur lot doit porter ce nonce (`<script nonce={nonce}>`) pour s'exécuter
+  sous cette CSP ; `'unsafe-inline'` reste ouvert sur `style-src` uniquement (attribut `style`
+  dynamique, pas les balises `<script>`).
+- `pbm_api.security.log_filter` a maintenant deux redactions installées au démarrage
+  (`install_api_key_redaction`, `install_secret_url_redaction`) : toute nouvelle famille de
+  secret journalisable (nouveau jeton d'URL, nouveau format de clé) s'ajoute par un nouveau
+  motif + un nouvel appel `_install_redaction(...)`, pas une réécriture du mécanisme.
+- `StorageBackend` (`pbm_api.storage`) expose désormais `head(key) -> int | None` (taille sans
+  téléchargement) sur les deux implémentations (`ObjectStorage`, `LocalObjectStorage`) — à
+  utiliser avant tout `get()` sur un contenu dont la taille n'est pas déjà garantie par un
+  contrôle amont (voir `uploads/service.py::complete_upload` pour l'usage de référence).
+- `/auth/register` est désormais limité en débit par IP (même `RateLimiter` que `/auth/login`/
+  `/auth/forgot`, scope `register:ip`).
+
 ## Règles de la flotte applicables ici (résumé de `~/.claude/CLAUDE.md`)
 
 - On construit sur chimera (32 Go, 16 threads) et on ne construit jamais sur la machine qui sert.
