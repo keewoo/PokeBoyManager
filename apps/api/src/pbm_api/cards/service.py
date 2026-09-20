@@ -3,6 +3,9 @@ Valeur (`get_card_detail`, `get_price_history`), exemplaires possédés pour l'o
 exemplaires » (`list_my_items`). Les onglets Histoire/En jeu ne passent pas par ce module : ils
 réutilisent tels quels `GET /cards/{id}/insights` et `GET /cards/{id}/in-game-study` (missions
 `v4-anecdotes`/`v4-jeu`), déjà en « génération à la demande si absente ».
+
+`list_featured_cards` (mission `pbm-front-accueil`) sert l'accueil visiteur : neuf vraies cartes
+du catalogue, pas de session requise (voir `pbm_api.routers.cards`).
 """
 
 import uuid
@@ -11,7 +14,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from typing import Literal
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.cards.errors import CardNotFoundError
@@ -211,3 +214,49 @@ async def list_my_items(
             )
         )
     return out
+
+
+FEATURED_CARDS_LIMIT = 9
+
+
+@dataclass(frozen=True)
+class FeaturedCard:
+    card_id: uuid.UUID
+    name: str
+    number: str
+    set_name: str
+
+
+async def list_featured_cards(
+    session: AsyncSession, limit: int = FEATURED_CARDS_LIMIT
+) -> list[FeaturedCard]:
+    """Neuf cartes pour la démonstration de l'accueil visiteur (mission `pbm-front-accueil`,
+    point 1) : la carte la plus valorisée de chaque extension (`card_value_rank`, mission
+    `v4-ranking` — déjà rafraîchie par le cron quotidien de prix), jusqu'à `limit` extensions
+    distinctes. Stable d'un rendu à l'autre (ne change qu'au prochain `REFRESH MATERIALIZED
+    VIEW`), jamais un tirage aléatoire par requête. Une carte sans image officielle ou sans
+    prix connu n'est jamais retenue — la démonstration doit ressembler à ce que fait le
+    produit, pas laisser deviner une vignette vide."""
+    result = await session.execute(
+        text(
+            """
+            SELECT card_id, name, number, set_name FROM (
+                SELECT DISTINCT ON (cvr.set_id)
+                    c.id AS card_id, c.name AS name, c.number AS number,
+                    s.name AS set_name, cvr.reference_price_eur AS reference_price_eur
+                FROM card_value_rank cvr
+                JOIN cards c ON c.id = cvr.card_id
+                JOIN sets s ON s.id = c.set_id
+                WHERE c.image_url IS NOT NULL AND cvr.reference_price_eur IS NOT NULL
+                ORDER BY cvr.set_id, cvr.reference_price_eur DESC
+            ) top_per_set
+            ORDER BY reference_price_eur DESC
+            LIMIT :limit
+            """
+        ),
+        {"limit": limit},
+    )
+    return [
+        FeaturedCard(card_id=row.card_id, name=row.name, number=row.number, set_name=row.set_name)
+        for row in result
+    ]

@@ -2,7 +2,10 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { LegalFooter } from "@/components/legal-footer";
-import { ScanDemo } from "@/components/scan-demo";
+import type { FeaturedCard } from "@/lib/api/featured-cards";
+
+import { FeaturedCards } from "./featured-cards";
+import { HeroImage } from "./hero-image";
 
 const STEPS = [
   {
@@ -33,7 +36,7 @@ const STEPS = [
 
 const AI_PROVIDERS = ["Claude · Anthropic", "Gemini · Google", "ChatGPT · OpenAI"];
 
-export function LandingPage() {
+export function LandingPage({ featuredCards }: { featuredCards: FeaturedCard[] }) {
   return (
     <div>
       <div className="grid items-center gap-9 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
@@ -41,7 +44,7 @@ export function LandingPage() {
           <span className="font-mono text-xs font-semibold text-muted-foreground">
             ESPACE PRIVÉ · TON IA · TES CARTES
           </span>
-          <h1 className="mt-2.5 font-heading text-4xl font-extrabold leading-[1.05] text-foreground sm:text-5xl">
+          <h1 className="mt-2.5 break-words font-heading text-3xl font-extrabold leading-[1.1] text-foreground sm:text-4xl sm:leading-[1.05] lg:text-5xl">
             Photographie ton classeur.
             <br />
             <em className="text-primary not-italic">On retrouve chaque carte</em> et ce qu&apos;elle
@@ -60,8 +63,10 @@ export function LandingPage() {
             </Button>
           </div>
         </div>
-        <ScanDemo />
+        <HeroImage />
       </div>
+
+      <FeaturedCards cards={featuredCards} />
 
       <div className="mt-9 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
         {STEPS.map((step) => (

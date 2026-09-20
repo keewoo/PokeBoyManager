@@ -61,19 +61,55 @@ describe("middleware", () => {
     expect(nonceOf(first)).not.toBe(nonceOf(second));
   });
 
+  // Lot `pbm-front-accueil` : sans `NEXT_PUBLIC_API_URL` (absente en dev sans `.env`, ou build
+  // mal configuré), `getApiBaseUrl()` renvoie désormais `/api` (relatif) plutôt que
+  // "http://localhost:8000" en dur — une origine relative résout contre 'self', déjà présent :
+  // rien à ajouter à `connect-src`/`img-src`, jamais "localhost" dans la CSP non plus.
+  describe("connect-src et img-src sans NEXT_PUBLIC_API_URL", () => {
+    const ORIGINAL = process.env.NEXT_PUBLIC_API_URL;
+
+    afterEach(() => {
+      if (ORIGINAL === undefined) delete process.env.NEXT_PUBLIC_API_URL;
+      else process.env.NEXT_PUBLIC_API_URL = ORIGINAL;
+    });
+
+    it("n'ajoute aucune origine à connect-src/img-src (l'API relative /api résout contre 'self')", () => {
+      delete process.env.NEXT_PUBLIC_API_URL;
+
+      const csp = middleware(requestFor("/")).headers.get("Content-Security-Policy");
+
+      expect(csp).toContain("connect-src 'self';");
+      expect(csp).toContain("img-src 'self' data:;");
+      expect(csp).not.toContain("localhost");
+    });
+
+    it("ajoute l'origine absolue configurée quand NEXT_PUBLIC_API_URL est définie", () => {
+      process.env.NEXT_PUBLIC_API_URL = "https://pokeboy.acx-connect.com/api";
+
+      const csp = middleware(requestFor("/")).headers.get("Content-Security-Policy");
+
+      expect(csp).toContain("connect-src 'self' https://pokeboy.acx-connect.com;");
+      expect(csp).toContain("img-src 'self' data: https://pokeboy.acx-connect.com;");
+    });
+  });
+
   // Lot `v5-e2e` : sans `NEXT_PUBLIC_UPLOAD_ORIGIN` dans `connect-src`, le `PUT` présigné direct
   // du navigateur vers le stockage objet (`STORAGE_BACKEND=s3`) est bloqué par la CSP et tout
   // envoi de photo échoue — trouvé en faisant réellement transiter un fichier par le navigateur
   // (`apps/web/e2e/parcours-complet.spec.ts`), jamais exercé avant par les e2e précédentes.
   describe("connect-src et l'origine du stockage objet", () => {
-    const ORIGINAL = process.env.NEXT_PUBLIC_UPLOAD_ORIGIN;
+    const ORIGINAL_API = process.env.NEXT_PUBLIC_API_URL;
+    const ORIGINAL_UPLOAD = process.env.NEXT_PUBLIC_UPLOAD_ORIGIN;
 
     afterEach(() => {
-      if (ORIGINAL === undefined) delete process.env.NEXT_PUBLIC_UPLOAD_ORIGIN;
-      else process.env.NEXT_PUBLIC_UPLOAD_ORIGIN = ORIGINAL;
+      if (ORIGINAL_API === undefined) delete process.env.NEXT_PUBLIC_API_URL;
+      else process.env.NEXT_PUBLIC_API_URL = ORIGINAL_API;
+      if (ORIGINAL_UPLOAD === undefined) delete process.env.NEXT_PUBLIC_UPLOAD_ORIGIN;
+      else process.env.NEXT_PUBLIC_UPLOAD_ORIGIN = ORIGINAL_UPLOAD;
     });
 
     it("ajoute l'origine du stockage objet quand NEXT_PUBLIC_UPLOAD_ORIGIN est définie (STORAGE_BACKEND=s3)", () => {
+      process.env.NEXT_PUBLIC_API_URL = "http://localhost:8000";
       process.env.NEXT_PUBLIC_UPLOAD_ORIGIN = "http://localhost:59000";
 
       const csp = middleware(requestFor("/")).headers.get("Content-Security-Policy");
@@ -82,6 +118,7 @@ describe("middleware", () => {
     });
 
     it("n'ajoute rien à connect-src sans NEXT_PUBLIC_UPLOAD_ORIGIN (STORAGE_BACKEND=local)", () => {
+      process.env.NEXT_PUBLIC_API_URL = "http://localhost:8000";
       delete process.env.NEXT_PUBLIC_UPLOAD_ORIGIN;
 
       const csp = middleware(requestFor("/")).headers.get("Content-Security-Policy");

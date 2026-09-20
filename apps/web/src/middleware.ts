@@ -11,8 +11,18 @@ export const config = {
 
 const PROTECTED_PATH_PREFIXES = ["/collection", "/ajouter", "/carte", "/profil"];
 
+// `getApiBaseUrl()` renvoie soit une origine absolue (`NEXT_PUBLIC_API_URL` défini), soit le
+// repli relatif `/api` (mission `pbm-front-accueil`, point 4). `new URL("/api")` lèverait
+// `Invalid URL` (une URL relative n'a pas d'origine sans base) : dans ce cas il n'y a rien à
+// ajouter à la CSP — une origine relative résout contre 'self', déjà présent.
+function apiOriginForCsp(): string | null {
+  const base = getApiBaseUrl();
+  if (base.startsWith("/")) return null;
+  return new URL(base).origin;
+}
+
 function buildCsp(nonce: string): string {
-  const apiOrigin = new URL(getApiBaseUrl()).origin;
+  const apiOrigin = apiOriginForCsp();
   // Avec `STORAGE_BACKEND=s3` (MinIO en dev/CI), le navigateur dépose la photo brute par un
   // `PUT` direct vers l'origine du stockage objet, présignée par l'API (`pbm_api.uploads`,
   // `pbm_api.s3.ObjectStorage.presign_put`) — jamais via l'API elle-même. Sans cette origine en
@@ -33,8 +43,8 @@ function buildCsp(nonce: string): string {
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}'`,
     "style-src 'self' 'unsafe-inline'",
-    `img-src 'self' data: ${apiOrigin}`,
-    `connect-src 'self' ${apiOrigin}${uploadOrigin ? ` ${uploadOrigin}` : ""}`,
+    `img-src 'self' data:${apiOrigin ? ` ${apiOrigin}` : ""}`,
+    `connect-src 'self'${apiOrigin ? ` ${apiOrigin}` : ""}${uploadOrigin ? ` ${uploadOrigin}` : ""}`,
     "font-src 'self'",
     "frame-ancestors 'none'",
     "base-uri 'self'",

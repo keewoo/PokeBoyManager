@@ -32,6 +32,26 @@ jobs:
       - run: pnpm --filter @pbm/web test
       - run: pnpm --filter @pbm/web build
 
+      # Garde (mission `pbm-front-accueil`) : cette étape ne définit délibérément pas
+      # `NEXT_PUBLIC_API_URL` — reproduit exactement la configuration incomplète trouvée en PROD
+      # (JF, capture d'écran du 20/09/2026) où le JavaScript servi contenait encore
+      # "http://localhost:8000" en dur (`src/lib/config.ts`, avant correctif). `.next/static` est
+      # ce qui part réellement vers le navigateur ; `.next/server` peut légitimement mentionner
+      # des chemins locaux (sourcemaps) sans rapport avec ce risque.
+      - name: Garde — aucune URL localhost dans le JavaScript de production
+        run: |
+          # Motif CIBLÉ : une URL/origine localhost (`http://localhost:8000`, `//localhost`,
+          # `localhost:<port>`) — exactement le défaut trouvé en PROD (JF, capture du 20/09/2026),
+          # un repli en dur de `src/lib/config.ts`. Pas le mot nu "localhost" : le polyfill URL de
+          # Next (`"localhost"===host`, token de la spec WHATWG URL) le contient dans TOUT build et
+          # n'est jamais une adresse d'API — une garde sur le mot nu serait un faux positif
+          # ininterprétable. `.next/static` est ce qui part réellement vers le navigateur.
+          if grep -rlaE 'localhost:[0-9]|//localhost' apps/web/.next/static; then
+            echo "::error::URL localhost trouvée dans apps/web/.next/static — src/lib/config.ts doit se replier sur une origine relative (/api), jamais un hôte en dur" >&2
+            exit 1
+          fi
+          echo "Aucune URL localhost dans apps/web/.next/static."
+
       # Non bloquant pour l'instant (mission `v5-securite` point 2) : au 20/09/2026, les seules
       # failles connues (`pnpm audit`) sont dans des devDependencies de build (vite/vitest/
       # postcss/esbuild), jamais expédiées dans le bundle de production — voir docs/SECURITE.md

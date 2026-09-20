@@ -1,8 +1,26 @@
+// Sans `NEXT_PUBLIC_API_URL` (absente à la construction), jamais une valeur en dur : le navigateur
+// résout `/api` contre l'origine courante, que Caddy achemine déjà vers l'API en PROD
+// (`docs/infra/SERVEUR-POKEBOY.md`) — et en dev, `.env` (copié depuis `.env.example`) définit la
+// variable explicitement plutôt que de dépendre d'un repli ici (mission `pbm-front-accueil` :
+// "localhost" ne doit plus apparaître dans le JavaScript servi en production).
+const RELATIVE_API_FALLBACK = "/api";
+
 export function getApiBaseUrl(): string {
   const url = process.env.NEXT_PUBLIC_API_URL;
   if (!url) {
-    return "http://localhost:8000";
+    return RELATIVE_API_FALLBACK;
   }
+  return url.replace(/\/+$/, "");
+}
+
+// Réservé aux Server Components / appels côté serveur (ex: accueil visiteur, mission
+// `pbm-front-accueil` point 1) : contrairement au navigateur, `fetch()` exécuté côté Node n'a
+// pas d'origine implicite pour résoudre une URL relative comme `/api` — il faut une URL absolue.
+// `null` sans `NEXT_PUBLIC_API_URL` (jamais une origine devinée) : l'appelant doit alors renoncer
+// à l'appel plutôt que de risquer une requête vers une origine inventée.
+export function getServerApiBaseUrl(): string | null {
+  const url = process.env.NEXT_PUBLIC_API_URL;
+  if (!url) return null;
   return url.replace(/\/+$/, "");
 }
 

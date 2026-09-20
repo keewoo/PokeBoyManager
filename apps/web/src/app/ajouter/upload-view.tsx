@@ -196,7 +196,7 @@ export function UploadView() {
 
   return (
     <div>
-      <div className="mb-4 flex gap-2 text-sm font-medium text-muted-foreground" aria-hidden>
+      <div className="mb-4 flex flex-wrap gap-2 text-sm font-medium text-muted-foreground" aria-hidden>
         <span className="rounded-full bg-secondary px-3 py-1 text-foreground">1 · Photos</span>
         <span className="rounded-full px-3 py-1">2 · Reconnaissance</span>
         <span className="rounded-full px-3 py-1">3 · Validation</span>

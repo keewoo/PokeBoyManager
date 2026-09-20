@@ -58,11 +58,11 @@ export default async function RootLayout({
   // nonce de la CSP de cette requête précise, seul moyen de l'autoriser sans `'unsafe-inline'`
   // sur `script-src`.
   const nonce = (await headers()).get("x-nonce") ?? undefined;
-
   // Même source de vérité que la garde de route (`middleware.ts`) et la page d'accueil
   // (`app/page.tsx`) : la présence du cookie de session, lu côté serveur (il est httpOnly).
-  // `router.refresh()` après connexion/déconnexion re-rend ce layout — l'en-tête suit
-  // toujours l'état réel (correctif `pbm-hotfix-fallback-ia-confiance`).
+  // La nav de `AppShell` a besoin de savoir si un visiteur est connecté, pas seulement l'accueil
+  // (mission `pbm-front-accueil`, point 3). `router.refresh()` après connexion/déconnexion re-rend
+  // ce layout — l'en-tête suit toujours l'état réel (correctif `pbm-hotfix-fallback-ia-confiance`).
   const hasSession = (await cookies()).has(getSessionCookieName());
 
   return (

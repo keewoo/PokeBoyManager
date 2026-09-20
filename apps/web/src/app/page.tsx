@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 
 import { getSessionCookieName } from "@/lib/config";
+import { getFeaturedCards } from "@/lib/api/featured-cards";
 
 import { HomeContent } from "./home-content";
 
@@ -28,5 +29,8 @@ export const metadata: Metadata = {
 export default async function HomePage() {
   const cookieStore = await cookies();
   const hasSession = cookieStore.has(getSessionCookieName());
-  return <HomeContent hasSession={hasSession} />;
+  // Inutile pour un visiteur déjà connecté (le tableau de bord ne montre pas cette
+  // démonstration) : ne récupérer les neuf cartes que lorsqu'elles seront réellement affichées.
+  const featuredCards = hasSession ? [] : await getFeaturedCards();
+  return <HomeContent hasSession={hasSession} featuredCards={featuredCards} />;
 }

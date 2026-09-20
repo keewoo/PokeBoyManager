@@ -10,7 +10,7 @@ vi.mock("@/lib/api/profile", () => ({ getProfile: vi.fn(() => new Promise(() => 
 
 describe("HomeContent", () => {
   it("affiche l'accueil visiteur sans cookie de session", () => {
-    render(<HomeContent hasSession={false} />);
+    render(<HomeContent hasSession={false} featuredCards={[]} />);
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
       "On retrouve chaque carte"
@@ -18,7 +18,7 @@ describe("HomeContent", () => {
   });
 
   it("affiche le tableau de bord connecté avec un cookie de session", () => {
-    render(<HomeContent hasSession={true} />);
+    render(<HomeContent hasSession={true} featuredCards={[]} />);
 
     expect(screen.getByText("Chargement…")).toBeInTheDocument();
   });

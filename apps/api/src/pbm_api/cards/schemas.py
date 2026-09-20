@@ -75,3 +75,14 @@ class MyCardItemOut(BaseModel):
     # bords/surface — `None` pour un exemplaire ajouté manuellement (aucune détection liée),
     # même choix de forme que `DetectionResponse.condition` (`pbm_api.uploads.schemas`).
     condition_detail: dict | None
+
+
+class FeaturedCardOut(BaseModel):
+    """Neuf du tableau de démonstration de l'accueil visiteur (mission `pbm-front-accueil`,
+    point 1) — jamais de prix ni de rareté ici : de vraies données, mais pas une fiche
+    complète, la route est publique (pas de session)."""
+
+    id: uuid.UUID
+    name: str
+    number: str
+    set_name: str
