@@ -2308,21 +2308,21 @@
       "attente": null
     },
     "v5-securite": {
-      "statut": "en_cours",
+      "statut": "integre",
       "machine": "chimera",
       "branche": "roadmap/v5-securite",
       "debut_reel": "2026-09-20",
-      "fin_reelle": null,
+      "fin_reelle": "2026-09-20",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 20415c6c5 intégré dans main — voir docs/roadmap/comptes-rendus/v5-securite.md",
+          "maj": "2026-09-20T11:17+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 20415c6c5 intégré dans main — voir docs/roadmap/comptes-rendus/v5-securite.md",
+          "maj": "2026-09-20T11:17+0200"
         },
         "securite": {
           "etat": "a_faire",
@@ -2350,14 +2350,14 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 20415c6c5 intégré dans main — voir docs/roadmap/comptes-rendus/v5-securite.md",
+          "maj": "2026-09-20T11:17+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit 20415c6c5 intégré dans main — voir docs/roadmap/comptes-rendus/v5-securite.md",
+          "maj": "2026-09-20T11:17+0200"
         }
       },
       "journal": [
@@ -2366,9 +2366,40 @@
           "machine": "chimera",
           "evenement": "démarré",
           "detail": "roadmap/v5-securite"
+        },
+        {
+          "quand": "2026-09-20T11:17+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit 20415c6c5"
         }
       ],
-      "compte_rendu": {},
+      "compte_rendu": {
+        "resume": "Revue de sécurité avant ouverture au public, sur l'ensemble des routes du MVP déjà fusionnées (dépendances `v4-fiche`/`v5-rgpd`/`v3-validation` déjà dans `origin/main`, ordre garanti par l'ordonnanceur). Quatre axes de la mission traités : accès croisé (IDOR), en-têtes/cookies/ CORS/débit/taille d'envoi, journaux, dépendances — plus SSRF et envoi de fichiers malveillants (risques explicitement cités par le plan). Détail complet, avec preuves, dans `docs/SECURITE.md`.",
+        "livrables": [
+          "`apps/api/src/pbm_api/security/headers.py` (nouveau) — `SecurityHeadersMiddleware`,",
+          "`apps/api/src/pbm_api/main.py` — middleware branché, `install_secret_url_redaction()` appelé",
+          "`apps/api/src/pbm_api/security/log_filter.py` — `install_secret_url_redaction`/",
+          "`apps/web/src/middleware.ts` — élargi à toutes les pages, CSP avec nonce par requête sur",
+          "`apps/web/src/app/layout.tsx` — le script inline (anti-flash de thème) porte désormais le",
+          "`apps/api/src/pbm_api/routers/auth.py` — `/auth/register` limité en débit par IP.",
+          "`apps/api/src/pbm_api/routers/collection.py` — `GET /me/collection/{item_id}` reroutée par",
+          "`apps/api/src/pbm_api/s3.py`, `apps/api/src/pbm_api/storage/local.py` — méthode `head()`"
+        ],
+        "preuves": [],
+        "ecarts": [
+          "**Aucune capture de conformité maquette** : ce lot n'a posé aucun nouvel écran (mission « sans",
+          "**Vérification CSP en navigateur réel non faite** : le Chromium headless de Playwright ne",
+          "**`test_catalogue_seed.py` (2 tests, hors périmètre de ce lot)** échoue localement :",
+          "**`pnpm audit` : 11 vulnérabilités non corrigées** (devDependencies de build) — voir"
+        ],
+        "reste": [
+          "Dépendances JS de build (`vite`/`vitest`/`postcss`/`esbuild`) à mettre à jour par un lot dédié",
+          "Limitation de débit sur `POST /me/ai-keys/{provider}/test` (faible priorité).",
+          "Présignage S3 avec vraie limite de taille imposée à l'écriture (`content-length-range`), au",
+          "Capture réelle en navigateur du comportement CSP, dès qu'un environnement avec Chromium"
+        ]
+      },
       "attente": null
     },
     "v5-e2e": {
