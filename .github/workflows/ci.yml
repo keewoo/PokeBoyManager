@@ -117,7 +117,13 @@ jobs:
         run: |
           uv export --no-hashes --no-header -o /tmp/requirements.txt
           grep -v '^-e ' /tmp/requirements.txt > /tmp/requirements-clean.txt
-          uvx pip-audit -r /tmp/requirements-clean.txt
+          # `--no-deps` : auditer exactement les versions épinglées par `uv export` (toutes
+          # transitives comprises) SANS relancer une résolution pip. `pyproject.toml` déclare
+          # `override-dependencies = ["redis>=8.1.0"]` (arq 0.28.0 épingle encore `redis<6`, mais
+          # son client `redis.asyncio` fonctionne avec redis-py 8.1.0) : uv honore l'override, le
+          # résolveur pip de pip-audit ne le comprend pas et échoue en `ResolutionImpossible`. Le
+          # jeu audité reste identique (mêmes pins), seule l'étape de re-résolution est évitée.
+          uvx pip-audit --no-deps -r /tmp/requirements-clean.txt
 
       - working-directory: apps/api
         run: uv run alembic upgrade head
@@ -158,6 +164,12 @@ jobs:
           - 8025:8025
     env:
       E2E_DATABASE_URL: postgresql+asyncpg://pbm:pbm@localhost:5432/pbm_e2e
+      # `alembic upgrade head` (étape dédiée ci-dessous) lit `DATABASE_URL`, pas
+      # `E2E_DATABASE_URL` (seuls les webServers de playwright.config.ts mappent le second sur le
+      # premier). Sans cette ligne, alembic retombe sur le défaut de `pbm_api.config` (port 55432)
+      # et échoue en `Connect call failed`. Même base que `E2E_DATABASE_URL` : le service Postgres
+      # du job écoute sur 5432.
+      DATABASE_URL: postgresql+asyncpg://pbm:pbm@localhost:5432/pbm_e2e
       REDIS_URL: redis://localhost:6379/0
       SMTP_HOST: localhost
       SMTP_PORT: 1025

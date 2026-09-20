@@ -1,10 +1,22 @@
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Valeurs de développement présentes en clair dans le dépôt (`config.py`, `.env.example`) :
+# tolérées hors production, INTERDITES dès `APP_ENV=production` (voir `_refuse_dev_defaults`).
+_DEV_SECRET_KEY = "dev-only-change-me-in-production"
+_DEV_AI_KEY_ENCRYPTION_KEY = "bo8a8UxneCy51yL6Mhan73p0Yxh+tKGlj4cIAbrfRvo="
 
 
 class Settings(BaseSettings):
     """Configuration lue depuis l'environnement — un lot pointe sa propre base/bucket."""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    # Environnement de déploiement (lot `pbm-deploy`) : "development" (défaut, dev/CI/e2e) ou
+    # "production". En production, les secrets de développement font REFUSER le démarrage
+    # (`_refuse_dev_defaults`) — une plateforme servie avec la clé publique du dépôt aurait des
+    # jetons CSRF forgeables et un coffre de clés IA déchiffrable par quiconque lit le dépôt.
+    app_env: str = "development"
 
     database_url: str = "postgresql+asyncpg://pbm:pbm@localhost:55432/pbm_v1_auth"
     redis_url: str = "redis://localhost:56379/0"
@@ -92,6 +104,29 @@ class Settings(BaseSettings):
     # (détection + identification, `pbm_api.worker.detect_cards_task`) sans clé IA réelle — aucune
     # disponible sur chimera (voir CLAUDE.md).
     ai_simulated_provider: bool = False
+
+    @model_validator(mode="after")
+    def _refuse_dev_defaults(self) -> "Settings":
+        """En production, aucune valeur de développement ne doit rester active (lot `pbm-deploy`,
+        exigence de la mission : « l'application doit refuser de démarrer avec une clé secrète de
+        développement »). Silencieux hors production pour ne pas gêner dev/CI/e2e, qui utilisent
+        délibérément ces défauts."""
+        if self.app_env.strip().lower() not in {"production", "prod"}:
+            return self
+        offenders: list[str] = []
+        if self.secret_key == _DEV_SECRET_KEY:
+            offenders.append("SECRET_KEY")
+        if self.ai_key_encryption_key == _DEV_AI_KEY_ENCRYPTION_KEY:
+            offenders.append("AI_KEY_ENCRYPTION_KEY")
+        if self.ai_simulated_provider:
+            offenders.append("AI_SIMULATED_PROVIDER (fournisseur IA simulé, jamais en production)")
+        if offenders:
+            raise ValueError(
+                "APP_ENV=production interdit les valeurs de développement : "
+                + ", ".join(offenders)
+                + " — à définir par variable d'environnement hors dépôt."
+            )
+        return self
 
 
 settings = Settings()
