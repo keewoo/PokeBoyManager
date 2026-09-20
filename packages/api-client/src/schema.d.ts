@@ -629,6 +629,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Dashboard */
+        get: operations["get_dashboard_me_dashboard_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/cards/{card_id}/insights": {
         parameters: {
             query?: never;
@@ -1249,6 +1266,82 @@ export interface components {
         CreateUploadsResponse: {
             /** Uploads */
             uploads: components["schemas"]["UploadTarget"][];
+        };
+        /** DashboardMoverCard */
+        DashboardMoverCard: {
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /**
+             * Card Id
+             * Format: uuid
+             */
+            card_id: string;
+            /** Card Name */
+            card_name: string;
+            /** Card Number */
+            card_number: string;
+            /** Set Name */
+            set_name: string;
+            /** Value Eur */
+            value_eur: string;
+            /** Value Change 30D Eur */
+            value_change_30d_eur: string;
+            /** Value Change 30D Pct */
+            value_change_30d_pct: string | null;
+        };
+        /** DashboardRecentAddition */
+        DashboardRecentAddition: {
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /**
+             * Card Id
+             * Format: uuid
+             */
+            card_id: string;
+            /** Card Name */
+            card_name: string;
+            /** Set Name */
+            set_name: string;
+            /**
+             * Added At
+             * Format: date-time
+             */
+            added_at: string;
+        };
+        /** DashboardResponse */
+        DashboardResponse: {
+            /** Items Total */
+            items_total: number;
+            /** Items Priced */
+            items_priced: number;
+            /** Items Missing Price */
+            items_missing_price: number;
+            /** Total Value Eur */
+            total_value_eur: string;
+            /** Value Change 30D Eur */
+            value_change_30d_eur: string;
+            /** Value History */
+            value_history: components["schemas"]["DashboardValuePoint"][];
+            /** Top Movers */
+            top_movers: components["schemas"]["DashboardMoverCard"][];
+            /** Recent Additions */
+            recent_additions: components["schemas"]["DashboardRecentAddition"][];
+        };
+        /** DashboardValuePoint */
+        DashboardValuePoint: {
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
+            /** Total Value Eur */
+            total_value_eur: string;
         };
         /** DeleteAccountRequest */
         DeleteAccountRequest: {
@@ -2969,6 +3062,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_dashboard_me_dashboard_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardResponse"];
                 };
             };
         };
