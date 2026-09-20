@@ -155,6 +155,18 @@ jointes, cf. transcript) : rendu conforme à la maquette dans les trois cas.
 
 ## Écarts au plan
 
+- **CI : le job `e2e` ne démarrait MinIO pour aucune spec, alors que le stockage objet y est requis
+  depuis `v3-validation`.** Trouvé en préparant le semis e2e de ce lot (photo de l'exemplaire) :
+  reproduit en local avec un `S3_ENDPOINT_URL` injoignable, `EndpointConnectionError` immédiate
+  (`botocore`) — le script de semis n'atteint jamais le navigateur. Le job s'appelle encore
+  « e2e — parcours auth », signe qu'il n'a jamais été mis à jour depuis l'ajout de
+  `validation.spec.ts` (lot `v3-validation`, qui sème lui aussi une photo). Confirmé qu'il
+  s'agissait bien du même trou en le corrigeant : `.github/workflows/ci.yml` gagne un service
+  MinIO identique à celui du job `api` ; `card-detail.spec.ts` **et** `validation.spec.ts`
+  vérifiés ensemble en local contre ce MinIO simulé, les deux passent. Corrigé plutôt que
+  contourné (comme `v3-validation` avait corrigé `auth.spec.ts` cassé par un rebase) : pousser
+  ce lot sans ce correctif aurait rendu la CI rouge sur un job qui n'est pas visible tant qu'on ne
+  regarde pas son détail — jamais acceptable (« ne jamais pousser un `main` rouge »).
 - **`libnspr4`/`libnss3`/`libasound2` absents sur cette session chimera** (`chrome-headless-shell:
   error while loading shared libraries`) : aucun navigateur Playwright ne pouvait démarrer sans
   eux, aucun accès `sudo` sur cette session pour les installer système. Contournement sans
