@@ -102,6 +102,30 @@ export async function completeUpload(uploadId: string): Promise<CompleteUploadRe
   return (await response.json()) as CompleteUploadResult;
 }
 
+export type PendingUpload = {
+  upload_id: string;
+  created_at: string;
+  pending_count: number;
+  total_count: number;
+};
+
+/** Envois de l'utilisateur qui ont encore des cartes à valider (lot `pbm-parcours-validation`,
+ * mission point 2) : point d'entrée de reprise depuis « Ajouter des photos ». Renvoie une liste
+ * vide plutôt que de lever si la requête échoue — c'est une aide, pas le cœur de l'écran. */
+export async function listPendingValidations(): Promise<PendingUpload[]> {
+  try {
+    const response = await fetch(`${getApiBaseUrl()}/uploads/pending-validation`, {
+      credentials: "include",
+    });
+    if (!response.ok) return [];
+    const body = await response.json().catch(() => null);
+    return Array.isArray(body?.uploads) ? (body.uploads as PendingUpload[]) : [];
+  } catch {
+    // Aide à la reprise, pas le cœur de l'écran : une panne réseau ne casse pas « Ajouter ».
+    return [];
+  }
+}
+
 export async function hasAnyAiKey(): Promise<boolean> {
   const response = await fetch(`${getApiBaseUrl()}/me/ai-keys`, { credentials: "include" });
   if (!response.ok) {

@@ -42,7 +42,12 @@ from pbm_api.ai.errors import AIProviderError
 from pbm_api.ai.factory import create_provider
 from pbm_api.ai.service import get_default_credential, record_usage
 from pbm_api.identification.cache import find_cached, store_cache
-from pbm_api.identification.extraction import extract_card
+from pbm_api.identification.extraction import (
+    extract_card,
+    merge_bottom_reading,
+    needs_bottom_pass,
+    read_card_bottom,
+)
 from pbm_api.identification.fingerprint import compute_phash
 from pbm_api.identification.reconciliation import CANDIDATES_LIMIT, reconcile
 from pbm_api.identification.rescue import (
@@ -287,6 +292,38 @@ async def _identify_one(
     usages: list[ExtractionUsage] = list(best.usages)
     method = "ia"
     rescued = False
+
+    # Seconde passe ciblée sur le bas de la carte (mission point 4) quand le premier appel n'a pas
+    # lu de numéro fiable : numéro/total/code d'extension y sont imprimés en petit, une bande
+    # agrandie se lit mieux. Le résultat fusionné n'est retenu que s'il rapproche AU MOINS aussi
+    # bien la carte du catalogue — jamais une régression. Une panne du fournisseur pendant cette
+    # passe est tracée, jamais avalée : le premier essai reste le résultat.
+    if needs_bottom_pass(best.extraction):
+        try:
+            bottom, bottom_usage = await read_card_bottom(ai_provider, crop, model=ai_model)
+        except AIProviderError as exc:
+            logger.warning(
+                "seconde passe bas de carte en échec (detection=%s): %s", detection.id, exc
+            )
+        else:
+            usages.append(bottom_usage)
+            merged = merge_bottom_reading(best.extraction, bottom)
+            if (
+                merged.number != best.extraction.number
+                or merged.set_code != best.extraction.set_code
+            ):
+                merged_result = await reconcile(session, merged)
+                merged_candidates = [c.model_dump(mode="json") for c in merged_result.candidates]
+                if top_combined_score(merged_candidates) >= top_combined_score(
+                    best.candidates_payload
+                ):
+                    best = _AiIdentification(
+                        extraction=merged,
+                        candidates_payload=merged_candidates,
+                        tier=merged_result.tier,
+                        usages=best.usages,
+                        phash=phash,
+                    )
 
     if top_combined_score(best.candidates_payload) < RESCUE_CONFIDENCE_THRESHOLD:
         rescue_result = await _rescue_low_confidence(

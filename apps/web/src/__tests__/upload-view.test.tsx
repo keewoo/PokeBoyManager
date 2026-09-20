@@ -3,7 +3,14 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import AjouterPage from "@/app/ajouter/page";
-import { ApiError, completeUpload, createUploads, hasAnyAiKey, putRawBytes } from "@/lib/api/uploads";
+import {
+  ApiError,
+  completeUpload,
+  createUploads,
+  hasAnyAiKey,
+  listPendingValidations,
+  putRawBytes,
+} from "@/lib/api/uploads";
 
 const push = vi.fn();
 
@@ -19,6 +26,7 @@ vi.mock("@/lib/api/uploads", async () => {
     createUploads: vi.fn(),
     putRawBytes: vi.fn(),
     completeUpload: vi.fn(),
+    listPendingValidations: vi.fn(),
   };
 });
 
@@ -34,6 +42,8 @@ describe("Page /ajouter", () => {
     vi.mocked(createUploads).mockReset();
     vi.mocked(putRawBytes).mockReset();
     vi.mocked(completeUpload).mockReset();
+    vi.mocked(listPendingValidations).mockReset();
+    vi.mocked(listPendingValidations).mockResolvedValue([]);
     push.mockReset();
   });
 
@@ -128,6 +138,41 @@ describe("Page /ajouter", () => {
       expect(push).toHaveBeenCalledWith(
         "/ajouter/validation?uploads=11111111-1111-1111-1111-111111111111"
       )
+    );
+  });
+
+  it("montre une tuile neutre pour un HEIC avant l'envoi (jamais une image cassée)", async () => {
+    vi.mocked(hasAnyAiKey).mockResolvedValue(true);
+    const user = userEvent.setup();
+    render(<AjouterPage />);
+    await screen.findByText(/glisse tes photos ici/i);
+
+    const heic = new File(["x"], "IMG_2044.heic", { type: "image/heic" });
+    const input = screen.getByLabelText("Choisir des fichiers");
+    await user.upload(input, heic);
+
+    expect(await screen.findByText("IMG_2044.heic")).toBeInTheDocument();
+    expect(screen.getByText(/aperçu indisponible/i)).toBeInTheDocument();
+  });
+
+  it("propose de reprendre les envois encore à valider", async () => {
+    vi.mocked(hasAnyAiKey).mockResolvedValue(true);
+    vi.mocked(listPendingValidations).mockResolvedValue([
+      {
+        upload_id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        created_at: "2026-09-20T20:52:18",
+        pending_count: 9,
+        total_count: 9,
+      },
+    ]);
+    render(<AjouterPage />);
+
+    expect(await screen.findByRole("heading", { name: /^à valider$/i })).toBeInTheDocument();
+    expect(screen.getByText(/9 cartes/)).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: /reprendre/i });
+    expect(link).toHaveAttribute(
+      "href",
+      "/ajouter/validation?uploads=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
     );
   });
 

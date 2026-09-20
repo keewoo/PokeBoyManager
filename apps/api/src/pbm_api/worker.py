@@ -9,13 +9,15 @@ voir `_heavy_cron_jobs`) ni exécutés (ils REFUSENT explicitement, voir `_refus
 tournent sur la flotte (chimera) et seul le résultat est importé — voir docs/infra/JOBS-LOURDS.md.
 """
 
+import asyncio
 import logging
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import httpx
 from arq.connections import RedisSettings
 from arq.cron import cron
+from sqlalchemy import func, select
 
 from pbm_api.ai.errors import AIProviderError
 from pbm_api.catalog.import_service import import_catalogue
@@ -29,7 +31,7 @@ from pbm_api.export.service import run_export
 from pbm_api.identification.service import run_identification_for_upload
 from pbm_api.ingame.tournaments import LimitlessTcgClient
 from pbm_api.ingame.tournaments_job import refresh_tournament_presence
-from pbm_api.models import DataExport, Job, JobStatus, Upload, User
+from pbm_api.models import DataExport, Detection, Job, JobStatus, Upload, User
 from pbm_api.pricing.exchange_rates import EcbClient, store_daily_rates
 from pbm_api.pricing.service import collect_daily_prices
 from pbm_api.ranking.service import refresh_card_value_rank
@@ -212,6 +214,40 @@ async def daily_exchange_rates_task(ctx: dict) -> dict:
     return await _run_daily_exchange_rates()
 
 
+async def _detect_identify_state(session, storage, upload: Upload) -> dict:
+    """Les trois étapes chaînées d'un job `detect_cards`, dans le même aller-retour par la file :
+    détection (mission `v3-detection`), identification (`v3-identification`, un appel IA par carte)
+    puis état estimé (`v3-etat`, sans appel IA de plus). Isolée pour être bornée par un délai
+    (`asyncio.wait_for`, voir `_run_detect_cards`)."""
+    existing = (
+        await session.execute(
+            select(func.count()).select_from(Detection).where(Detection.upload_id == upload.id)
+        )
+    ).scalar_one()
+    if existing:
+        # Reprise (mission point 6) : un passage précédent a déjà découpé les cartes (job repris
+        # ou relancé après un blocage). On ne redécoupe pas — ça dupliquerait les détections —,
+        # on reprend l'identification + l'état sur celles encore en attente. Les recadrages déjà
+        # identifiés touchent le cache d'empreinte, sans rappeler l'IA (`v3-identification`).
+        detections_count, method = existing, "reprise"
+    else:
+        summary = await run_detection_for_upload(session, storage, upload)
+        detections_count, method = summary.detections_count, summary.method
+    id_summary = await run_identification_for_upload(session, storage, upload)
+    state_summary = await run_state_estimation_for_upload(session, storage, upload)
+    return {
+        "detections_count": detections_count,
+        "method": method,
+        "identified_count": id_summary.identified_count,
+        "identification_cache_hits": id_summary.cache_hits,
+        "identification_ai_calls": id_summary.ai_calls,
+        "identification_visual_matches": id_summary.visual_matches,
+        "identification_rescued_count": id_summary.rescued_count,
+        "state_assessed_count": state_summary.assessed_count,
+        "state_counterfeit_flagged_count": state_summary.counterfeit_flagged_count,
+    }
+
+
 async def _run_detect_cards(job_id: str) -> dict:
     async with async_session_factory() as session:
         job = await session.get(Job, uuid.UUID(job_id))
@@ -225,34 +261,39 @@ async def _run_detect_cards(job_id: str) -> dict:
         await session.commit()
 
         upload_id = uuid.UUID(job.payload["upload_id"])
+        # Journal (mission point 5) : jusqu'ici `journalctl -u pokeboy-prod-worker` ne montrait
+        # que les démarrages du service — tout diagnostic était aveugle. On trace désormais le
+        # début et la fin de chaque job de reconnaissance avec son identifiant.
+        logger.info("job %s detect_cards démarré (upload=%s)", job_id, upload_id)
         upload = await session.get(Upload, upload_id)
         storage = build_storage()
+        timeout = settings.detect_job_timeout_seconds
         try:
             if upload is None:
                 raise LookupError(f"upload {upload_id} introuvable")
-            summary = await run_detection_for_upload(session, storage, upload)
-            # Identification (mission `v3-identification`) chaînée dans le même job que la
-            # détection : un seul aller-retour par la file par photo, et le principe cadre « un
-            # appel IA par carte, dès le premier tir » veut dire un appel par carte détectée,
-            # pas un job de plus par carte.
-            id_summary = await run_identification_for_upload(session, storage, upload)
-            # État (mission `v3-etat`) chaîné après l'identification, dans le même job : le
-            # centrage se mesure sur le recadrage déjà en stockage, coins/bords/surface/
-            # contrefaçon viennent de l'extraction que l'identification vient d'écrire (fraîche
-            # ou réutilisée du cache) — jamais un appel IA de plus.
-            state_summary = await run_state_estimation_for_upload(session, storage, upload)
-            report = {
-                "detections_count": summary.detections_count,
-                "method": summary.method,
-                "identified_count": id_summary.identified_count,
-                "identification_cache_hits": id_summary.cache_hits,
-                "identification_ai_calls": id_summary.ai_calls,
-                "identification_visual_matches": id_summary.visual_matches,
-                "state_assessed_count": state_summary.assessed_count,
-                "state_counterfeit_flagged_count": state_summary.counterfeit_flagged_count,
-            }
+            # Délai maximal par job (mission point 6) : au-delà, le job passe en échec EXPLICITE
+            # relançable, jamais laissé « running » à bloquer l'écran de validation. Les commits
+            # par carte de la détection/identification gardent les cartes déjà traitées.
+            report = await asyncio.wait_for(
+                _detect_identify_state(session, storage, upload), timeout=timeout
+            )
             job.status = JobStatus.succeeded
             job.result = report
+        except TimeoutError:
+            # `asyncio.wait_for` lève `TimeoutError` (== `asyncio.TimeoutError` depuis Python 3.11).
+            # La coroutine a été annulée : la session peut porter une transaction à moitié
+            # ouverte. On l'annule et on relit le job avant d'écrire l'échec (un accès attribut
+            # sur un objet expiré déclencherait un rechargement hors pont greenlet async).
+            await session.rollback()
+            job = await session.get(Job, uuid.UUID(job_id))
+            message = (
+                f"Reconnaissance interrompue : délai maximal de {timeout}s dépassé "
+                f"(photo trop lourde ou fournisseur IA trop lent). Relance la reconnaissance."
+            )
+            job.status = JobStatus.failed
+            job.error = message
+            report = {"error": message, "timeout": True}
+            logger.warning("job %s detect_cards: délai de %ss dépassé", job_id, timeout)
         except AIProviderError as exc:
             # `user_message` est le texte normalisé prêt à consigner sur le `Job` (mission
             # `v3-ia-providers` point 3) ; `detail` (brut, potentiellement technique) ne part
@@ -260,13 +301,55 @@ async def _run_detect_cards(job_id: str) -> dict:
             job.status = JobStatus.failed
             job.error = exc.user_message
             report = {"error": exc.user_message}
+            logger.warning("job %s detect_cards: fournisseur IA en échec: %s", job_id, exc)
         except Exception as exc:
             job.status = JobStatus.failed
             job.error = str(exc)
             report = {"error": str(exc)}
+            logger.exception("job %s detect_cards: échec inattendu", job_id)
         job.finished_at = _now_naive_utc()
         await session.commit()
+        logger.info("job %s detect_cards terminé: statut=%s", job_id, job.status.value)
     return report
+
+
+async def reap_stale_jobs_in_session(session) -> int:
+    """Repasse en échec tout job resté « running » au-delà de `stale_job_timeout_seconds` — cœur
+    de `reap_stale_jobs`, isolé pour être testable avec une session fournie."""
+    cutoff = _now_naive_utc() - timedelta(seconds=settings.stale_job_timeout_seconds)
+    result = await session.execute(
+        select(Job).where(Job.status == JobStatus.running, Job.started_at < cutoff)
+    )
+    stale = list(result.scalars().all())
+    for job in stale:
+        job.status = JobStatus.failed
+        job.error = (
+            "Job interrompu (worker redémarré ou bloqué au-delà du délai maximal). "
+            "Relance la reconnaissance."
+        )
+        job.finished_at = _now_naive_utc()
+        logger.warning(
+            "reprise: job %s (%s) resté 'running' depuis %s → échec",
+            job.id,
+            job.type,
+            job.started_at,
+        )
+    if stale:
+        await session.commit()
+    return len(stale)
+
+
+async def reap_stale_jobs(ctx: dict | None = None) -> dict:
+    """Au démarrage du worker (`WorkerSettings.on_startup`) : tout job resté « running » au-delà
+    de `stale_job_timeout_seconds` est forcément mort (le délai par job l'aurait sinon fait
+    échouer) — worker redémarré en plein job, machine tuée, blocage. On le repasse en échec
+    EXPLICITE et relançable plutôt que de le laisser bloquer l'écran de validation indéfiniment
+    (trois `detect_cards` bloqués observés en PROD le 20/09). Reprise possible ensuite via
+    `POST /uploads/{id}/retry-recognition`."""
+    async with async_session_factory() as session:
+        reaped = await reap_stale_jobs_in_session(session)
+    logger.info("reprise au démarrage: %d job(s) bloqué(s) repris", reaped)
+    return {"reaped": reaped}
 
 
 async def detect_cards_task(ctx: dict, job_id: str) -> dict:
@@ -296,7 +379,10 @@ async def _run_export(export_id: str) -> dict:
 async def export_user_data_task(ctx: dict, export_id: str) -> dict:
     """Export RGPD de la collection (mission `v5-rgpd` point 1) : un `DataExport` par demande
     (`POST /me/export`), archive ZIP + lien de téléchargement signé envoyé par e-mail."""
-    return await _run_export(export_id)
+    logger.info("job export_user_data démarré (export=%s)", export_id)
+    result = await _run_export(export_id)
+    logger.info("job export_user_data terminé (export=%s): %s", export_id, result.get("status"))
+    return result
 
 
 async def _run_weekly_tournament_presence() -> dict:
@@ -371,3 +457,13 @@ class WorkerSettings:
     cron_jobs = _heavy_cron_jobs()
     redis_settings = RedisSettings.from_dsn(settings.redis_url)
     queue_name = f"{settings.redis_prefix}queue"
+    # Reprise des jobs bloqués au démarrage (mission point 6) : un worker qui redémarre nettoie
+    # les `running` orphelins d'une exécution précédente avant de reprendre le travail.
+    on_startup = staticmethod(reap_stale_jobs)
+    # Filet de sécurité au-dessus du délai que le code applique lui-même (`_run_detect_cards`
+    # borne à `detect_job_timeout_seconds` via `asyncio.wait_for` et écrit l'échec en base) : arq
+    # laisse donc toujours le code écrire son propre échec avant d'intervenir.
+    job_timeout = settings.detect_job_timeout_seconds + 60
+    # Plusieurs photos d'un même envoi sont enfilées en parallèle (mission point 6, « un lot de 4
+    # photos ne se bloque pas ») : arq en traite plusieurs de front, chacune bornée par son délai.
+    max_jobs = 10

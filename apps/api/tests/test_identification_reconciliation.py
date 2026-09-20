@@ -149,3 +149,55 @@ async def test_reconcile_does_not_preselect_with_low_confidence(
 
     assert result.candidates[0].preselected is False
     assert result.candidates[0].combined_score < PRESELECTION_THRESHOLD
+
+
+async def test_reconcile_preselects_confident_unique_number_and_name(
+    db_session, catalog_with_number_collision
+):
+    """Calibrage `pbm-parcours-validation` : un numéro+nom qui ne colle qu'à UNE carte (Raichu
+    026, absent de l'autre extension) est présélectionné même sans code d'extension lu — le cas
+    que « Tout ajouter » doit prendre en charge. L'ancien seuil de 0,9, inatteignable avec la
+    somme de poids du score catalogue, ne présélectionnait jamais ce cas pourtant sûr."""
+    fixtures = catalog_with_number_collision
+    extraction = CardExtraction(
+        name="Raichu", name_confidence=0.95, number="026", number_confidence=0.9
+    )
+
+    result = await reconcile(db_session, extraction)
+
+    assert result.tier == "numero_nom"
+    assert result.candidates[0].card_id == str(fixtures["raichu"].id)
+    assert result.candidates[0].preselected is True
+
+
+async def test_reconcile_does_not_preselect_ambiguous_number_and_name(
+    db_session, catalog_with_number_collision
+):
+    """Le même numéro+nom (Pikachu 025) existe dans deux extensions : ex-aequo, aucun candidat
+    présélectionné (marge `PRESELECTION_MARGIN`) — c'est à l'humain de trancher l'extension,
+    « Tout ajouter » ne doit pas en choisir une au hasard."""
+    extraction = CardExtraction(
+        name="Pikachu", name_confidence=0.95, number="025", number_confidence=0.95
+    )
+
+    result = await reconcile(db_session, extraction)
+
+    assert result.tier == "numero_nom"
+    assert len(result.candidates) == 2
+    assert all(candidate.preselected is False for candidate in result.candidates)
+
+
+async def test_reconcile_never_preselects_name_only(db_session, catalog_with_number_collision):
+    """Nom seul (numéro illisible) : le score plafonne sous le seuil (nom ≤ 0,5 × confiance),
+    jamais présélectionné — plusieurs impressions partagent un nom. Le bon candidat reste
+    proposé en tête, à un clic."""
+    fixtures = catalog_with_number_collision
+    extraction = CardExtraction(name="Raichu", name_confidence=0.95)
+
+    result = await reconcile(db_session, extraction)
+
+    assert result.tier == "nom_flou"
+    assert result.candidates
+    assert result.candidates[0].card_id == str(fixtures["raichu"].id)
+    assert result.candidates[0].preselected is False
+    assert result.candidates[0].combined_score < PRESELECTION_THRESHOLD

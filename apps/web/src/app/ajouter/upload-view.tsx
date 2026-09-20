@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { FormNotice } from "@/components/auth/form-notice";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,8 @@ import {
   completeUpload,
   createUploads,
   hasAnyAiKey,
+  listPendingValidations,
+  type PendingUpload,
   putRawBytes,
   type UploadTarget,
 } from "@/lib/api/uploads";
@@ -50,10 +52,68 @@ function formatEuros(value: number): string {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(value);
 }
 
+// Les navigateurs ne savent pas afficher un HEIC/HEIF dans un <img> : une URL d'objet Blob HEIC
+// rend l'icône « image cassée » constatée en production (JF, 20/09) AVANT même l'envoi. Pour ces
+// formats — et pour tout aperçu qui échoue à charger — on montre une tuile neutre, jamais une
+// image brisée (mission point 3).
+const UNRENDERABLE_PREVIEW_TYPES = new Set(["image/heic", "image/heif"]);
+
+function PreviewThumb({ url, contentType }: { url: string; contentType: string }) {
+  const [failed, setFailed] = useState(false);
+  if (UNRENDERABLE_PREVIEW_TYPES.has(contentType) || failed) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-secondary text-muted-foreground">
+        <span aria-hidden className="text-xl">
+          🖼️
+        </span>
+        <span className="px-1 text-center text-[10px] leading-tight">Aperçu indisponible</span>
+      </div>
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- aperçu local (objet Blob), pas une image distante
+    <img
+      src={url}
+      alt=""
+      className="h-full w-full object-cover"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
+type PendingGroup = { ids: string[]; pendingCount: number; createdAt: string };
+
+// Un envoi = une photo côté API ; l'écran de validation en regroupe plusieurs par l'URL. On
+// reconstitue le lot d'origine en regroupant les envois par horodatage à la seconde (ceux d'un
+// même « Lancer la reconnaissance »), pour proposer une seule reprise par lot.
+function groupPending(uploads: PendingUpload[]): PendingGroup[] {
+  const map = new Map<string, PendingGroup>();
+  for (const upload of uploads) {
+    const key = upload.created_at.slice(0, 19);
+    const group = map.get(key) ?? { ids: [], pendingCount: 0, createdAt: upload.created_at };
+    group.ids.push(upload.upload_id);
+    group.pendingCount += upload.pending_count;
+    map.set(key, group);
+  }
+  return [...map.values()];
+}
+
+function formatDateTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "numeric",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 export function UploadView() {
   const router = useRouter();
   const [aiKeyStatus, setAiKeyStatus] = useState<"loading" | "missing" | "ready">("loading");
   const [items, setItems] = useState<UploadItem[]>([]);
+  const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([]);
   const [batchError, setBatchError] = useState<string | null>(null);
   const [isLaunching, setIsLaunching] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -65,10 +125,17 @@ export function UploadView() {
     hasAnyAiKey().then((present) => {
       if (!cancelled) setAiKeyStatus(present ? "ready" : "missing");
     });
+    // Envois anciens encore à valider (mission point 2) : un lot dont la reconnaissance a abouti
+    // mais qui n'a jamais été validé ne doit pas être perdu — on le propose à la reprise.
+    listPendingValidations().then((list) => {
+      if (!cancelled) setPendingUploads(list);
+    });
     return () => {
       cancelled = true;
     };
   }, []);
+
+  const pendingGroups = useMemo(() => groupPending(pendingUploads), [pendingUploads]);
 
   useEffect(() => {
     const urls = previewUrls.current;
@@ -208,6 +275,33 @@ export function UploadView() {
         position (EXIF) sont supprimées à l&rsquo;envoi.
       </p>
 
+      {pendingGroups.length > 0 && (
+        <div className="mb-5 rounded-lg border border-border bg-card p-4">
+          <h3 className="font-heading text-base font-bold text-foreground">À valider</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Des cartes reconnues attendent ta validation — reprends là où tu t&rsquo;es arrêté.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {pendingGroups.map((group) => (
+              <li
+                key={group.ids.join(",")}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border px-3 py-2"
+              >
+                <span className="text-sm text-foreground">
+                  <span className="font-medium">
+                    {group.pendingCount} carte{group.pendingCount > 1 ? "s" : ""}
+                  </span>{" "}
+                  · <span className="text-muted-foreground">{formatDateTime(group.createdAt)}</span>
+                </span>
+                <Button asChild size="sm" variant="outline">
+                  <Link href={`/ajouter/validation?uploads=${group.ids.join(",")}`}>Reprendre</Link>
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div
         className="flex flex-col items-center gap-2 rounded-lg border-2 border-dashed border-border bg-card px-6 py-12 text-center"
         onDragOver={(event) => event.preventDefault()}
@@ -273,8 +367,7 @@ export function UploadView() {
             {items.map((item) => (
               <li key={item.id} className="rounded-lg border border-border bg-card p-2 text-left text-xs">
                 <div className="mb-1.5 aspect-square overflow-hidden rounded-md bg-secondary">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- aperçu local (objet Blob), pas une image distante */}
-                  <img src={item.previewUrl} alt="" className="h-full w-full object-cover" />
+                  <PreviewThumb url={item.previewUrl} contentType={item.contentType} />
                 </div>
                 <p className="truncate font-medium text-foreground">{item.file.name}</p>
                 <p className="text-muted-foreground">{formatSize(item.file.size)}</p>

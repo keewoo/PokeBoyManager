@@ -6,20 +6,32 @@ jamais par un identifiant fourni tel quel par l'appelant.
 """
 
 import uuid
+from dataclasses import dataclass
+from datetime import datetime
 
 from arq.connections import ArqRedis
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.ai.service import list_keys as list_ai_keys
 from pbm_api.config import settings
-from pbm_api.models import Detection, Job, JobStatus, Upload, UploadStatus, User
+from pbm_api.models import (
+    Detection,
+    DetectionStatus,
+    Job,
+    JobStatus,
+    Upload,
+    UploadStatus,
+    User,
+)
 from pbm_api.security.upload_tokens import generate_upload_token
 from pbm_api.storage import LocalObjectStorage, StorageBackend
 from pbm_api.uploads.errors import (
     DetectionCropMissingError,
     DetectionNotFoundError,
     InvalidFileError,
+    RecognitionInProgressError,
+    RecognitionUnavailableError,
     TooManyFilesError,
     UploadAlreadyProcessedError,
     UploadNotFoundError,
@@ -238,6 +250,68 @@ async def get_upload_detail(
     job = await get_latest_recognition_job(db, upload_id)
     detections = await list_detections(db, user, upload_id)
     return upload, job, detections
+
+
+@dataclass(frozen=True)
+class PendingUploadSummary:
+    upload_id: uuid.UUID
+    created_at: datetime
+    pending_count: int
+    total_count: int
+
+
+async def list_uploads_pending_validation(
+    db: AsyncSession, user: User
+) -> list[PendingUploadSummary]:
+    """Envois de l'utilisateur qui ont encore au moins une détection `pending` (mission point 2) :
+    l'écran « Ajouter des photos » les propose à la reprise pour qu'un envoi ancien ne soit jamais
+    perdu (143 détections en attente observées en PROD, invisibles faute de point d'entrée). Borné
+    à `user.id`, jamais un `upload_id` fourni par l'appelant."""
+    pending = func.count(Detection.id).filter(Detection.status == DetectionStatus.pending)
+    result = await db.execute(
+        select(Upload.id, Upload.created_at, pending.label("pending"), func.count(Detection.id))
+        .join(Detection, Detection.upload_id == Upload.id)
+        .where(Upload.user_id == user.id)
+        .group_by(Upload.id, Upload.created_at)
+        .having(pending > 0)
+        .order_by(Upload.created_at.desc())
+    )
+    return [
+        PendingUploadSummary(
+            upload_id=row[0], created_at=row[1], pending_count=row[2], total_count=row[3]
+        )
+        for row in result.all()
+    ]
+
+
+async def retry_recognition(
+    db: AsyncSession, user: User, arq_pool: ArqRedis, upload_id: uuid.UUID
+) -> Job:
+    """Relance la reconnaissance d'un envoi (mission point 6, « reprise possible ») : un nouveau
+    `Job detect_cards` enfilé vers le worker. Le pipeline saute la détection si des recadrages
+    existent déjà (`pbm_api.worker._detect_identify_state`) — jamais de détections dupliquées. On
+    refuse d'empiler une seconde reconnaissance si une est déjà en file/en cours."""
+    upload = await get_owned_upload(db, user, upload_id)
+    if upload.status != UploadStatus.processed:
+        raise RecognitionUnavailableError("l'envoi n'a pas de photo traitée à reconnaître")
+    if not bool(await list_ai_keys(db, user)):
+        raise RecognitionUnavailableError("aucune clé IA configurée")
+
+    latest = await get_latest_recognition_job(db, upload_id)
+    if latest is not None and latest.status in (JobStatus.queued, JobStatus.running):
+        raise RecognitionInProgressError
+
+    job = Job(
+        type=JOB_TYPE,
+        status=JobStatus.queued,
+        user_id=user.id,
+        payload={"upload_id": str(upload.id)},
+    )
+    db.add(job)
+    await db.commit()
+    await db.refresh(job)
+    await arq_pool.enqueue_job("detect_cards_task", str(job.id))
+    return job
 
 
 async def get_detection_crop(

@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from pydantic import BaseModel, Field
 
@@ -52,6 +53,27 @@ class DetectionResponse(BaseModel):
 class ListDetectionsResponse(BaseModel):
     upload_id: uuid.UUID
     detections: list[DetectionResponse]
+
+
+class PendingUploadItem(BaseModel):
+    upload_id: uuid.UUID
+    created_at: datetime
+    pending_count: int
+    total_count: int
+
+
+class PendingUploadsResponse(BaseModel):
+    """`GET /uploads/pending-validation` (lot `pbm-parcours-validation`, mission point 2) : les
+    envois de l'utilisateur qui ont encore des cartes à valider — point d'entrée de reprise depuis
+    « Ajouter des photos »."""
+
+    uploads: list[PendingUploadItem]
+
+
+class RetryRecognitionResponse(BaseModel):
+    upload_id: uuid.UUID
+    job_id: uuid.UUID
+    status: JobStatus
 
 
 class UploadDetailResponse(BaseModel):

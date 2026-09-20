@@ -105,6 +105,19 @@ class Settings(BaseSettings):
     # disponible sur chimera (voir CLAUDE.md).
     ai_simulated_provider: bool = False
 
+    # --- Reconnaissance : bornes de durée des jobs (lot pbm-parcours-validation) ---
+    # Délai maximal d'un job `detect_cards` (détection + identification + état d'une photo) :
+    # au-delà, le job passe en échec EXPLICITE avec un message relançable, jamais laissé
+    # « running » indéfiniment (trois jobs bloqués observés en PROD le 20/09). Le worker arq pose
+    # un `job_timeout` légèrement supérieur (filet de sécurité) ; ce délai-ci est celui que le
+    # code applique lui-même (`asyncio.wait_for`) pour pouvoir écrire l'échec en base.
+    detect_job_timeout_seconds: int = 300
+    # Un job resté « running » plus longtemps que ça est forcément mort (le délai ci-dessus l'aurait
+    # sinon fait échouer) : le démarrage du worker (`on_startup`) le repasse en échec pour qu'il
+    # cesse de bloquer l'écran de validation et devienne relançable. Bien au-dessus du délai d'un
+    # job vivant + du `job_timeout` arq, pour ne jamais reprendre un job réellement en cours.
+    stale_job_timeout_seconds: int = 1200
+
     # --- Traitements lourds sur la flotte, jamais sur la machine qui sert (lot pbm-jobs-flotte) ---
     # Règle d'or de la flotte : « on ne construit pas sur la machine qui sert ». Les jobs qui
     # balaient tout le catalogue (relevé de prix ~22 000 cartes, import du catalogue, relevé de

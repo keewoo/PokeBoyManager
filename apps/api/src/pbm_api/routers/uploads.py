@@ -27,6 +27,8 @@ from pbm_api.uploads.errors import (
     DetectionCropMissingError,
     DetectionNotFoundError,
     InvalidFileError,
+    RecognitionInProgressError,
+    RecognitionUnavailableError,
     TooManyFilesError,
     UploadAlreadyProcessedError,
     UploadNotFoundError,
@@ -40,6 +42,9 @@ from pbm_api.uploads.schemas import (
     CreateUploadsResponse,
     DetectionResponse,
     ListDetectionsResponse,
+    PendingUploadItem,
+    PendingUploadsResponse,
+    RetryRecognitionResponse,
     UploadDetailResponse,
 )
 from pbm_api.validation.schemas import ConfirmAllResponse
@@ -184,6 +189,54 @@ async def list_detections(
         upload_id=upload_id,
         detections=[_detection_response(upload_id, detection) for detection in detections],
     )
+
+
+@router.get("/pending-validation", response_model=PendingUploadsResponse)
+async def list_pending_validation(
+    db: Annotated[AsyncSession, Depends(get_session)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> PendingUploadsResponse:
+    """Envois encore à valider (mission point 2) : point d'entrée de reprise depuis « Ajouter des
+    photos » — un envoi ancien avec des détections en attente reste toujours accessible.
+    Déclarée AVANT `GET /uploads/{upload_id}` : sinon « pending-validation » serait interprété
+    comme un identifiant d'envoi (UUID) et rejeté en 422."""
+    summaries = await service.list_uploads_pending_validation(db, current_user)
+    return PendingUploadsResponse(
+        uploads=[
+            PendingUploadItem(
+                upload_id=summary.upload_id,
+                created_at=summary.created_at,
+                pending_count=summary.pending_count,
+                total_count=summary.total_count,
+            )
+            for summary in summaries
+        ]
+    )
+
+
+@router.post("/{upload_id}/retry-recognition", response_model=RetryRecognitionResponse)
+async def retry_recognition(
+    upload_id: uuid.UUID,
+    db: Annotated[AsyncSession, Depends(get_session)],
+    arq_pool: Annotated[ArqRedis, Depends(get_arq_pool)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    _csrf: Annotated[None, Depends(require_csrf)],
+) -> RetryRecognitionResponse:
+    """Relance la reconnaissance d'un envoi (mission point 6) : après un job en échec ou un délai
+    dépassé, l'utilisateur peut réessayer sans renvoyer la photo. Le pipeline ne redécoupe pas si
+    des recadrages existent déjà (`pbm_api.worker`)."""
+    try:
+        job = await service.retry_recognition(db, current_user, arq_pool, upload_id)
+    except UploadNotFoundError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "envoi introuvable") from None
+    except RecognitionInProgressError:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "une reconnaissance est déjà en cours pour cet envoi"
+        ) from None
+    except RecognitionUnavailableError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from None
+
+    return RetryRecognitionResponse(upload_id=upload_id, job_id=job.id, status=job.status)
 
 
 @router.get("/{upload_id}", response_model=UploadDetailResponse)

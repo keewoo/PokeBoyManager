@@ -37,6 +37,33 @@ function confidenceLevel(score: number): "low" | "mid" | "high" {
   return "low";
 }
 
+function CropImage({ src, className }: { src: string; className: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    // Recadrage introuvable dans le stockage : tuile neutre + message, jamais l'icône « image
+    // cassée » (mission `pbm-parcours-validation` point 5 — rien ne doit rester muet à l'écran).
+    return (
+      <div
+        className={cn(
+          className,
+          "flex items-center justify-center bg-secondary p-1 text-center text-[10px] text-muted-foreground"
+        )}
+      >
+        recadrage indisponible
+      </div>
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- image servie par l'API, pas next/image
+    <img
+      src={src}
+      alt="Recadrage de la carte photographiée"
+      className={className}
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 function ManualSearch({ onPick }: { onPick: (card: CardSearchResult) => void }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<CardSearchResult[]>([]);
@@ -129,10 +156,8 @@ export function DetectionCard({
           carte (miniatures « coupées » constatées en production). L'aspect 63/88 ne tient que
           si la hauteur reste dérivée de la largeur. */}
       <div className="flex flex-col gap-1 self-start">
-        {/* eslint-disable-next-line @next/next/no-img-element -- image servie par l'API, pas next/image */}
-        <img
+        <CropImage
           src={`${getApiBaseUrl()}${detection.crop_url}`}
-          alt="Recadrage de la carte photographiée"
           className="aspect-[63/88] w-full rounded object-cover"
         />
         {selected && (

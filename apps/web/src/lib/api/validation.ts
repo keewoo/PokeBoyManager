@@ -125,6 +125,18 @@ export function confirmAll(uploadId: string): Promise<ConfirmAllResult> {
   return apiJson<ConfirmAllResult>("POST", `/uploads/${uploadId}/confirm-all`);
 }
 
+export type RetryRecognitionResult = {
+  upload_id: string;
+  job_id: string;
+  status: JobStatus;
+};
+
+/** Relance la reconnaissance d'un envoi (lot `pbm-parcours-validation`, mission point 6) après
+ * un job en échec ou un délai dépassé — sans renvoyer la photo. */
+export function retryRecognition(uploadId: string): Promise<RetryRecognitionResult> {
+  return apiJson<RetryRecognitionResult>("POST", `/uploads/${uploadId}/retry-recognition`);
+}
+
 export async function searchCatalog(query: string): Promise<CardSearchResult[]> {
   if (!query.trim()) return [];
   const params = new URLSearchParams({ q: query });

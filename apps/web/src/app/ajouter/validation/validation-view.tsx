@@ -12,6 +12,7 @@ import {
   confirmDetection,
   getUpload,
   rejectDetection,
+  retryRecognition,
   subscribeToUploadEvents,
   type Detection,
   type UploadDetail,
@@ -46,12 +47,26 @@ export function ValidationView({ uploadIds }: { uploadIds: string[] }) {
   const [selectedCandidate, setSelectedCandidate] = useState<Record<string, number>>({});
   const [manualCards, setManualCards] = useState<Record<string, SelectedCard | null>>({});
   const [forms, setForms] = useState<Record<string, ConfirmForm>>({});
+  const [retrying, setRetrying] = useState(false);
   const formsRef = useRef(forms);
   formsRef.current = forms;
   const manualCardsRef = useRef(manualCards);
   manualCardsRef.current = manualCards;
   const selectedCandidateRef = useRef(selectedCandidate);
   selectedCandidateRef.current = selectedCandidate;
+  // Flux SSE ouverts, par envoi : gardés pour pouvoir en rouvrir un après une relance (le
+  // précédent s'est fermé sur `done` quand le job a échoué).
+  const streamsRef = useRef<Map<string, () => void>>(new Map());
+
+  function openStream(id: string) {
+    streamsRef.current.get(id)?.();
+    const unsubscribe = subscribeToUploadEvents(
+      id,
+      (snapshot) => setUploads((prev) => ({ ...prev, [id]: snapshot })),
+      () => {}
+    );
+    streamsRef.current.set(id, unsubscribe);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -75,22 +90,40 @@ export function ValidationView({ uploadIds }: { uploadIds: string[] }) {
     }
 
     load();
-    const unsubscribers = uploadIds.map((id) =>
-      subscribeToUploadEvents(
-        id,
-        (snapshot) => {
-          setUploads((prev) => ({ ...prev, [id]: snapshot }));
-        },
-        () => {}
-      )
-    );
+    uploadIds.forEach(openStream);
 
+    const streams = streamsRef.current;
     return () => {
       cancelled = true;
-      unsubscribers.forEach((unsubscribe) => unsubscribe());
+      streams.forEach((unsubscribe) => unsubscribe());
+      streams.clear();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `uploadIds` vient de l'URL, stable pour la durée de vie de l'écran
   }, []);
+
+  async function handleRetry() {
+    const failedIds = uploadIds.filter((id) => uploads[id]?.job_status === "failed");
+    if (failedIds.length === 0 || retrying) return;
+    setRetrying(true);
+    setError(null);
+    try {
+      await Promise.all(failedIds.map((id) => retryRecognition(id)));
+      // Optimiste : on repasse l'envoi en « en file » et on rouvre son flux de progression (le
+      // précédent s'est fermé quand le job avait échoué).
+      setUploads((prev) => {
+        const next = { ...prev };
+        for (const id of failedIds) {
+          if (next[id]) next[id] = { ...next[id], job_status: "queued", job_error: null };
+        }
+        return next;
+      });
+      failedIds.forEach(openStream);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "La relance a échoué.");
+    } finally {
+      setRetrying(false);
+    }
+  }
 
   const merged: MergedDetection[] = useMemo(() => {
     const rows: MergedDetection[] = [];
@@ -263,7 +296,10 @@ export function ValidationView({ uploadIds }: { uploadIds: string[] }) {
         <EmptyState
           title="La reconnaissance a échoué"
           description={`Le fournisseur IA a signalé une erreur : ${failedJobError}`}
-          action={{ label: "Réessayer avec une nouvelle photo", href: "/ajouter" }}
+          action={{
+            label: retrying ? "Relance en cours…" : "Relancer la reconnaissance",
+            onClick: handleRetry,
+          }}
         />
       );
     }
@@ -307,10 +343,15 @@ export function ValidationView({ uploadIds }: { uploadIds: string[] }) {
       )}
 
       {failedJobError && (
-        <div className="mb-4">
-          <FormNotice variant="error">
-            La reconnaissance a échoué sur une partie des photos : {failedJobError}
-          </FormNotice>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <FormNotice variant="error">
+              La reconnaissance a échoué sur une partie des photos : {failedJobError}
+            </FormNotice>
+          </div>
+          <Button variant="outline" size="sm" onClick={handleRetry} disabled={retrying}>
+            {retrying ? "Relance en cours…" : "Relancer la reconnaissance"}
+          </Button>
         </div>
       )}
 
@@ -331,7 +372,11 @@ export function ValidationView({ uploadIds }: { uploadIds: string[] }) {
                   key={row.detection.id}
                   src={`${getApiBaseUrl()}${row.detection.crop_url}`}
                   alt=""
-                  className="aspect-[63/88] w-full rounded object-cover"
+                  className="aspect-[63/88] w-full rounded bg-secondary object-cover"
+                  onError={(event) => {
+                    // Recadrage absent du stockage : tuile neutre, jamais l'icône « image cassée ».
+                    event.currentTarget.style.visibility = "hidden";
+                  }}
                 />
               ))}
             </div>

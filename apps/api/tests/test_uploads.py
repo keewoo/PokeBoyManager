@@ -18,7 +18,15 @@ from PIL.ExifTags import IFD
 from sqlalchemy import select
 
 from pbm_api.config import settings
-from pbm_api.models import AiProvider, Job, JobStatus, Upload, UploadStatus
+from pbm_api.models import (
+    AiProvider,
+    Detection,
+    DetectionStatus,
+    Job,
+    JobStatus,
+    Upload,
+    UploadStatus,
+)
 from pbm_api.routers.uploads import get_storage
 from pbm_api.s3 import ObjectStorage
 from pbm_api.security.csrf import CSRF_HEADER_NAME
@@ -406,6 +414,136 @@ async def test_complete_returns_404_for_another_users_upload(api_client, storage
     )
 
     assert complete.status_code == 404
+
+
+# --- Reprise d'un envoi à valider (mission `pbm-parcours-validation` points 2 & 6) -----------
+
+
+async def _seed_pending_detection(db_session, upload_id: uuid.UUID) -> None:
+    db_session.add(
+        Detection(
+            upload_id=upload_id,
+            bbox={"reading_order": 0, "points": []},
+            crop_s3_key="crop-key",
+            status=DetectionStatus.pending,
+        )
+    )
+    await db_session.flush()
+
+
+async def test_pending_validation_lists_uploads_with_pending_detections(
+    api_client, db_session, storage
+):
+    csrf = await _register_verify_login(api_client, _unique_email("pv"))
+    target = await _create_one(api_client, csrf)
+    await _put_to_s3(target, _jpeg_with_gps_exif())
+    await api_client.post(
+        f"/uploads/{target['upload_id']}/complete", headers={CSRF_HEADER_NAME: csrf}
+    )
+    await _seed_pending_detection(db_session, uuid.UUID(target["upload_id"]))
+
+    response = await api_client.get("/uploads/pending-validation")
+
+    assert response.status_code == 200, response.text
+    items = response.json()["uploads"]
+    match = next((u for u in items if u["upload_id"] == target["upload_id"]), None)
+    assert match is not None, "l'envoi avec une détection en attente doit être proposé à la reprise"
+    assert match["pending_count"] == 1
+    assert match["total_count"] == 1
+
+
+async def test_pending_validation_is_scoped_to_current_user(api_client, db_session, storage):
+    csrf_a = await _register_verify_login(api_client, _unique_email("pv-a"))
+    target = await _create_one(api_client, csrf_a)
+    await _put_to_s3(target, _jpeg_with_gps_exif())
+    await api_client.post(
+        f"/uploads/{target['upload_id']}/complete", headers={CSRF_HEADER_NAME: csrf_a}
+    )
+    await _seed_pending_detection(db_session, uuid.UUID(target["upload_id"]))
+
+    await _register_verify_login(api_client, _unique_email("pv-b"))
+    response = await api_client.get("/uploads/pending-validation")
+
+    assert response.status_code == 200
+    assert all(u["upload_id"] != target["upload_id"] for u in response.json()["uploads"])
+
+
+async def _complete_with_key(api_client, csrf) -> dict:
+    await api_client.put(
+        f"/me/ai-keys/{AiProvider.anthropic.value}",
+        json={"api_key": AI_KEY},
+        headers={CSRF_HEADER_NAME: csrf},
+    )
+    target = await _create_one(api_client, csrf)
+    await _put_to_s3(target, _jpeg_with_gps_exif())
+    complete = await api_client.post(
+        f"/uploads/{target['upload_id']}/complete", headers={CSRF_HEADER_NAME: csrf}
+    )
+    assert complete.status_code == 200, complete.text
+    return {"target": target, "complete": complete.json()}
+
+
+async def test_retry_recognition_enqueues_a_new_job_after_failure(api_client, db_session, storage):
+    csrf = await _register_verify_login(api_client, _unique_email("retry"))
+    seeded = await _complete_with_key(api_client, csrf)
+    first_job_id = seeded["complete"]["job_id"]
+
+    # Le premier job doit être terminal pour qu'une relance soit permise (sinon 409 en cours).
+    job = (
+        await db_session.execute(select(Job).where(Job.id == uuid.UUID(first_job_id)))
+    ).scalar_one()
+    job.status = JobStatus.failed
+    await db_session.flush()
+
+    response = await api_client.post(
+        f"/uploads/{seeded['target']['upload_id']}/retry-recognition",
+        headers={CSRF_HEADER_NAME: csrf},
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "queued"
+    assert body["job_id"] != first_job_id
+
+
+async def test_retry_recognition_conflicts_when_a_job_is_still_in_progress(api_client, storage):
+    csrf = await _register_verify_login(api_client, _unique_email("retry-busy"))
+    seeded = await _complete_with_key(api_client, csrf)  # job left 'queued'
+
+    response = await api_client.post(
+        f"/uploads/{seeded['target']['upload_id']}/retry-recognition",
+        headers={CSRF_HEADER_NAME: csrf},
+    )
+
+    assert response.status_code == 409
+
+
+async def test_retry_recognition_requires_an_ai_key(api_client, storage):
+    csrf = await _register_verify_login(api_client, _unique_email("retry-nokey"))
+    target = await _create_one(api_client, csrf)
+    await _put_to_s3(target, _jpeg_with_gps_exif())
+    await api_client.post(
+        f"/uploads/{target['upload_id']}/complete", headers={CSRF_HEADER_NAME: csrf}
+    )
+
+    response = await api_client.post(
+        f"/uploads/{target['upload_id']}/retry-recognition", headers={CSRF_HEADER_NAME: csrf}
+    )
+
+    assert response.status_code == 400
+
+
+async def test_retry_recognition_404_for_another_users_upload(api_client, storage):
+    csrf_a = await _register_verify_login(api_client, _unique_email("retry-iso-a"))
+    seeded = await _complete_with_key(api_client, csrf_a)
+
+    csrf_b = await _register_verify_login(api_client, _unique_email("retry-iso-b"))
+    response = await api_client.post(
+        f"/uploads/{seeded['target']['upload_id']}/retry-recognition",
+        headers={CSRF_HEADER_NAME: csrf_b},
+    )
+
+    assert response.status_code == 404
 
 
 # --- Backend local (D7) : cible d'envoi signée, sans session ---------------------------------

@@ -79,6 +79,23 @@ class CardExtraction(BaseModel):
     counterfeit_reason: str | None = None
 
 
+class CardBottomReading(BaseModel):
+    """Seconde passe ciblée sur le bas de la carte (lot `pbm-parcours-validation`, mission point
+    4) : quand le premier appel n'a pas lu de numéro fiable, une image AGRANDIE de la seule bande
+    inférieure est renvoyée au modèle pour lire numéro / total / code d'extension — qui y sont
+    imprimés en tout petit, souvent illisibles sur le recadrage entier. Schéma volontairement
+    réduit à ces trois champs : le reste (nom, état, contrefaçon) est déjà connu du premier
+    appel, jamais redemandé (le principe « un seul appel par carte » cède ici sur les seules
+    cartes dont le numéro manque — arbitrage JF 20/09/2026, comme le secours vision)."""
+
+    number: str | None = None
+    number_confidence: float = Field(ge=0.0, le=1.0, default=0.0)
+    total: int | None = None
+    total_confidence: float = Field(ge=0.0, le=1.0, default=0.0)
+    set_code: str | None = None
+    set_code_confidence: float = Field(ge=0.0, le=1.0, default=0.0)
+
+
 class IdentificationCandidate(BaseModel):
     """Un candidat du catalogue, classé (mission point 2) — forme stockée dans
     `Detection.candidates` (JSONB, liste de ces objets, au plus trois)."""

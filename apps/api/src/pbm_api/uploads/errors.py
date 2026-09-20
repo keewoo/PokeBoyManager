@@ -29,6 +29,16 @@ class UploadTooLargeError(Exception):
     moyen d'empêcher ce dépôt au moment du présignage, contrairement au backend local."""
 
 
+class RecognitionUnavailableError(Exception):
+    """Relance de reconnaissance impossible : aucune clé IA configurée, ou l'envoi n'a pas de
+    photo traitée à reconnaître (lot `pbm-parcours-validation`, mission point 6)."""
+
+
+class RecognitionInProgressError(Exception):
+    """Une reconnaissance est déjà en file ou en cours pour cet envoi : relancer en empilerait une
+    seconde inutilement (lot `pbm-parcours-validation`, mission point 6)."""
+
+
 class DetectionNotFoundError(Exception):
     """Aucune détection avec cet id pour cet envoi de cet utilisateur."""
 

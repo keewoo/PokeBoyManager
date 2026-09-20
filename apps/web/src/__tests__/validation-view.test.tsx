@@ -3,7 +3,13 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ValidationView } from "@/app/ajouter/validation/validation-view";
-import { confirmAll, confirmDetection, getUpload, subscribeToUploadEvents } from "@/lib/api/validation";
+import {
+  confirmAll,
+  confirmDetection,
+  getUpload,
+  retryRecognition,
+  subscribeToUploadEvents,
+} from "@/lib/api/validation";
 
 const push = vi.fn();
 
@@ -21,6 +27,7 @@ vi.mock("@/lib/api/validation", async () => {
     confirmDetection: vi.fn(),
     rejectDetection: vi.fn(),
     confirmAll: vi.fn(),
+    retryRecognition: vi.fn(),
     subscribeToUploadEvents: vi.fn(),
   };
 });
@@ -85,6 +92,7 @@ describe("ValidationView", () => {
     vi.mocked(getUpload).mockReset();
     vi.mocked(confirmDetection).mockReset();
     vi.mocked(confirmAll).mockReset();
+    vi.mocked(retryRecognition).mockReset();
     vi.mocked(subscribeToUploadEvents).mockReset();
     vi.mocked(subscribeToUploadEvents).mockReturnValue(() => {});
     push.mockReset();
@@ -155,6 +163,28 @@ describe("ValidationView", () => {
 
     await waitFor(() => expect(confirmAll).toHaveBeenCalledWith(UPLOAD_ID));
     await waitFor(() => expect(push).toHaveBeenCalledWith("/collection"));
+  });
+
+  it("propose de relancer la reconnaissance quand un job a échoué (mission point 6)", async () => {
+    vi.mocked(getUpload).mockResolvedValue(
+      uploadDetail({ job_status: "failed", job_error: "délai maximal dépassé" })
+    );
+    vi.mocked(retryRecognition).mockResolvedValue({
+      upload_id: UPLOAD_ID,
+      job_id: "new-job",
+      status: "queued",
+    });
+
+    const user = userEvent.setup();
+    render(<ValidationView uploadIds={[UPLOAD_ID]} />);
+    await screen.findAllByText(/Sarmuraï/);
+
+    const retryButton = await screen.findByRole("button", {
+      name: /relancer la reconnaissance/i,
+    });
+    await user.click(retryButton);
+
+    await waitFor(() => expect(retryRecognition).toHaveBeenCalledWith(UPLOAD_ID));
   });
 
   it("affiche le message du fournisseur IA quand le job de reconnaissance échoue sans détection (régression pbm-hotfix-reconnaissance)", async () => {
