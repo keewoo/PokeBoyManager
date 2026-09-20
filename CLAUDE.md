@@ -418,6 +418,72 @@ connus (en-tête `AppShell` non sensible à la session, images de carte bloquée
 deux préexistants, hors périmètre de ce lot) :
 `docs/roadmap/comptes-rendus/v4-dashboard.md`.
 
+## Fiche carte (lot `v4-fiche`)
+
+Routes (`apps/api/src/pbm_api/routers/cards.py`, module `pbm_api.cards`) : `GET /cards/{id}`
+(catalogue + prix EUR par variante + classement + résumé du meilleur exemplaire possédé — voir
+plus bas), `GET /cards/{id}/price-history?variant=&range=7|30|365|all` (courbe de valeur,
+`pbm_api.pricing.valuation.price_history_eur` — un point par jour où au moins une source a un
+relevé exploitable, jamais interpolé : risque documenté du lot, un historique court en début de
+vie s'affiche tel quel), `GET /cards/{id}/my-items` (tous les exemplaires possédés par
+l'utilisateur courant, onglet « Mes exemplaires » — jamais le `GET /me/collection/{item}` déjà
+existant, mission initiale : une fiche montre systématiquement *tous* les exemplaires, pas un
+seul connu d'avance). `GET /me/collection/{item}/photo` (`routers/collection.py`), ajoutée par ce
+lot pour la bascule « Ma photo » de l'en-tête : sert la photo brute de l'exemplaire
+(`CollectionItem.photo_s3_key`), 404 explicite si l'exemplaire n'a pas de photo (ajout manuel) ou
+si l'objet a disparu du stockage — jamais un succès vide. Les onglets Histoire/En jeu ne passent
+par aucune route de ce lot : ils réutilisent tels quels `GET /cards/{id}/insights` et
+`GET /cards/{id}/in-game-study` (missions `v4-anecdotes`/`v4-jeu`, déjà en génération à la demande
+si absente) — **premiers écrans à les consommer**.
+
+`MyCardItemOut.purchase_price_eur` : prix d'achat converti au taux du jour d'**acquisition**
+(`pbm_api.pricing.exchange_rates.get_rate_to_eur`, jamais celui du jour de lecture — ce qui a été
+payé ne change pas rétroactivement), `None` sans prix d'achat ou si ce taux n'a jamais été
+relevé. Sert la plus-value de l'en-tête (`value_eur - purchase_price_eur`) sans second aller-
+retour serveur. Bug trouvé en écrivant ce champ : `Decimal.__truediv__` d'une conversion de
+change dont le quotient est « rond » (ex. 40 USD à 2 USD/EUR) renvoie un `Decimal` en notation
+scientifique (`2E+1`) que Pydantic sérialise tel quel — `.quantize(Decimal("0.000001"))` après
+toute conversion de devise, appliqué ici et dans `price_history_eur` (les deux fonctions de ce
+lot ; les usages plus anciens de `convert_to_eur` dans `pricing/valuation.py`, testés à l'égalité
+exacte par `test_valuation.py`, n'ont pas été touchés — hors périmètre, risque de régression pour
+un autre lot).
+
+En-tête de fiche et « État »/« Ajoutée le »/« Prix d'achat »/« Plus-value » : dérivés côté front
+(`apps/web/src/app/carte/[id]/card-detail-view.tsx`, `pickPrimaryItem`) du **meilleur** exemplaire
+possédé (valeur la plus forte, `MyCardItemOut[]` déjà chargé pour l'onglet « Mes exemplaires »),
+même choix que `CardDetailResponse.collection_rank` côté API (`pbm_api.cards.service.
+_best_owned_item`) — jamais un second calcul qui pourrait diverger. `CardRankingOut.
+value_percentile` est un `PERCENT_RANK()` **0 → 1, 1 = le plus cher** (`pbm_api.ranking.service`,
+vue matérialisée `card_value_rank`) : le badge « top X % de l'extension » calcule
+`(1 - value_percentile) * 100`, jamais `100 - value_percentile` (confondre les deux échelles
+aurait affiché un pourcentage dix fois trop petit).
+
+Page `apps/web/src/app/carte/[id]/` : onglet actif en état local (`useState`, pas dérivé de
+`useSearchParams` à chaque rendu comme `/collection`) — changer d'onglet ne redemande rien au
+serveur, la bascule doit être instantanée ; l'URL (`?onglet=`) n'est mise à jour qu'ensuite, pour
+le partage et le retour arrière. Cinq onglets (Valeur, **État**, Histoire, En jeu, Mes
+exemplaires) : la maquette (`ROADMAP.html`, `V.fiche`) en montre cinq alors que la mission n'en
+listait que quatre (l'État en moins) — la maquette prime (`CLAUDE.md` racine : « le front
+reproduit la maquette »), d'autant que le contenu de cet onglet existe déjà entièrement
+(`v3-etat`). Courbe de valeur : Recharts (`value-chart.tsx`, propre à ce lot — homonyme sans
+rapport avec celui de `v4-dashboard`), ligne de référence en pointillés pour le prix d'achat,
+palette et specs de marque suivant la référence dataviz du poste (un seul hue pour la série, pas
+de légende à une série, grille recessive) ; partage avec `v4-dashboard` le mock `ResizeObserver`
+de `vitest.setup.ts` (absent de jsdom, requis par `ResponsiveContainer`, les deux lots l'ayant
+ajouté indépendamment en parallèle).
+
+Tests : `apps/api/tests/test_card_detail_routes.py` (accès croisé sur les trois routes + la
+photo, conversion de devise), `apps/web/src/__tests__/card-detail-view.test.tsx`. e2e Playwright
+de conformité à la maquette (captures jointes au compte rendu du lot) :
+`apps/web/e2e/card-detail.spec.ts` — aucune clé IA réelle disponible sur chimera, une carte
+possédée avec historique de prix, état estimé, anecdotes et étude en jeu déjà en cache est semée
+directement en base par `apps/api/scripts/seed_card_fiche_e2e.py` (même forme que
+`seed_validation_e2e.py`) ; connexion par appels API directs (`page.request`, cookies partagés
+avec `page`) plutôt qu'en remplissant le formulaire d'inscription à l'écran — la case CGU de ce
+formulaire s'est révélée instable à cliquer dans l'environnement Playwright de ce poste
+(`auth.spec.ts` échoue au même endroit, non lié à ce lot) ; seule la fiche elle-même reste
+exercée par le navigateur.
+
 ## Règles de la flotte applicables ici (résumé de `~/.claude/CLAUDE.md`)
 
 - On construit sur chimera (32 Go, 16 threads) et on ne construit jamais sur la machine qui sert.
