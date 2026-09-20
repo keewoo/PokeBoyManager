@@ -14,6 +14,7 @@ from datetime import date
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from pbm_api.identification.reconciliation import top_candidate_preselected
 from pbm_api.models import Card, IdentificationCorrection, User
 from pbm_api.models.catalog import PriceVariant
 from pbm_api.models.collection import CollectionItem, Detection, DetectionStatus, Upload
@@ -152,11 +153,14 @@ async def confirm_all(
     confirmed: list[uuid.UUID] = []
     skipped: list[uuid.UUID] = []
     for detection in detections:
-        top = _top_candidate(detection)
-        if top is None or not top.get("preselected"):
+        # Présélection ré-appliquée aux scores stockés (politique courante), pas au drapeau figé à
+        # l'écriture (lot `pbm-parcours-validation`) : sinon les 143 détections d'Aymeric,
+        # identifiées sous l'ancien seuil de 0,9, ne seraient jamais ajoutées par « Tout ajouter ».
+        if not top_candidate_preselected(detection.candidates):
             skipped.append(detection.id)
             continue
 
+        top = max(detection.candidates, key=lambda c: float(c.get("combined_score") or 0.0))
         card_id = uuid.UUID(top["card_id"])
         db.add(
             CollectionItem(

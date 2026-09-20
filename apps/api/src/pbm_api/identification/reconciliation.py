@@ -67,19 +67,38 @@ def _combined_score(catalog_score: float, extraction: CardExtraction, tier: str)
     return max(0.0, min(1.0, catalog_score)) * mean_confidence
 
 
+def _is_top_preselected(sorted_combined_scores: list[float]) -> bool:
+    """Politique de présélection : le meilleur candidat est présélectionné s'il est à la fois assez
+    sûr (au-dessus du seuil) ET nettement détaché du suivant (un numéro+nom qui colle à plusieurs
+    extensions reste ambigu, jamais ajouté d'office). Scores triés par ordre décroissant."""
+    if not sorted_combined_scores:
+        return False
+    top = sorted_combined_scores[0]
+    runner_up = sorted_combined_scores[1] if len(sorted_combined_scores) > 1 else 0.0
+    return top > PRESELECTION_THRESHOLD and (
+        len(sorted_combined_scores) == 1 or (top - runner_up) >= PRESELECTION_MARGIN
+    )
+
+
+def top_candidate_preselected(candidates: list[dict] | None) -> bool:
+    """Ré-applique la politique de présélection aux `combined_score` DÉJÀ calculés d'une liste de
+    candidats stockée (`Detection.candidates`, JSON), au moment de SERVIR ou de VALIDER — pas au
+    moment de l'écriture. Les scores ne bougent jamais ; seule la politique évolue (calibrage
+    `pbm-parcours-validation` : seuil 0,9 → 0,6). Sans ça, une détection identifiée AVANT ce lot —
+    dont les 143 détections en attente d'Aymeric — ou une entrée du cache partagé resterait figée
+    sur l'ancien seuil, et « Tout ajouter » n'ajouterait toujours rien."""
+    if not candidates:
+        return False
+    scores = sorted((float(c.get("combined_score") or 0.0) for c in candidates), reverse=True)
+    return _is_top_preselected(scores)
+
+
 def _to_candidates(
     raw: list[CardCandidate], extraction: CardExtraction, tier: str
 ) -> list[IdentificationCandidate]:
     scored = [(c, _combined_score(c.score, extraction, tier)) for c in raw]
     scored.sort(key=lambda pair: pair[1], reverse=True)
-    # Présélection : le meilleur candidat seulement, s'il est à la fois assez sûr (au-dessus du
-    # seuil) ET nettement détaché du suivant (un numéro+nom qui colle à plusieurs extensions
-    # reste ambigu, jamais ajouté d'office). Voir le docstring du module pour le calibrage.
-    top_combined = scored[0][1] if scored else 0.0
-    runner_up = scored[1][1] if len(scored) > 1 else 0.0
-    top_preselected = top_combined > PRESELECTION_THRESHOLD and (
-        len(scored) == 1 or (top_combined - runner_up) >= PRESELECTION_MARGIN
-    )
+    top_preselected = _is_top_preselected([combined for _c, combined in scored])
     return [
         IdentificationCandidate(
             card_id=str(candidate.card_id),

@@ -10,7 +10,11 @@ import uuid
 
 import pytest
 
-from pbm_api.identification.reconciliation import PRESELECTION_THRESHOLD, reconcile
+from pbm_api.identification.reconciliation import (
+    PRESELECTION_THRESHOLD,
+    reconcile,
+    top_candidate_preselected,
+)
 from pbm_api.identification.schemas import CardExtraction
 from pbm_api.models import Card, CardName, Set
 
@@ -49,6 +53,25 @@ async def catalog_with_number_collision(db_session):
         "pikachu_b": pikachu_b,
         "raichu": raichu,
     }
+
+
+def test_top_candidate_preselected_recomputes_from_stored_scores():
+    """Politique de présélection ré-appliquée aux `combined_score` stockés (lot
+    `pbm-parcours-validation`) : indispensable pour que les détections identifiées AVANT ce lot
+    (drapeau `preselected` figé sous l'ancien seuil de 0,9 — les 143 d'Aymeric) profitent du
+    nouveau seuil sans être réécrites."""
+    # Drapeau figé à False, mais score au-dessus du seuil + candidat unique → présélectionné.
+    assert top_candidate_preselected([{"combined_score": 0.82, "preselected": False}]) is True
+    # Sous le seuil, quel que soit le drapeau stocké.
+    assert top_candidate_preselected([{"combined_score": 0.49, "preselected": True}]) is False
+    # Ex-aequo (numéro+nom dans deux extensions) : marge non atteinte → non présélectionné.
+    assert (
+        top_candidate_preselected([{"combined_score": 0.7}, {"combined_score": 0.7}]) is False
+    )
+    # Nettement détaché du suivant → présélectionné.
+    assert top_candidate_preselected([{"combined_score": 0.8}, {"combined_score": 0.5}]) is True
+    assert top_candidate_preselected([]) is False
+    assert top_candidate_preselected(None) is False
 
 
 async def test_reconcile_without_any_signal_returns_no_candidate(db_session):

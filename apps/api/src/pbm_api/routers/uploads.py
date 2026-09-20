@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pbm_api.auth.dependencies import get_current_user, require_csrf
 from pbm_api.config import settings
 from pbm_api.db import get_session
+from pbm_api.identification.reconciliation import top_candidate_preselected
 from pbm_api.models import Detection, Job, JobStatus, UploadStatus, User
 from pbm_api.queue import get_arq_pool
 from pbm_api.security.upload_tokens import verify_upload_token
@@ -59,6 +60,18 @@ _SSE_POLL_INTERVAL_SECONDS = 0.7
 _SSE_MAX_DURATION_SECONDS = 300
 
 
+def _served_candidates(candidates: list | None) -> list | None:
+    """Ré-applique la politique de présélection courante (seuil + marge) aux `combined_score` déjà
+    stockés, au moment de servir — jamais le drapeau figé à l'écriture (lot
+    `pbm-parcours-validation`). Ainsi une détection identifiée avant ce lot (les 143 en attente
+    d'Aymeric) ou servie depuis le cache partagé profite immédiatement du nouveau calibrage."""
+    if not candidates:
+        return candidates
+    ordered = sorted(candidates, key=lambda c: float(c.get("combined_score") or 0.0), reverse=True)
+    preselect_top = top_candidate_preselected(ordered)
+    return [{**c, "preselected": (index == 0 and preselect_top)} for index, c in enumerate(ordered)]
+
+
 def _detection_response(upload_id: uuid.UUID, detection: Detection) -> DetectionResponse:
     return DetectionResponse(
         id=detection.id,
@@ -66,7 +79,7 @@ def _detection_response(upload_id: uuid.UUID, detection: Detection) -> Detection
         status=detection.status,
         crop_url=f"/uploads/{upload_id}/detections/{detection.id}/crop",
         extraction=detection.extraction,
-        candidates=detection.candidates,
+        candidates=_served_candidates(detection.candidates),
         condition=detection.condition_assessment,
         identification_method=detection.identification_method,
     )

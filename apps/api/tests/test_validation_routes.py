@@ -610,6 +610,60 @@ async def test_confirm_all_uses_preselected_candidate_and_skips_the_rest(
     assert unmatched_result.scalar_one().status.value == "pending"
 
 
+async def test_confirm_all_recomputes_preselection_for_pre_lot_detections(
+    api_client, db_session, storage
+):
+    """Régression `pbm-parcours-validation` : une détection identifiée AVANT ce lot a son drapeau
+    `preselected` figé sous l'ancien seuil de 0,9 (les 143 d'Aymeric, ou une entrée du cache
+    partagé). L'API doit ré-appliquer le seuil courant (0,6) aux `combined_score` stockés — au
+    service comme dans « Tout ajouter » — sinon la carte n'est jamais proposée ni ajoutée."""
+    card = await _seed_sarmurai(db_session)
+    csrf = await _register_verify_login(api_client, _unique_email("val-recompute"))
+    photo = make_single_card(seed=91, index=0)
+    upload_id, _job = await _upload_and_complete_with_ai_key(api_client, csrf, _encode(photo.image))
+
+    legacy = Detection(
+        upload_id=upload_id,
+        bbox={"reading_order": 0, "points": []},
+        crop_s3_key="legacy-crop",
+        extraction={"name": "Sarmuraï", "number": "1"},
+        candidates=[
+            {
+                "card_id": str(card.id),
+                "set_id": str(card.set_id),
+                "name": "Sarmuraï",
+                "number": "1",
+                "set_name": "Écarlate et Violet",
+                "set_code": "sv01",
+                "catalog_score": 0.9,
+                "combined_score": 0.82,
+                "preselected": False,  # figé sous l'ancien seuil de 0,9
+            }
+        ],
+    )
+    db_session.add(legacy)
+    await db_session.commit()
+
+    # Servie : la présélection est ré-appliquée (0,82 > 0,6, candidat unique) → True malgré le
+    # drapeau figé à False.
+    served = await _first_detection(api_client, upload_id)
+    assert served["candidates"][0]["preselected"] is True
+
+    response = await api_client.post(
+        f"/uploads/{upload_id}/confirm-all", headers={CSRF_HEADER_NAME: csrf}
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["confirmed"] == [str(legacy.id)]
+
+    items = (
+        await db_session.execute(
+            select(CollectionItem).where(CollectionItem.detection_id == legacy.id)
+        )
+    ).scalars().all()
+    assert len(items) == 1
+    assert items[0].card_id == card.id
+
+
 async def test_confirm_all_returns_404_for_another_users_upload(api_client, db_session):
     csrf_a = await _register_verify_login(api_client, _unique_email("val-confirm-all-iso-a"))
     file_entry = {"filename": "a.jpg", "content_type": "image/jpeg", "size_bytes": 10}
