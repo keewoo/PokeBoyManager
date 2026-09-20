@@ -58,6 +58,23 @@ class ObjectStorage:
     async def get(self, key: str) -> bytes | None:
         return await asyncio.to_thread(self._get_sync, key)
 
+    def _head_sync(self, key: str) -> int | None:
+        try:
+            response = self._client.head_object(Bucket=self.bucket, Key=key)
+            return response["ContentLength"]
+        except ClientError as exc:
+            if exc.response.get("Error", {}).get("Code") in ("NoSuchKey", "404"):
+                return None
+            raise
+
+    async def head(self, key: str) -> int | None:
+        """Taille en octets sans télécharger le corps (mission `v5-securite` point 2) :
+        `presign_put` n'impose aucune limite de taille au navigateur (`generate_presigned_url`
+        ne supporte pas de condition `content-length-range`, contrairement à un présignage
+        POST) — un objet déposé plus gros que `upload_max_size_bytes` doit être rejeté avant
+        `get()`, pas après avoir chargé tous ses octets en mémoire."""
+        return await asyncio.to_thread(self._head_sync, key)
+
     def _put_sync(self, key: str, data: bytes, content_type: str) -> None:
         self._client.put_object(Bucket=self.bucket, Key=key, Body=data, ContentType=content_type)
 

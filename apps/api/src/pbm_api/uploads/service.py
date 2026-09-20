@@ -24,6 +24,7 @@ from pbm_api.uploads.errors import (
     UploadAlreadyProcessedError,
     UploadNotFoundError,
     UploadRawMissingError,
+    UploadTooLargeError,
 )
 from pbm_api.uploads.processing import UnsupportedImageError, process_uploaded_image
 from pbm_api.uploads.schemas import UploadFileRequest, UploadTarget
@@ -139,6 +140,15 @@ async def complete_upload(
     upload = await get_owned_upload(db, user, upload_id)
     if upload.status != UploadStatus.pending:
         raise UploadAlreadyProcessedError
+
+    size = await storage.head(upload.s3_key)
+    if size is None:
+        raise UploadRawMissingError
+    if size > settings.upload_max_size_bytes:
+        await storage.delete(upload.s3_key)
+        upload.status = UploadStatus.failed
+        await db.commit()
+        raise UploadTooLargeError
 
     raw = await storage.get(upload.s3_key)
     if raw is None:

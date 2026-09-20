@@ -37,6 +37,19 @@ class LocalObjectStorage:
     async def get(self, key: str) -> bytes | None:
         return await asyncio.to_thread(self._get_sync, key)
 
+    def _head_sync(self, key: str) -> int | None:
+        path = self._path_for(key)
+        if not path.is_file():
+            return None
+        return path.stat().st_size
+
+    async def head(self, key: str) -> int | None:
+        """Taille en octets sans lire le fichier — même contrat que `ObjectStorage.head`
+        (mission `v5-securite` point 2), même si ce backend ne peut pas dépasser
+        `upload_max_size_bytes` en pratique (`PUT /uploads/{id}/raw` vérifie déjà
+        `Content-Length` avant d'écrire)."""
+        return await asyncio.to_thread(self._head_sync, key)
+
     def _put_sync(self, key: str, data: bytes, content_type: str) -> None:
         path = self._path_for(key)
         path.parent.mkdir(parents=True, exist_ok=True)

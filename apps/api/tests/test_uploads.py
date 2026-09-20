@@ -262,6 +262,32 @@ async def test_complete_rejects_bytes_that_are_not_really_an_image(api_client, s
     assert complete.status_code == 400, complete.text
 
 
+async def test_complete_rejects_an_object_bigger_than_declared_at_creation(
+    api_client, db_session, storage
+):
+    """Mission `v5-securite` point 2 : une URL présignée S3 (`generate_presigned_url`, pas de
+    présignage POST) n'impose aucune limite de taille au navigateur — `size_bytes` déclaré à
+    `POST /uploads` n'est qu'une métadonnée, jamais appliquée par MinIO/S3 lui-même. Simule
+    l'écart : un dépôt réel plus gros que `upload_max_size_bytes`, jamais lu en mémoire
+    entièrement (`storage.head` avant `storage.get`), objet supprimé du stockage."""
+    csrf = await _register_verify_login(api_client, _unique_email("up-oversized"))
+    target = await _create_one(api_client, csrf, size_bytes=1000)
+    oversized = b"x" * (settings.upload_max_size_bytes + 1)
+    await _put_to_s3(target, oversized)
+
+    complete = await api_client.post(
+        f"/uploads/{target['upload_id']}/complete", headers={CSRF_HEADER_NAME: csrf}
+    )
+
+    assert complete.status_code == 413, complete.text
+
+    upload = (
+        await db_session.execute(select(Upload).where(Upload.id == uuid.UUID(target["upload_id"])))
+    ).scalar_one()
+    assert upload.status == UploadStatus.failed
+    assert await storage.get(upload.s3_key) is None
+
+
 async def test_complete_requires_raw_bytes_to_have_been_received(api_client):
     csrf = await _register_verify_login(api_client, _unique_email("up-noraw"))
     target = await _create_one(api_client, csrf)

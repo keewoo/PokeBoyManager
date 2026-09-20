@@ -31,6 +31,7 @@ from pbm_api.uploads.errors import (
     UploadAlreadyProcessedError,
     UploadNotFoundError,
     UploadRawMissingError,
+    UploadTooLargeError,
 )
 from pbm_api.uploads.processing import UnsupportedImageError
 from pbm_api.uploads.schemas import (
@@ -145,6 +146,12 @@ async def complete_upload(
     except UploadRawMissingError:
         raise HTTPException(
             status.HTTP_409_CONFLICT, "aucune donnée reçue pour cet envoi"
+        ) from None
+    except UploadTooLargeError:
+        max_mo = settings.upload_max_size_bytes // (1024 * 1024)
+        raise HTTPException(
+            status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            f"dépasse la taille maximale de {max_mo} Mo",
         ) from None
     except UnsupportedImageError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from None
