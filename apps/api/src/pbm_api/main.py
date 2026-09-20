@@ -16,13 +16,16 @@ from pbm_api.routers.images import router as images_router
 from pbm_api.routers.in_game_study import router as in_game_study_router
 from pbm_api.routers.profile import router as profile_router
 from pbm_api.routers.uploads import router as uploads_router
-from pbm_api.security.log_filter import install_api_key_redaction
+from pbm_api.security.headers import SecurityHeadersMiddleware
+from pbm_api.security.log_filter import install_api_key_redaction, install_secret_url_redaction
 from pbm_api.security.validation_errors import install_validation_error_redaction
 
 install_api_key_redaction()
+install_secret_url_redaction()
 
 app = FastAPI(title="PokeBoyManager API")
 install_validation_error_redaction(app)
+app.add_middleware(SecurityHeadersMiddleware)
 
 # `apps/web` et `apps/api` sont deux origines distinctes (ports différents en local, sous-
 # domaines distincts en UAT/PROD) : sans CORS, le navigateur bloque tout fetch, y compris les
