@@ -67,7 +67,7 @@ _Une fois les cartes connues, on les parcourt, on les filtre, on les valorise, e
 | `v4-ranking` | P1 | Classement (« ranking ») de chaque carte | DA1 (devAI) | 26 oct. → 27 oct. | v2-prix | D6 | Intégré (main) | [prompt](prompts/v4-ranking.md) |
 | `v4-collection` | P0 | Page collection : grille, filtres, tris et valeur totale | CH1 (chimera) | 28 oct. → 30 oct. | v3-validation, v2-prix | — | Intégré (main) | [prompt](prompts/v4-collection.md) |
 | `v4-anecdotes` | P1 | Histoire et anecdotes de la carte (sourcées) | CH2 (chimera) | 28 oct. → 30 oct. | v3-ia-providers, v2-catalogue | — | Intégré (main) | [prompt](prompts/v4-anecdotes.md) |
-| `v4-fiche` | P0 | Fiche carte : image officielle, ma photo, état, valeur dans le temps, histoire | CH4 (chimera) | 2 nov. → 5 nov. | v4-collection, v4-ranking, v4-anecdotes, v3-etat | — | En cours | [prompt](prompts/v4-fiche.md) |
+| `v4-fiche` | P0 | Fiche carte : image officielle, ma photo, état, valeur dans le temps, histoire | CH4 (chimera) | 2 nov. → 5 nov. | v4-collection, v4-ranking, v4-anecdotes, v3-etat | — | Intégré (main) | [prompt](prompts/v4-fiche.md) |
 | `v4-jeu` | P2 | Étude d'utilisation en jeu (légalité, attaques, présence en tournoi) | CH2 (chimera) | 2 nov. → 5 nov. | v4-anecdotes | — | Intégré (main) | [prompt](prompts/v4-jeu.md) |
 | `v4-dashboard` | P1 | Accueil connecté : valeur de la collection, hausses et baisses, derniers ajouts | CH1 (chimera) | 2 nov. → 3 nov. | v4-collection | — | Intégré (main) | [prompt](prompts/v4-dashboard.md) |
 | `v4-insights-batch` | P1 | Pré-générer histoire et étude en jeu de TOUTES les cartes, en un seul passage par carte | CH2 (chimera) | 6 nov. → 12 nov. | v4-jeu, v2-catalogue-complet | D4 | Intégré (main) | [prompt](prompts/v4-insights-batch.md) |
@@ -79,7 +79,7 @@ _Un espace qui garde des clés IA et des photos privées ne sort qu'après une r
 | Lot | Prio | Titre | Couloir | Prévu | Dépend de | Décision | Statut | Prompt |
 |---|---|---|---|---|---|---|---|---|
 | `v5-rgpd` | P1 | Exporter mes données et supprimer mon compte | DA1 (devAI) | 28 oct. → 29 oct. | v1-byok | — | Intégré (main) | [prompt](prompts/v5-rgpd.md) |
-| `v5-e2e` | P1 | Parcours e2e Playwright en CI | CH3 (chimera) | 6 nov. → 11 nov. | v4-fiche | — | À faire | [prompt](prompts/v5-e2e.md) |
+| `v5-e2e` | P1 | Parcours e2e Playwright en CI | CH3 (chimera) | 6 nov. → 11 nov. | v4-fiche | — | En cours | [prompt](prompts/v5-e2e.md) |
 | `v5-securite` | P0 | Revue de sécurité avant ouverture | DA1 (devAI) | 9 nov. → 12 nov. | v4-fiche, v5-rgpd, v3-validation | — | À faire | [prompt](prompts/v5-securite.md) |
 | `v5-prod` | P0 | Mise en PROD : domaine, sauvegardes, surveillance (sans UAT) | DA2 (devAI) | 16 nov. → 20 nov. | v5-securite, v5-e2e | D8 | À faire | [prompt](prompts/v5-prod.md) |
 

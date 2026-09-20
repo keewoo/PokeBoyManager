@@ -1942,21 +1942,21 @@
       "attente": null
     },
     "v4-fiche": {
-      "statut": "en_cours",
+      "statut": "integre",
       "machine": "chimera",
       "branche": "roadmap/v4-fiche",
       "debut_reel": "2026-09-20",
-      "fin_reelle": null,
+      "fin_reelle": "2026-09-20",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit ce6003643 intégré dans main — voir docs/roadmap/comptes-rendus/v4-fiche.md",
+          "maj": "2026-09-20T10:36+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit ce6003643 intégré dans main — voir docs/roadmap/comptes-rendus/v4-fiche.md",
+          "maj": "2026-09-20T10:36+0200"
         },
         "securite": {
           "etat": "a_faire",
@@ -1984,14 +1984,14 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit ce6003643 intégré dans main — voir docs/roadmap/comptes-rendus/v4-fiche.md",
+          "maj": "2026-09-20T10:36+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit ce6003643 intégré dans main — voir docs/roadmap/comptes-rendus/v4-fiche.md",
+          "maj": "2026-09-20T10:36+0200"
         }
       },
       "journal": [
@@ -2000,9 +2000,38 @@
           "machine": "chimera",
           "evenement": "démarré",
           "detail": "roadmap/v4-fiche"
+        },
+        {
+          "quand": "2026-09-20T10:36+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit ce6003643"
         }
       ],
-      "compte_rendu": {},
+      "compte_rendu": {
+        "resume": "Fiche carte complète (`/carte/[id]`) : image officielle basculable vers la photo possédée, en-tête (extension, sortie, rareté, classement, état estimé, prix d'achat, plus-value), cinq onglets — Valeur (courbe Recharts par variante/période avec prix d'achat en ligne de référence), État (centrage/coins/bords/surface détaillés), Histoire (anecdotes sourcées), En jeu (légalités, attaques, présence en tournoi, synthèse), Mes exemplaires (tableau de tous les exemplaires possédés). Conforme à la maquette (`ROADMAP.html`, onglet Maquette, écran `V.fiche`) — cinq onglets comme la maquette, pas quatre comme le première lecture de la mission (voir « Écarts »).",
+        "livrables": [
+          "`apps/api/src/pbm_api/cards/` (nouveau module) :",
+          "`service.py` — `get_card_detail` (catalogue + prix EUR par variante + classement +",
+          "`schemas.py`, `errors.py` (`CardNotFoundError`).",
+          "`apps/api/src/pbm_api/routers/cards.py` — `GET /cards/{id}`, `GET",
+          "`apps/api/src/pbm_api/routers/collection.py` — `GET /me/collection/{item}/photo` (bascule",
+          "`apps/api/src/pbm_api/pricing/valuation.py` — `price_history_eur` (nouvelle fonction de ce",
+          "Front `apps/web/src/app/carte/[id]/` : `card-detail-view.tsx` (orchestrateur, en-tête, onglets),",
+          "`apps/web/src/lib/api/cards.ts` — client de la fiche (types + appels des 5 routes consommées :"
+        ],
+        "preuves": [],
+        "ecarts": [
+          "**CI : le job `e2e` ne démarrait MinIO pour aucune spec, alors que le stockage objet y est requis",
+          "**`libnspr4`/`libnss3`/`libasound2` absents sur cette session chimera** (`chrome-headless-shell:",
+          "**Case CGU du formulaire d'inscription instable au clic dans l'e2e** (`locator.check: Test",
+          "**`card_value_rank` (vue matérialisée) non rafraîchie par le script de seed e2e** : la carte"
+        ],
+        "reste": [
+          "Rien d'identifié dans le périmètre de la mission. `docs/ARCHITECTURE.md` n'a pas été mis à jour",
+          "Les gaps d'environnement chimera ci-dessus (client PostgreSQL, bibliothèques Playwright)"
+        ]
+      },
       "attente": null
     },
     "v4-jeu": {
@@ -2335,10 +2364,10 @@
       "compte_rendu": {}
     },
     "v5-e2e": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
+      "statut": "en_cours",
+      "machine": "chimera",
+      "branche": "roadmap/v5-e2e",
+      "debut_reel": "2026-09-20",
       "fin_reelle": null,
       "taches": {
         "dev": {
@@ -2387,8 +2416,16 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-20T10:36+0200",
+          "machine": "chimera",
+          "evenement": "démarré",
+          "detail": "roadmap/v5-e2e"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": null
     },
     "v5-prod": {
       "statut": "a_faire",
