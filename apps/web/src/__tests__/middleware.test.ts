@@ -31,4 +31,33 @@ describe("middleware", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("location")).toBeNull();
   });
+
+  it("pose des en-têtes de sécurité même sur une page publique", () => {
+    const response = middleware(requestFor("/"));
+
+    expect(response.headers.get("X-Frame-Options")).toBe("DENY");
+    expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(response.headers.get("Referrer-Policy")).toBe("strict-origin-when-cross-origin");
+    const csp = response.headers.get("Content-Security-Policy");
+    expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).toContain("script-src 'self' 'nonce-");
+  });
+
+  it("pose aussi les en-têtes de sécurité sur la redirection vers /connexion", () => {
+    const response = middleware(requestFor("/collection"));
+
+    expect(response.headers.get("X-Frame-Options")).toBe("DENY");
+    expect(response.headers.get("Content-Security-Policy")).toContain("default-src 'self'");
+  });
+
+  it("utilise un nonce différent à chaque requête", () => {
+    const first = middleware(requestFor("/"));
+    const second = middleware(requestFor("/"));
+
+    const nonceOf = (response: ReturnType<typeof middleware>) =>
+      response.headers.get("Content-Security-Policy")?.match(/'nonce-([^']+)'/)?.[1];
+
+    expect(nonceOf(first)).toBeTruthy();
+    expect(nonceOf(first)).not.toBe(nonceOf(second));
+  });
 });
