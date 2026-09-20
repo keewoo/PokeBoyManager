@@ -88,10 +88,20 @@ def _clear_auth_cookies(response: Response) -> None:
 @router.post("/register", response_model=MessageResponse, status_code=status.HTTP_202_ACCEPTED)
 async def register(
     payload: RegisterRequest,
+    request: Request,
     db: AsyncSession = Depends(get_session),
     compromised_checker: CompromisedPasswordChecker = Depends(get_compromised_checker),
     email_sender: EmailSender = Depends(get_email_sender),
+    limiter: RateLimiter = Depends(get_login_rate_limiter),
 ) -> MessageResponse:
+    # Par IP seulement (mission `v5-securite` point 2) : l'e-mail change à chaque appel d'un
+    # abus réel, une limite par e-mail ne freinerait rien. `register_user` fait un hachage de
+    # mot de passe coûteux et un appel réseau HIBP avant même de savoir si le compte existe
+    # déjà — sans ce garde-fou, l'inscription est à la fois un vecteur de bombardement d'e-mails
+    # (adresses de tiers) et un moyen de faire tourner ce travail coûteux en boucle.
+    if not await limiter.hit("register:ip", _client_ip(request)):
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, TOO_MANY_ATTEMPTS_MESSAGE)
+
     try:
         await service.register_user(
             db,

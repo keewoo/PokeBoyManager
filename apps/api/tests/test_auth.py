@@ -243,6 +243,27 @@ async def test_login_is_rate_limited_after_five_failed_attempts(
     assert still_blocked.status_code == 429
 
 
+async def test_register_is_rate_limited_by_ip_after_five_attempts(
+    api_client: httpx.AsyncClient,
+) -> None:
+    """Mission `v5-securite` point 2 : sans ce garde-fou, `/auth/register` fait tourner un
+    hachage de mot de passe coûteux et un appel réseau HIBP à volonté, et peut bombarder
+    n'importe quelle adresse d'e-mails de vérification non sollicités."""
+    for _ in range(5):
+        response = await api_client.post(
+            "/auth/register", json=_register_payload(_unique_email("ratelimit"))
+        )
+        assert response.status_code == 202
+
+    blocked = await api_client.post(
+        "/auth/register", json=_register_payload(_unique_email("ratelimit"))
+    )
+    assert blocked.status_code == 429
+    # Aucun e-mail supplémentaire envoyé pour la tentative bloquée.
+    sent = api_client.email_sender.sent  # type: ignore[attr-defined]
+    assert len(sent) == 5
+
+
 # --- Déconnexion -------------------------------------------------------------------------
 
 
