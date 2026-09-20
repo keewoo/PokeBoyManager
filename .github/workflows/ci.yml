@@ -32,6 +32,16 @@ jobs:
       - run: pnpm --filter @pbm/web test
       - run: pnpm --filter @pbm/web build
 
+      # Non bloquant pour l'instant (mission `v5-securite` point 2) : au 20/09/2026, les seules
+      # failles connues (`pnpm audit`) sont dans des devDependencies de build (vite/vitest/
+      # postcss/esbuild), jamais expédiées dans le bundle de production — voir docs/SECURITE.md
+      # pour le détail et le suivi. Toujours exécuté et visible dans le journal : une régression
+      # (nouvelle faille, ou une de ces quatre qui gagnerait la sévérité `critical` en
+      # production) doit se voir ici avant de devenir bloquante.
+      - name: pnpm audit (dépendances JS)
+        run: pnpm --filter @pbm/web audit
+        continue-on-error: true
+
   api:
     name: api — lint, tests
     runs-on: ubuntu-latest
@@ -98,6 +108,16 @@ jobs:
 
       - working-directory: apps/api
         run: uv run ruff check .
+
+      # Bloquant (contrairement à `pnpm audit` ci-dessus) : aucune faille connue au 20/09/2026
+      # (mission `v5-securite` point 2, voir docs/SECURITE.md) — une régression ici doit
+      # empêcher le merge, pas seulement s'afficher.
+      - name: pip-audit (dépendances Python)
+        working-directory: apps/api
+        run: |
+          uv export --no-hashes --no-header -o /tmp/requirements.txt
+          grep -v '^-e ' /tmp/requirements.txt > /tmp/requirements-clean.txt
+          uvx pip-audit -r /tmp/requirements-clean.txt
 
       - working-directory: apps/api
         run: uv run alembic upgrade head
