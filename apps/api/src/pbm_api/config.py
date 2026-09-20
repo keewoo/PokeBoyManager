@@ -105,6 +105,28 @@ class Settings(BaseSettings):
     # disponible sur chimera (voir CLAUDE.md).
     ai_simulated_provider: bool = False
 
+    # --- Traitements lourds sur la flotte, jamais sur la machine qui sert (lot pbm-jobs-flotte) ---
+    # Règle d'or de la flotte : « on ne construit pas sur la machine qui sert ». Les jobs qui
+    # balaient tout le catalogue (relevé de prix ~22 000 cartes, import du catalogue, relevé de
+    # tournoi, taux de change) tournent sur chimera dans `pbm_catalogue_ref` ; seul le RÉSULTAT est
+    # importé en PROD (voir docs/infra/JOBS-LOURDS.md). Le worker de PROD ne garde que le court :
+    # reconnaissance des photos (`detect_cards_task`), exports RGPD, e-mails.
+    #   None  -> défaut selon l'environnement : autorisé hors production (dev/CI/chimera), REFUSÉ en
+    #            production (le relevé de prix a fait tomber kailo-srv à 2 cœurs/4 Go : 1 h 20 pour
+    #            zéro prix écrit). Faux par défaut en production même si la variable est oubliée.
+    #   true  -> autorisé (à ne poser que sur une machine faite pour ça — chimera/devAI).
+    #   false -> refusé (posé dans le .env de PROD, ceinture + bretelles avec le défaut).
+    # Lire l'état effectif via la propriété `heavy_jobs_allowed`, jamais ce champ brut.
+    heavy_jobs_enabled: bool | None = None
+
+    @property
+    def heavy_jobs_allowed(self) -> bool:
+        """Vrai si ce nœud a le droit de planifier/exécuter les traitements lourds (voir le champ
+        `heavy_jobs_enabled`). L'explicite l'emporte ; le défaut est FAUX en production."""
+        if self.heavy_jobs_enabled is not None:
+            return self.heavy_jobs_enabled
+        return self.app_env.strip().lower() not in {"production", "prod"}
+
     @model_validator(mode="after")
     def _refuse_dev_defaults(self) -> "Settings":
         """En production, aucune valeur de développement ne doit rester active (lot `pbm-deploy`,

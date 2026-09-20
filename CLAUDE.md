@@ -19,6 +19,7 @@ valeur dans le temps, fiche carte (image officielle, état estimé, anecdotes so
 - Aucun secret dans le dépôt (`.env` ignoré, `.env.example` sans valeur réelle).
 - Le front reproduit la maquette (onglet « Maquette du site » de `ROADMAP.html`) ; identité propre, pas de logo officiel Pokémon.
 - Construire sur chimera, déployer par devAI ; jamais de build ni de déploiement depuis le Mac de JF.
+- **Traitements lourds sur la flotte, jamais sur la machine qui sert** (relevé de prix, import du catalogue, génération par lots, relevé de tournoi) : ils tournent sur chimera, seul le résultat est importé en PROD. Le worker de PROD ne garde que le court (reconnaissance, exports RGPD, e-mails), garde par `HEAVY_JOBS_ENABLED` (faux par défaut en production). Détail et runbook : `docs/infra/JOBS-LOURDS.md` (lot `pbm-jobs-flotte`).
 - Un repli silencieux (`|| true`, `except: pass`, `2>/dev/null` sur un chemin nominal) est interdit : un relevé de prix vide ou un lot sans compte rendu est une panne.
 
 ## Monorepo — structure et commandes

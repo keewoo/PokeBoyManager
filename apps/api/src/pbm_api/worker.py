@@ -1,8 +1,15 @@
 """Worker arq : import du catalogue (déclenché) et sa reprise hebdomadaire (mission point 4).
 
 Lancement : `uv run arq pbm_api.worker.WorkerSettings`.
+
+Traitements lourds vs court (lot `pbm-jobs-flotte`) : sur un nœud où `settings.heavy_jobs_allowed`
+est faux (PROD, la machine qui sert), les jobs qui balaient tout le catalogue (relevé de prix,
+import du catalogue, relevé de tournoi, taux de change) NE sont ni planifiés (aucun `cron` posé,
+voir `_heavy_cron_jobs`) ni exécutés (ils REFUSENT explicitement, voir `_refuse_heavy_job`). Ils
+tournent sur la flotte (chimera) et seul le résultat est importé — voir docs/infra/JOBS-LOURDS.md.
 """
 
+import logging
 import uuid
 from datetime import UTC, datetime
 
@@ -29,10 +36,20 @@ from pbm_api.ranking.service import refresh_card_value_rank
 from pbm_api.state.service import run_state_estimation_for_upload
 from pbm_api.storage import build_storage
 
+logger = logging.getLogger(__name__)
+
 JOB_TYPE = "import_catalogue"
 PRICE_JOB_TYPE = "daily_prices"
 EXCHANGE_RATE_JOB_TYPE = "daily_exchange_rates"
 TOURNAMENT_PRESENCE_JOB_TYPE = "weekly_tournament_presence"
+
+# Traitements lourds (balayent tout le catalogue / dépendent d'un débit réseau soutenu) : jamais
+# sur la machine qui sert. Les jobs COURTS gardés en PROD (`detect_cards`, `export_user_data`) ne
+# sont pas dans cet ensemble — ils sont enfilés à la demande depuis une route HTTP, bornés à un
+# envoi ou un utilisateur, et n'ont rien à voir avec le catalogue entier.
+HEAVY_JOB_TYPES = frozenset(
+    {JOB_TYPE, PRICE_JOB_TYPE, EXCHANGE_RATE_JOB_TYPE, TOURNAMENT_PRESENCE_JOB_TYPE}
+)
 
 
 def _now_naive_utc() -> datetime:
@@ -40,6 +57,33 @@ def _now_naive_utc() -> datetime:
     initiale) : leur passer un datetime "aware" fait échouer asyncpg (`can't subtract
     offset-naive and offset-aware datetimes`)."""
     return datetime.now(UTC).replace(tzinfo=None)
+
+
+async def _refuse_heavy_job(job_type: str, payload: dict | None = None) -> dict:
+    """Refus EXPLICITE d'un traitement lourd sur un nœud qui ne doit pas le faire (PROD) : écrit un
+    `Job` en échec avec un message clair dans `jobs.error`, jamais une exécution à moitié (mission
+    `pbm-jobs-flotte` point 1). Aucune requête réseau, aucune écriture catalogue n'est tentée."""
+    message = (
+        f"Traitement lourd « {job_type} » refusé sur ce nœud : HEAVY_JOBS_ENABLED est faux "
+        f"(app_env={settings.app_env}). Les traitements lourds tournent sur la flotte (chimera), "
+        f"pas sur la machine qui sert ; seul le résultat est importé en PROD "
+        f"(voir docs/infra/JOBS-LOURDS.md)."
+    )
+    logger.warning(message)
+    async with async_session_factory() as session:
+        now = _now_naive_utc()
+        session.add(
+            Job(
+                type=job_type,
+                status=JobStatus.failed,
+                payload=payload,
+                error=message,
+                started_at=now,
+                finished_at=now,
+            )
+        )
+        await session.commit()
+    return {"error": message, "refused": True}
 
 
 async def _run_import(mode: str, languages: tuple[str, ...], set_ids: list[str] | None) -> dict:
@@ -80,12 +124,18 @@ async def import_catalogue_task(
     set_ids: list[str] | None = None,
     mode: str = "full",
 ) -> dict:
+    if not settings.heavy_jobs_allowed:
+        return await _refuse_heavy_job(
+            JOB_TYPE, {"mode": mode, "languages": languages, "set_ids": set_ids}
+        )
     langs = tuple(languages) if languages else ("fr", "en")
     return await _run_import(mode, langs, set_ids)
 
 
 async def weekly_incremental_import(ctx: dict) -> dict:
     """Cron hebdomadaire : n'importe que les extensions absentes de la base (nouveautés)."""
+    if not settings.heavy_jobs_allowed:
+        return await _refuse_heavy_job(JOB_TYPE, {"mode": "incremental"})
     return await _run_import("incremental", ("fr", "en"), None)
 
 
@@ -123,6 +173,8 @@ async def _run_daily_prices() -> dict:
 async def daily_prices_task(ctx: dict) -> dict:
     """Relevé quotidien 06:00 Europe/Paris (mission `v2-prix` point 1) : prix de toutes les
     cartes, source Cardmarket (TCGdex) + TCGplayer (Pokémon TCG API)."""
+    if not settings.heavy_jobs_allowed:
+        return await _refuse_heavy_job(PRICE_JOB_TYPE)
     return await _run_daily_prices()
 
 
@@ -153,7 +205,10 @@ async def _run_daily_exchange_rates() -> dict:
 
 async def daily_exchange_rates_task(ctx: dict) -> dict:
     """Taux de change BCE quotidiens (mission `v2-prix` point 2), consommés par le service
-    `valuation` pour convertir une tendance TCGplayer (USD) en euros."""
+    `valuation` pour convertir une tendance TCGplayer (USD) en euros. Fournis avec les prix par le
+    bundle de la flotte (mission `pbm-jobs-flotte`) : hors PROD sur un nœud à jobs lourds."""
+    if not settings.heavy_jobs_allowed:
+        return await _refuse_heavy_job(EXCHANGE_RATE_JOB_TYPE)
     return await _run_daily_exchange_rates()
 
 
@@ -274,20 +329,23 @@ async def _run_weekly_tournament_presence() -> dict:
 
 async def weekly_tournament_presence_task(ctx: dict) -> dict:
     """Relevé hebdomadaire de présence en tournoi (mission `v4-jeu` point 2), source publique
-    Limitless TCG — bridé aux cartes légales dans au moins un format."""
+    Limitless TCG — bridé aux cartes légales dans au moins un format. Scrutation d'un site tiers
+    (lente, concurrence=1) : lourde pour la machine qui sert, elle tourne sur la flotte."""
+    if not settings.heavy_jobs_allowed:
+        return await _refuse_heavy_job(TOURNAMENT_PRESENCE_JOB_TYPE)
     return await _run_weekly_tournament_presence()
 
 
-class WorkerSettings:
-    functions = [
-        import_catalogue_task,
-        daily_prices_task,
-        daily_exchange_rates_task,
-        detect_cards_task,
-        export_user_data_task,
-        weekly_tournament_presence_task,
-    ]
-    cron_jobs = [
+def _heavy_cron_jobs() -> list:
+    """Les crons des traitements lourds — posés UNIQUEMENT sur un nœud qui a le droit de les
+    exécuter (`settings.heavy_jobs_allowed`). En PROD, cette liste est vide : le worker ne planifie
+    aucun relevé de prix ni import (mission `pbm-jobs-flotte` point 1) ; c'est la flotte (chimera)
+    qui les fait, pilotée par des agents launchd sur devAI (voir docs/infra/JOBS-LOURDS.md). Les
+    jobs courts (`detect_cards`, `export_user_data`) ne sont pas des crons : ils sont enfilés à la
+    demande depuis l'API et restent servis en PROD quoi qu'il arrive."""
+    if not settings.heavy_jobs_allowed:
+        return []
+    return [
         cron(weekly_incremental_import, weekday=0, hour=6, minute=0),
         cron(daily_prices_task, hour=6, minute=0),
         cron(daily_exchange_rates_task, hour=6, minute=0),
@@ -296,5 +354,20 @@ class WorkerSettings:
         # fenêtre — chimera comme Limitless TCG restent réactifs pendant les deux.
         cron(weekly_tournament_presence_task, weekday=0, hour=8, minute=0),
     ]
+
+
+class WorkerSettings:
+    # Toutes les fonctions restent enregistrées, même les lourdes : si un job lourd est malgré tout
+    # enfilé vers un worker de PROD, il est pris en charge et REFUSÉ proprement
+    # (`_refuse_heavy_job`) plutôt que de finir en « function not found ».
+    functions = [
+        import_catalogue_task,
+        daily_prices_task,
+        daily_exchange_rates_task,
+        detect_cards_task,
+        export_user_data_task,
+        weekly_tournament_presence_task,
+    ]
+    cron_jobs = _heavy_cron_jobs()
     redis_settings = RedisSettings.from_dsn(settings.redis_url)
     queue_name = f"{settings.redis_prefix}queue"
