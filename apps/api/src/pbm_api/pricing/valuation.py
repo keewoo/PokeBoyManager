@@ -98,6 +98,71 @@ async def reference_price_eur(
 _PriceRow = tuple[Decimal | None, Decimal | None, Decimal | None, str]
 
 
+async def price_history_eur(
+    session: AsyncSession,
+    card_id: Any,
+    variant: PriceVariant,
+    start: date | None,
+    end: date,
+) -> list[tuple[date, Decimal]]:
+    """Historique de la référence de prix EUR d'une carte/variante entre `start` (inclus, `None`
+    = depuis le premier relevé) et `end` (inclus) — mission `v4-fiche` point 2 (courbe de
+    valeur). Un point par jour où au moins une source a un relevé exploitable, jamais un jour
+    interpolé (risque documenté du lot : historique court en début de vie, à afficher
+    honnêtement plutôt qu'à combler)."""
+    conditions = [
+        CardPriceDaily.card_id == card_id,
+        CardPriceDaily.variant == variant,
+        CardPriceDaily.day <= end,
+    ]
+    if start is not None:
+        conditions.append(CardPriceDaily.day >= start)
+
+    result = await session.execute(
+        select(
+            CardPriceDaily.day,
+            CardPriceDaily.source,
+            CardPriceDaily.price_low,
+            CardPriceDaily.price_mid,
+            CardPriceDaily.price_trend,
+            CardPriceDaily.currency,
+        )
+        .where(*conditions)
+        .order_by(CardPriceDaily.day)
+    )
+    by_day: dict[date, dict[PriceSource, _PriceRow]] = {}
+    for day, source, price_low, price_mid, price_trend, currency in result:
+        by_day.setdefault(day, {})[source] = (price_low, price_mid, price_trend, currency)
+
+    rate_cache: dict[tuple[str, date], Decimal | None] = {}
+
+    async def _cached_rate(currency: str, day: date) -> Decimal | None:
+        key = (currency, day)
+        if key not in rate_cache:
+            rate_cache[key] = await get_rate_to_eur(session, currency, day)
+        return rate_cache[key]
+
+    points: list[tuple[date, Decimal]] = []
+    for day in sorted(by_day):
+        sources = by_day[day]
+        cardmarket = sources.get(PriceSource.cardmarket)
+        trend = _sanitize_trend(*cardmarket[:3]) if cardmarket else None
+        if trend is not None:
+            points.append((day, trend))
+            continue
+
+        tcgplayer = sources.get(PriceSource.tcgplayer)
+        trend = _sanitize_trend(*tcgplayer[:3]) if tcgplayer else None
+        if trend is not None:
+            rate = await _cached_rate(tcgplayer[3], day)
+            if rate is not None:
+                # `.quantize` : une conversion dont le quotient est "rond" renvoie sinon un
+                # `Decimal` en notation scientifique (`2E+1`), sérialisé tel quel par Pydantic —
+                # illisible sur la courbe de la fiche.
+                points.append((day, convert_to_eur(trend, rate).quantize(Decimal("0.000001"))))
+    return points
+
+
 async def _bulk_latest_prices(
     session: AsyncSession, card_ids: set[Any], as_of: date
 ) -> dict[tuple[Any, PriceVariant, PriceSource], _PriceRow]:

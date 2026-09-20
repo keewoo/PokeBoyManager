@@ -5,6 +5,7 @@ from pbm_api.config import settings
 from pbm_api.routers.ai_keys import router as ai_keys_router
 from pbm_api.routers.auth import router as auth_router
 from pbm_api.routers.card_insights import router as card_insights_router
+from pbm_api.routers.cards import router as cards_router
 from pbm_api.routers.catalog import router as catalog_router
 from pbm_api.routers.collection import router as collection_router
 from pbm_api.routers.dashboard import router as dashboard_router
@@ -48,3 +49,4 @@ app.include_router(dashboard_router)
 app.include_router(card_insights_router)
 app.include_router(export_router)
 app.include_router(in_game_study_router)
+app.include_router(cards_router)

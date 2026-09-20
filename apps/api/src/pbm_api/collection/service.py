@@ -21,7 +21,7 @@ from decimal import Decimal
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pbm_api.collection.errors import CollectionItemNotFoundError
+from pbm_api.collection.errors import CollectionItemNotFoundError, CollectionItemPhotoMissingError
 from pbm_api.collection.schemas import (
     CollectionSort,
     CreateCollectionItemRequest,
@@ -31,6 +31,7 @@ from pbm_api.models import Card, CardName, Set, User
 from pbm_api.models.catalog import PriceVariant
 from pbm_api.models.collection import CollectionItem
 from pbm_api.pricing.valuation import bulk_item_values_multi
+from pbm_api.storage import StorageBackend
 from pbm_api.validation.errors import CardNotFoundError
 
 DEFAULT_LIMIT = 60
@@ -447,3 +448,18 @@ async def delete_item(session: AsyncSession, user: User, item_id: uuid.UUID) -> 
     item = await get_owned_item(session, user, item_id)
     await session.delete(item)
     await session.commit()
+
+
+async def get_item_photo(
+    session: AsyncSession, storage: StorageBackend, user: User, item_id: uuid.UUID
+) -> bytes:
+    """Bascule « Ma photo » de la fiche carte (mission `v4-fiche`) — même distinction que
+    `pbm_api.uploads.service.get_detection_crop` : un exemplaire ajouté manuellement n'a pas de
+    photo, jamais un succès vide à la place."""
+    item = await get_owned_item(session, user, item_id)
+    if item.photo_s3_key is None:
+        raise CollectionItemPhotoMissingError
+    data = await storage.get(item.photo_s3_key)
+    if data is None:
+        raise CollectionItemPhotoMissingError
+    return data

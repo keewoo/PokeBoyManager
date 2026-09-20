@@ -12,13 +12,14 @@ from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.auth.dependencies import get_current_user, require_csrf
 from pbm_api.collection import service
-from pbm_api.collection.errors import CollectionItemNotFoundError
+from pbm_api.collection.errors import CollectionItemNotFoundError, CollectionItemPhotoMissingError
 from pbm_api.collection.schemas import (
     CollectionAggregates,
     CollectionFacets,
@@ -36,12 +37,20 @@ from pbm_api.models import Card, PriceVariant, Set, User
 from pbm_api.models.collection import CollectionItem
 from pbm_api.pricing.valuation import item_value
 from pbm_api.ranking.service import card_value_rank, collection_rank
+from pbm_api.storage import StorageBackend, build_storage
 from pbm_api.validation.errors import CardNotFoundError
 
 router = APIRouter(prefix="/me/collection", tags=["collection"])
 
 ITEM_NOT_FOUND_MESSAGE = "exemplaire introuvable"
 CARD_NOT_FOUND_MESSAGE = "carte introuvable au catalogue"
+ITEM_PHOTO_MISSING_MESSAGE = "cet exemplaire n'a pas de photo"
+
+_storage = build_storage()
+
+
+def get_storage() -> StorageBackend:
+    return _storage
 
 
 def _pct_change(current: Decimal | None, past: Decimal | None) -> Decimal | None:
@@ -244,6 +253,25 @@ async def delete_collection_item(
         await service.delete_item(session, current_user, item_id)
     except CollectionItemNotFoundError:
         raise HTTPException(status.HTTP_404_NOT_FOUND, ITEM_NOT_FOUND_MESSAGE) from None
+
+
+@router.get("/{item_id}/photo")
+async def get_collection_item_photo(
+    item_id: uuid.UUID,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    storage: Annotated[StorageBackend, Depends(get_storage)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> Response:
+    """Bascule « Ma photo » de la fiche carte (mission `v4-fiche`) — jamais la photo d'un
+    exemplaire d'un autre utilisateur (`service.get_owned_item`, même filtre que le reste de ce
+    routeur)."""
+    try:
+        data = await service.get_item_photo(session, storage, current_user, item_id)
+    except CollectionItemNotFoundError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, ITEM_NOT_FOUND_MESSAGE) from None
+    except CollectionItemPhotoMissingError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, ITEM_PHOTO_MISSING_MESSAGE) from None
+    return Response(content=data, media_type="image/jpeg")
 
 
 class CollectionItemRanking(BaseModel):
