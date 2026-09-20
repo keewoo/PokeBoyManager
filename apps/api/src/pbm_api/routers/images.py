@@ -15,15 +15,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pbm_api.catalog.tcgdex_client import TcgdexClient
 from pbm_api.db import get_session
 from pbm_api.models import Card
-from pbm_api.s3 import ObjectStorage
+from pbm_api.storage import StorageBackend, build_storage
 
 router = APIRouter()
 
-_storage = ObjectStorage()
+# `build_storage()` (comme `routers/uploads.py`), jamais `ObjectStorage()` en dur : sur le PROD
+# `STORAGE_BACKEND=local` (disque du serveur, aucun S3/MinIO) — un client S3 codé en dur y lève
+# une erreur de connexion et le proxy renvoie 500 pour TOUTES les cartes (l'accueil visiteur du
+# lot `pbm-front-accueil` retombait alors sur neuf vignettes « Image à venir »). Trouvé en servant
+# la première fois de vraies images officielles depuis la PROD.
+_storage = build_storage()
 _tcgdex = TcgdexClient()
 
 
-def get_storage() -> ObjectStorage:
+def get_storage() -> StorageBackend:
     return _storage
 
 
@@ -35,7 +40,7 @@ def get_tcgdex_client() -> TcgdexClient:
 async def get_card_image(
     card_id: uuid.UUID,
     session: Annotated[AsyncSession, Depends(get_session)],
-    storage: Annotated[ObjectStorage, Depends(get_storage)],
+    storage: Annotated[StorageBackend, Depends(get_storage)],
     tcgdex: Annotated[TcgdexClient, Depends(get_tcgdex_client)],
     size: str = Query("high", pattern="^(high|low)$"),
 ) -> Response:

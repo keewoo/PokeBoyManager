@@ -97,3 +97,44 @@ async def test_image_proxy_502_when_official_source_unreachable(db_session, stor
         response = await client.get(f"/img/cards/{card.id}")
 
     assert response.status_code == 502
+
+
+async def test_image_proxy_works_with_local_storage_backend(db_session, tmp_path):
+    """Sur le PROD `STORAGE_BACKEND=local` (disque du serveur, aucun S3/MinIO) : le proxy doit
+    cacher puis servir depuis le disque. Le proxy codait `ObjectStorage()` en dur et renvoyait 500
+    pour TOUTES les cartes en PROD — l'accueil visiteur (`pbm-front-accueil`) retombait alors sur
+    neuf « Image à venir ». Ce test aurait mordu (`pbm-hotfix-img-proxy-storage`)."""
+    from pbm_api.storage.local import LocalObjectStorage
+
+    local = LocalObjectStorage(root=str(tmp_path))
+    await local.ensure_bucket()
+    card = await _make_card(db_session, "local", "https://assets.tcgdex.net/fr/sv/sv03.5/007")
+    fake_tcgdex = FakeImageTcgdexClient()
+    async with await _client_for(db_session, local, fake_tcgdex) as client:
+        first = await client.get(f"/img/cards/{card.id}", params={"size": "low"})
+        second = await client.get(f"/img/cards/{card.id}", params={"size": "low"})
+
+    assert first.status_code == 200
+    assert first.content == b"fake-image-bytes"
+    assert second.status_code == 200
+    assert fake_tcgdex.fetch_calls == [
+        ("https://assets.tcgdex.net/fr/sv/sv03.5/007", "low")
+    ], "un seul appel réseau : le deuxième doit venir du cache disque local, pas d'un S3 supposé"
+
+
+def test_image_proxy_uses_configured_storage_backend_not_hardcoded_s3():
+    """Garde anti-régression directe : le proxy passe par `build_storage()` (respecte
+    `STORAGE_BACKEND`), jamais un `ObjectStorage()` (client S3) codé en dur — celui-ci lève une
+    erreur de connexion sur le PROD en stockage local et casse le proxy pour toutes les cartes."""
+    import inspect
+
+    from pbm_api.routers import images
+
+    source = inspect.getsource(images)
+    assert "build_storage()" in source, "le proxy doit construire son stockage via build_storage()"
+    # Le marqueur du bug est l'import DIRECT du client S3 (immunisé contre une mention en
+    # commentaire) : s'il réapparaît, quelqu'un a recodé le backend en dur.
+    assert "from pbm_api.s3 import ObjectStorage" not in source, (
+        "le proxy ne doit pas importer le client S3 directement : passer par build_storage() "
+        "(respecte STORAGE_BACKEND), sinon 500 sur le PROD en stockage local"
+    )
