@@ -135,7 +135,7 @@ export function ValidationView({ uploadIds }: { uploadIds: string[] }) {
   // silencieux qui laisse croire qu'il n'y avait simplement rien à reconnaître.
   const failedUploads = uploadIds
     .map((id) => uploads[id])
-    .filter((detail): detail is UploadDetail => Boolean(detail) && detail.job_status === "failed");
+    .filter((detail): detail is UploadDetail => !!detail && detail.job_status === "failed");
   const failedJobError = failedUploads.find((detail) => detail.job_error)?.job_error ?? null;
 
   function selectedCardFor(detection: Detection): SelectedCard | null {
