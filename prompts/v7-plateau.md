@@ -59,7 +59,7 @@ Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_va
 
 **Gain.** C'est ce que le joueur voit : un plateau lisible, avec ses vraies cartes.
 
-**Fonctionnalités.** Zones des deux joueurs (actif, banc de 5, pioche, défausse, 6 récompenses, énergies attachées, compteurs de dégâts), main en éventail, glisser-déposer, mise en évidence des actions possibles, adaptatif mobile.
+**Fonctionnalités.** Plateau 16/9 conçu en 1920×1080 avec une zone utile centrale de 1500×900 ; carte de référence 126×176, actif 145×203, banc 105×147 (5 emplacements, 12-16 d'écart), actif adverse 110×154, pioche/défausse/récompenses 75×105, badge PV 70×28, marqueurs de dégâts 22-26 ; main en éventail, glisser-déposer, mise en évidence des actions possibles, adaptatif mobile.
 
 **Tenants — ce qu'il faut avant.** Temps réel, images jouables, design system.
 
@@ -71,13 +71,14 @@ Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_va
 
 ## 3. Mission
 
-1. Composants de plateau conformes à la maquette du jeu, en deux moitiés symétriques.
-2. Glisser-déposer des cartes de la main vers le banc, énergie sur un Pokémon, sélection d'une attaque ; les actions illégales ne sont même pas proposées.
-3. Rendu à partir de la seule vue serveur ; rafraîchir la page redonne le même plateau.
+1. Plateau à l'échelle : toutes les tailles dérivent d'une seule unité (largeur du plateau / 120), d'après le tableau de dimensions de la maquette — rien à recalculer quand la fenêtre change.
+2. Structure verticale imposée : décor 8 % en haut, actif adverse, pioche et défausse adverses, ligne centrale, mon actif, mon banc de 5, mes récompenses et ma pioche, décor 8 % en bas ; la main reste sous le plateau.
+3. Glisser-déposer des cartes de la main vers le banc, énergie sur un Pokémon, sélection d'une attaque ; les actions illégales ne sont même pas proposées.
+4. Rendu à partir de la seule vue serveur ; rafraîchir la page redonne le même plateau.
 
 ## 4. Risques & pièges
 
-Lisibilité sur téléphone : plateau compact, zoom sur une carte au toucher long. Aucune information cachée dans le DOM (la main adverse n'est jamais envoyée).
+**Les emplacements ne sont jamais dessinés dans le décor** (règle posée par JF le 20/09) : le fond ne fournit que l'arène, la ligne médiane, l'ambiance et les gradins, avec un centre mat et peu contrasté et les effets lumineux cantonnés aux 15-20 % périphériques ; tout emplacement est produit en HTML/CSS par-dessus, sinon la moindre évolution (taille du deck, nombre de cartes au banc, disposition mobile) casse l'image. Lisibilité sur téléphone : plateau compact, zoom au toucher long. Aucune information cachée dans le DOM (la main adverse n'est jamais envoyée).
 
 ## 5. Livrables — définition de « fini »
 

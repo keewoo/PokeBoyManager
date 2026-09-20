@@ -2072,8 +2072,8 @@
       "difficulte": 3,
       "titre": "Plateau de jeu graphique",
       "gain": "C'est ce que le joueur voit : un plateau lisible, avec ses vraies cartes.",
-      "fonctionnalites": "Zones des deux joueurs (actif, banc de 5, pioche, défausse, 6 récompenses, énergies attachées, compteurs de dégâts), main en éventail, glisser-déposer, mise en évidence des actions possibles, adaptatif mobile.",
-      "risques": "Lisibilité sur téléphone : plateau compact, zoom sur une carte au toucher long. Aucune information cachée dans le DOM (la main adverse n'est jamais envoyée).",
+      "fonctionnalites": "Plateau 16/9 conçu en 1920×1080 avec une zone utile centrale de 1500×900 ; carte de référence 126×176, actif 145×203, banc 105×147 (5 emplacements, 12-16 d'écart), actif adverse 110×154, pioche/défausse/récompenses 75×105, badge PV 70×28, marqueurs de dégâts 22-26 ; main en éventail, glisser-déposer, mise en évidence des actions possibles, adaptatif mobile.",
+      "risques": "**Les emplacements ne sont jamais dessinés dans le décor** (règle posée par JF le 20/09) : le fond ne fournit que l'arène, la ligne médiane, l'ambiance et les gradins, avec un centre mat et peu contrasté et les effets lumineux cantonnés aux 15-20 % périphériques ; tout emplacement est produit en HTML/CSS par-dessus, sinon la moindre évolution (taille du deck, nombre de cartes au banc, disposition mobile) casse l'image. Lisibilité sur téléphone : plateau compact, zoom au toucher long. Aucune information cachée dans le DOM (la main adverse n'est jamais envoyée).",
       "tenants": "Temps réel, images jouables, design system.",
       "aboutissants": "Déroulé de la partie.",
       "dependances": [
@@ -2085,7 +2085,8 @@
         "Maquette du jeu : écran Plateau"
       ],
       "mission": [
-        "Composants de plateau conformes à la maquette du jeu, en deux moitiés symétriques.",
+        "Plateau à l'échelle : toutes les tailles dérivent d'une seule unité (largeur du plateau / 120), d'après le tableau de dimensions de la maquette — rien à recalculer quand la fenêtre change.",
+        "Structure verticale imposée : décor 8 % en haut, actif adverse, pioche et défausse adverses, ligne centrale, mon actif, mon banc de 5, mes récompenses et ma pioche, décor 8 % en bas ; la main reste sous le plateau.",
         "Glisser-déposer des cartes de la main vers le banc, énergie sur un Pokémon, sélection d'une attaque ; les actions illégales ne sont même pas proposées.",
         "Rendu à partir de la seule vue serveur ; rafraîchir la page redonne le même plateau."
       ],
@@ -2141,7 +2142,7 @@
       "difficulte": 3,
       "titre": "Décors d'arène et animations de jeu (évolution, attaques spéciales, K.O.)",
       "gain": "Demande de JF (19/09) : une partie doit être belle à regarder — c'est ce qui donne envie d'en refaire une.",
-      "fonctionnalites": "Choix du décor du plateau parmi plusieurs arènes (ville, forêt, volcan, bord de mer, salle de tournoi), mémorisé par joueur ; animations : évolution, attaque simple, attaque de carte spéciale (ex/GX/V/VMAX) avec mise en scène, mise K.O., prise de récompense, début et fin de tour.",
+      "fonctionnalites": "Choix du décor du plateau parmi plusieurs arènes (l'illustration fournie par JF et des variantes), mémorisé par joueur ; animations : évolution, attaque simple, attaque de carte spéciale (ex/GX/V/VMAX) avec mise en scène, mise K.O., prise de récompense, début et fin de tour.",
       "risques": "Décors **originaux** inspirés des ambiances du jeu, jamais des visuels officiels repris (propriété intellectuelle). Les animations ne doivent ni retarder le jeu ni masquer une information : chacune est courte (moins d'une seconde, sauf la mise en scène d'attaque spéciale), interruptible, et l'état du plateau est déjà à jour dessous. `prefers-reduced-motion` respecté (tout se joue alors en fondu court). Budget : 60 images par seconde sur un téléphone de milieu de gamme, mesuré.",
       "tenants": "Plateau de jeu, déroulé de la partie.",
       "aboutissants": "—",

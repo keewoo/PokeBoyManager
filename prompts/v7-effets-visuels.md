@@ -59,7 +59,7 @@ Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_va
 
 **Gain.** Demande de JF (19/09) : une partie doit être belle à regarder — c'est ce qui donne envie d'en refaire une.
 
-**Fonctionnalités.** Choix du décor du plateau parmi plusieurs arènes (ville, forêt, volcan, bord de mer, salle de tournoi), mémorisé par joueur ; animations : évolution, attaque simple, attaque de carte spéciale (ex/GX/V/VMAX) avec mise en scène, mise K.O., prise de récompense, début et fin de tour.
+**Fonctionnalités.** Choix du décor du plateau parmi plusieurs arènes (l'illustration fournie par JF et des variantes), mémorisé par joueur ; animations : évolution, attaque simple, attaque de carte spéciale (ex/GX/V/VMAX) avec mise en scène, mise K.O., prise de récompense, début et fin de tour.
 
 **Tenants — ce qu'il faut avant.** Plateau de jeu, déroulé de la partie.
 
