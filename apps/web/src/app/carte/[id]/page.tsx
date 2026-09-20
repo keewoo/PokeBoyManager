@@ -1,4 +1,4 @@
-import { EmptyState } from "@/components/empty-state";
+import { CardDetailView } from "./card-detail-view";
 
 export default async function FicheCartePage({
   params,
@@ -7,10 +7,5 @@ export default async function FicheCartePage({
 }) {
   const { id } = await params;
 
-  return (
-    <EmptyState
-      title="Fiche carte"
-      description={`La fiche détaillée de la carte « ${id} » (image officielle, état estimé, anecdotes, étude en jeu) arrive avec le lot v4-fiche.`}
-    />
-  );
+  return <CardDetailView cardId={id} />;
 }
