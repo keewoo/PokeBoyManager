@@ -80,6 +80,23 @@ def _heic_bytes() -> bytes:
     return buf.getvalue()
 
 
+def _mpo_bytes() -> bytes:
+    """MPO = JPEG multi-images des modes portrait/HDR des téléphones (correctif
+    `pbm-hotfix-formats-image`). Le navigateur l'annonce en `image/jpeg`."""
+    buf = io.BytesIO()
+    Image.new("RGB", (32, 24), "red").save(
+        buf, format="MPO", append_images=[Image.new("RGB", (32, 24), "blue")]
+    )
+    return buf.getvalue()
+
+
+def _webp_bytes() -> bytes:
+    image = Image.new("RGB", (16, 16), (200, 100, 50))
+    buf = io.BytesIO()
+    image.save(buf, format="WEBP")
+    return buf.getvalue()
+
+
 @pytest.fixture
 async def storage():
     object_storage = ObjectStorage()
@@ -228,6 +245,38 @@ async def test_heic_upload_is_converted_to_jpeg(api_client, storage):
         api_client, csrf, content_type="image/heic", filename="IMG_2044.heic"
     )
     await _put_to_s3(target, _heic_bytes())
+
+    complete = await api_client.post(
+        f"/uploads/{target['upload_id']}/complete", headers={CSRF_HEADER_NAME: csrf}
+    )
+
+    assert complete.status_code == 200, complete.text
+    assert complete.json()["content_type"] == "image/jpeg"
+
+
+async def test_mpo_upload_is_converted_to_jpeg(api_client, storage):
+    """Le défaut de production : un MPO (photo portrait/HDR) était rejeté « format non accepté »
+    alors que c'est un JPEG lisible. Le navigateur l'annonce en `image/jpeg`."""
+    csrf = await _register_verify_login(api_client, _unique_email("up-mpo"))
+    target = await _create_one(
+        api_client, csrf, content_type="image/jpeg", filename="IMG_portrait.jpg"
+    )
+    await _put_to_s3(target, _mpo_bytes())
+
+    complete = await api_client.post(
+        f"/uploads/{target['upload_id']}/complete", headers={CSRF_HEADER_NAME: csrf}
+    )
+
+    assert complete.status_code == 200, complete.text
+    assert complete.json()["content_type"] == "image/jpeg"
+
+
+async def test_webp_upload_is_converted_to_jpeg(api_client, storage):
+    csrf = await _register_verify_login(api_client, _unique_email("up-webp"))
+    target = await _create_one(
+        api_client, csrf, content_type="image/webp", filename="carte.webp"
+    )
+    await _put_to_s3(target, _webp_bytes())
 
     complete = await api_client.post(
         f"/uploads/{target['upload_id']}/complete", headers={CSRF_HEADER_NAME: csrf}

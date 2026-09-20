@@ -52,7 +52,7 @@ describe("Page /ajouter", () => {
     render(<AjouterPage />);
 
     expect(await screen.findByText(/glisse tes photos ici/i)).toBeInTheDocument();
-    expect(screen.getByText(/jpeg, png, heic/i)).toBeInTheDocument();
+    expect(screen.getByText(/jpeg, png, heic, webp/i)).toBeInTheDocument();
     expect(screen.getByText(/20 mo max par photo/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /choisir des fichiers/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /prendre une photo/i })).toBeInTheDocument();

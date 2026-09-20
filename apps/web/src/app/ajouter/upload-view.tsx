@@ -93,7 +93,11 @@ export function UploadView() {
       const base = { id: crypto.randomUUID(), file, contentType, previewUrl };
 
       if (!ALLOWED_CONTENT_TYPES.includes(contentType)) {
-        return { ...base, status: "error" as const, errorMessage: "Format non accepté (JPEG, PNG, HEIC)." };
+        return {
+          ...base,
+          status: "error" as const,
+          errorMessage: `« ${file.name} » : format non accepté (JPEG, PNG, HEIC, WEBP).`,
+        };
       }
       if (file.size > MAX_SIZE_BYTES) {
         return { ...base, status: "error" as const, errorMessage: "Dépasse 20 Mo." };
@@ -220,7 +224,7 @@ export function UploadView() {
         </div>
         <h3 className="font-heading text-base font-bold text-foreground">Glisse tes photos ici</h3>
         <p className="text-sm text-muted-foreground">
-          JPEG, PNG, HEIC · 20 Mo max par photo · 30 photos par envoi
+          JPEG, PNG, HEIC, WEBP · 20 Mo max par photo · 30 photos par envoi
         </p>
         <div className="mt-2 flex flex-wrap justify-center gap-2">
           <Button type="button" onClick={() => fileInputRef.current?.click()}>

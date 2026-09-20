@@ -29,9 +29,22 @@ from pbm_api.uploads.errors import (
 from pbm_api.uploads.processing import UnsupportedImageError, process_uploaded_image
 from pbm_api.uploads.schemas import UploadFileRequest, UploadTarget
 
-# Types déclarés acceptés à la création (mission point 2) — le type réel (magic bytes) est
-# revérifié à `complete_upload` via `pbm_api.uploads.processing`, jamais fait confiance seul.
-ALLOWED_CONTENT_TYPES = frozenset({"image/jpeg", "image/png", "image/heic", "image/heif"})
+# Types déclarés acceptés à la création (mission point 2, élargi par `pbm-hotfix-formats-image`).
+# Le type déclaré par le navigateur n'est qu'un premier filtre : le type RÉEL (magic bytes) est
+# revérifié à `complete_upload` via `pbm_api.uploads.processing`, seul gardien qui fait foi.
+# `application/octet-stream` est admis ici car certains navigateurs (Safari/iOS notamment)
+# l'envoient pour un HEIC ou un MPO issu de l'appareil photo — le refuser rejetterait à tort une
+# vraie photo ; c'est le contrôle du contenu réel qui tranche ensuite.
+ALLOWED_CONTENT_TYPES = frozenset(
+    {
+        "image/jpeg",
+        "image/png",
+        "image/heic",
+        "image/heif",
+        "image/webp",
+        "application/octet-stream",
+    }
+)
 
 JOB_TYPE = "detect_cards"
 
@@ -156,10 +169,12 @@ async def complete_upload(
 
     try:
         processed = process_uploaded_image(raw)
-    except UnsupportedImageError:
+    except UnsupportedImageError as exc:
         upload.status = UploadStatus.failed
         await db.commit()
-        raise
+        # Message final montré à l'utilisateur : quel fichier, pourquoi, et les formats acceptés
+        # (le « pourquoi » + formats vient de `process_uploaded_image`, le nom du fichier d'ici).
+        raise UnsupportedImageError(f"« {upload.original_filename} » : {exc}") from exc
 
     await storage.put(upload.s3_key, processed.data, processed.content_type)
     upload.content_type = processed.content_type
