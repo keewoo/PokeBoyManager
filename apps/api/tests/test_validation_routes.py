@@ -457,6 +457,33 @@ async def test_confirm_detection_returns_404_for_another_users_detection(
     assert items.scalars().all() == []
 
 
+async def test_reject_detection_returns_404_for_another_users_detection(
+    api_client, db_session, storage, monkeypatch
+):
+    await _seed_sarmurai(db_session)
+    csrf_a = await _register_verify_login(api_client, _unique_email("val-reject-iso-a"))
+    photo = make_single_card(seed=37, index=1)
+    upload_id, job_id = await _upload_and_complete_with_ai_key(
+        api_client, csrf_a, _encode(photo.image)
+    )
+    await _simulate_worker(db_session, storage, upload_id, job_id, monkeypatch, STUB_PAYLOAD)
+    detection = await _first_detection(api_client, upload_id)
+
+    csrf_b = await _register_verify_login(api_client, _unique_email("val-reject-iso-b"))
+
+    response = await api_client.post(
+        f"/detections/{detection['id']}/reject", headers={CSRF_HEADER_NAME: csrf_b}
+    )
+    assert response.status_code == 404
+
+    correction_result = await db_session.execute(
+        select(IdentificationCorrection).where(
+            IdentificationCorrection.detection_id == uuid.UUID(detection["id"])
+        )
+    )
+    assert correction_result.scalar_one_or_none() is None
+
+
 async def test_confirm_detection_twice_returns_409(api_client, db_session, storage, monkeypatch):
     card = await _seed_sarmurai(db_session)
     csrf = await _register_verify_login(api_client, _unique_email("val-confirm-twice"))

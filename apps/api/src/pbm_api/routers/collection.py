@@ -302,9 +302,10 @@ async def get_collection_item(
     session: Annotated[AsyncSession, Depends(get_session)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> CollectionItemDetail:
-    item = await session.get(CollectionItem, item_id)
-    if item is None or item.user_id != current_user.id:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, ITEM_NOT_FOUND_MESSAGE)
+    try:
+        item = await service.get_owned_item(session, current_user, item_id)
+    except CollectionItemNotFoundError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, ITEM_NOT_FOUND_MESSAGE) from None
 
     value_eur = await item_value(session, item, currency="EUR")
     rank = await card_value_rank(session, item.card_id)

@@ -386,6 +386,39 @@ async def test_cross_user_isolation_on_ai_keys(api_client: httpx.AsyncClient, db
     assert len(still_there.json()) == 1
 
 
+async def test_test_route_returns_404_for_another_users_key(
+    api_client: httpx.AsyncClient,
+) -> None:
+    """B ne peut pas faire tester la clé enregistrée de A en visant le même fournisseur sans
+    fournir de clé : `_get_credential` filtre par `user_id`, B n'en a pas — 404, jamais la clé
+    de A envoyée au fournisseur en son nom."""
+    csrf_a = await _register_verify_login(api_client, _unique_email("byok-test-iso-a"))
+    await api_client.put(
+        "/me/ai-keys/anthropic",
+        json={"api_key": ANTHROPIC_KEY},
+        headers={CSRF_HEADER_NAME: csrf_a},
+    )
+
+    transport = httpx.ASGITransport(app=fastapi_app)
+    tester = FakeProviderKeyTester()
+    fastapi_app.dependency_overrides[get_provider_key_tester] = lambda: tester
+    try:
+        async with httpx.AsyncClient(
+            transport=transport, base_url="https://testserver"
+        ) as client_b:
+            client_b.email_sender = api_client.email_sender  # type: ignore[attr-defined]
+            csrf_b = await _register_verify_login(client_b, _unique_email("byok-test-iso-b"))
+
+            response = await client_b.post(
+                "/me/ai-keys/anthropic/test", json={}, headers={CSRF_HEADER_NAME: csrf_b}
+            )
+    finally:
+        del fastapi_app.dependency_overrides[get_provider_key_tester]
+
+    assert response.status_code == 404
+    assert tester.received_keys == []
+
+
 async def test_cross_user_isolation_on_ai_usage(api_client: httpx.AsyncClient, db_session) -> None:
     email_a = _unique_email("usage-iso-a")
     await _register_verify_login(api_client, email_a)
