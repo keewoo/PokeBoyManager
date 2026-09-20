@@ -1,10 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import HomePage from "@/app/page";
+import { LandingPage } from "@/components/landing/landing-page";
 
-describe("HomePage (visiteur)", () => {
+describe("LandingPage (accueil visiteur)", () => {
   it("affiche l'accroche et mène à l'inscription et à la connexion", () => {
-    render(<HomePage />);
+    render(<LandingPage />);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
       "On retrouve chaque carte"
     );
@@ -19,14 +19,14 @@ describe("HomePage (visiteur)", () => {
   });
 
   it("présente les trois étapes photo → reconnaissance → valeur", () => {
-    render(<HomePage />);
+    render(<LandingPage />);
     expect(screen.getByText("Une carte ou tout un classeur")).toBeInTheDocument();
     expect(screen.getByText("Tu vérifies, tu valides")).toBeInTheDocument();
     expect(screen.getByText("Ta collection, cotée chaque jour")).toBeInTheDocument();
   });
 
   it("précise qu'on peut apporter sa propre IA", () => {
-    render(<HomePage />);
+    render(<LandingPage />);
     expect(screen.getByText("Apporte ta propre IA")).toBeInTheDocument();
     expect(screen.getByText("Claude · Anthropic")).toBeInTheDocument();
     expect(screen.getByText("Gemini · Google")).toBeInTheDocument();
@@ -34,7 +34,7 @@ describe("HomePage (visiteur)", () => {
   });
 
   it("affiche le pied de page légal", () => {
-    render(<HomePage />);
+    render(<LandingPage />);
     expect(screen.getByRole("link", { name: "Mentions légales" })).toBeInTheDocument();
   });
 });

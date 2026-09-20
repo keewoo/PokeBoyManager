@@ -553,6 +553,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/collection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Collection */
+        get: operations["list_collection_me_collection_get"];
+        put?: never;
+        /** Create Collection Item */
+        post: operations["create_collection_item_me_collection_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/collection/facets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Collection Facets */
+        get: operations["get_collection_facets_me_collection_facets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/collection/{item_id}": {
         parameters: {
             query?: never;
@@ -562,6 +597,25 @@ export interface paths {
         };
         /** Get Collection Item */
         get: operations["get_collection_item_me_collection__item_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Collection Item */
+        delete: operations["delete_collection_item_me_collection__item_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Collection Item */
+        patch: operations["update_collection_item_me_collection__item_id__patch"];
+        trace?: never;
+    };
+    "/me/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Dashboard */
+        get: operations["get_dashboard_me_dashboard_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -809,6 +863,50 @@ export interface components {
             /** New Password */
             new_password: string;
         };
+        /** CollectionAggregates */
+        CollectionAggregates: {
+            /** Items Total */
+            items_total: number;
+            /** Items Priced */
+            items_priced: number;
+            /** Items Missing Price */
+            items_missing_price: number;
+            /** Total Value Eur */
+            total_value_eur: string;
+            /** Value Change 7D Eur */
+            value_change_7d_eur: string;
+            /** Value Change 30D Eur */
+            value_change_30d_eur: string;
+        };
+        /** CollectionFacetSet */
+        CollectionFacetSet: {
+            /**
+             * Set Id
+             * Format: uuid
+             */
+            set_id: string;
+            /** Name */
+            name: string;
+            /** Code */
+            code: string;
+        };
+        /** CollectionFacets */
+        CollectionFacets: {
+            /** Sets */
+            sets: components["schemas"]["CollectionFacetSet"][];
+            /** Series */
+            series: string[];
+            /** Rarities */
+            rarities: string[];
+            /** Card Types */
+            card_types: string[];
+            /** Languages */
+            languages: string[];
+            /** Variants */
+            variants: components["schemas"]["PriceVariant"][];
+            /** Condition Grades */
+            condition_grades: string[];
+        };
         /** CollectionItemDetail */
         CollectionItemDetail: {
             /**
@@ -854,6 +952,72 @@ export interface components {
             /** Collection Rank Total */
             collection_rank_total: number;
         };
+        /** CollectionListItem */
+        CollectionListItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Card Id
+             * Format: uuid
+             */
+            card_id: string;
+            /**
+             * Set Id
+             * Format: uuid
+             */
+            set_id: string;
+            /** Card Name */
+            card_name: string;
+            /** Card Number */
+            card_number: string;
+            /** Set Name */
+            set_name: string;
+            /** Set Code */
+            set_code: string;
+            /** Series */
+            series: string | null;
+            /** Rarity */
+            rarity: string | null;
+            /** Card Type */
+            card_type: string | null;
+            /** Language */
+            language: string;
+            variant: components["schemas"]["PriceVariant"];
+            /** Condition Grade */
+            condition_grade: string | null;
+            /** Counterfeit Suspected */
+            counterfeit_suspected: boolean;
+            /** Purchase Price */
+            purchase_price: string | null;
+            /** Purchase Currency */
+            purchase_currency: string | null;
+            /** Acquired At */
+            acquired_at: string | null;
+            /** Value Eur */
+            value_eur: string | null;
+            /** Value Change 30D Eur */
+            value_change_30d_eur: string | null;
+            /** Value Change 30D Pct */
+            value_change_30d_pct: string | null;
+            /** Is Duplicate */
+            is_duplicate: boolean;
+        };
+        /** CollectionListResponse */
+        CollectionListResponse: {
+            /** Items */
+            items: components["schemas"]["CollectionListItem"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+            aggregates: components["schemas"]["CollectionAggregates"];
+        };
+        /**
+         * CollectionSort
+         * @enum {string}
+         */
+        CollectionSort: "value_desc" | "value_asc" | "value_change_30d_desc" | "value_change_30d_asc" | "acquired_at_desc" | "acquired_at_asc" | "number_asc" | "name_asc";
         /** CompleteUploadResponse */
         CompleteUploadResponse: {
             /**
@@ -927,6 +1091,39 @@ export interface components {
             /** Token */
             token: string;
         };
+        /** CreateCollectionItemRequest */
+        CreateCollectionItemRequest: {
+            /**
+             * Card Id
+             * Format: uuid
+             */
+            card_id: string;
+            /**
+             * Language
+             * @default fr
+             */
+            language: string;
+            /** @default normal */
+            variant: components["schemas"]["PriceVariant"];
+            /**
+             * Quantity
+             * @default 1
+             */
+            quantity: number;
+            /** Condition Grade */
+            condition_grade?: string | null;
+            /** Purchase Price */
+            purchase_price?: number | string | null;
+            /** Purchase Currency */
+            purchase_currency?: string | null;
+            /** Acquired At */
+            acquired_at?: string | null;
+        };
+        /** CreateCollectionItemResponse */
+        CreateCollectionItemResponse: {
+            /** Collection Item Ids */
+            collection_item_ids: string[];
+        };
         /** CreateUploadsRequest */
         CreateUploadsRequest: {
             /** Files */
@@ -936,6 +1133,82 @@ export interface components {
         CreateUploadsResponse: {
             /** Uploads */
             uploads: components["schemas"]["UploadTarget"][];
+        };
+        /** DashboardMoverCard */
+        DashboardMoverCard: {
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /**
+             * Card Id
+             * Format: uuid
+             */
+            card_id: string;
+            /** Card Name */
+            card_name: string;
+            /** Card Number */
+            card_number: string;
+            /** Set Name */
+            set_name: string;
+            /** Value Eur */
+            value_eur: string;
+            /** Value Change 30D Eur */
+            value_change_30d_eur: string;
+            /** Value Change 30D Pct */
+            value_change_30d_pct: string | null;
+        };
+        /** DashboardRecentAddition */
+        DashboardRecentAddition: {
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /**
+             * Card Id
+             * Format: uuid
+             */
+            card_id: string;
+            /** Card Name */
+            card_name: string;
+            /** Set Name */
+            set_name: string;
+            /**
+             * Added At
+             * Format: date-time
+             */
+            added_at: string;
+        };
+        /** DashboardResponse */
+        DashboardResponse: {
+            /** Items Total */
+            items_total: number;
+            /** Items Priced */
+            items_priced: number;
+            /** Items Missing Price */
+            items_missing_price: number;
+            /** Total Value Eur */
+            total_value_eur: string;
+            /** Value Change 30D Eur */
+            value_change_30d_eur: string;
+            /** Value History */
+            value_history: components["schemas"]["DashboardValuePoint"][];
+            /** Top Movers */
+            top_movers: components["schemas"]["DashboardMoverCard"][];
+            /** Recent Additions */
+            recent_additions: components["schemas"]["DashboardRecentAddition"][];
+        };
+        /** DashboardValuePoint */
+        DashboardValuePoint: {
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
+            /** Total Value Eur */
+            total_value_eur: string;
         };
         /** DeleteAccountRequest */
         DeleteAccountRequest: {
@@ -1189,6 +1462,27 @@ export interface components {
             checked_at: string | null;
             /** Decks */
             decks: components["schemas"]["TournamentDeckOut"][];
+        };
+        /**
+         * UpdateCollectionItemRequest
+         * @description Toute mise à jour partielle : seuls les champs effectivement envoyés sont modifiés
+         *     (`exclude_unset=True` côté service) — un client peut donc corriger le seul état estimé sans
+         *     reposer la langue, la variante ou le prix d'achat déjà enregistrés.
+         */
+        UpdateCollectionItemRequest: {
+            /** Language */
+            language?: string | null;
+            variant?: components["schemas"]["PriceVariant"] | null;
+            /** Condition Grade */
+            condition_grade?: string | null;
+            /** Counterfeit Suspected */
+            counterfeit_suspected?: boolean | null;
+            /** Purchase Price */
+            purchase_price?: number | string | null;
+            /** Purchase Currency */
+            purchase_currency?: string | null;
+            /** Acquired At */
+            acquired_at?: string | null;
         };
         /** UpdateProfileRequest */
         UpdateProfileRequest: {
@@ -2354,6 +2648,106 @@ export interface operations {
             };
         };
     };
+    list_collection_me_collection_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                set_id?: string[] | null;
+                series?: string[] | null;
+                rarity?: string[] | null;
+                card_type?: string[] | null;
+                language?: string[] | null;
+                variant?: components["schemas"]["PriceVariant"][] | null;
+                condition_grade?: string[] | null;
+                value_min?: number | string | null;
+                value_max?: number | string | null;
+                acquired_from?: string | null;
+                acquired_to?: string | null;
+                duplicates?: boolean;
+                counterfeit?: boolean;
+                sort?: components["schemas"]["CollectionSort"];
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_collection_item_me_collection_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCollectionItemRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateCollectionItemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_collection_facets_me_collection_facets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionFacets"];
+                };
+            };
+        };
+    };
     get_collection_item_me_collection__item_id__get: {
         parameters: {
             query?: never;
@@ -2381,6 +2775,90 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_collection_item_me_collection__item_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_collection_item_me_collection__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCollectionItemRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionListItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_dashboard_me_dashboard_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardResponse"];
                 };
             };
         };

@@ -20,3 +20,13 @@ if (!URL.createObjectURL) {
 if (!URL.revokeObjectURL) {
   URL.revokeObjectURL = () => {};
 }
+
+// jsdom n'implémente pas ResizeObserver : `recharts.ResponsiveContainer` (lot v4-dashboard,
+// courbe de valeur) en a besoin pour mesurer son conteneur.
+if (!window.ResizeObserver) {
+  window.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}

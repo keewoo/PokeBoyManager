@@ -386,6 +386,38 @@ Front `apps/web/src/app/collection/` : panneau de filtres (tiroir sur mobile), r
 `apps/api/tests/test_collection_routes.py` (accès croisé compris),
 `apps/web/src/__tests__/collection-view.test.tsx`.
 
+## Accueil connecté (lot `v4-dashboard`)
+
+`apps/web/src/app/page.tsx` (Server Component) lit le cookie de session (`cookies()`, jamais un
+état client après montage — évite un flash de l'accueil visiteur) et bascule vers `HomeContent`
+(`apps/web/src/app/home-content.tsx`, isolé du Server Component pour rester testable hors
+runtime Next.js) : `DashboardView` avec session, `LandingPage`
+(`apps/web/src/components/landing/`, extraite sans changement de l'ancien contenu de `page.tsx`)
+sinon. `GET /me/dashboard` (`pbm_api.dashboard.service.get_dashboard`, appelé par
+`routers/dashboard.py`) réutilise tel quel `pricing.valuation.bulk_item_values_multi`
+(`v4-collection`) : une seule valorisation en masse couvre à la fois la valeur du jour, les
+points de la courbe et la référence 30 jours — jamais une requête de prix par exemplaire ni par
+date. Courbe sur 90 jours avec un point tous les 7 jours (`HISTORY_POINT_INTERVAL_DAYS`) plutôt
+qu'un par jour : `bulk_item_values_multi` fait un `UNION ALL` d'une sous-requête par date
+demandée, 90 dates multiplieraient le coût par 90 pour un agrément visuel qu'une dizaine de
+points suffit à donner (job lourd = job bridé, `~/.claude/CLAUDE.md`). Plus fortes variations
+triées par montant absolu (mouvements à variation nulle exclus) ; cinq derniers ajouts par
+`created_at`.
+
+`apps/web/src/components/dashboard/total-value-delta.tsx` (montant en euros signé, ▲/▼/=) est
+**distinct** de `value-delta.tsx` (`v4-collection`, pourcentage) : l'agrégat de tête de la
+maquette (« ▲ +42,50 € sur 30 j ») n'est pas la même donnée, pas le même composant à réutiliser
+tel quel. Courbe : `value-chart.tsx` (Recharts `LineChart`/`ResponsiveContainer`, ajouté à
+`package.json` — déjà dans la stack cible de `docs/roadmap/ROADMAP.html`) ; rien affiché en
+dessous de 2 points (le montant du dessus porte déjà l'information, un graphe à un seul point
+serait trompeur). `vitest.setup.ts` polyfill `ResizeObserver` (absent de jsdom,
+`ResponsiveContainer` en a besoin). Tests : `apps/api/tests/test_dashboard_routes.py` (accès
+croisé compris), `apps/web/src/__tests__/dashboard-view.test.tsx`,
+`apps/web/src/__tests__/home-content.test.tsx`. Détail, capture de conformité maquette et écarts
+connus (en-tête `AppShell` non sensible à la session, images de carte bloquées par ORB — tous
+deux préexistants, hors périmètre de ce lot) :
+`docs/roadmap/comptes-rendus/v4-dashboard.md`.
+
 ## Règles de la flotte applicables ici (résumé de `~/.claude/CLAUDE.md`)
 
 - On construit sur chimera (32 Go, 16 threads) et on ne construit jamais sur la machine qui sert.
