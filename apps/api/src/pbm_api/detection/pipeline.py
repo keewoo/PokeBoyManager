@@ -50,7 +50,10 @@ def _is_plausible(image: np.ndarray, quads: list[np.ndarray]) -> bool:
     return not has_unclaimed_regions(image, quads)
 
 
-def _refine_box_with_opencv(image: np.ndarray, box: NormalizedBox) -> np.ndarray:
+def refine_box_with_opencv(image: np.ndarray, box: NormalizedBox) -> np.ndarray:
+    """Affinage OpenCV local d'une boîte LLM — public depuis `pbm-hotfix-fallback-ia-confiance` :
+    le secours d'identification (`pbm_api.identification.rescue`) réutilise exactement le même
+    affinage pour redécouper une carte mal cadrée, jamais une seconde implémentation."""
     height, width = image.shape[:2]
     x_min, y_min, x_max, y_max = denormalize_box(box, width, height)
     box_width, box_height = x_max - x_min, y_max - y_min
@@ -94,7 +97,7 @@ async def run_detection(
             ImageInput(data=image_bytes, media_type=ai_media_type or "image/jpeg"),
             model=ai_model,
         )
-        quads = [_refine_box_with_opencv(image, box) for box in boxes]
+        quads = [refine_box_with_opencv(image, box) for box in boxes]
         method = "llm_fallback"
 
     crops = [warp_card(image, quad) for quad in quads]
