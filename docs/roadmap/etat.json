@@ -2308,10 +2308,10 @@
       "attente": null
     },
     "v5-securite": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
+      "statut": "en_cours",
+      "machine": "chimera",
+      "branche": "roadmap/v5-securite",
+      "debut_reel": "2026-09-20",
       "fin_reelle": null,
       "taches": {
         "dev": {
@@ -2360,8 +2360,16 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-20T10:38+0200",
+          "machine": "chimera",
+          "evenement": "démarré",
+          "detail": "roadmap/v5-securite"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": null
     },
     "v5-e2e": {
       "statut": "en_cours",
