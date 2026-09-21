@@ -142,6 +142,28 @@ _Le MVP en ligne a révélé ce qu'aucun test n'avait vu : formats de photo refu
 | `h1-front-accueil` | P1 | Accueil crédible, site responsive, fin des URL de développement | DA2 (devAI) | 20 sept. → 20 sept. | — | — | Intégré (main) | [prompt](prompts/h1-front-accueil.md) |
 | `h1-parcours-validation` | P0 | Après la reconnaissance, l'utilisateur voit ses cartes et les ajoute | DA2 (devAI) | 21 sept. → 21 sept. | — | — | Intégré (main) | [prompt](prompts/h1-parcours-validation.md) |
 
+## V8 — Échanger ses cartes (4 janv. → 26 févr.)
+
+_Une collection ne grandit pas qu'en achetant : elle grandit en échangeant ses doublons. PokeBoy sait déjà qui possède quoi, ce qui manque à chacun, ce que ça vaut et dans quel état c'est — il est le seul à pouvoir proposer un échange juste et à en garder la preuve._
+
+| Lot | Prio | Titre | Couloir | Prévu | Dépend de | Décision | Statut | Prompt |
+|---|---|---|---|---|---|---|---|---|
+| `v8-disponibilite` | P0 | Mes doublons, et ce que j'accepte d'échanger | DA4 (devAI) | 4 janv. → 8 janv. | — | — | À faire | [prompt](prompts/v8-disponibilite.md) |
+| `v8-mineurs` | P0 | Échanger quand on a quinze ans | CH6 (chimera) | 4 janv. → 8 janv. | — | D13 | À faire | [prompt](prompts/v8-mineurs.md) |
+| `v8-appariement` | P0 | Le moteur d'appariement : mes doublons contre tes souhaits | DA4 (devAI) | 11 janv. → 15 janv. | v8-disponibilite, v6-import-export | — | À faire | [prompt](prompts/v8-appariement.md) |
+| `v8-vitrine` | P0 | La vitrine des cartes à échanger | CH6 (chimera) | 11 janv. → 15 janv. | v8-disponibilite | — | À faire | [prompt](prompts/v8-vitrine.md) |
+| `v8-offre` | P0 | Proposer, contre-proposer, accepter | DA4 (devAI) | 18 janv. → 22 janv. | v8-appariement | D12 | À faire | [prompt](prompts/v8-offre.md) |
+| `v8-suggestions` | P1 | L'échange équilibré, proposé par l'appli | CH6 (chimera) | 18 janv. → 22 janv. | v8-appariement | — | À faire | [prompt](prompts/v8-suggestions.md) |
+| `v8-transfert` | P0 | La carte change de mains, et l'appli le sait | DA4 (devAI) | 25 janv. → 29 janv. | v8-offre | — | À faire | [prompt](prompts/v8-transfert.md) |
+| `v8-fil-echange` | P1 | Le fil de l'échange | CH6 (chimera) | 25 janv. → 29 janv. | v8-offre | — | À faire | [prompt](prompts/v8-fil-echange.md) |
+| `v8-expedition` | P0 | Envoyer, suivre, recevoir | DA4 (devAI) | 1 févr. → 5 févr. | v8-transfert | D14 | À faire | [prompt](prompts/v8-expedition.md) |
+| `v8-reputation` | P1 | À qui ai-je affaire | CH6 (chimera) | 1 févr. → 5 févr. | v8-offre | — | À faire | [prompt](prompts/v8-reputation.md) |
+| `v8-litiges` | P0 | Quand ça se passe mal | DA4 (devAI) | 8 févr. → 12 févr. | v8-expedition | — | À faire | [prompt](prompts/v8-litiges.md) |
+| `v8-suivi-ecran` | P1 | Où en est mon échange | CH6 (chimera) | 8 févr. → 12 févr. | v8-expedition | — | À faire | [prompt](prompts/v8-suivi-ecran.md) |
+| `v8-mode-garant` | P2 | Mode garant : caution restituée et commission (conditionnel) | DA4 (devAI) | 15 févr. → 26 févr. | v8-litiges | D15 | À faire | [prompt](prompts/v8-mode-garant.md) |
+| `v8-e2e-echange` | P1 | Un échange complet, joué tout seul | CH6 (chimera) | 15 févr. → 19 févr. | v8-litiges, v8-suivi-ecran | — | À faire | [prompt](prompts/v8-e2e-echange.md) |
+| `v8-hub-etude` | P3 | Centre de tri PokeBoy : l'étude avant la moindre ligne de code (conditionnel) | CH6 (chimera) | 22 févr. → 26 févr. | v8-litiges | D12 | À faire | [prompt](prompts/v8-hub-etude.md) |
+
 ## Décisions de JF
 
 | # | Avant le | Décision | Prise | Débloque |
@@ -157,3 +179,7 @@ _Le MVP en ligne a révélé ce qu'aucun test n'avait vu : formats de photo refu
 | D9 | 2026-09-19 | Périmètre des règles v1 du moteur de jeu : proposition — Pokémon de base et évolutions, énergies, attaques, faiblesse/résistance, retraite, banc, récompenses, conditions de victoire ; dresseurs, talents et états spéciaux en v2. | JF le 19/09 : NON à un périmètre réduit — les cartes Dresseur (Objets, Supporters, Stades, Outils), les talents et les états spéciaux font partie de la première version du jeu. Découpage : un socle de moteur (zones, tour, attaques, récompenses) puis un lot dédié aux effets de cartes, avec une règle stricte — un effet non implémenté n'est jamais approximé, la carte est refusée dans le deck et le dit. | v7-regles-moteur, v7-regles-cartes |
 | D10 | 2026-09-19 | Un deck n'utilise que les cartes possédées — faut-il faire une exception pour les Énergies de base (illimitées, comme dans les decks papier) ? Proposition : oui, les Énergies de base sont fournies. | JF le 19/09 : les Énergies de BASE sont illimitées et fournies (comme sur un deck papier), sans être décomptées de la collection. Les Énergies SPÉCIALES sont des cartes comme les autres : il faut les posséder, et la règle des 4 exemplaires s'applique. | v7-decks-api, v7-decks-legalite |
 | D11 | 2026-09-19 | Cadre du jeu en ligne (propriété intellectuelle) : partie privée entre comptes invités seulement, ou file d'attente ouverte à tous les inscrits ? Sans revenu ni publicité dans les deux cas. | JF le 19/09 (« clairement ») : jeu en ligne PRIVÉ — file d'attente réservée aux comptes invités, pas d'ouverture publique, aucun revenu ni publicité. Les cartes jouables restent celles que le joueur possède. | v7-file-attente |
+| D12 | 2026-12-14 | Mécanique d'échange retenue pour la v1, parmi les trois proposées par JF : (1) en direct entre collectionneurs, PokeBoy ne fait que mettre en relation ; (2) PokeBoy intermédiaire physique — étiquettes vers PokeBoy, contrôle, réexpédition, frais fixes ; (3) PokeBoy garant — chacun verse une caution proportionnelle à la valeur, restituée à la double validation, commission retenue. Proposition : (1) d'abord, seule livrable sans argent ni stock et seule ouverte aux mineurs ; (3) ensuite, si le taux de litige mesuré le justifie ; (2) jamais sans volume — voir v8-hub-etude. | en attente | v8-offre, v8-mode-garant, v8-hub-etude |
+| D13 | 2026-12-14 | Âge minimum pour échanger et accord parental. Le public de départ est majoritairement mineur, et aucun mode où l'utilisateur avance de l'argent ne lui est ouvert. Proposition : échange direct dès 13 ans avec accord parental enregistré ; tout mode avec caution ou commission réservé aux 18 ans et plus. | en attente | v8-mineurs, v8-mode-garant |
+| D14 | 2027-01-22 | Expédition : transporteur, seuil de valeur au-dessus duquel le suivi est obligatoire, qui paie le port, quelle assurance. Proposition : l'adresse n'est jamais affichée — c'est l'étiquette générée qui la porte ; suivi obligatoire au-delà de 30 € de valeur figée ; port à la charge de chaque expéditeur ; aucune assurance promise tant qu'aucune n'est souscrite. | en attente | v8-expedition |
+| D15 | 2027-02-05 | Circulation de l'argent, si le mode garant est retenu. PokeBoy n'encaisse jamais pour le compte d'un tiers sur son propre compte : retenir les fonds d'autrui est un service de paiement. Proposition : séquestre porté par un prestataire agréé (Stripe Connect ou Mangopay), vérification d'identité des deux parties, commission facturée par PokeBoy avec TVA. À faire confirmer par un conseil avant toute ligne de code. | en attente | v8-mode-garant |

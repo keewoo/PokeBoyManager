@@ -1,7 +1,7 @@
 {
   "meta": {
     "titre": "Roadmap PokeBoyManager",
-    "date": "2026-09-19",
+    "date": "2026-09-21",
     "horizon": [
       "2026-09-21",
       "2027-04-10"
@@ -144,6 +144,16 @@
         "id": "CH5",
         "machine": "chimera",
         "nom": "Decks — écrans, recherche, assistant"
+      },
+      {
+        "id": "DA4",
+        "machine": "devAI",
+        "nom": "Échanges — règles, transfert & argent"
+      },
+      {
+        "id": "CH6",
+        "machine": "chimera",
+        "nom": "Échanges — écrans, appariement & messagerie"
       }
     ],
     "capacite": {
@@ -179,6 +189,10 @@
     {
       "id": "J",
       "nom": "Jeu — decks et parties"
+    },
+    {
+      "id": "E",
+      "nom": "Échanges entre collectionneurs"
     }
   ],
   "vagues": [
@@ -261,6 +275,14 @@
       "fin": "2026-09-21",
       "these": "Le MVP en ligne a révélé ce qu'aucun test n'avait vu : formats de photo refusés, appel IA rejeté, écran de validation muet, traitements lourds sur la machine qui sert, URL de développement figées dans le site.",
       "gain": "Un produit réellement utilisable par quelqu'un d'autre que ses auteurs."
+    },
+    {
+      "id": "V8",
+      "nom": "Échanger ses cartes",
+      "debut": "2027-01-04",
+      "fin": "2027-02-26",
+      "these": "Une collection ne grandit pas qu'en achetant : elle grandit en échangeant ses doublons. PokeBoy sait déjà qui possède quoi, ce qui manque à chacun, ce que ça vaut et dans quel état c'est — il est le seul à pouvoir proposer un échange juste et à en garder la preuve.",
+      "gain": "Deux collectionneurs trouvent l'échange qui leur convient, l'exécutent sans se faire avoir, et leurs deux collections se mettent à jour toutes seules."
     }
   ],
   "echeances": [
@@ -290,8 +312,18 @@
       "type": "jalon"
     },
     {
+      "date": "2026-12-14",
+      "quoi": "D12/D13 — mécanique d'échange et âge minimum tranchés",
+      "type": "decision"
+    },
+    {
       "date": "2026-12-18",
       "quoi": "Fin des extensions post-MVP",
+      "type": "interne"
+    },
+    {
+      "date": "2027-02-26",
+      "quoi": "Échanges entre collectionneurs ouverts (mode direct)",
       "type": "interne"
     }
   ],
@@ -386,6 +418,41 @@
       "quoi": "Cadre du jeu en ligne (propriété intellectuelle) : partie privée entre comptes invités seulement, ou file d'attente ouverte à tous les inscrits ? Sans revenu ni publicité dans les deux cas.",
       "debloque": [
         "v7-file-attente"
+      ]
+    },
+    {
+      "id": "D12",
+      "date": "2026-12-14",
+      "quoi": "Mécanique d'échange retenue pour la v1, parmi les trois proposées par JF : (1) en direct entre collectionneurs, PokeBoy ne fait que mettre en relation ; (2) PokeBoy intermédiaire physique — étiquettes vers PokeBoy, contrôle, réexpédition, frais fixes ; (3) PokeBoy garant — chacun verse une caution proportionnelle à la valeur, restituée à la double validation, commission retenue. Proposition : (1) d'abord, seule livrable sans argent ni stock et seule ouverte aux mineurs ; (3) ensuite, si le taux de litige mesuré le justifie ; (2) jamais sans volume — voir v8-hub-etude.",
+      "debloque": [
+        "v8-offre",
+        "v8-mode-garant",
+        "v8-hub-etude"
+      ]
+    },
+    {
+      "id": "D13",
+      "date": "2026-12-14",
+      "quoi": "Âge minimum pour échanger et accord parental. Le public de départ est majoritairement mineur, et aucun mode où l'utilisateur avance de l'argent ne lui est ouvert. Proposition : échange direct dès 13 ans avec accord parental enregistré ; tout mode avec caution ou commission réservé aux 18 ans et plus.",
+      "debloque": [
+        "v8-mineurs",
+        "v8-mode-garant"
+      ]
+    },
+    {
+      "id": "D14",
+      "date": "2027-01-22",
+      "quoi": "Expédition : transporteur, seuil de valeur au-dessus duquel le suivi est obligatoire, qui paie le port, quelle assurance. Proposition : l'adresse n'est jamais affichée — c'est l'étiquette générée qui la porte ; suivi obligatoire au-delà de 30 € de valeur figée ; port à la charge de chaque expéditeur ; aucune assurance promise tant qu'aucune n'est souscrite.",
+      "debloque": [
+        "v8-expedition"
+      ]
+    },
+    {
+      "id": "D15",
+      "date": "2027-02-05",
+      "quoi": "Circulation de l'argent, si le mode garant est retenu. PokeBoy n'encaisse jamais pour le compte d'un tiers sur son propre compte : retenir les fonds d'autrui est un service de paiement. Proposition : séquestre porté par un prestataire agréé (Stripe Connect ou Mangopay), vérification d'identité des deux parties, commission facturée par PokeBoy avec TVA. À faire confirmer par un conseil avant toute ligne de code.",
+      "debloque": [
+        "v8-mode-garant"
       ]
     }
   ],
@@ -2705,6 +2772,556 @@
       ],
       "taches_na": {
         "maquette": "back-end"
+      }
+    },
+    {
+      "vague": "V8",
+      "piste": "E",
+      "id": "v8-disponibilite",
+      "couloir": "DA4",
+      "debut": "2027-01-04",
+      "fin": "2027-01-08",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 2,
+      "difficulte": 2,
+      "titre": "Mes doublons, et ce que j'accepte d'échanger",
+      "gain": "Un échange commence par une phrase simple : « celle-là, je l'ai en double ». L'appli sait déjà qui possède quoi ; encore faut-il qu'elle sache ce que le propriétaire est prêt à laisser partir.",
+      "fonctionnalites": "Détection automatique des doublons (même carte, plusieurs exemplaires) ; marquage « échangeable » sur un EXEMPLAIRE précis, jamais sur la carte ; exemplaire réservé dès qu'une offre l'engage et libéré si l'offre tombe ; rien n'est échangeable par défaut.",
+      "risques": "Le même exemplaire engagé dans deux offres à la fois est la faute classique : la réservation se pose en base (contrainte d'unicité), pas dans l'écran. Un exemplaire employé dans un deck doit le dire — même mécanique que v7-decks-collection-sync, et même règle : on prévient, on ne corrige jamais en silence.",
+      "tenants": "Collection, exemplaires, decks.",
+      "aboutissants": "Toute la vague : sans stock déclaré, il n'y a rien à apparier.",
+      "dependances": [],
+      "decision": null,
+      "refs": [
+        "v7-decks-collection-sync : la règle « aucune correction silencieuse »"
+      ],
+      "mission": [
+        "Champs d'échangeabilité et de réservation sur l'exemplaire, avec l'offre qui le retient ; contrainte d'unicité en base, pas un simple contrôle applicatif.",
+        "Vue « mes doublons » : regroupement par carte, exemplaire conseillé à céder (le moins bien noté en état à valeur égale), valeur du lot cessible.",
+        "Alerte si l'exemplaire sert dans un deck : on prévient, on ne retire rien.",
+        "Tests : deux offres concurrentes sur le même exemplaire — la seconde échoue proprement ; annulation d'offre — l'exemplaire redevient disponible ; suppression de compte — les réservations tombent."
+      ],
+      "livrables": [
+        "doublons détectés, exemplaires marqués échangeables",
+        "réservation garantie en base, prouvée par un test de concurrence"
+      ],
+      "taches_na": {
+        "maquette": "écran minimal, rattaché à la collection existante"
+      }
+    },
+    {
+      "vague": "V8",
+      "piste": "E",
+      "id": "v8-appariement",
+      "couloir": "DA4",
+      "debut": "2027-01-11",
+      "fin": "2027-01-15",
+      "priorite": "P0",
+      "taille": "L",
+      "complexite": 4,
+      "difficulte": 3,
+      "titre": "Le moteur d'appariement : mes doublons contre tes souhaits",
+      "gain": "C'est la seule raison d'échanger ici plutôt que dans un groupe Discord : PokeBoy connaît les deux collections, les deux listes de souhaits et les deux valeurs. Il peut proposer l'échange ; personne d'autre ne le peut.",
+      "fonctionnalites": "Appariement bilatéral (j'ai ce que tu cherches ET tu as ce que je cherche), classé par valeur échangée et par écart ; appariement unilatéral en second rang ; chaînes à trois (A→B→C) détectées et rapportées, même si la v1 ne les exécute pas ; score de compatibilité expliqué en une phrase lisible.",
+      "risques": "La liste de souhaits vient de v6-import-export : si elle est vide, le moteur ne trouve rien et l'écran paraît cassé — prévoir une liste implicite (cartes manquantes d'une extension entamée) et le dire à l'utilisateur. Le calcul est coûteux : il tourne en tâche de fond (arq), jamais à l'affichage, et se rafraîchit à chaque changement de collection ou de souhaits.",
+      "tenants": "Collection, liste de souhaits, prix du jour.",
+      "aboutissants": "La vitrine et les suggestions d'équilibrage n'affichent que ce que ce moteur produit.",
+      "dependances": [
+        "v8-disponibilite",
+        "v6-import-export"
+      ],
+      "decision": null,
+      "refs": [],
+      "mission": [
+        "Index des exemplaires cessibles et des souhaits, recalculé en tâche de fond ; résultats datés et réutilisables, pas un calcul à la volée.",
+        "Liste de souhaits implicite déduite des extensions entamées, clairement signalée comme déduite.",
+        "Détection des chaînes à trois : rapport uniquement, avec le nombre de chaînes trouvées — la v1 ne les exécute pas et l'écrit.",
+        "Tests sur jeu de données : deux collections qui se complètent, deux qui ne se complètent pas, liste de souhaits vide, 10 000 exemplaires (mesure du temps de calcul)."
+      ],
+      "livrables": [
+        "appariements bilatéraux classés et expliqués",
+        "temps de calcul mesuré et consigné"
+      ],
+      "taches_na": {
+        "maquette": "moteur sans écran ; les écrans sont dans v8-vitrine"
+      }
+    },
+    {
+      "vague": "V8",
+      "piste": "E",
+      "id": "v8-offre",
+      "couloir": "DA4",
+      "debut": "2027-01-18",
+      "fin": "2027-01-22",
+      "priorite": "P0",
+      "taille": "L",
+      "complexite": 4,
+      "difficulte": 4,
+      "titre": "Proposer, contre-proposer, accepter",
+      "gain": "Le cœur de la vague : un échange est un engagement entre deux personnes. Il doit avoir un état, une trace et une fin — y compris quand il n'aboutit pas.",
+      "fonctionnalites": "Offre de N cartes contre M cartes ; balance de valeur affichée des deux côtés ; contre-offre ; expiration automatique à 7 jours ; états acceptée, refusée, expirée, annulée ; gel des exemplaires engagés ; le mode de règlement (direct, garant, dépôt) est un ATTRIBUT de l'offre, pas une branche de code.",
+      "risques": "Les valeurs bougent entre la proposition et l'acceptation : on les FIGE à l'acceptation et on les archive avec l'offre — sinon un litige se juge sur des prix qui n'existent plus. Une offre acceptée n'est pas un transfert : la carte ne change de mains qu'à la réception validée (v8-transfert). Le mode est enfichable dès maintenant, même si un seul est livré : c'est ce qui évitera de réécrire la machine à états le jour où JF tranche autrement.",
+      "tenants": "Appariement, prix, exemplaires réservés.",
+      "aboutissants": "Expédition, transfert, litiges, réputation : tout pend à cette machine à états.",
+      "dependances": [
+        "v8-appariement"
+      ],
+      "decision": "D12",
+      "refs": [
+        "D12 : mécanique retenue"
+      ],
+      "mission": [
+        "Machine à états de l'offre, transitions contrôlées côté serveur, journal d'audit horodaté et immuable.",
+        "Valeurs figées et archivées au moment de l'acceptation, avec leur source et leur date.",
+        "Mode de règlement porté par l'offre, avec un seul mode actif en v1 et les autres refusés explicitement.",
+        "Expiration et annulation : les exemplaires engagés redeviennent disponibles, les deux parties sont prévenues.",
+        "Tests : contre-offres en cascade, acceptation simultanée des deux côtés, expiration pendant une contre-offre, annulation après acceptation."
+      ],
+      "livrables": [
+        "machine à états complète et testée",
+        "valeurs figées, journal d'audit consultable"
+      ],
+      "taches_na": {}
+    },
+    {
+      "vague": "V8",
+      "piste": "E",
+      "id": "v8-transfert",
+      "couloir": "DA4",
+      "debut": "2027-01-25",
+      "fin": "2027-01-29",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "La carte change de mains, et l'appli le sait",
+      "gain": "Ce qu'aucun groupe Discord ne fera jamais : la carte échangée arrive dans l'autre collection avec sa photo, son état estimé et son historique de valeur.",
+      "fonctionnalites": "Transfert de l'exemplaire d'une collection à l'autre à la validation de réception ; historique de possession conservé (pseudos seulement) ; decks des deux côtés alertés ; valeur totale, courbes et statistiques recalculées des deux côtés.",
+      "risques": "Le transfert est irréversible : il n'a lieu qu'à la double validation, jamais à l'acceptation. Un compte supprimé (v5-rgpd) ne doit pas laisser de pseudo orphelin dans l'historique d'une carte qui, elle, reste. La photo prise par l'ancien propriétaire part avec l'exemplaire par défaut — c'est la photo de CETTE carte — mais l'ancien propriétaire doit pouvoir la retirer.",
+      "tenants": "Exemplaires, decks, valeur de collection, RGPD.",
+      "aboutissants": "La confiance dans les chiffres de la collection après un échange.",
+      "dependances": [
+        "v8-offre"
+      ],
+      "decision": null,
+      "refs": [
+        "v5-rgpd : suppression de compte"
+      ],
+      "mission": [
+        "Transfert transactionnel des deux côtés à la fois : soit les deux cartes changent de main, soit aucune.",
+        "Historique de possession attaché à l'exemplaire, anonymisable sans le détruire.",
+        "Recalcul des valeurs, des decks et des statistiques des deux collections, dans la même transaction.",
+        "Tests : échange croisé de deux cartes utilisées chacune dans un deck, suppression de compte après échange, rejeu du même transfert (idempotence)."
+      ],
+      "livrables": [
+        "transfert transactionnel testé",
+        "historique de possession conservé et anonymisable"
+      ],
+      "taches_na": {}
+    },
+    {
+      "vague": "V8",
+      "piste": "E",
+      "id": "v8-expedition",
+      "couloir": "DA4",
+      "debut": "2027-02-01",
+      "fin": "2027-02-05",
+      "priorite": "P0",
+      "taille": "L",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "Envoyer, suivre, recevoir",
+      "gain": "Entre l'acceptation et la réception il y a la poste : c'est là que les échanges meurent, par oubli bien plus souvent que par malveillance.",
+      "fonctionnalites": "Étapes obligatoires — envoyé (avec numéro de suivi), reçu, validé ; photo de l'emballage avant fermeture, horodatée ; relances automatiques à J+2 et J+5 ; délai au-delà duquel l'échange bascule en litige ; étiquette générée par PokeBoy quand le mode le prévoit, pour que l'adresse ne soit jamais affichée à personne.",
+      "risques": "Suivi obligatoire au-delà du seuil fixé en D15 ; en-dessous, l'envoi simple reste possible mais l'utilisateur est prévenu, noir sur blanc, qu'il ne pourra rien prouver. Ne jamais afficher le mot « assuré » tant qu'aucune assurance n'est souscrite. Les relances sont l'essentiel du gain : un échange oublié est un échange perdu.",
+      "tenants": "Offre acceptée, adresses, transporteur.",
+      "aboutissants": "Litiges (le dossier se constitue ici), transfert, réputation.",
+      "dependances": [
+        "v8-transfert"
+      ],
+      "decision": "D14",
+      "refs": [
+        "D14 : transporteur, seuil de suivi, assurance"
+      ],
+      "mission": [
+        "Étapes et délais côté serveur, relances par e-mail et notification, bascule automatique en litige.",
+        "Photo d'emballage horodatée, conservée pour la durée de contestation puis purgée.",
+        "Adresse postale jamais exposée dans l'interface ni dans une API : seule l'étiquette la porte.",
+        "Tests : envoi d'un seul côté puis silence, réception sans validation, dépassement de délai, numéro de suivi invalide."
+      ],
+      "livrables": [
+        "étapes, relances et délais testés",
+        "aucune adresse exposée (vérifié dans les réponses API)"
+      ],
+      "taches_na": {}
+    },
+    {
+      "vague": "V8",
+      "piste": "E",
+      "id": "v8-litiges",
+      "couloir": "DA4",
+      "debut": "2027-02-08",
+      "fin": "2027-02-12",
+      "priorite": "P0",
+      "taille": "L",
+      "complexite": 3,
+      "difficulte": 4,
+      "titre": "Quand ça se passe mal",
+      "gain": "Un dispositif d'échange ne se juge pas sur les échanges qui marchent : il se juge sur ce qu'il fait le jour où une carte n'arrive pas.",
+      "fonctionnalites": "Ouverture d'un litige par l'une des parties dans une fenêtre définie ; dossier constitué automatiquement (offre figée, valeurs archivées, photos d'emballage, suivi, fil de discussion) ; arbitrage par un opérateur avec motif écrit ; issues — en faveur de l'un, des deux, ou sans suite ; conséquences sur la réputation et sur les plafonds ; gel du compte en cas de récidive.",
+      "risques": "L'arbitrage est un travail humain : on le dimensionne, on ne l'automatise pas. Une décision doit être motivée et conservée — c'est elle qui sera opposée à un parent mécontent. Le taux de litige mesuré ici est la donnée qui décidera, ou non, du mode garant : il doit être exploitable, pas seulement affiché.",
+      "tenants": "Expédition, offre figée, réputation.",
+      "aboutissants": "La décision D12 se tranche avec les chiffres produits par ce lot.",
+      "dependances": [
+        "v8-expedition"
+      ],
+      "decision": null,
+      "refs": [],
+      "mission": [
+        "Dossier de litige constitué automatiquement, consultable par les deux parties et par l'opérateur.",
+        "Écran d'arbitrage réservé à l'opérateur, décision motivée obligatoire, conservation de la trace.",
+        "Conséquences appliquées : réputation, plafonds, gel — et notification écrite aux deux parties.",
+        "Indicateurs exportables : taux de litige, valeur moyenne en jeu, délai moyen de résolution."
+      ],
+      "livrables": [
+        "litige de bout en bout, arbitré et tracé",
+        "indicateurs de litige exportables (entrée de la décision D12)"
+      ],
+      "taches_na": {}
+    },
+    {
+      "vague": "V8",
+      "piste": "E",
+      "id": "v8-mode-garant",
+      "couloir": "DA4",
+      "debut": "2027-02-15",
+      "fin": "2027-02-26",
+      "priorite": "P2",
+      "taille": "XL",
+      "complexite": 5,
+      "difficulte": 5,
+      "titre": "Mode garant : caution restituée et commission (conditionnel)",
+      "gain": "La protection sans la logistique : PokeBoy ne touche jamais une carte, mais retient de quoi rendre l'arnaque non rentable.",
+      "fonctionnalites": "Caution proportionnelle à la valeur figée de l'offre, versée par chacune des deux parties ; libération automatique à la double validation ; commission retenue par PokeBoy ; en cas de litige, la caution suit la décision d'arbitrage ; reçus, facturation et TVA.",
+      "risques": "Trois obstacles, dans cet ordre. (1) Une caution inférieure à la valeur de la carte NE DISSUADE PAS : garder une carte à 200 € en perdant 20 € reste rentable — une caution réellement protectrice immobilise l'équivalent de la carte sur une carte bancaire. (2) Retenir les fonds d'un tiers est un service de paiement : PokeBoy n'encaisse jamais sur son propre compte, le séquestre passe par un prestataire agréé, avec vérification d'identité des deux parties. (3) Aucun compte de moins de 18 ans n'y a accès (D13) — ce qui exclut, au démarrage, la majorité des utilisateurs. Ce lot ne démarre que si D12 et D14 le disent.",
+      "tenants": "Litiges, offre figée, identité vérifiée.",
+      "aboutissants": "Un second mode de règlement, sans réécrire la machine à états.",
+      "dependances": [
+        "v8-litiges"
+      ],
+      "decision": "D15",
+      "refs": [
+        "D12 : mécanique retenue",
+        "D13 : âge minimum",
+        "D15 : circulation de l'argent"
+      ],
+      "mission": [
+        "AVANT d'écrire une ligne : chiffrer sur les données réelles produites par v8-litiges — taux de litige constaté, valeur moyenne d'un échange, part des comptes majeurs. Si l'un des trois ne tient pas, le lot S'ARRÊTE et l'écrit dans son compte rendu : c'est une conclusion valable, pas un échec.",
+        "Séquestre porté par le prestataire agréé retenu en D14 ; aucun flux ne transite par un compte PokeBoy.",
+        "Libération automatique à la double validation, ou selon la décision d'arbitrage ; aucun cas où l'argent reste bloqué sans qu'un humain en soit averti.",
+        "Commission, reçus, TVA, et écran « où en est mon argent » lisible par un adolescent et par son parent."
+      ],
+      "livrables": [
+        "note de chiffrage préalable (poursuivre ou arrêter, avec les chiffres)",
+        "si poursuite : séquestre de bout en bout, testé, litige compris"
+      ],
+      "taches_na": {}
+    },
+    {
+      "vague": "V8",
+      "piste": "E",
+      "id": "v8-mineurs",
+      "couloir": "CH6",
+      "debut": "2027-01-04",
+      "fin": "2027-01-08",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 2,
+      "difficulte": 4,
+      "titre": "Échanger quand on a quinze ans",
+      "gain": "Les premiers utilisateurs sont des collégiens. Une fonctionnalité d'échange pensée pour des adultes se retourne immédiatement contre eux : adresse postale exposée, argent, contact direct avec des inconnus.",
+      "fonctionnalites": "Âge calculé depuis la date de naissance (v1-identite) ; accord parental enregistré (adresse du responsable, trace horodatée) avant le premier échange d'un mineur ; adresse postale jamais affichée à qui que ce soit ; plafond de valeur pour les comptes jeunes ou neufs ; signalement en un geste sur toute offre et tout message.",
+      "risques": "C'est le lot qui peut interdire deux des trois mécaniques : aucun mode où l'utilisateur avance de l'argent n'est ouvert à un compte de moins de 18 ans. À trancher (D13) AVANT d'écrire une ligne de séquestre. Le plafond de valeur doit être une protection, pas une punition : il s'explique à l'écran et il se lève avec l'ancienneté.",
+      "tenants": "Identité du compte, offre, expédition.",
+      "aboutissants": "Conditionne l'ouverture des modes payants à la population réelle.",
+      "dependances": [],
+      "decision": "D13",
+      "refs": [
+        "v1-identite : date de naissance et acceptation des conditions",
+        "D13 : âge minimum"
+      ],
+      "mission": [
+        "Calcul de l'âge et politique d'accès à l'échange, appliquée côté serveur et pas seulement à l'écran.",
+        "Accord parental : demande par e-mail au responsable, confirmation tracée, révocable.",
+        "Plafond de valeur par ancienneté et par nombre d'échanges aboutis, expliqué à l'utilisateur.",
+        "Signalement et blocage d'un membre, accessibles depuis chaque offre et chaque message.",
+        "Tests : compte de 12 ans, de 15 ans sans accord, de 15 ans avec accord, de 17 ans face à un mode payant."
+      ],
+      "livrables": [
+        "politique d'âge appliquée côté serveur",
+        "accord parental tracé et révocable",
+        "aucune adresse postale visible dans l'interface"
+      ],
+      "taches_na": {}
+    },
+    {
+      "vague": "V8",
+      "piste": "E",
+      "id": "v8-vitrine",
+      "couloir": "CH6",
+      "debut": "2027-01-11",
+      "fin": "2027-01-15",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 2,
+      "difficulte": 2,
+      "titre": "La vitrine des cartes à échanger",
+      "gain": "Voir ce que les autres proposent, et repérer d'un coup d'œil ce qui manque à sa propre collection.",
+      "fonctionnalites": "Grille des exemplaires proposés par les autres membres ; filtres par extension, état, valeur et rareté ; bandeau « dans ma liste de souhaits » en tête ; fiche d'un exemplaire proposé — la vraie photo de son propriétaire, l'état estimé, la valeur du jour, la réputation du propriétaire ; bouton « proposer un échange ».",
+      "risques": "La photo publiée est une photo prise par un utilisateur : elle peut être identifiante (mains, décor, chambre). Le rappeler au moment de la mise en vitrine, et exclure ces pages de l'indexation par les moteurs de recherche. La vitrine est réservée aux membres connectés.",
+      "tenants": "Exemplaires échangeables, appariement, réputation.",
+      "aboutissants": "Point d'entrée de tous les échanges.",
+      "dependances": [
+        "v8-disponibilite"
+      ],
+      "decision": null,
+      "refs": [
+        "Maquette : grille de collection, réutilisée"
+      ],
+      "mission": [
+        "Grille et filtres réutilisant les composants de la collection, pas une seconde implémentation.",
+        "Mise en avant des correspondances avec la liste de souhaits de celui qui regarde.",
+        "Avertissement au dépôt d'une photo en vitrine ; pages hors indexation, réservées aux membres.",
+        "Tests d'écran : vitrine vide, un seul membre, 500 exemplaires, filtre sans résultat."
+      ],
+      "livrables": [
+        "vitrine filtrable et responsive",
+        "correspondances avec les souhaits mises en avant"
+      ],
+      "taches_na": {}
+    },
+    {
+      "vague": "V8",
+      "piste": "E",
+      "id": "v8-suggestions",
+      "couloir": "CH6",
+      "debut": "2027-01-18",
+      "fin": "2027-01-22",
+      "priorite": "P1",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "L'échange équilibré, proposé par l'appli",
+      "gain": "Un échange échoue le plus souvent sur « c'est pas équilibré ». L'appli connaît les prix : elle peut dire de combien, et quoi ajouter pour y remédier.",
+      "fonctionnalites": "Écart de valeur affiché en euros et en pourcentage, avec la source et la date du prix ; suggestions pour combler l'écart, prises dans les doublons disponibles de celui qui doit compléter ; tolérance réglable (« j'accepte jusqu'à 10 % d'écart ») ; pas de soulte en argent en v1.",
+      "risques": "Les prix sont bruyants — une carte vaut du simple au double selon l'état et la source : afficher une fourchette, jamais un chiffre nu, et toujours dater. Ne pas transformer un loisir d'enfant en salle de marché : l'écart est une information, pas un verdict, et l'utilisateur reste libre d'accepter un échange déséquilibré.",
+      "tenants": "Appariement, prix, état estimé.",
+      "aboutissants": "Taux d'acceptation des offres.",
+      "dependances": [
+        "v8-appariement"
+      ],
+      "decision": null,
+      "refs": [
+        "v3-etat : l'état pondère la valeur"
+      ],
+      "mission": [
+        "Calcul et affichage de l'écart avec fourchette, source et date ; jamais un prix nu.",
+        "Suggestions de complément prises uniquement dans les exemplaires disponibles, classées par pertinence.",
+        "Tolérance réglable par utilisateur, mémorisée, jamais bloquante.",
+        "Tests : échange à valeur nulle des deux côtés, carte sans prix connu, écart de 300 %."
+      ],
+      "livrables": [
+        "écart expliqué et daté",
+        "suggestions de complément testées"
+      ],
+      "taches_na": {}
+    },
+    {
+      "vague": "V8",
+      "piste": "E",
+      "id": "v8-fil-echange",
+      "couloir": "CH6",
+      "debut": "2027-01-25",
+      "fin": "2027-01-29",
+      "priorite": "P1",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 4,
+      "titre": "Le fil de l'échange",
+      "gain": "Deux personnes qui échangent se parlent. Si l'appli ne le permet pas, elles partent sur Instagram — et PokeBoy perd la trace, donc la preuve le jour du litige.",
+      "fonctionnalites": "Fil attaché à l'offre : messages, étapes franchies, pièces jointes (photos d'emballage) ; masquage automatique des adresses e-mail, numéros de téléphone et pseudos de réseaux sociaux ; signalement à chaque message ; conservation du fil clos pendant toute la durée de contestation.",
+      "risques": "Messagerie entre mineurs et inconnus : c'est le point le plus sensible du produit. Pas de messagerie libre hors offre, aucun contact possible sans offre en cours, signalement visible partout. Le masquage des coordonnées protège l'utilisateur ; il ne doit pas être présenté comme une protection du chiffre d'affaires.",
+      "tenants": "Offre, expédition, signalement.",
+      "aboutissants": "Le dossier de litige se nourrit de ce fil.",
+      "dependances": [
+        "v8-offre"
+      ],
+      "decision": null,
+      "refs": [
+        "v8-mineurs : signalement et blocage"
+      ],
+      "mission": [
+        "Fil rattaché à l'offre, lecture réservée aux deux parties et à l'opérateur d'arbitrage.",
+        "Détection et masquage des coordonnées, avec message d'explication — pas une disparition silencieuse.",
+        "Signalement en un geste, notification à l'opérateur, blocage réciproque immédiat.",
+        "Tests : coordonnées écrites en toutes lettres et déguisées, pièce jointe trop lourde, message après clôture de l'offre."
+      ],
+      "livrables": [
+        "fil de discussion rattaché à l'offre",
+        "masquage des coordonnées et signalement testés"
+      ],
+      "taches_na": {}
+    },
+    {
+      "vague": "V8",
+      "piste": "E",
+      "id": "v8-reputation",
+      "couloir": "CH6",
+      "debut": "2027-02-01",
+      "fin": "2027-02-05",
+      "priorite": "P1",
+      "taille": "M",
+      "complexite": 2,
+      "difficulte": 3,
+      "titre": "À qui ai-je affaire",
+      "gain": "En l'absence de garant, la réputation est la seule protection — et elle coûte zéro euro.",
+      "fonctionnalites": "Fiche d'échangeur : échanges aboutis, délai moyen d'expédition, taux d'abandon, litiges ouverts et leur issue, ancienneté du compte ; évaluation en fin d'échange sur deux axes (conformité de la carte, rapidité) ; visible AVANT d'accepter une offre.",
+      "risques": "Une réputation vide bloquerait tous les nouveaux : afficher un statut « nouveau » explicite et un plafond de valeur plutôt qu'un mauvais score. Les évaluations réciproques ne se publient que lorsque les deux sont données, ou à l'expiration du délai — sinon la première évaluation appelle des représailles.",
+      "tenants": "Offres closes, litiges, plafonds.",
+      "aboutissants": "Confiance du mode direct, qui n'a rien d'autre.",
+      "dependances": [
+        "v8-offre"
+      ],
+      "decision": null,
+      "refs": [],
+      "mission": [
+        "Indicateurs calculés, pas déclarés ; recalcul à chaque clôture d'échange.",
+        "Évaluations réciproques à publication différée ; aucune modification après publication.",
+        "Statut « nouveau » assumé, avec le plafond associé expliqué.",
+        "Tests : compte neuf, compte à un litige perdu, compte à cinquante échanges, évaluation unilatérale."
+      ],
+      "livrables": [
+        "fiche d'échangeur complète",
+        "évaluations réciproques sans représailles possibles"
+      ],
+      "taches_na": {}
+    },
+    {
+      "vague": "V8",
+      "piste": "E",
+      "id": "v8-suivi-ecran",
+      "couloir": "CH6",
+      "debut": "2027-02-08",
+      "fin": "2027-02-12",
+      "priorite": "P1",
+      "taille": "M",
+      "complexite": 2,
+      "difficulte": 2,
+      "titre": "Où en est mon échange",
+      "gain": "Un échange dure une semaine et traverse quatre étapes : sans écran qui le dit, l'utilisateur s'inquiète ou oublie — et dans les deux cas il n'envoie pas.",
+      "fonctionnalites": "Liste « mes échanges » par état ; frise des étapes avec les dates réelles et la prochaine échéance ; action attendue mise en avant (« à toi d'envoyer », « confirme la réception ») ; notifications et e-mails de relance ; ouverture d'un litige depuis l'écran, sans aller la chercher.",
+      "risques": "La notification est le produit ici : trop, elle est coupée ; trop peu, l'échange meurt. Une seule relance par étape, plus un récapitulatif. L'écran doit rester lisible sur un téléphone (PWA, v6-pwa), c'est là qu'il sera consulté.",
+      "tenants": "Expédition, offre, notifications.",
+      "aboutissants": "Taux d'aboutissement des échanges.",
+      "dependances": [
+        "v8-expedition"
+      ],
+      "decision": null,
+      "refs": [
+        "v6-pwa : consultation sur téléphone"
+      ],
+      "mission": [
+        "Écran « mes échanges » et frise d'étapes, avec l'action attendue en évidence.",
+        "Notifications et e-mails branchés sur les relances serveur, une par étape.",
+        "Ouverture de litige accessible depuis l'écran de suivi.",
+        "Tests d'écran : échange à chaque étape, échange en retard, échange en litige, affichage sur téléphone."
+      ],
+      "livrables": [
+        "écran de suivi complet sur téléphone et ordinateur",
+        "relances branchées et limitées"
+      ],
+      "taches_na": {}
+    },
+    {
+      "vague": "V8",
+      "piste": "E",
+      "id": "v8-e2e-echange",
+      "couloir": "CH6",
+      "debut": "2027-02-15",
+      "fin": "2027-02-19",
+      "priorite": "P1",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "Un échange complet, joué tout seul",
+      "gain": "L'échange engage des biens réels entre deux personnes : c'est le parcours qu'on ne peut pas se permettre de casser sans le savoir.",
+      "fonctionnalites": "Deux navigateurs, deux comptes : mise en vitrine, appariement, offre, contre-offre, acceptation, expédition des deux côtés, réception, validation, transfert vérifié dans les deux collections. Plus un second scénario : envoi d'un seul côté, dépassement de délai, litige ouvert et arbitré.",
+      "risques": "Le scénario de litige a besoin d'une horloge maîtrisée : prévoir de pouvoir avancer le temps côté serveur, sinon le test attend cinq jours. Ce lot tourne en CI, pas seulement à la main.",
+      "tenants": "Toute la vague.",
+      "aboutissants": "Droit de livrer la vague.",
+      "dependances": [
+        "v8-litiges",
+        "v8-suivi-ecran"
+      ],
+      "decision": null,
+      "refs": [
+        "v5-e2e : socle Playwright",
+        "v7-e2e-jeu : scénario à deux navigateurs"
+      ],
+      "mission": [
+        "Scénario nominal à deux navigateurs, jusqu'au transfert vérifié dans les deux collections.",
+        "Scénario de litige avec horloge maîtrisée côté serveur.",
+        "Intégration en CI, avec les traces conservées en cas d'échec."
+      ],
+      "livrables": [
+        "deux scénarios verts en CI",
+        "traces conservées en cas d'échec"
+      ],
+      "taches_na": {
+        "maquette": "tests, aucun écran produit"
+      }
+    },
+    {
+      "vague": "V8",
+      "piste": "E",
+      "id": "v8-hub-etude",
+      "couloir": "CH6",
+      "debut": "2027-02-22",
+      "fin": "2027-02-26",
+      "priorite": "P3",
+      "taille": "S",
+      "complexite": 1,
+      "difficulte": 2,
+      "titre": "Centre de tri PokeBoy : l'étude avant la moindre ligne de code (conditionnel)",
+      "gain": "La mécanique la plus protectrice — PokeBoy reçoit les deux cartes puis les redistribue — est aussi la seule qui soit un métier et non une fonctionnalité. On la chiffre avant de s'y engager.",
+      "fonctionnalites": "Étude chiffrée : coût réel d'un aller-retour suivi et assuré, seuil de valeur au-dessous duquel les frais dépassent la carte, volume mensuel nécessaire pour couvrir local, assurance et manutention, délai ajouté par le double trajet, traitement du cas « la carte reçue n'est pas celle annoncée », responsabilité en cas de perte ou d'incendie, et ce que rapporterait le contrôle d'authenticité et d'état — la seule partie qui soit déjà à nous (v6-contrefacon, v3-etat).",
+      "risques": "Le piège est de coder d'abord : l'étiquette prépayée et le tableau de réception se font en trois jours, le reste est de la logistique. La conclusion attendue est un CHIFFRE et une recommandation — ouvrir, différer ou abandonner — pas une opinion. Une étude qui conclut « ne pas ouvrir » est un succès du lot.",
+      "tenants": "Litiges, expédition, contrôle d'authenticité.",
+      "aboutissants": "Entrée de la décision D12 pour la suite.",
+      "dependances": [
+        "v8-litiges"
+      ],
+      "decision": "D12",
+      "refs": [
+        "v6-contrefacon : contrôle d'authenticité",
+        "v3-etat : estimation d'état"
+      ],
+      "mission": [
+        "Chiffrer les trois postes : port aller-retour suivi, assurance des biens détenus, manutention.",
+        "Déterminer le seuil de valeur de carte et le volume mensuel à partir desquels le modèle tient.",
+        "Décrire le parcours complet côté utilisateur et côté opérateur, délais compris, sans le coder.",
+        "Conclure par une recommandation chiffrée : ouvrir, différer, abandonner."
+      ],
+      "livrables": [
+        "note chiffrée avec seuil de volume et grille de frais",
+        "recommandation explicite, même négative"
+      ],
+      "taches_na": {
+        "dev": "étude, aucun code produit",
+        "tests": "étude, aucun code produit",
+        "maquette": "étude, aucun écran produit",
+        "securite": "étude, aucun code produit"
       }
     }
   ]
