@@ -111,6 +111,11 @@
         "nom": "Livraison & infra (seul à déployer)"
       },
       {
+        "id": "DA3",
+        "machine": "devAI",
+        "nom": "Decks — API, légalité, synchronisation"
+      },
+      {
         "id": "CH1",
         "machine": "chimera",
         "nom": "Front — comptes, accueil & collection"
@@ -134,11 +139,16 @@
         "id": "JF",
         "machine": "JF / externe",
         "nom": "Décisions, comptes externes"
+      },
+      {
+        "id": "CH5",
+        "machine": "chimera",
+        "nom": "Decks — écrans, recherche, assistant"
       }
     ],
     "capacite": {
-      "devAI": 2,
-      "chimera": 4
+      "devAI": 3,
+      "chimera": 5
     }
   },
   "pistes": [
@@ -227,6 +237,14 @@
       "fin": "2026-12-18",
       "these": "Ce qui rend le produit meilleur que la concurrence, une fois le socle en service.",
       "gain": "Contrefaçons repérées, alertes de prix, scan mobile, cartes gradées."
+    },
+    {
+      "id": "V7D",
+      "nom": "Gestionnaire de decks",
+      "debut": "2026-09-22",
+      "fin": "2026-10-23",
+      "these": "Avant le jeu lui-même : construire, nommer, corriger et partager des decks à partir de SA collection — à la main ou avec son IA. C'est utilisable seul, sans moteur de règles.",
+      "gain": "La collection devient exploitable : on prépare ses decks, on voit ce qui manque, et on est prêt le jour où les parties s'ouvrent."
     },
     {
       "id": "V7",
@@ -1816,12 +1834,12 @@
       }
     },
     {
-      "vague": "V7",
+      "vague": "V7D",
       "piste": "J",
       "id": "v7-decks-api",
-      "couloir": "DA1",
-      "debut": "2027-01-04",
-      "fin": "2027-01-08",
+      "couloir": "DA3",
+      "debut": "2026-09-22",
+      "fin": "2026-09-25",
       "priorite": "P0",
       "taille": "M",
       "complexite": 3,
@@ -1833,7 +1851,7 @@
       "tenants": "Collection, moteur de règles ; D10.",
       "aboutissants": "Constructeur de deck, proposition par l'IA, file d'attente.",
       "dependances": [
-        "v7-regles-moteur"
+        "v4-collection"
       ],
       "decision": "D10",
       "refs": [],
@@ -1891,12 +1909,12 @@
       }
     },
     {
-      "vague": "V7",
+      "vague": "V7D",
       "piste": "J",
       "id": "v7-decks-ui",
-      "couloir": "CH1",
-      "debut": "2027-01-11",
-      "fin": "2027-01-15",
+      "couloir": "CH5",
+      "debut": "2026-09-29",
+      "fin": "2026-10-02",
       "priorite": "P0",
       "taille": "M",
       "complexite": 3,
@@ -1908,7 +1926,8 @@
       "tenants": "API des decks, design system.",
       "aboutissants": "File d'attente, partie.",
       "dependances": [
-        "v7-decks-api"
+        "v7-decks-api",
+        "v7-decks-recherche"
       ],
       "decision": null,
       "refs": [
@@ -1927,12 +1946,12 @@
       "taches_na": {}
     },
     {
-      "vague": "V7",
+      "vague": "V7D",
       "piste": "J",
       "id": "v7-deck-ia",
-      "couloir": "CH2",
-      "debut": "2027-01-18",
-      "fin": "2027-01-22",
+      "couloir": "CH5",
+      "debut": "2026-10-09",
+      "fin": "2026-10-13",
       "priorite": "P1",
       "taille": "M",
       "complexite": 3,
@@ -1944,7 +1963,8 @@
       "tenants": "API des decks, couche fournisseurs IA, clé du joueur.",
       "aboutissants": "—",
       "dependances": [
-        "v7-decks-api"
+        "v7-decks-legalite",
+        "v7-decks-ui"
       ],
       "decision": null,
       "refs": [],
@@ -2270,6 +2290,215 @@
       ],
       "livrables": [
         "e2e du jeu vert en CI"
+      ],
+      "taches_na": {
+        "maquette": "tests"
+      }
+    },
+    {
+      "vague": "V7D",
+      "piste": "J",
+      "id": "v7-decks-recherche",
+      "couloir": "CH5",
+      "debut": "2026-09-22",
+      "fin": "2026-09-25",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 2,
+      "titre": "Recherche de cartes du constructeur : trouver une carte en trois secondes",
+      "gain": "Construire un deck à la main n'est supportable que si la carte cherchée apparaît immédiatement — c'est la brique la plus utilisée du module.",
+      "fonctionnalites": "Recherche par nom (FR/EN, accents ignorés), numéro (`236/217`, `XY121`, `TG05`), extension, type, rareté, PV, coût d'attaque ; filtres cumulables ; tri (valeur, nom, numéro, date d'ajout) ; bascule « seulement mes cartes » et « doublons » ; navigation et ajout au clavier ; pagination par curseur.",
+      "risques": "Performance : la recherche porte sur 22 000 cartes et sur la collection de l'utilisateur — viser moins de 150 ms, index trigram et index composés, mesurés. Ne jamais proposer une carte que l'utilisateur ne possède pas quand le filtre le dit.",
+      "tenants": "Collection, recherche catalogue existante.",
+      "aboutissants": "Constructeur de deck, assistant IA.",
+      "dependances": [
+        "v4-collection"
+      ],
+      "decision": null,
+      "refs": [
+        "Maquette du jeu : Constructeur de deck, mode Manuel"
+      ],
+      "mission": [
+        "Route `GET /me/decks/cards?` : facettes (type, rareté, extension, PV, possédées, doublons), tri, curseur ; réponse enrichie du nombre possédé et déjà utilisé dans le deck courant.",
+        "Index et mesures : 150 ms au 95e centile sur un jeu de 22 000 cartes et 5 000 exemplaires, chiffré dans le compte rendu.",
+        "Clavier : flèches pour parcourir, Entrée pour ajouter, Échap pour fermer ; testé.",
+        "Tests d'accès croisé : les cartes d'un autre utilisateur ne sont jamais renvoyées."
+      ],
+      "livrables": [
+        "route de recherche du constructeur",
+        "mesures de performance"
+      ],
+      "taches_na": {
+        "maquette": "back-end"
+      }
+    },
+    {
+      "vague": "V7D",
+      "piste": "J",
+      "id": "v7-decks-legalite",
+      "couloir": "DA3",
+      "debut": "2026-09-29",
+      "fin": "2026-10-02",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "Contrôle de légalité d'un deck, expliqué ligne par ligne",
+      "gain": "Un deck n'a de valeur que s'il est jouable : le joueur doit savoir exactement ce qui bloque, et pourquoi.",
+      "fonctionnalites": "60 cartes (paramétrable pour les formats courts), maximum 4 exemplaires d'une même carte par son nom, Énergies de base illimitées et non décomptées (D10), Énergies spéciales soumises à possession et à la règle des 4, au moins un Pokémon de base, cartes non possédées, cartes signalées comme contrefaçons exclues, légalité par format (Standard, Étendu, Illimité) ; rapport lisible avec le détail par carte.",
+      "risques": "Le contrôle doit être **la même règle côté serveur et côté écran** : une seule implémentation, exposée par l'API, jamais deux logiques qui divergent. Plus tard, les cartes dont l'effet n'est pas pris en charge par le moteur (`v7-regles-cartes`) seront refusées ici : prévoir le point d'extension sans l'activer.",
+      "tenants": "Modèle de deck.",
+      "aboutissants": "Constructeur, assistant IA, file d'attente.",
+      "dependances": [
+        "v7-decks-api"
+      ],
+      "decision": "D10",
+      "refs": [],
+      "mission": [
+        "Service de légalité unique, renvoyant une liste de constats (bloquant / avertissement) avec la carte concernée et le texte à afficher.",
+        "Formats : Standard et Étendu déduits des légalités du catalogue ; format du deck choisi par le joueur, avec l'explication des cartes hors format.",
+        "Tests : 30 cas, dont les pièges (5e exemplaire d'un même nom sous deux illustrations, énergie spéciale non possédée, deck sans Pokémon de base, carte contrefaite)."
+      ],
+      "livrables": [
+        "service de légalité + rapport détaillé",
+        "30 cas de test"
+      ],
+      "taches_na": {
+        "maquette": "back-end"
+      }
+    },
+    {
+      "vague": "V7D",
+      "piste": "J",
+      "id": "v7-decks-collection-sync",
+      "couloir": "DA3",
+      "debut": "2026-10-05",
+      "fin": "2026-10-08",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "Une carte quitte la collection : les decks le disent tout de suite",
+      "gain": "Demande explicite de JF : une carte vendue, échangée ou supprimée ne doit pas laisser un deck faussement jouable.",
+      "fonctionnalites": "À chaque changement de collection, les decks concernés passent en « à compléter » ; alerte dans le deck et notification au joueur ; trois issues proposées — remplacer par une carte équivalente possédée, retirer du deck, voir la carte ; historique des modifications du deck.",
+      "risques": "**Jamais de correction silencieuse** : on ne retire pas automatiquement la carte du deck. Une partie en cours n'est pas affectée (le deck y est figé au démarrage). Suggestion de remplacement : même type, même rôle, coût d'attaque proche — et uniquement parmi les cartes possédées.",
+      "tenants": "Modèle de deck, légalité, collection.",
+      "aboutissants": "Confiance dans la liste de decks.",
+      "dependances": [
+        "v7-decks-legalite"
+      ],
+      "decision": null,
+      "refs": [
+        "Maquette du jeu : bandeau d'alerte du constructeur"
+      ],
+      "mission": [
+        "Déclencheur applicatif sur suppression ou mise en vente d'un exemplaire : marquage des decks concernés, sans les modifier.",
+        "Suggestions de remplacement classées, prises dans la collection, avec la raison ; une seule requête, pas d'appel IA.",
+        "Notification au joueur (en-tête et liste des decks) ; état « à compléter » visible partout où le deck apparaît.",
+        "Tests : vente d'une carte utilisée dans deux decks, doublon retiré mais exemplaire restant (le deck reste jouable), partie en cours non affectée."
+      ],
+      "livrables": [
+        "alerte et suggestions testées",
+        "aucun deck modifié en silence"
+      ],
+      "taches_na": {}
+    },
+    {
+      "vague": "V7D",
+      "piste": "J",
+      "id": "v7-decks-stats",
+      "couloir": "CH5",
+      "debut": "2026-10-05",
+      "fin": "2026-10-08",
+      "priorite": "P1",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 2,
+      "titre": "Fiche d'un deck : composition, courbe d'énergie et valeur",
+      "gain": "Pour améliorer un deck, il faut le voir : ce qu'il coûte à jouer, ce qu'il contient, ce qu'il vaut.",
+      "fonctionnalites": "Répartition par type et par rôle (attaquants, murs, soutien, énergies), courbe des coûts d'attaque, PV moyens, lignes d'évolution complètes ou non, nombre de cartes spéciales, valeur marchande totale du deck, part de doublons utilisés.",
+      "risques": "Les chiffres viennent du catalogue et de la collection, jamais d'une estimation du modèle.",
+      "tenants": "Constructeur, catalogue, prix.",
+      "aboutissants": "Améliorations proposées par l'IA.",
+      "dependances": [
+        "v7-decks-ui"
+      ],
+      "decision": null,
+      "refs": [],
+      "mission": [
+        "Agrégats calculés côté serveur et exposés par l'API ; graphiques sobres côté écran (courbe des coûts, répartition par type).",
+        "Valeur du deck calculée avec le service de valorisation existant.",
+        "Tests sur des decks connus."
+      ],
+      "livrables": [
+        "fiche de deck chiffrée"
+      ],
+      "taches_na": {}
+    },
+    {
+      "vague": "V7D",
+      "piste": "J",
+      "id": "v7-decks-import-export",
+      "couloir": "CH5",
+      "debut": "2026-10-14",
+      "fin": "2026-10-17",
+      "priorite": "P2",
+      "taille": "M",
+      "complexite": 2,
+      "difficulte": 2,
+      "titre": "Importer et exporter une liste de deck",
+      "gain": "Récupérer un deck vu ailleurs, ou partager le sien, sans tout ressaisir.",
+      "fonctionnalites": "Export au format texte standard des listes de deck (quantité, nom, extension, numéro) et en PDF simple ; import d'une liste collée, avec rapprochement des cartes, signalement de ce qui manque dans la collection et de ce qui n'existe pas au catalogue.",
+      "risques": "Une liste importée ne doit pas créer de cartes dans la collection : elle crée un deck « à compléter » et dit ce qui manque.",
+      "tenants": "Recherche, légalité.",
+      "aboutissants": "—",
+      "dependances": [
+        "v7-decks-legalite"
+      ],
+      "decision": null,
+      "refs": [],
+      "mission": [
+        "Analyseur de liste tolérant (quantité en tête, nom FR ou EN, numéro facultatif) ; rapport d'import ligne par ligne.",
+        "Export texte et PDF ; le PDF montre les vignettes et la liste.",
+        "Tests : liste d'un tournoi réel, liste avec fautes de frappe, liste avec cartes non possédées."
+      ],
+      "livrables": [
+        "import et export testés"
+      ],
+      "taches_na": {}
+    },
+    {
+      "vague": "V7D",
+      "piste": "J",
+      "id": "v7-decks-e2e",
+      "couloir": "CH5",
+      "debut": "2026-10-20",
+      "fin": "2026-10-23",
+      "priorite": "P1",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 2,
+      "titre": "Parcours complet du gestionnaire de decks, joué automatiquement",
+      "gain": "Le module a beaucoup de chemins (manuel, IA, import, alerte) : seule une recette automatique évite les régressions.",
+      "fonctionnalites": "—",
+      "risques": "L'assistant IA est simulé dans le test ; un essai réel avec une vraie clé est fait à la main et consigné.",
+      "tenants": "Tous les lots du gestionnaire de decks.",
+      "aboutissants": "Ouverture du module aux joueurs.",
+      "dependances": [
+        "v7-decks-stats",
+        "v7-deck-ia",
+        "v7-decks-collection-sync"
+      ],
+      "decision": null,
+      "refs": [],
+      "mission": [
+        "Parcours Playwright : créer un deck, chercher et ajouter des cartes, atteindre 60, sauver, dupliquer, supprimer une carte de la collection et vérifier l'alerte, corriger, exporter.",
+        "Vérification des largeurs (320, 390, 768, 1280) sur les écrans du module.",
+        "Exécution en CI."
+      ],
+      "livrables": [
+        "e2e du module deck vert en CI"
       ],
       "taches_na": {
         "maquette": "tests"
