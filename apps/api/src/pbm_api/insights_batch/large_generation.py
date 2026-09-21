@@ -145,7 +145,8 @@ def build_large_prompt(
         "- Traite chaque carte séparément. N'utilise JAMAIS le contexte ni les faits d'une carte "
         "pour une autre : une anecdote ne parle que de la carte sous laquelle elle est rangée.",
         "- Rends exactement un objet par carte, avec le champ `card_ref` recopié À L'IDENTIQUE "
-        'depuis l\'en-tête « CARTE <card_ref> ». N\'ajoute aucune carte hors de cette liste, '
+        "depuis l'en-tête « CARTE <card_ref> ». Le `card_ref` est le CODE COURT (par exemple "
+        "`c1`, `c2`), JAMAIS le nom de la carte. N'ajoute aucune carte hors de cette liste, "
         "n'en oublie aucune, ne répète aucun `card_ref`.",
         "",
         "=== Partie 1 — anecdotes (français, au plus DEUX par carte) ===",
@@ -189,27 +190,55 @@ def build_large_prompt(
 
 
 def parse_large_result(
-    text: str, requested_refs: list[str]
+    text: str,
+    requested_refs: list[str],
+    card_names_by_ref: dict[str, str] | None = None,
 ) -> dict[str, LargeCardInsight]:
     """Valide le JSON contre `LargeInsightExtraction` puis vérifie que l'ensemble des `card_ref`
     rendus coïncide EXACTEMENT avec `requested_refs` (aucun manquant, inconnu ni doublon).
 
+    Tolérance de libellé (`card_names_by_ref`, ref→nom) : le modèle renvoie parfois le NOM de la
+    carte en `card_ref` au lieu du code court `cN` demandé — observé sur les paquets courts (cartes
+    rares/nommées : « Dracaufeu GX », « M-Rayquaza EX »…). Un tel libellé est remappé vers son `cN`
+    UNIQUEMENT si ce nom est unique dans le paquet (sinon ambigu → laissé en discordance, rejeté).
+    La BIJECTION exacte entre cartes demandées et objets rendus — le vrai garde-fou anti-mélange :
+    aucune carte perdue, ajoutée ni dupliquée — est préservée APRÈS remappage.
+
     Lève `pydantic.ValidationError` (JSON hors schéma, réponse tronquée) ou `PacketMixingError`
     (discordance de `card_ref`) : dans les deux cas l'appelant rejette le paquet entier."""
     extraction = LargeInsightExtraction.model_validate_json(text)
-    returned = [card.card_ref for card in extraction.cards]
+    requested_set = set(requested_refs)
+
+    # Table nom→ref, restreinte aux noms UNIQUES dans le paquet (un nom partagé par deux cartes
+    # serait ambigu : on ne remappe pas, la discordance sera signalée comme d'habitude).
+    name_to_ref: dict[str, str] = {}
+    if card_names_by_ref:
+        counts: dict[str, int] = {}
+        for name in card_names_by_ref.values():
+            counts[name] = counts.get(name, 0) + 1
+        name_to_ref = {
+            name: ref for ref, name in card_names_by_ref.items() if counts[name] == 1
+        }
+
+    normalized: list[tuple[str, LargeCardInsight]] = []
+    for card in extraction.cards:
+        ref = card.card_ref
+        if ref not in requested_set and ref in name_to_ref:
+            ref = name_to_ref[ref]  # le modèle a rendu le nom au lieu du code court
+        normalized.append((ref, card))
+
+    returned = [ref for ref, _ in normalized]
     returned_set = set(returned)
     if len(returned) != len(returned_set):
         duplicates = sorted({ref for ref in returned if returned.count(ref) > 1})
         raise PacketMixingError(f"card_ref en double dans la réponse : {duplicates}")
-    requested_set = set(requested_refs)
     if returned_set != requested_set:
         missing = sorted(requested_set - returned_set)
         unknown = sorted(returned_set - requested_set)
         raise PacketMixingError(
             f"card_ref demandés/rendus discordants — manquants={missing} inconnus={unknown}"
         )
-    return {card.card_ref: card for card in extraction.cards}
+    return {ref: card for ref, card in normalized}
 
 
 __all__ = [

@@ -53,7 +53,24 @@ et les fiches produites sont **importées en PROD et dans la base de référence
 
 ## Mesure (contenu réduit) — le gate avant la grande dépense
 
-<!-- REMPLIR après mesure : taille de paquet retenue, coût/carte, échecs, extrapolation 80 % -->
+Échantillon de 120 cartes d'extensions récentes complètes (paquets réels de N cartes), vraie clé,
+modèle `claude-haiku-4-5`, taux USD→EUR 1,146 :
+
+| Taille paquet | Couvertes | Échecs paquet | Coût/carte | Extrapolation 80 % (17 735) | Anecdotes écartées faute de source |
+|---|---|---|---|---|---|
+| 15 | 105/120 | 1 | 0,00159 € | 28,22 € | 7 |
+| **25** (retenue) | **120/120** | **0** | **0,00134 €** | **23,71 €** | 28 (≈26 %) |
+
+**Taille de paquet retenue : 25** — 100 % couvert, aucun échec de paquet, la moins chère.
+**80 % du catalogue ≈ 24 €, largement sous le plafond de 50 €** → le ciblage 80 % est atteignable
+sans le rogner. Coût de la mesure elle-même : **0,3275 €** (réel, sur la clé d'Aymeric).
+
+Le taux d'anecdotes écartées faute de source (~26 % à paquet 25) est le filtre anti-hallucination
+qui fait son travail : une anecdote dont le `source_url` n'est pas dans le contexte fourni est
+rejetée plutôt que stockée. Chaque carte couverte garde ses **règles de jeu** (toujours produites,
+données catalogue) et ses anecdotes réellement sourcées (0, 1 ou 2). Beaucoup de cartes obscures
+n'ont qu'une page wiki d'extension et peu d'anecdotes propres : renvoyer moins plutôt qu'inventer
+est le comportement voulu (mission « aucune anecdote sans source vérifiable »).
 
 ## Génération et import
 

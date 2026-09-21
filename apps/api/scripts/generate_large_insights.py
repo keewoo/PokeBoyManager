@@ -326,6 +326,7 @@ class Packet:
     request: dict
     ref_to_tcgdex: dict[str, str]
     allowed_by_ref: dict[str, set[str]]
+    ref_to_name: dict[str, str]  # cN -> nom de carte : tolérance de libellé au parsing
     estimated_input_tokens: int
     card_count: int
 
@@ -349,6 +350,7 @@ def build_packets(
         by_set[s].append(card)
 
     packets: list[Packet] = []
+    pkt_idx = 0
     for s in order:
         set_cards = by_set[s]
         for chunk_idx in range(0, len(set_cards), packet_size):
@@ -356,18 +358,23 @@ def build_packets(
             packet_cards: list[PacketCard] = []
             ref_to_tcgdex: dict[str, str] = {}
             allowed_by_ref: dict[str, set[str]] = {}
+            ref_to_name: dict[str, str] = {}
             for i, card in enumerate(chunk, start=1):
                 ref = f"c{i}"
                 pc = _packet_card(card, ref, card_pages.get(card["tcgdex_id"], []))
                 packet_cards.append(pc)
                 ref_to_tcgdex[ref] = card["tcgdex_id"]
                 allowed_by_ref[ref] = allowed_urls_for(set_pages.get(s, []), pc)
+                ref_to_name[ref] = card["name"]
             prompt = build_large_prompt(
                 set_name=set_cards[0].get("set_name") or "", set_pages=set_pages.get(s, []),
                 cards=packet_cards,
             )
-            # custom_id Anthropic : ^[a-zA-Z0-9_-]{1,64}$ — "_" séparateur, pas de ":".
-            custom_id = f"{tag}-{s}-{chunk_idx}"[:64]
+            # custom_id Anthropic : ^[a-zA-Z0-9_-]{1,64}$ — un INDEX simple (le set_tcgdex_id
+            # contient parfois un point, ex "me02.5"/"swsh10.5", interdit ici) ; le mappage
+            # résultat→paquet passe par le dict `packets_by_id`, pas par le contenu du custom_id.
+            custom_id = f"{tag}-{pkt_idx}"
+            pkt_idx += 1
             max_tokens = min(64000, _OUT_TOKENS_PER_CARD * len(chunk) + 1200)
             request = build_batch_request(
                 custom_id=custom_id, model=model, max_tokens=max_tokens,
@@ -375,7 +382,7 @@ def build_packets(
             )
             packets.append(Packet(
                 custom_id=custom_id, request=request, ref_to_tcgdex=ref_to_tcgdex,
-                allowed_by_ref=allowed_by_ref,
+                allowed_by_ref=allowed_by_ref, ref_to_name=ref_to_name,
                 estimated_input_tokens=len(prompt) // _ESTIMATED_CHARS_PER_TOKEN,
                 card_count=len(chunk),
             ))
@@ -462,6 +469,7 @@ class BatchOutcome:
     anecdotes_total: int = 0
     anecdotes_rejected_no_source: int = 0
     failed_packets: list[str] = field(default_factory=list)  # custom_ids
+    failure_reasons: dict[str, int] = field(default_factory=dict)  # raison -> compte
     input_tokens: int = 0
     output_tokens: int = 0
     errored_requests: int = 0
@@ -497,11 +505,18 @@ def _apply_results(results, packets_by_id: dict[str, Packet]) -> tuple[list[dict
         if r.result_type != "succeeded" or r.text is None:
             outcome.errored_requests += 1
             outcome.failed_packets.append(r.custom_id)
+            reason = f"errored:{r.result_type}"
+            outcome.failure_reasons[reason] = outcome.failure_reasons.get(reason, 0) + 1
             continue
         try:
-            parsed = parse_large_result(r.text, list(packet.ref_to_tcgdex.keys()))
-        except (ValidationError, PacketMixingError):
+            parsed = parse_large_result(
+                r.text, list(packet.ref_to_tcgdex.keys()),
+                card_names_by_ref=packet.ref_to_name,
+            )
+        except (ValidationError, PacketMixingError) as exc:
             outcome.failed_packets.append(r.custom_id)
+            reason = type(exc).__name__
+            outcome.failure_reasons[reason] = outcome.failure_reasons.get(reason, 0) + 1
             continue
         for ref, insight in parsed.items():
             allowed = packet.allowed_by_ref.get(ref, set())
@@ -559,6 +574,10 @@ async def generate(args: argparse.Namespace, api_key: str, log: Logger) -> None:
 
     # Cartes restant à couvrir, dans l'ordre de priorité, coupées à la cible.
     worklist = [c for c in ordered if c["tcgdex_id"] not in done][: max(0, target - len(done))]
+    if args.max_cards is not None:
+        # Garde-fou de tranche (validation, reprise contrôlée) : ne traite qu'au plus N cartes
+        # ce passage — la cible/budget restent les bornes dures.
+        worklist = worklist[: args.max_cards]
     if not worklist:
         log("cible déjà atteinte ou rien à faire — arrêt.")
         return
@@ -614,7 +633,8 @@ async def generate(args: argparse.Namespace, api_key: str, log: Logger) -> None:
                             failed_cards.append(card)
             if outcome.failed_packets:
                 log(f"[chunk@{idx}] {len(outcome.failed_packets)} paquet(s) en échec "
-                    f"→ ré-essai carte par carte de {len(failed_cards)} carte(s)")
+                    f"{dict(outcome.failure_reasons)} → ré-essai carte par carte de "
+                    f"{len(failed_cards)} carte(s)")
             if failed_cards:
                 retry_packets = build_packets(failed_cards, set_pages, card_pages, model=model,
                                               packet_size=1, tag="r1")
@@ -637,7 +657,8 @@ async def generate(args: argparse.Namespace, api_key: str, log: Logger) -> None:
                 ]
                 if still_failed:
                     log(f"[retry@{idx}] {len(still_failed)} carte(s) toujours en échec après "
-                        f"ré-essai — laissées candidates : {still_failed[:10]}...")
+                        f"ré-essai {dict(routcome.failure_reasons)} — laissées candidates : "
+                        f"{still_failed[:10]}...")
         finally:
             await client.aclose()
 
@@ -755,6 +776,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--top-expensive", type=int, default=3000)
     p.add_argument("--packet-size", type=int, default=25)
     p.add_argument("--chunk-cards", type=int, default=4000)
+    p.add_argument("--max-cards", type=int, default=None,
+                   help="borne de tranche : au plus N cartes ce passage (validation/reprise)")
     p.add_argument("--model", default="claude-haiku-4-5-20251001")
     p.add_argument("--usd-to-eur-rate", type=float, default=1.146)
     p.add_argument("--poll-interval", type=int, default=15)

@@ -89,6 +89,46 @@ def test_parse_large_result_rejects_invalid_or_truncated_json() -> None:
         parse_large_result(truncated, requested_refs=["c1"])
 
 
+def test_parse_large_result_remaps_card_name_to_ref() -> None:
+    # Défaut réel observé (diagnostic du lot) : sur les paquets courts, le modèle renvoie le NOM de
+    # la carte en `card_ref` (« Dracaufeu GX ») au lieu du code court demandé. Avec la table
+    # ref→nom, le libellé est remappé vers son `cN` — le paquet n'est pas perdu, l'anecdote reste
+    # rattachée à la bonne carte.
+    text = _payload([("Dracaufeu GX", "https://w/1"), ("c2", "https://w/2")])
+    parsed = parse_large_result(
+        text,
+        requested_refs=["c1", "c2"],
+        card_names_by_ref={"c1": "Dracaufeu GX", "c2": "Bulbizarre"},
+    )
+    assert set(parsed) == {"c1", "c2"}
+    assert parsed["c1"].anecdotes[0].source_url == "https://w/1"
+    assert parsed["c2"].anecdotes[0].source_url == "https://w/2"
+
+
+def test_parse_large_result_name_remap_ambiguous_is_rejected() -> None:
+    # Deux cartes de même nom dans le paquet : le nom est ambigu, on NE remappe pas → le paquet
+    # est rejeté plutôt que de risquer d'attribuer une anecdote à la mauvaise carte.
+    text = _payload([("Énergie Eau", "https://w/1"), ("c2", "https://w/2")])
+    with pytest.raises(PacketMixingError):
+        parse_large_result(
+            text,
+            requested_refs=["c1", "c2"],
+            card_names_by_ref={"c1": "Énergie Eau", "c2": "Énergie Eau"},
+        )
+
+
+def test_parse_large_result_name_remap_still_rejects_missing_card() -> None:
+    # La tolérance de libellé ne doit PAS laisser passer un paquet incomplet : une seule carte
+    # rendue (fût-elle nommée) pour deux demandées reste une discordance.
+    text = _payload([("Dracaufeu GX", "https://w/1")])
+    with pytest.raises(PacketMixingError):
+        parse_large_result(
+            text,
+            requested_refs=["c1", "c2"],
+            card_names_by_ref={"c1": "Dracaufeu GX", "c2": "Bulbizarre"},
+        )
+
+
 def _packet_card(ref: str, name: str, url: str) -> PacketCard:
     return PacketCard(
         card_ref=ref,
@@ -147,3 +187,43 @@ def test_allowed_urls_scopes_to_set_plus_that_cards_sources() -> None:
     c1 = _packet_card("c1", "Dracaufeu ex", "https://w/dracaufeu")
     urls = allowed_urls_for(set_pages, c1)
     assert urls == {"https://w/set", "https://w/dracaufeu"}
+
+
+def _load_generation_script():
+    # build_packets vit dans le SCRIPT (apps/api/scripts/generate_large_insights.py), pas dans le
+    # module : on le charge par chemin. sys.modules doit être renseigné avant exec_module, sinon la
+    # résolution des `@dataclass` du script échoue (cls.__module__ introuvable).
+    import importlib.util
+    import sys
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / "scripts" / "generate_large_insights.py"
+    spec = importlib.util.spec_from_file_location("generate_large_insights", path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["generate_large_insights"] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_build_packets_custom_id_is_api_valid_even_with_dotted_set_id() -> None:
+    # Défaut réel du lot : `custom_id = f"{tag}-{set_id}-{chunk}"` produisait `g25-swsh3.5-0` — le
+    # point est INTERDIT par l'API Anthropic (`^[a-zA-Z0-9_-]{1,64}$`), les paquets de ces
+    # extensions (`me02.5`, `swsh10.5`, `swsh3.5`…) échouaient en silence. Le custom_id est
+    # désormais un simple index ; le mappage résultat→paquet passe par le dict, pas par ce libellé.
+    import re
+
+    module = _load_generation_script()
+    cards = [
+        {
+            "tcgdex_id": "swsh3.5-13", "set_tcgdex_id": "swsh3.5", "name": "Pika",
+            "number": "13", "supertype": "Pokémon", "set_name": "Champions Path",
+            "attacks": [], "abilities": [], "legal_standard": False, "legal_expanded": True,
+        }
+    ]
+    packets = module.build_packets(
+        cards, {"swsh3.5": []}, {}, model="claude-haiku-4-5-20251001",
+        packet_size=25, tag="g25",
+    )
+    assert packets, "au moins un paquet attendu"
+    for p in packets:
+        assert re.fullmatch(r"[a-zA-Z0-9_-]{1,64}", p.custom_id), p.custom_id
