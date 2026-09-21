@@ -1,0 +1,242 @@
+[
+  {
+    "id": "j-tests-regles",
+    "titre": "Batterie de cas de règles : la table qui dit si le moteur a raison",
+    "piste": "Q",
+    "couloir": "J-MOT",
+    "jalon": "J1",
+    "priorite": "P0",
+    "taille": "M",
+    "complexite": 3,
+    "difficulte": 3,
+    "apres": [
+      "j-regles-reference",
+      "j-ko-recompenses"
+    ],
+    "gain": "Un moteur de règles ne se relit pas, il se prouve. Cette table est ce qui permettra de modifier le moteur dans six mois sans tout casser en silence.",
+    "fonctionnalites": "Des cas écrits en données (état de départ, action, état attendu, règle citée), une par mécanique et une par cas limite, exécutés en CI ; un rapport de couverture par règle du corpus ; l'obligation, pour tout lot de moteur, d'ajouter ses cas.",
+    "mission": [
+      "Formaliser le format des cas et l'exécuteur, lisible par un humain qui connaît les règles mais pas Python.",
+      "Écrire les cas des mécaniques déjà livrées, en citant l'identifiant de règle de `REGLES.md`.",
+      "Publier la couverture par règle : quelles règles n'ont aucun cas.",
+      "Faire échouer la CI si une règle du corpus n'a aucun cas associé."
+    ],
+    "acceptation": [
+      "Au moins 200 cas verts, tous rattachés à une règle du corpus.",
+      "Aucune règle du corpus n'est sans cas (ou l'exception est écrite et justifiée).",
+      "Un cas se lit et s'écrit sans toucher au code du moteur."
+    ],
+    "livrables": [
+      "format de cas + exécuteur",
+      "≥ 200 cas",
+      "couverture par règle"
+    ],
+    "risques": "Des tests écrits depuis le code plutôt que depuis les règles : ils valident le comportement actuel, y compris ses erreurs."
+  },
+  {
+    "id": "j-simulation-bots",
+    "titre": "Bots de simulation : des milliers de parties pour débusquer les blocages",
+    "piste": "Q",
+    "couloir": "J-QUA",
+    "jalon": "J2",
+    "priorite": "P0",
+    "taille": "M",
+    "complexite": 4,
+    "difficulte": 4,
+    "apres": [
+      "j-tests-regles",
+      "j-effets-dsl"
+    ],
+    "gain": "Les cas de règles vérifient ce qu'on a prévu. Les bots trouvent ce qu'on n'a pas prévu : boucles infinies, états impossibles, parties qui ne finissent jamais, scripts de cartes qui se bloquent mutuellement.",
+    "fonctionnalites": "Un bot aléatoire (joue n'importe quelle action légale) et un bot heuristique (attaque, évolue, économise ses ressources) ; exécution massive en parallèle sur chimera ; détection des anomalies (partie sans fin, état invalide, action légale qui lève une exception, durée anormale) ; reproduction d'une anomalie depuis sa graine ; rapport par lot de scripts de cartes.",
+    "mission": [
+      "Écrire les deux bots sur la seule vue joueur (jamais l'état complet).",
+      "Lancer les campagnes sur chimera et collecter les anomalies avec leur graine.",
+      "Mesurer la distribution des durées de partie et le nombre de tours : une dérive signale un script de carte fautif.",
+      "Intégrer une campagne réduite en CI à chaque lot de scripts, et une campagne longue chaque nuit.",
+      "Faire échouer bruyamment sur toute anomalie — jamais de `continue` silencieux."
+    ],
+    "acceptation": [
+      "10 000 parties simulées sans état invalide ni blocage, et le chiffre est publié.",
+      "Toute anomalie est reproductible depuis sa graine en une commande.",
+      "La campagne de CI tourne sur chaque lot de scripts de cartes."
+    ],
+    "livrables": [
+      "bots aléatoire et heuristique",
+      "campagnes massives",
+      "reproduction par graine"
+    ],
+    "risques": "Ignorer les parties « trop longues » comme un artefact : c'est exactement la forme que prend une boucle d'effets entre deux cartes."
+  },
+  {
+    "id": "j-e2e-deux-navigateurs",
+    "titre": "Partie complète jouée automatiquement, à deux navigateurs",
+    "piste": "Q",
+    "couloir": "J-QUA",
+    "jalon": "J5",
+    "priorite": "P0",
+    "taille": "M",
+    "complexite": 4,
+    "difficulte": 4,
+    "apres": [
+      "j-partie-fin-ui",
+      "j-plateau-decisions"
+    ],
+    "gain": "C'est la seule preuve qui vaut pour JF : deux navigateurs, une partie jouée du début à la fin, sans intervention.",
+    "fonctionnalites": "Playwright pilotant deux contextes, parcours complet (connexion, choix du deck, file, appariement, mise en place avec mulligan, plusieurs tours, attaques, Dresseurs, K.O., fin de partie, historique mis à jour), plus les parcours dégradés : F5 au milieu, expiration d'horloge, abandon, déconnexion et reprise, repli en interrogation périodique.",
+    "mission": [
+      "Écrire le parcours nominal avec un deck de test aux scripts garantis.",
+      "Ajouter les quatre parcours dégradés, chacun avec sa preuve (capture, journal).",
+      "Tourner en CI sur chaque modification du jeu, et publier les captures dans le compte rendu.",
+      "Garder le test lisible : il sert aussi de documentation du parcours."
+    ],
+    "acceptation": [
+      "Le parcours nominal et les quatre parcours dégradés sont verts en CI.",
+      "Les captures d'écran de la partie sont jointes au compte rendu.",
+      "Le test échoue si l'historique du compte n'est pas mis à jour à la fin."
+    ],
+    "livrables": [
+      "e2e à deux navigateurs",
+      "quatre parcours dégradés",
+      "captures en CI"
+    ],
+    "risques": "Un e2e qui ne vérifie que la fin heureuse : les pannes réelles sont toutes dans les parcours dégradés."
+  },
+  {
+    "id": "j-charge-temps-reel",
+    "titre": "Tenue en charge : combien de parties simultanées sur deux cœurs",
+    "piste": "Q",
+    "couloir": "J-QUA",
+    "jalon": "J5",
+    "priorite": "P1",
+    "taille": "S",
+    "complexite": 3,
+    "difficulte": 3,
+    "apres": [
+      "j-simulation-bots",
+      "j-temps-reel"
+    ],
+    "gain": "Le jeu sera servi par la machine qui héberge déjà kailo.life et ACX : deux cœurs, quatre gigaoctets, partagés. Il faut savoir avant, pas pendant.",
+    "fonctionnalites": "Mesure du coût d'une partie (mémoire, CPU, connexions), montée en charge jusqu'au point de rupture, plafond de parties simultanées configuré et appliqué (file d'attente plutôt que dégradation), mesure de l'empreinte des instantanés et du journal en base, purge.",
+    "mission": [
+      "Mesurer sur chimera puis vérifier sur le serveur cible, avec les autres services en fonctionnement.",
+      "Fixer un plafond de parties simultanées et le faire appliquer par le service (refus explicite, pas ralentissement).",
+      "Mesurer la croissance de la base par partie et dimensionner la purge en conséquence.",
+      "Écrire les chiffres dans `docs/jeu/CHARGE.md` : ce sont eux qu'on relira le jour d'un incident."
+    ],
+    "acceptation": [
+      "Le plafond est mesuré, écrit et appliqué.",
+      "Une partie de plus que le plafond reçoit un refus clair, et les parties en cours ne ralentissent pas.",
+      "La croissance de la base par partie est chiffrée et la purge dimensionnée."
+    ],
+    "livrables": [
+      "mesures de charge",
+      "plafond appliqué",
+      "docs/jeu/CHARGE.md"
+    ],
+    "risques": "Mesurer sur une machine vide : le serveur cible sert déjà deux autres sites, et c'est là que se joue la vraie limite."
+  },
+  {
+    "id": "j-observabilite-jeu",
+    "titre": "Voir ce qui se passe : métriques du jeu et alertes de règles",
+    "piste": "Q",
+    "couloir": "J-SRV",
+    "jalon": "J5",
+    "priorite": "P1",
+    "taille": "S",
+    "complexite": 2,
+    "difficulte": 3,
+    "apres": [
+      "j-partie-service"
+    ],
+    "gain": "Une règle qui casse doit se voir dans une métrique avant de se voir dans une plainte. C'est particulièrement vrai ici : les joueurs sont deux ou trois, ils ne signaleront pas tout.",
+    "fonctionnalites": "Métriques : parties en cours, créées, terminées par raison, durée moyenne, tours moyens, actions refusées par motif, expirations d'horloge, déconnexions, erreurs de moteur, scripts de cartes en échec. Alerte sur les motifs anormaux (explosion des refus, erreurs de moteur non nulles, parties qui n'aboutissent pas).",
+    "mission": [
+      "Exposer les métriques et les brancher sur la sonde d'infrastructure existante (mail vers direction@upgreg.ai).",
+      "Traiter toute erreur de moteur comme une alerte, jamais comme une ligne de journal.",
+      "Suivre les actions refusées par motif : une hausse signale soit un bug d'interface, soit une tentative de triche.",
+      "Publier un récapitulatif hebdomadaire des parties jouées."
+    ],
+    "acceptation": [
+      "Une erreur de moteur en production déclenche une alerte, vérifié par un test d'injection.",
+      "Les métriques sont visibles sans se connecter en SSH.",
+      "Le récapitulatif hebdomadaire arrive, et son absence est elle-même un signal."
+    ],
+    "livrables": [
+      "métriques du jeu",
+      "alertes branchées sur la sonde"
+    ],
+    "risques": "Dupliquer la sonde existante par des scripts ad hoc : la consigne du poste est de modifier la sonde, pas de la doubler."
+  },
+  {
+    "id": "j-securite-jeu",
+    "titre": "Revue de sécurité du jeu avant ouverture",
+    "piste": "Q",
+    "couloir": "J-SRV",
+    "jalon": "J5",
+    "priorite": "P0",
+    "taille": "M",
+    "complexite": 3,
+    "difficulte": 4,
+    "apres": [
+      "j-autorite-vues",
+      "j-e2e-deux-navigateurs"
+    ],
+    "gain": "Le jeu ouvre un canal permanent entre deux comptes, dont celui d'un mineur. Il mérite sa propre revue, comme le reste du produit en a eu une avant la mise en ligne.",
+    "fonctionnalites": "Revue écrite : autorité du serveur et absence de fuite d'information cachée, authentification du canal temps réel, limitation de débit sur les messages et les actions, validation stricte des charges utiles, isolation des parties entre comptes, protection du mineur (aucun texte libre, blocage d'un joueur, invitation révocable), données conservées et durée, effacement en cas de suppression de compte (RGPD, `v5-rgpd`).",
+    "mission": [
+      "Rejouer le test de non-fuite sur l'ensemble des scripts de cartes livrés, pas seulement sur le moteur.",
+      "Éprouver le canal : message malformé, action hors tour, action sur une partie étrangère, rafale.",
+      "Vérifier que les parties et journaux d'un compte supprimé disparaissent avec lui.",
+      "Écrire la revue dans `docs/jeu/SECURITE-JEU.md` avec ses conclusions et les correctifs appliqués."
+    ],
+    "acceptation": [
+      "Aucune fuite d'information cachée sur l'ensemble des scripts livrés.",
+      "Toute action sur une partie étrangère est refusée et journalisée.",
+      "La suppression d'un compte efface bien ses parties et ses journaux.",
+      "La revue est écrite, datée et ses correctifs sont livrés."
+    ],
+    "livrables": [
+      "docs/jeu/SECURITE-JEU.md",
+      "correctifs appliqués"
+    ],
+    "risques": "Faire la revue avant les derniers scripts de cartes : c'est dans un script mal écrit que la prochaine fuite d'information apparaîtra."
+  },
+  {
+    "id": "j-mise-en-ligne-jeu",
+    "titre": "Mettre le jeu en ligne sur le serveur partagé",
+    "piste": "Q",
+    "couloir": "J-SRV",
+    "jalon": "J5",
+    "priorite": "P0",
+    "taille": "M",
+    "complexite": 3,
+    "difficulte": 3,
+    "apres": [
+      "j-securite-jeu",
+      "j-charge-temps-reel",
+      "j-fin-effets-compte"
+    ],
+    "gain": "Le jeu ne vaut que joué. Et il doit arriver sur une machine qui sert déjà deux autres sites, sans les mettre en péril.",
+    "fonctionnalites": "Images construites sur chimera et tirées par le serveur (jamais construites sur place), service de temps réel derrière le proxy avec WebSocket, migrations appliquées, plafond de parties simultanées configuré, sauvegarde des parties, surveillance branchée, procédure de retour arrière.",
+    "mission": [
+      "Construire sur chimera, publier les images, faire tirer le serveur (`pull` + `up -d`) — la règle du projet.",
+      "Configurer le proxy pour le WebSocket et vérifier la reprise de connexion à travers lui.",
+      "Appliquer les migrations et vérifier la purge et les sauvegardes des tables de parties.",
+      "Écrire la procédure de retour arrière et l'essayer une fois pour de vrai.",
+      "Ne conclure « en ligne » que sur une partie réellement jouée de bout en bout par deux comptes."
+    ],
+    "acceptation": [
+      "Aucune construction d'image n'a lieu sur le serveur qui sert les visiteurs.",
+      "Une partie complète est jouée en production par deux comptes, et la preuve est jointe.",
+      "Le retour arrière a été exécuté une fois et documenté.",
+      "Les autres sites du serveur ne sont pas dégradés pendant la mise en ligne (mesures avant/après)."
+    ],
+    "livrables": [
+      "jeu en production",
+      "procédure de retour arrière éprouvée",
+      "preuve de partie jouée"
+    ],
+    "risques": "Conclure « déployé » sur une ligne de journal : un build en échec laisse la plateforme debout sur les anciennes images, tout a l'air normal et rien n'est livré."
+  }
+]

@@ -1,0 +1,270 @@
+[
+  {
+    "id": "j-rendu-carte",
+    "titre": "Ma photo ou l'image officielle : la carte telle qu'elle est jouée",
+    "piste": "G",
+    "couloir": "J-GFX",
+    "jalon": "J3",
+    "priorite": "P0",
+    "taille": "M",
+    "complexite": 3,
+    "difficulte": 3,
+    "decision": "DJ5",
+    "apres": [
+      "j-plateau-layout"
+    ],
+    "gain": "C'est la promesse du produit : on joue avec SES cartes, celles qu'on a photographiées, cornées, avec leur reflet — pas avec un catalogue anonyme. C'est aussi ce qui distingue ce jeu de tous les autres.",
+    "fonctionnalites": "Trois rendus par carte : photo personnelle redressée, image officielle, dos de carte. Choix global et par deck (DJ5) ; repli sur l'image officielle si la photo manque ou est trop sombre ; redressement et recadrage au format carte ; indicateur discret « photo de Aymeric » ; réglage « ne jamais montrer mes photos à l'adversaire ».",
+    "mission": [
+      "Réutiliser le redressement de `v3-detection` pour produire une image de jeu au bon format depuis la photo d'origine.",
+      "Noter la qualité de chaque photo (netteté, luminosité, cadrage) et replier automatiquement sous un seuil, en le disant au joueur dans le constructeur de deck.",
+      "Implémenter le choix global/par deck et le réglage de confidentialité.",
+      "Vérifier la lisibilité en jeu : une photo au flash ne doit pas rendre la carte illisible sur le plateau."
+    ],
+    "acceptation": [
+      "Une carte sans photo exploitable se joue avec l'image officielle, sans trou ni attente.",
+      "Le réglage de confidentialité est respecté côté adversaire (test de bout en bout).",
+      "Les trois rendus sont lisibles à la taille du plateau sur téléphone."
+    ],
+    "livrables": [
+      "rendu à trois variantes",
+      "note de qualité et repli",
+      "réglages"
+    ],
+    "risques": "Servir la photo d'origine pleine résolution : une partie chargerait plusieurs dizaines de mégaoctets. Le format de jeu est produit à l'avance."
+  },
+  {
+    "id": "j-assets-pipeline",
+    "titre": "Fabrique d'images : vignettes, variantes, cache et budget de poids",
+    "piste": "G",
+    "couloir": "J-GFX",
+    "jalon": "J3",
+    "priorite": "P1",
+    "taille": "M",
+    "complexite": 3,
+    "difficulte": 3,
+    "apres": [
+      "j-rendu-carte"
+    ],
+    "gain": "Une partie affiche jusqu'à 120 cartes. Sans pré-calcul et sans budget, le plateau se charge pendant une minute sur un téléphone en 4G, et le jeu meurt là.",
+    "fonctionnalites": "Génération des variantes (plateau, main, zoom, vignette de journal) en WebP/AVIF, au moment de l'ajout à la collection et non pendant la partie ; cache avec empreinte ; pré-chargement du deck au lancement de la partie ; budget de poids par partie mesuré et tenu ; images officielles mises en cache localement.",
+    "mission": [
+      "Produire les variantes par lots sur chimera (GPU disponible) et les stocker à côté des photos d'origine.",
+      "Pré-charger les images du deck pendant la mise en place, avec une barre de progression honnête.",
+      "Mesurer le poids réel d'une partie et poser un plafond ; dépasser le plafond doit faire échouer la CI, pas ralentir le joueur.",
+      "Prévoir la régénération quand une photo est remplacée."
+    ],
+    "acceptation": [
+      "Le poids total d'une partie reste sous le plafond fixé, mesuré en CI.",
+      "Aucune génération d'image n'a lieu pendant une partie.",
+      "Le pré-chargement se termine avant la fin de la mise en place dans les conditions de test (4G simulée)."
+    ],
+    "livrables": [
+      "génération par lots",
+      "pré-chargement",
+      "budget mesuré en CI"
+    ],
+    "risques": "Générer à la volée « pour commencer » : le serveur qui sert kailo.life a deux cœurs, et une partie suffirait à le mettre à genoux."
+  },
+  {
+    "id": "j-anim-socle",
+    "titre": "Socle d'animation : les effets suivent les événements, jamais l'inverse",
+    "piste": "G",
+    "couloir": "J-GFX",
+    "jalon": "J3",
+    "priorite": "P0",
+    "taille": "M",
+    "complexite": 4,
+    "difficulte": 4,
+    "apres": [
+      "j-plateau-etat-visuel"
+    ],
+    "gain": "C'est la pièce qui décide si les animations sont un plaisir ou un bug : elles doivent raconter ce que le serveur a déjà décidé, sans jamais afficher un état qui n'existe pas.",
+    "fonctionnalites": "Une file d'animations alimentée par les événements du moteur ; chaque animation a une durée bornée et peut être accélérée ou sautée ; l'état affiché reste celui du serveur (l'animation est une transition, pas une source de vérité) ; respect de `prefers-reduced-motion` ; rattrapage quand plusieurs événements arrivent d'un coup (reprise après coupure).",
+    "mission": [
+      "Implémenter la file, ses durées et son mode accéléré ; interdire toute animation bloquante.",
+      "Garantir qu'un événement non animé (type inconnu) applique tout de même son changement d'état — visible, sans effet.",
+      "Traiter la reprise : à la reconnexion, les vingt événements manqués ne se rejouent pas un par un, ils se résument.",
+      "Mesurer la fluidité sur un téléphone d'entrée de gamme et fixer un plancher d'images par seconde."
+    ],
+    "acceptation": [
+      "Aucune animation ne peut empêcher une action légale d'être jouée (l'animation se saute).",
+      "Un événement sans animation définie ne bloque ni ne disparaît.",
+      "Le plancher d'images par seconde est tenu sur l'appareil de référence."
+    ],
+    "livrables": [
+      "file d'animations",
+      "mode accéléré et réduit",
+      "mesure de fluidité"
+    ],
+    "risques": "Faire dépendre l'état affiché de la fin d'une animation : au moindre onglet en arrière-plan, le plateau se fige dans un état faux."
+  },
+  {
+    "id": "j-anim-attaques-typees",
+    "titre": "Une attaque Feu brûle la carte d'en face : un effet par type",
+    "piste": "G",
+    "couloir": "J-GFX",
+    "jalon": "J3",
+    "priorite": "P1",
+    "taille": "L",
+    "complexite": 4,
+    "difficulte": 4,
+    "apres": [
+      "j-anim-socle"
+    ],
+    "gain": "C'est la demande explicite de JF, et c'est ce qui fait qu'un enfant a envie de rejouer : l'attaque doit se voir et se sentir, pas s'afficher en chiffres.",
+    "fonctionnalites": "Un effet par type d'énergie, joué sur la carte cible : **Feu** — flammes qui lèchent la carte adverse, bords qui noircissent, braises qui retombent ; **Eau** — vague qui traverse, ruissellement, carte trempée ; **Plante** — lianes qui enserrent, pétales ; **Électrique** — arc, flash blanc, tremblement du plateau ; **Psy** — onde concentrique, distorsion de l'image de la carte ; **Combat** — impact, fissure, recul ; **Obscurité** — ombre qui engloutit ; **Métal** — éclat, étincelles ; **Dragon** — souffle ; **Fée** — étoiles. Intensité proportionnelle aux dégâts, effet renforcé en cas de faiblesse, effet atténué en cas de résistance, effet particulier pour un échec au pile ou face.",
+    "mission": [
+      "Écrire les effets en shaders/canvas légers réutilisables, paramétrés par intensité — pas dix animations sans rapport entre elles.",
+      "Lier l'intensité au résultat réel : dégâts infligés, faiblesse appliquée, résistance, échec.",
+      "Faire subsister une trace brève (la carte brûlée reste noircie une seconde) sans jamais masquer les compteurs de dégâts.",
+      "Prévoir la version réduite de chaque effet pour `prefers-reduced-motion` et pour les appareils lents.",
+      "Faire valider le rendu par JF et par Aymeric avant d'industrialiser les dix types."
+    ],
+    "acceptation": [
+      "Les dix types ont leur effet, et l'intensité reflète le résultat du calcul.",
+      "L'effet ne masque jamais l'état du plateau plus d'une seconde.",
+      "La version réduite existe pour chaque effet et reste compréhensible.",
+      "Le plancher d'images par seconde est tenu avec l'effet le plus lourd."
+    ],
+    "livrables": [
+      "dix effets typés paramétrés",
+      "versions réduites",
+      "validation par JF"
+    ],
+    "risques": "Dix animations écrites séparément : impossible à maintenir, et l'une d'elles finira par cacher un compteur de dégâts au moment décisif."
+  },
+  {
+    "id": "j-anim-evolution-ko",
+    "titre": "Évolution, K.O., récompense : les moments qui comptent",
+    "piste": "G",
+    "couloir": "J-GFX",
+    "jalon": "J3",
+    "priorite": "P1",
+    "taille": "M",
+    "complexite": 3,
+    "difficulte": 3,
+    "apres": [
+      "j-anim-socle"
+    ],
+    "gain": "Ce sont les trois instants forts d'une partie. Les jouer platement, c'est perdre l'essentiel de l'émotion du jeu.",
+    "fonctionnalites": "Évolution (la carte d'évolution se pose en fondu lumineux sur la précédente, halo, la pile se voit), mise K.O. (la carte bascule, se désature et rejoint la défausse), prise de récompense (la carte quitte la ligne des récompenses et rejoint la main, au dos puis révélée), mise en place initiale (les cartes se distribuent, les récompenses s'alignent, la révélation simultanée est un moment), mulligan (main révélée puis remélangée), pile ou face animé et honnête.",
+    "mission": [
+      "Écrire les six animations sur le socle, avec leurs durées et leurs versions réduites.",
+      "Soigner la révélation simultanée de la mise en place : c'est le premier effet que voit un joueur.",
+      "Rendre le pile ou face lisible et non truqué en apparence : le résultat vient du serveur, l'animation s'arrête dessus.",
+      "Vérifier que chaque animation reste juste quand plusieurs événements s'enchaînent (double K.O., deux récompenses)."
+    ],
+    "acceptation": [
+      "Un double K.O. affiche deux animations sans se chevaucher ni se perdre.",
+      "La prise de deux récompenses se voit comme deux cartes.",
+      "Le pile ou face ne donne jamais une impression de résultat prédéterminé côté client."
+    ],
+    "livrables": [
+      "six animations de moments clés"
+    ],
+    "risques": "Faire durer l'animation de K.O. plus que le plaisir : au-delà d'une seconde et demie, elle agace au lieu de marquer."
+  },
+  {
+    "id": "j-anim-pokemon-apparition",
+    "titre": "Le Pokémon apparaît au-dessus de sa carte",
+    "piste": "G",
+    "couloir": "J-GFX",
+    "jalon": "J3",
+    "priorite": "P2",
+    "taille": "L",
+    "complexite": 5,
+    "difficulte": 5,
+    "decision": "DJ3",
+    "apres": [
+      "j-anim-socle",
+      "j-rendu-carte"
+    ],
+    "gain": "C'est le « bel effet » demandé par JF : la carte n'est plus un carton, le Pokémon sort de son illustration pour attaquer. C'est le moment que raconte un enfant de onze ans après sa partie.",
+    "fonctionnalites": "Pour une liste restreinte de Pokémon, une apparition animée au-dessus de la carte lors de la pose, de l'évolution ou de l'attaque : le sujet est détouré de l'illustration officielle de la carte (segmentation), mis en volume par un léger déplacement en parallaxe, accompagné de particules du type correspondant, puis se replie dans la carte. Dégradation propre : un Pokémon sans apparition préparée joue l'effet de type générique.",
+    "mission": [
+      "Trancher DJ3 avec JF **avant** toute production d'assets : aucune image nouvelle n'est introduite, tout part de l'illustration de la carte.",
+      "Mettre au point la chaîne de détourage sur chimera (segmentation GPU), produire les découpes par lots, contrôler la qualité à la main sur les Pokémon vedettes.",
+      "Animer en parallaxe et en particules, sans modèle 3D : le coût doit rester tenable sur un téléphone.",
+      "Établir la liste des Pokémon vedettes avec Aymeric (ses préférés d'abord), et la faire grandir par lots.",
+      "Garantir la dégradation : sans découpe, l'effet de type suffit et rien ne manque visiblement."
+    ],
+    "acceptation": [
+      "DJ3 est tranchée et écrite avant la première découpe.",
+      "Une carte sans découpe joue l'effet générique, sans trou ni message d'erreur.",
+      "Le coût d'affichage reste sous le plafond de fluidité sur l'appareil de référence.",
+      "Les découpes des Pokémon vedettes sont validées à l'œil, une par une."
+    ],
+    "livrables": [
+      "chaîne de détourage par lots",
+      "apparition en parallaxe",
+      "liste des vedettes"
+    ],
+    "risques": "Introduire des sprites ou des modèles pris ailleurs : ce serait un usage d'images protégées sur un service en ligne, même privé et sans revenu. La découpe de l'illustration de la carte que le joueur possède est le chemin à tenir, et il est tranché par JF avant qu'un octet ne soit produit."
+  },
+  {
+    "id": "j-arene-decors",
+    "titre": "Décors d'arène : jouer quelque part, pas sur un fond gris",
+    "piste": "G",
+    "couloir": "J-GFX",
+    "jalon": "J3",
+    "priorite": "P2",
+    "taille": "S",
+    "complexite": 2,
+    "difficulte": 2,
+    "apres": [
+      "j-anim-socle"
+    ],
+    "gain": "Un tapis de jeu et un décor changent l'impression générale pour un coût dérisoire, et donnent une raison de revenir (en débloquer un nouveau).",
+    "fonctionnalites": "Plusieurs tapis de jeu et fonds d'arène, choix par le joueur, thème automatique selon le type dominant du deck, variation jour/nuit, respect du contraste avec les cartes, décors débloqués par les badges.",
+    "mission": [
+      "Produire quatre à six décors sobres qui ne concurrencent jamais la lisibilité des cartes.",
+      "Brancher le choix sur le profil du joueur et le thème automatique sur le deck.",
+      "Vérifier le contraste des indicateurs sur chaque décor.",
+      "Relier le déblocage aux badges (`j-profil-jeu`) si DJ6 le retient."
+    ],
+    "acceptation": [
+      "Chaque décor passe le contrôle de contraste avec tous les indicateurs de plateau.",
+      "Le changement de décor n'affecte ni la disposition ni la lisibilité.",
+      "Le poids des décors entre dans le budget de la partie."
+    ],
+    "livrables": [
+      "décors et tapis",
+      "thème automatique par deck"
+    ],
+    "risques": "Des décors trop présents : la carte, les jetons et les énergies doivent rester ce qu'on voit en premier."
+  },
+  {
+    "id": "j-son",
+    "titre": "Sons du jeu : entendre l'attaque, la pioche et la victoire",
+    "piste": "G",
+    "couloir": "J-GFX",
+    "jalon": "J3",
+    "priorite": "P2",
+    "taille": "S",
+    "complexite": 2,
+    "difficulte": 2,
+    "decision": "DJ9",
+    "apres": [
+      "j-anim-socle"
+    ],
+    "gain": "Le son fait la moitié de la sensation de jeu, pour un coût très faible. Il doit rester coupable en un geste.",
+    "fonctionnalites": "Bruitages : carte posée, énergie attachée, attaque par type, K.O., récompense prise, pile ou face, minuterie qui s'épuise, victoire et défaite. Musique d'ambiance optionnelle, coupée par défaut (DJ9). Réglages mémorisés par appareil, coupure globale immédiate, sons respectant le mode silencieux du système.",
+    "mission": [
+      "Choisir ou produire des sons libres de droits, courts, non agressifs.",
+      "Brancher les sons sur les mêmes événements que les animations, avec la même file.",
+      "Régler les volumes relatifs pour qu'aucun son ne surprenne (la minuterie surtout).",
+      "Respecter les réglages système et le mode silencieux, et tester sur mobile."
+    ],
+    "acceptation": [
+      "Tous les sons sont libres de droits, et leur origine est écrite dans le dépôt.",
+      "La coupure est immédiate et mémorisée.",
+      "Aucun son ne se déclenche avant une interaction du joueur (règle des navigateurs)."
+    ],
+    "livrables": [
+      "banque de sons sourcée",
+      "réglages mémorisés"
+    ],
+    "risques": "Des sons pris au hasard sur Internet : c'est un risque de droits pour quelques kilo-octets d'effet. La source de chaque son est écrite."
+  }
+]

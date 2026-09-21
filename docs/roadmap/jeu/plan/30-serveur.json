@@ -1,0 +1,254 @@
+[
+{
+  "id": "j-partie-service",
+  "titre": "Service de parties : créer, persister, reprendre, expirer",
+  "piste": "S", "couloir": "J-SRV", "jalon": "J1",
+  "priorite": "P0", "taille": "M", "complexite": 4, "difficulte": 4,
+  "apres": ["j-journal-actions", "j-cartes-pokemon"],
+  "gain": "C'est l'enveloppe qui transforme un moteur de règles en parties réelles : deux comptes, deux decks, un journal persistant, et une partie qui survit à un redémarrage du serveur.",
+  "fonctionnalites": "Tables `games`, `game_players`, `game_events` (journal), `game_snapshots` (instantanés) ; création d'une partie à partir de deux decks résolus en scripts ; application d'une action (validation, journalisation, diffusion) ; reprise d'une partie depuis l'instantané et la queue de journal ; expiration des parties abandonnées ; purge.",
+  "mission": [
+    "Écrire le modèle et les migrations Alembic, en gardant le journal append-only (aucune mise à jour d'une entrée existante).",
+    "Implémenter la boucle : action reçue → validation par le moteur → écriture du journal → nouvel état → événements diffusés, le tout dans une transaction.",
+    "Résoudre les decks en scripts au moment de la création, et refuser la partie si une carte n'est pas jouable (`j-effets-catalogue-compilation`).",
+    "Reprise : recharger depuis le dernier instantané, rejouer la queue, comparer l'empreinte.",
+    "Purge des parties mortes et des instantanés anciens, avec une métrique de ce qui a été purgé."
+  ],
+  "acceptation": [
+    "Une partie survit à un redémarrage complet de l'API : la reprise redonne l'état exact, empreinte comprise.",
+    "Deux actions concurrentes sur la même partie ne peuvent pas être appliquées deux fois (verrou testé).",
+    "Une partie dont le deck contient une carte non scriptée est refusée à la création, avec la liste des cartes."
+  ],
+  "livrables": ["modèle + migrations", "boucle d'application transactionnelle", "reprise et purge"],
+  "risques": "La partie est l'endroit où deux requêtes arrivent en même temps (le joueur clique deux fois, le réseau rejoue). L'idempotence par numéro d'action est obligatoire dès le premier jour."
+},
+{
+  "id": "j-autorite-vues",
+  "titre": "Autorité du serveur : le client ne voit que ce qu'il a le droit de voir",
+  "piste": "S", "couloir": "J-SRV", "jalon": "J1",
+  "priorite": "P0", "taille": "M", "complexite": 4, "difficulte": 4,
+  "apres": ["j-partie-service"],
+  "gain": "Sans cette règle tenue dès le début, l'anti-triche ne se rajoute jamais : il suffit d'ouvrir les outils du navigateur pour lire la main de l'adversaire, et plus personne n'a envie de jouer.",
+  "fonctionnalites": "Toute action passe par `valider()` côté serveur ; le client reçoit exclusivement `vue(etat, joueur)` ; les événements diffusés sont filtrés par destinataire (le même K.O. n'est pas décrit pareil aux deux joueurs quand une information est cachée) ; les identifiants de cartes cachées sont remplacés par des jetons opaques, changés à chaque mélange.",
+  "mission": [
+    "Filtrer toute sortie de l'API et du canal temps réel par la projection joueur — un seul point de sortie, pas un filtrage par route.",
+    "Remplacer les identifiants des cartes cachées par des jetons opaques non corrélables entre deux mélanges.",
+    "Écrire le test de non-fuite : pour 1 000 états, aucun identifiant de carte cachée n'apparaît dans ce qui part vers le client ; ce test tourne en CI sur chaque lot de scripts de cartes.",
+    "Journaliser toute action refusée avec son motif, et alerter sur les motifs anormaux (un client qui propose des actions illégales en rafale)."
+  ],
+  "acceptation": [
+    "Le test de non-fuite est vert et tourne sur chaque modification du moteur ou des scripts.",
+    "Un client modifié qui envoie une action illégale reçoit un refus motivé et n'altère jamais l'état.",
+    "Les jetons de cartes cachées ne permettent pas de suivre une carte d'un mélange à l'autre."
+  ],
+  "livrables": ["point de sortie unique filtré", "jetons opaques", "test de non-fuite en CI"],
+  "risques": "Le filtrage par route : il suffit d'une route oubliée. Le filtrage doit être structurel, au sérialiseur, et vérifié par un test qui cherche les fuites plutôt que de les supposer absentes."
+},
+{
+  "id": "j-temps-reel",
+  "titre": "Canal temps réel : diffusion des coups, reconnexion et reprise après F5",
+  "piste": "S", "couloir": "J-SRV", "jalon": "J1",
+  "priorite": "P0", "taille": "M", "complexite": 4, "difficulte": 4,
+  "apres": ["j-autorite-vues"],
+  "gain": "Un jeu au tour par tour sans temps réel, c'est un formulaire. Et une partie qu'un F5 tue, c'est une partie qu'on ne recommence pas.",
+  "fonctionnalites": "WebSocket authentifié, souscription à une partie, diffusion des événements dans l'ordre avec numéro de séquence, accusés de réception, détection de coupure, reconnexion avec resynchronisation depuis le dernier numéro connu, repli en interrogation périodique si le WebSocket est impossible (réseau d'école, proxy).",
+  "mission": [
+    "Authentifier la connexion avec la session du compte, refuser un joueur étranger à la partie.",
+    "Numéroter les événements et permettre au client de demander « donne-moi tout depuis le numéro N ».",
+    "Traiter les envois en double et le désordre : le client applique par numéro, jamais par ordre d'arrivée.",
+    "Reprise : à la reconnexion, le client reçoit l'état complet de sa vue plus la queue d'événements.",
+    "Repli en interrogation périodique, annoncé dans l'interface (« connexion dégradée »)."
+  ],
+  "acceptation": [
+    "Un F5 au milieu d'une partie, y compris au milieu d'une demande de décision, ramène le joueur exactement où il était.",
+    "Une coupure de réseau de 60 s ne perd aucun événement.",
+    "Le repli en interrogation permet de finir une partie, plus lentement, et le dit au joueur."
+  ],
+  "livrables": ["canal WebSocket numéroté", "resynchronisation", "repli dégradé"],
+  "risques": "Compter sur l'ordre d'arrivée des messages : il n'est pas garanti. Le numéro de séquence est ce qui rend la reprise possible, et il coûte trois lignes au départ."
+},
+{
+  "id": "j-timer",
+  "titre": "Horloges : par tour, par partie, par décision — et ce qui se passe à l'expiration",
+  "piste": "S", "couloir": "J-SRV", "jalon": "J1",
+  "priorite": "P0", "taille": "M", "complexite": 4, "difficulte": 4,
+  "decision": "DJ4",
+  "apres": ["j-temps-reel", "j-effets-choix"],
+  "gain": "Sans horloge, un joueur qui part dîner bloque l'autre indéfiniment. Avec une horloge mal faite, un enfant perd une partie gagnée parce qu'il réfléchissait. Le réglage est un choix de JF (DJ4), pas un détail technique.",
+  "fonctionnalites": "Trois horloges : temps par tour, temps total par joueur, temps par décision (y compris hors de son tour). Décompte autoritaire côté serveur, affichage côté client, avertissements sonores et visuels, tolérance réseau, pause automatique en cas de déconnexion avec délai de reprise, expiration = action par défaut si elle existe (réponse par défaut d'une demande, fin de tour) sinon défaite au temps.",
+  "mission": [
+    "Porter les horloges dans l'état de la partie (donc reprises après un F5) et non dans un minuteur en mémoire.",
+    "Décompter côté serveur ; le client n'affiche qu'une estimation, corrigée à chaque événement.",
+    "Implémenter la pause de déconnexion et sa reprise, avec un affichage honnête des deux côtés (« l'adversaire s'est déconnecté, 1 min 47 »).",
+    "Définir l'action par défaut de chaque situation d'expiration et la journaliser comme telle.",
+    "Tests : expiration pendant une demande adressée à l'adversaire, reprise après pause, dérive d'horloge client."
+  ],
+  "acceptation": [
+    "Les durées sont des paramètres de configuration, modifiables sans redéploiement du moteur.",
+    "Une expiration produit toujours une action journalisée et jamais un blocage.",
+    "Le temps affiché ne s'écarte jamais de plus de deux secondes du temps serveur."
+  ],
+  "livrables": ["trois horloges dans l'état", "pause de déconnexion", "actions par défaut"],
+  "risques": "Un minuteur en mémoire meurt au redéploiement et fait perdre des parties. L'horloge est une donnée de la partie, calculée à partir d'horodatages, pas un compte à rebours vivant."
+},
+{
+  "id": "j-file-attente",
+  "titre": "Recherche d'un adversaire : file d'attente privée et appariement",
+  "piste": "S", "couloir": "J-SRV", "jalon": "J1",
+  "priorite": "P0", "taille": "M", "complexite": 3, "difficulte": 3,
+  "decision": "D11",
+  "apres": ["j-partie-service"],
+  "gain": "C'est la porte d'entrée du jeu : « je veux jouer » doit aboutir à une partie en quelques secondes, ou à une réponse claire (« personne en ligne »).",
+  "fonctionnalites": "File d'attente réservée aux comptes invités (D11), entrée avec un deck choisi et vérifié, appariement par ordre d'arrivée (et par proximité de niveau si le classement existe), annulation, présence en ligne (« 2 joueurs disponibles »), refus si le deck n'est pas jouable, protection contre l'entrée simultanée dans deux parties.",
+  "mission": [
+    "Implémenter la file (Redis) et l'appariement, avec un verrou qui empêche un joueur d'être apparié deux fois.",
+    "Vérifier le deck à l'entrée : légalité, possession, scripts disponibles — et dire précisément ce qui manque.",
+    "Afficher la présence : qui est en ligne parmi les comptes invités, qui est en partie.",
+    "Traiter le cas « personne en ligne » : proposer l'invitation directe ou l'entraînement contre le bot.",
+    "Tests : deux joueurs appariés, trois joueurs dont un annule, deck refusé à l'entrée."
+  ],
+  "acceptation": [
+    "Un joueur ne peut jamais se retrouver dans deux parties (test de concurrence).",
+    "Le refus d'un deck nomme les cartes en cause et la raison.",
+    "L'attente affiche l'état réel : nombre de joueurs disponibles, temps d'attente."
+  ],
+  "livrables": ["file d'attente + appariement", "vérification du deck à l'entrée", "présence en ligne"],
+  "risques": "L'appariement est le classique des conditions de course : deux joueurs appariés chacun avec un troisième. Le verrou atomique est obligatoire, et c'est un test, pas une relecture."
+},
+{
+  "id": "j-invitations",
+  "titre": "Inviter quelqu'un à jouer : par pseudo ou par lien",
+  "piste": "S", "couloir": "J-SRV", "jalon": "J1",
+  "priorite": "P1", "taille": "S", "complexite": 2, "difficulte": 2,
+  "decision": "D11",
+  "apres": ["j-file-attente"],
+  "gain": "Entre deux frères ou deux amis, on ne « cherche pas un adversaire » : on invite quelqu'un de précis. C'est l'usage le plus probable de ce jeu.",
+  "fonctionnalites": "Inviter un compte par pseudo, ou fabriquer un lien d'invitation à usage unique et limité dans le temps ; notification de l'invitation ; acceptation, refus, annulation, expiration ; salon d'attente à deux avant le lancement.",
+  "mission": [
+    "Modéliser l'invitation (émetteur, destinataire ou lien, deck choisi, expiration) et ses transitions.",
+    "Notifier dans l'application, et prévoir le relais par e-mail ou notification PWA plus tard.",
+    "Empêcher un lien d'invitation d'ouvrir un compte : il rejoint une partie, il ne crée jamais d'accès (D11).",
+    "Tests : invitation acceptée, refusée, expirée, lien réutilisé (refusé)."
+  ],
+  "acceptation": [
+    "Un lien d'invitation ne sert qu'une fois et expire.",
+    "Une invitation n'ouvre aucun droit au-delà de la partie concernée.",
+    "Les deux joueurs voient le même salon d'attente et le même deck annoncé."
+  ],
+  "livrables": ["invitations par pseudo et par lien", "salon d'attente à deux"],
+  "risques": "Un lien d'invitation qui vaut authentification est une porte ouverte : il rejoint une partie, rien d'autre."
+},
+{
+  "id": "j-lancement-partie",
+  "titre": "Lancement : choix du deck, contrôle, prêt à jouer, tirage au sort",
+  "piste": "S", "couloir": "J-SRV", "jalon": "J1",
+  "priorite": "P0", "taille": "S", "complexite": 3, "difficulte": 3,
+  "apres": ["j-invitations", "j-aleatoire-determinisme"],
+  "gain": "C'est le moment que JF a nommé : le jeton « qui commence ». Il doit être visible, vérifiable, et donner au gagnant le choix que les règles lui accordent.",
+  "fonctionnalites": "Choix du deck parmi les siens, dernier contrôle de légalité et de possession, état « prêt » des deux côtés, publication de l'empreinte de graine, tirage au sort animé du premier joueur, choix du gagnant du tirage (commencer ou non, selon `REGLES.md`), compte à rebours et bascule en partie.",
+  "mission": [
+    "Enchaîner les étapes comme une machine à états persistée : un rechargement au milieu ne perd rien.",
+    "Publier l'empreinte de la graine avant le tirage, révéler la graine en fin de partie.",
+    "Implémenter le choix laissé au gagnant du tirage, avec un délai et un choix par défaut.",
+    "Refuser le lancement si un deck est devenu injouable entre la file et le lancement (carte vendue, script retiré).",
+    "Tests : un joueur se déconnecte avant d'être prêt, deck devenu invalide, tirage rejoué à l'identique depuis la graine."
+  ],
+  "acceptation": [
+    "Le tirage est vérifiable après coup par les deux joueurs.",
+    "Un rechargement pendant la mise en place reprend à la bonne étape.",
+    "Un deck devenu injouable arrête le lancement avec sa raison, sans partie fantôme."
+  ],
+  "livrables": ["machine de lancement persistée", "tirage vérifiable"],
+  "risques": "Un tirage au sort côté client, même « pour l'animation » : le résultat vient du serveur, l'animation ne fait que le montrer."
+},
+{
+  "id": "j-initialisation",
+  "titre": "Mise en place : mélange, main de sept, mulligans, actif et banc face cachée, six récompenses",
+  "piste": "S", "couloir": "J-MOT", "jalon": "J1",
+  "priorite": "P0", "taille": "M", "complexite": 4, "difficulte": 4,
+  "apres": ["j-lancement-partie", "j-cartes-pokemon"],
+  "gain": "C'est la première chose que voit un joueur, et l'une des plus subtiles : les mulligans et la révélation simultanée sont des règles que la plupart des jeux en ligne simplifient à tort.",
+  "fonctionnalites": "Mélange des deux decks, pioche de sept cartes, contrôle « au moins un Pokémon de base » ; mulligan : main révélée, remélangée, nouvelle main, l'adversaire pioche une carte supplémentaire par mulligan (selon `REGLES.md`) ; placement de l'actif et du banc **face cachée** ; six récompenses mises de côté ; révélation simultanée ; premier tour selon la règle retenue.",
+  "mission": [
+    "Implémenter la boucle de mulligan et son comptage, avec la révélation de la main au bon moment.",
+    "Placer l'actif et le banc face cachée : l'adversaire ne doit rien apprendre avant la révélation (c'est un cas du test de non-fuite).",
+    "Rendre la révélation simultanée : aucun joueur ne voit avant l'autre, même si l'un valide plus tôt.",
+    "Journaliser chaque mulligan, chaque pioche supplémentaire, et le contenu révélé.",
+    "Tests : trois mulligans de suite, mulligan des deux joueurs, main sans Pokémon de base cinq fois d'affilée."
+  ],
+  "acceptation": [
+    "Le placement face cachée ne laisse rien fuir avant la révélation (test dédié).",
+    "Le comptage des cartes supplémentaires après mulligans est exact et journalisé.",
+    "La révélation est simultanée même quand un joueur valide dix secondes avant l'autre."
+  ],
+  "livrables": ["mise en place complète avec mulligans", "révélation simultanée"],
+  "risques": "Simplifier le placement face cachée « parce que c'est plus simple en ligne » : c'est une information de jeu réelle, et la révélation est un des rares moments spectaculaires du jeu."
+},
+{
+  "id": "j-deconnexion-abandon",
+  "titre": "Déconnexion, abandon, désertion : une partie ne reste jamais suspendue",
+  "piste": "S", "couloir": "J-SRV", "jalon": "J1",
+  "priorite": "P1", "taille": "S", "complexite": 3, "difficulte": 3,
+  "apres": ["j-timer"],
+  "gain": "La panne la plus fréquente d'un jeu en ligne n'est pas une erreur de règle, c'est un adversaire qui ne revient pas. Ce que le jeu fait alors décide s'il reste jouable.",
+  "fonctionnalites": "Détection de la coupure, pause avec délai de reprise annoncé, reprise transparente, abandon explicite (avec confirmation), désertion après expiration du délai, fin de partie par forfait, nettoyage des parties fantômes, trace dans l'historique (« gagnée par abandon »).",
+  "mission": [
+    "Distinguer trois cas : coupure passagère, abandon volontaire, désertion — leurs conséquences ne sont pas les mêmes.",
+    "Afficher des deux côtés ce qui se passe, avec le temps restant.",
+    "Fermer proprement la partie et écrire son résultat sur les comptes (`j-fin-effets-compte`).",
+    "Balayer périodiquement les parties sans activité et les clore avec un motif explicite — jamais les laisser dormir.",
+    "Tests : déconnexion puis reprise dans le délai, déconnexion dépassant le délai, abandon pendant une demande de décision."
+  ],
+  "acceptation": [
+    "Aucune partie ne reste « en cours » plus longtemps que le plafond configuré.",
+    "Chaque clôture automatique porte son motif dans le journal et dans l'historique.",
+    "La reprise dans le délai ne coûte aucun temps d'horloge au joueur déconnecté au-delà de la pause prévue."
+  ],
+  "livrables": ["gestion des trois cas", "balayage des parties mortes"],
+  "risques": "Le nettoyage silencieux : une partie close sans motif ressemble à un bug pour le joueur, et masque les vraies pannes côté exploitation."
+},
+{
+  "id": "j-replay",
+  "titre": "Replay d'une partie : la rejouer coup par coup, et la partager",
+  "piste": "S", "couloir": "J-SRV", "jalon": "J4",
+  "priorite": "P2", "taille": "S", "complexite": 2, "difficulte": 3,
+  "apres": ["j-journal-actions", "j-partie-service"],
+  "gain": "Le journal existe déjà : en faire un replay coûte peu et sert trois fois — revoir sa partie, comprendre un désaccord de règle, et diagnostiquer une panne sans interroger le joueur.",
+  "fonctionnalites": "Rejouer une partie terminée coup par coup, avance et retour, vitesse réglable, vue d'un joueur ou vue complète une fois la partie finie, lien de partage vers les seuls comptes autorisés, export du journal pour le support.",
+  "mission": [
+    "Servir le journal d'une partie terminée avec la vue choisie, en révélant l'information cachée seulement après la fin.",
+    "Implémenter la navigation coup par coup côté client en rejouant le journal localement.",
+    "Restreindre le partage aux comptes invités et aux deux joueurs.",
+    "Tests : replay identique à la partie jouée, replay d'une partie interrompue par abandon."
+  ],
+  "acceptation": [
+    "Le replay reproduit exactement les états successifs (empreintes comparées).",
+    "Aucune information cachée n'est servie avant la fin de la partie.",
+    "Le lien de replay n'est pas accessible à un compte non autorisé."
+  ],
+  "livrables": ["replay coup par coup", "partage restreint"],
+  "risques": "Servir le journal complet d'une partie en cours sous prétexte de replay : c'est la fuite d'information la plus facile à commettre."
+},
+{
+  "id": "j-echanges-emotes",
+  "titre": "Emotes prédéfinies : se parler sans chat libre",
+  "piste": "S", "couloir": "J-SRV", "jalon": "J4",
+  "priorite": "P2", "taille": "S", "complexite": 1, "difficulte": 1,
+  "decision": "DJ10",
+  "apres": ["j-temps-reel"],
+  "gain": "Un jeu à deux sans aucun signe de vie est froid ; un chat libre entre un adulte et un mineur demande une modération que ce projet n'aura pas. Les emotes prennent le meilleur des deux.",
+  "fonctionnalites": "Une dizaine de messages prédéfinis (« bien joué », « oups », « ton tour », « belle carte »), limitation de débit, possibilité de couper les emotes de l'adversaire, aucune saisie libre, aucune trace conservée au-delà de la partie.",
+  "mission": [
+    "Définir la liste avec JF, en s'assurant qu'aucune ne peut servir à narguer (pas d'emote ironique).",
+    "Limiter le débit et permettre la coupure immédiate côté receveur.",
+    "Ne rien persister au-delà de la partie."
+  ],
+  "acceptation": [
+    "Aucune saisie de texte libre n'existe dans l'interface de jeu.",
+    "Couper les emotes est immédiat et mémorisé.",
+    "Le débit est limité et testé."
+  ],
+  "livrables": ["emotes prédéfinies", "coupure côté receveur"],
+  "risques": "Ajouter « juste un petit chat » plus tard : ce serait un autre produit, avec une obligation de modération."
+}
+]

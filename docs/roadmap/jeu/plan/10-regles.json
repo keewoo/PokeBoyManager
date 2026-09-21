@@ -1,0 +1,280 @@
+[
+{
+  "id": "j-regles-reference",
+  "titre": "Corpus de règles de référence : la version des règles qui fait foi, écrite et citée",
+  "piste": "R", "couloir": "J-MOT", "jalon": "J1",
+  "priorite": "P0", "taille": "M", "complexite": 2, "difficulte": 3,
+  "decision": "DJ1",
+  "apres": [],
+  "gain": "Sans une référence écrite, chaque lot du moteur invente sa propre version des règles et personne ne peut arbitrer un désaccord. Ce document est la vérité contre laquelle le moteur est jugé, et il est écrit AVANT la première ligne de moteur.",
+  "fonctionnalites": "Un document unique qui fixe, pour la version retenue en DJ1 : zones et leurs limites, déroulé d'un tour, règle du premier tour, calcul des dégâts, faiblesse et résistance, retraite, banc, états spéciaux et leur cumul, phase entre les tours, mises K.O., récompenses par marqueur de règle, conditions de victoire, mulligan, et les règles de cartes particulières (ACE SPEC, Radiant, VSTAR, GX, Pokémon-ex). Chaque point cite sa source et la date de la version.",
+  "mission": [
+    "Choisir la version des règles avec JF (DJ1) et la citer : édition du livret officiel, date, langue de référence.",
+    "Rédiger `docs/jeu/REGLES.md` : une section par mécanique, chaque affirmation numérotée (`R-3.4`) pour être citée par un test.",
+    "Lister explicitement les points où les règles ont changé selon les époques (faiblesse ×2 contre +30, résistance −20 contre −30, cumul des états spéciaux, premier tour) et écrire lequel s'applique ici.",
+    "Dresser la table des cas limites connus : pioche vide en début de tour, banc vide après un K.O., K.O. simultané, dernier Pokémon mis K.O. par un effet hors attaque, abandon, égalité.",
+    "Produire la table de cas de test initiale (`docs/jeu/cas-de-regles.yaml`) : chaque cas nomme la règle qu'il vérifie."
+  ],
+  "acceptation": [
+    "Chaque section du document porte un identifiant de règle citable par un test.",
+    "Aucun point de règle n'est laissé en « selon l'époque » : un seul comportement est choisi et écrit.",
+    "La table de cas couvre au minimum les dix cas limites listés dans la mission.",
+    "JF a validé DJ1 et la validation est datée dans le document."
+  ],
+  "livrables": ["docs/jeu/REGLES.md (règles numérotées)", "docs/jeu/cas-de-regles.yaml (table de cas)"],
+  "risques": "Le piège est de recopier une page d'encyclopédie amateur : les règles y mélangent les époques. Une seule source officielle, datée, et tout écart assumé par écrit."
+},
+{
+  "id": "j-modele-etat",
+  "titre": "État d'une partie : zones, attachements, compteurs, et vues par joueur",
+  "piste": "R", "couloir": "J-MOT", "jalon": "J1",
+  "priorite": "P0", "taille": "L", "complexite": 4, "difficulte": 4,
+  "apres": ["j-regles-reference"],
+  "gain": "Toute la suite manipule cet objet. S'il est mal taillé — information cachée mélangée à l'information publique, attachements traités à part des cartes — chaque lot suivant paie la dette, et l'anti-triche devient impossible à greffer.",
+  "fonctionnalites": "Structures pures et sérialisables en JSON : les deux joueurs, leurs zones (pioche, main, Pokémon actif, banc de 5, défausse, 6 récompenses, zone perdue si le format la connaît), chaque Pokémon en jeu avec ses cartes empilées (évolutions), ses énergies attachées, son outil, ses compteurs de dégâts, ses états spéciaux et son orientation ; le stade en jeu ; le tour courant, son numéro, sa phase, les drapeaux du tour (énergie posée, supporter joué, retraite faite) ; la version du schéma d'état.",
+  "mission": [
+    "Définir les structures (dataclasses figées, aucune méthode d'entrée/sortie) et leur sérialisation JSON bidirectionnelle, avec `schema_version`.",
+    "Séparer nettement l'information publique de l'information cachée : la pioche est une liste ordonnée, la main est privée, les récompenses sont face cachée.",
+    "Implémenter la projection `vue(etat, joueur)` : ce qu'un joueur a le droit de savoir — nombre de cartes en main de l'adversaire, mais pas leur identité ; nombre de cartes en pioche, jamais leur ordre.",
+    "Écrire les invariants vérifiables (`verifier(etat)`) : total des cartes constant, banc ≤ 5, un seul outil par Pokémon, un seul stade en jeu, pas de carte dans deux zones.",
+    "Tests de propriété : sérialiser puis désérialiser un état quelconque le laisse identique ; la vue d'un joueur ne contient jamais un identifiant de carte cachée."
+  ],
+  "acceptation": [
+    "`vue(etat, joueur)` ne laisse fuir aucune carte cachée — vérifié par un test qui parcourt la structure produite à la recherche des identifiants de la main adverse.",
+    "Les invariants sont vérifiés après chaque action dans toute la suite de tests du moteur.",
+    "Un état complet se sérialise, se relit et se compare à l'identique.",
+    "Aucune dépendance à FastAPI, SQLAlchemy ou au réseau dans le paquet du moteur (vérifié par un test d'import)."
+  ],
+  "livrables": ["paquet `pbm_game.state` pur", "projection par joueur", "invariants + tests de propriété"],
+  "risques": "La tentation de mettre des méthodes pratiques (« piocher », « attacher ») sur l'état : toute mutation doit passer par une action journalisée, sinon la rejouabilité est perdue dès le premier raccourci."
+},
+{
+  "id": "j-aleatoire-determinisme",
+  "titre": "Aléatoire reproductible : mélange, pile ou face, et graine vérifiable",
+  "piste": "R", "couloir": "J-MOT", "jalon": "J1",
+  "priorite": "P0", "taille": "S", "complexite": 3, "difficulte": 3,
+  "apres": ["j-modele-etat"],
+  "gain": "Sans aléatoire reproductible, une partie ne se rejoue pas, un bug ne se reproduit pas, et rien ne prouve au perdant que le mélange n'était pas truqué.",
+  "fonctionnalites": "Un générateur à graine par partie, des flux séparés (mélange de chaque joueur, pile ou face, effets aléatoires), chaque tirage journalisé avec son motif ; engagement de la graine publié avant la partie et révélé à la fin (commit-reveal) pour que chacun puisse vérifier après coup que le mélange n'a pas été rejoué en boucle jusqu'à un bon résultat.",
+  "mission": [
+    "Encapsuler l'aléatoire dans un objet passé explicitement : aucun appel à `random` ailleurs dans le moteur (vérifié par un test de grep).",
+    "Un flux par usage, pour qu'ajouter un pile ou face quelque part ne décale pas tous les mélanges suivants.",
+    "Journaliser chaque tirage : motif, flux, résultat.",
+    "Publier l'empreinte de la graine à la création de la partie, révéler la graine à la fin ; un vérificateur indépendant recalcule le mélange.",
+    "Tests : deux parties à graine identique et actions identiques donnent un état final identique, octet pour octet."
+  ],
+  "acceptation": [
+    "Aucun appel à un aléatoire global dans le moteur.",
+    "Rejouer une partie depuis (graine + journal) redonne l'état final à l'identique, sur une centaine de parties simulées.",
+    "La vérification a posteriori du mélange est documentée et outillée en une commande."
+  ],
+  "livrables": ["`pbm_game.rng` (flux nommés, journalisé)", "vérificateur commit-reveal"],
+  "risques": "Un flux partagé entre le mélange et les pile ou face suffit à casser la reproductibilité quand une carte ajoute un tirage : séparer dès le départ, c'est gratuit ; après, c'est une reprise de tous les tests."
+},
+{
+  "id": "j-journal-actions",
+  "titre": "Journal d'actions : la partie est sa suite de coups, pas son état",
+  "piste": "R", "couloir": "J-MOT", "jalon": "J1",
+  "priorite": "P0", "taille": "M", "complexite": 3, "difficulte": 4,
+  "apres": ["j-aleatoire-determinisme"],
+  "gain": "C'est la pièce qui rend possibles quatre choses d'un coup : la reprise après un F5, le replay, le support (« montre-moi la partie ») et l'anti-triche. La stocker dès le premier jour coûte peu ; la rajouter après coûte une réécriture.",
+  "fonctionnalites": "Journal append-only numéroté : chaque entrée porte son numéro, son auteur, l'action demandée, les événements produits par le moteur, l'horodatage et l'empreinte de l'état résultant. `rejouer(journal)` reconstruit l'état. Le journal est la source de vérité persistée ; l'état n'est qu'un cache.",
+  "mission": [
+    "Définir le format d'une entrée et sa sérialisation stable (versionnée).",
+    "Implémenter `appliquer(etat, action) -> (etat, evenements)` sans effet de bord, et `rejouer(journal) -> etat`.",
+    "Empreinte de l'état après chaque coup : une divergence se détecte au coup près, pas à la fin de la partie.",
+    "Test de propriété : pour toute partie simulée, `rejouer(journal) == etat` et les empreintes concordent.",
+    "Prévoir la compaction : instantané périodique + queue de journal, pour ne pas rejouer 400 coups à chaque reconnexion."
+  ],
+  "acceptation": [
+    "Sur 1 000 parties simulées, rejouer le journal redonne exactement l'état final et toutes les empreintes intermédiaires.",
+    "Une entrée de journal est lisible par un humain sans outil (identifiants de cartes résolus en noms dans la vue de débogage).",
+    "La reprise depuis un instantané + queue donne le même état que le rejeu complet."
+  ],
+  "livrables": ["format de journal versionné", "`rejouer()` + empreintes", "instantanés"],
+  "risques": "Journaliser l'état plutôt que les actions : le fichier gonfle, la divergence ne se voit plus, et le replay ment. Le journal enregistre ce qui a été DEMANDÉ et ce que le moteur en a FAIT, pas une photo du plateau."
+},
+{
+  "id": "j-actions-legales",
+  "titre": "Générateur d'actions légales : ce qui est jouable, et pourquoi le reste ne l'est pas",
+  "piste": "R", "couloir": "J-MOT", "jalon": "J1",
+  "priorite": "P0", "taille": "M", "complexite": 4, "difficulte": 4,
+  "apres": ["j-journal-actions"],
+  "gain": "L'interface n'a plus à connaître les règles : elle affiche la liste que le moteur lui donne. Les bots s'en servent aussi. Et quand un coup est refusé, le joueur lit la raison au lieu de croire à un bug.",
+  "fonctionnalites": "`actions_legales(etat, joueur)` rend la liste exhaustive des coups possibles, chacun avec ses cibles valides et une étiquette lisible. `valider(etat, action)` rend soit l'accord, soit un refus motivé par une règle citée (`R-3.4 : une seule énergie par tour`). Toute action passe par là, y compris celles venues du serveur.",
+  "mission": [
+    "Énumérer les familles d'actions : piocher, poser un Pokémon de base au banc, faire évoluer, attacher une énergie, jouer un Objet, un Supporter, un Stade, un Outil, utiliser un talent, battre en retraite, déclarer une attaque, passer le tour, abandonner, répondre à une demande de décision.",
+    "Pour chacune, calculer les cibles valides à partir de l'état — jamais depuis l'interface.",
+    "Motiver chaque refus par un identifiant de règle du corpus de référence.",
+    "Garantir que jouer une action tirée de `actions_legales` ne lève jamais d'exception (test de propriété sur parties aléatoires).",
+    "Mesurer le coût : la liste doit se calculer en quelques millisecondes, elle est demandée à chaque changement d'état."
+  ],
+  "acceptation": [
+    "Sur 10 000 états tirés de parties simulées, toute action de la liste s'applique sans erreur, et aucune action hors liste n'est acceptée par `valider`.",
+    "Chaque refus porte un identifiant de règle existant dans `REGLES.md`.",
+    "Le calcul reste sous 5 ms sur un état complet."
+  ],
+  "livrables": ["`actions_legales()` exhaustif", "`valider()` avec raisons citées"],
+  "risques": "Dupliquer la logique entre « je liste » et « je valide » : les deux divergent inévitablement. Une seule source, la liste, et la validation vérifie l'appartenance plus les conditions de fraîcheur."
+},
+{
+  "id": "j-machine-tour",
+  "titre": "Déroulé d'un tour : phases, contraintes du tour, et fin de tour",
+  "piste": "R", "couloir": "J-MOT", "jalon": "J1",
+  "priorite": "P0", "taille": "M", "complexite": 3, "difficulte": 3,
+  "apres": ["j-actions-legales"],
+  "gain": "C'est le squelette de la partie : sans lui, les actions existent mais aucune ne sait quand elle a le droit de survenir.",
+  "fonctionnalites": "Début de tour (pioche obligatoire ; pioche impossible = défaite), phase principale libre (pose au banc, évolutions, une énergie, Dresseurs, talents, retraite), déclaration d'attaque qui termine le tour, passage de tour, drapeaux remis à zéro. Contraintes : une énergie par tour, un Supporter par tour, une retraite par tour, pas d'évolution d'un Pokémon posé ce tour-ci, pas d'évolution au premier tour de chaque joueur, règle du premier tour retenue en DJ1.",
+  "mission": [
+    "Implémenter la machine à phases et les drapeaux de tour, tous portés par l'état (donc sérialisés, donc repris après un F5).",
+    "Traiter la pioche impossible comme une condition de défaite vérifiée au bon moment, pas comme une exception.",
+    "Brancher les fenêtres de déclenchement (début de tour, fin de tour) que la pile d'effets utilisera plus tard — même vides pour l'instant.",
+    "Écrire les tests de tour : chaque contrainte a son cas passant et son cas refusé, avec la raison attendue."
+  ],
+  "acceptation": [
+    "Les six contraintes de tour sont testées dans les deux sens (autorisé / refusé motivé).",
+    "Le drapeau d'énergie, de Supporter et de retraite survit à une sérialisation/reprise.",
+    "Déclarer une attaque termine le tour même si l'attaque n'inflige aucun dégât."
+  ],
+  "livrables": ["machine à phases", "tests de contraintes de tour"],
+  "risques": "Coder les contraintes dans l'interface « pour l'ergonomie » : le serveur doit les tenir seul, l'interface ne fait que griser."
+},
+{
+  "id": "j-degats-resolution",
+  "titre": "Attaque et dégâts : coût, faiblesse, résistance, modificateurs",
+  "piste": "R", "couloir": "J-MOT", "jalon": "J1",
+  "priorite": "P0", "taille": "M", "complexite": 4, "difficulte": 4,
+  "decision": "DJ1",
+  "apres": ["j-machine-tour"],
+  "gain": "C'est le geste central du jeu, et celui dont le calcul est le plus souvent faux : l'ordre des opérations entre faiblesse, résistance et modificateurs change le résultat.",
+  "fonctionnalites": "Vérification du coût de l'attaque (énergies typées et incolores, énergies fournissant plusieurs unités), calcul des dégâts de base, application dans l'ordre officiel : modificateurs qui changent les dégâts de base, puis faiblesse, puis résistance, puis effets de réduction ; plancher à zéro ; pose des compteurs de dégâts ; dégâts au banc qui ignorent faiblesse et résistance ; auto-dégâts.",
+  "mission": [
+    "Implémenter le paiement du coût, en traitant correctement l'incolore et les énergies multiples.",
+    "Implémenter la chaîne de calcul dans l'ordre fixé par `REGLES.md`, chaque étape étant un point d'accroche nommé pour les effets à venir.",
+    "Poser les dégâts sous forme de compteurs sur le Pokémon, jamais en soustrayant des PV : les soins et les effets « PV restants » en dépendent.",
+    "Produire un détail de calcul lisible (« 60 base, ×2 faiblesse, −30 résistance = 90 ») exploité par le journal de partie et l'aide en jeu.",
+    "Tests : table de cas issue du corpus de règles, y compris résistance supérieure aux dégâts, faiblesse sur dégâts nuls, dégâts au banc."
+  ],
+  "acceptation": [
+    "Tous les cas de dégâts de `cas-de-regles.yaml` passent.",
+    "Le détail de calcul est produit pour chaque attaque et affiché dans le journal.",
+    "Les dégâts au banc n'appliquent ni faiblesse ni résistance."
+  ],
+  "livrables": ["résolution d'attaque + détail de calcul", "table de cas verte"],
+  "risques": "Appliquer la faiblesse après les réductions, ou soustraire des PV : les deux erreurs sont invisibles jusqu'au jour où un joueur compte et découvre qu'il a perdu à tort."
+},
+{
+  "id": "j-ko-recompenses",
+  "titre": "Mises K.O., récompenses et conditions de victoire",
+  "piste": "R", "couloir": "J-MOT", "jalon": "J1",
+  "priorite": "P0", "taille": "M", "complexite": 4, "difficulte": 4,
+  "apres": ["j-degats-resolution"],
+  "gain": "La fin d'une partie est le moment où une erreur de moteur coûte le plus cher : c'est là que le résultat se décide.",
+  "fonctionnalites": "Détection du K.O. (compteurs ≥ PV), défausse du Pokémon avec toute sa pile d'évolutions, ses énergies et son outil, prise du bon nombre de récompenses selon le marqueur de règle (1 pour un Pokémon ordinaire, 2 pour un Pokémon-ex/V/GX, 3 pour un TAG TEAM), K.O. simultané, promotion obligatoire d'un Pokémon du banc, et les trois conditions de victoire : plus de récompenses à prendre, adversaire sans Pokémon à promouvoir, adversaire incapable de piocher. Abandon et égalité.",
+  "mission": [
+    "Résoudre les K.O. dans l'ordre officiel, y compris quand une attaque en provoque plusieurs.",
+    "Lire le nombre de récompenses depuis la carte du catalogue (marqueur de règle) et non depuis une liste en dur.",
+    "Traiter le K.O. simultané et l'égalité selon `REGLES.md`.",
+    "Interrompre la partie proprement : état final figé, vainqueur, raison, journal clos.",
+    "Tests : chaque condition de victoire, le double K.O., le K.O. du dernier Pokémon, la victoire par pioche vide."
+  ],
+  "acceptation": [
+    "Les trois conditions de victoire et l'égalité sont couvertes par des tests nommés.",
+    "Le nombre de récompenses vient du catalogue ; une carte inconnue au marqueur inconnu fait échouer bruyamment, pas silencieusement à 1.",
+    "Une partie terminée refuse toute action supplémentaire."
+  ],
+  "livrables": ["résolution des K.O.", "fin de partie normalisée (vainqueur + raison)"],
+  "risques": "Le repli silencieux « marqueur inconnu → 1 récompense » : c'est exactement la panne muette que ce dépôt a déjà payée quatre fois. Un marqueur inconnu est une erreur qui remonte."
+},
+{
+  "id": "j-retraite-banc",
+  "titre": "Banc, retraite et promotion : le Pokémon actif change de place",
+  "piste": "R", "couloir": "J-MOT", "jalon": "J1",
+  "priorite": "P0", "taille": "S", "complexite": 2, "difficulte": 2,
+  "apres": ["j-machine-tour"],
+  "gain": "Le déplacement de l'actif est le geste défensif du jeu, et c'est aussi la cible des effets d'appât : il doit exister proprement avant qu'on lui ajoute des effets.",
+  "fonctionnalites": "Banc limité à cinq, coût de retraite payé en défaussant des énergies attachées (au choix du joueur), une retraite par tour, retraite impossible sous certains états spéciaux, promotion obligatoire après un K.O., échange forcé provoqué par un effet (qui ne consomme ni la retraite du tour ni d'énergie), banc vide = défaite.",
+  "mission": [
+    "Implémenter la retraite avec choix des énergies défaussées (demande de décision au joueur).",
+    "Distinguer trois mouvements différents : retraite volontaire, promotion après K.O., échange forcé par un effet — leurs règles ne sont pas les mêmes.",
+    "Conserver les compteurs de dégâts, énergies et outils lors d'un passage au banc ; retirer les états spéciaux selon `REGLES.md`.",
+    "Tests : retraite sans énergie suffisante, banc plein, échange forcé sous paralysie, promotion quand le banc est vide."
+  ],
+  "acceptation": [
+    "Les trois types de mouvement ont des chemins distincts et testés.",
+    "Le passage au banc soigne bien ce qu'il doit soigner, et rien d'autre.",
+    "Le banc vide après K.O. termine la partie avec la bonne raison."
+  ],
+  "livrables": ["retraite / promotion / échange forcé", "tests de mouvement"],
+  "risques": "Confondre échange forcé et retraite : les cartes d'appât deviendraient injouables sous paralysie, ou consommeraient la retraite du tour."
+},
+{
+  "id": "j-etats-speciaux",
+  "titre": "États spéciaux : Empoisonné, Brûlé, Endormi, Paralysé, Confus",
+  "piste": "R", "couloir": "J-MOT", "jalon": "J1",
+  "priorite": "P0", "taille": "M", "complexite": 4, "difficulte": 4,
+  "decision": "DJ1",
+  "apres": ["j-retraite-banc", "j-checkup"],
+  "gain": "JF les a explicitement mis dans la première version (D9). Ce sont aussi les règles les plus souvent jouées de travers, parce que leur cumul et leur ordre de résolution changent selon les époques.",
+  "fonctionnalites": "Les cinq états, leur pose, leurs règles de cumul (un seul état « couché » à la fois, poison et brûlure cumulables avec les autres selon la version retenue), leurs effets (pas d'attaque ni de retraite sous paralysie ou sommeil, pile ou face de confusion avec auto-dégâts, compteurs de poison et de brûlure), leur guérison (passage au banc, évolution, effets de soin, réveil au pile ou face).",
+  "mission": [
+    "Encoder les cinq états et la matrice de cumul exacte de la version retenue.",
+    "Brancher leur résolution sur la phase entre les tours (`j-checkup`), dans l'ordre officiel.",
+    "Implémenter la confusion : pile ou face à la déclaration d'attaque, auto-dégâts sur échec, attaque annulée.",
+    "Représenter l'orientation de la carte (couchée, tournée) dans l'état, pour que l'interface la montre comme sur une vraie table.",
+    "Tests : un cas par état, un cas par combinaison autorisée, guérison par retraite, par évolution, par effet."
+  ],
+  "acceptation": [
+    "La matrice de cumul est testée exhaustivement (toutes les paires).",
+    "Un Pokémon endormi ou paralysé ne peut ni attaquer ni battre en retraite, mais peut être échangé de force.",
+    "Les compteurs de poison et de brûlure s'appliquent au bon moment, et le pile ou face de brûlure est journalisé."
+  ],
+  "livrables": ["cinq états + matrice de cumul", "résolution en phase intermédiaire"],
+  "risques": "Le cumul est le piège : selon la version, poison + sommeil coexistent mais sommeil + paralysie non. Le seul garde-fou est la matrice écrite dans `REGLES.md` et testée paire par paire."
+},
+{
+  "id": "j-checkup",
+  "titre": "Phase entre les deux tours : l'ordre exact de résolution",
+  "piste": "R", "couloir": "J-MOT", "jalon": "J1",
+  "priorite": "P0", "taille": "S", "complexite": 3, "difficulte": 3,
+  "apres": ["j-machine-tour"],
+  "gain": "Beaucoup d'effets disent « à la fin du tour » ou « entre les tours ». Sans une phase nommée où tout se résout dans un ordre fixé, ces effets se résolvent dans l'ordre où le code a été écrit — c'est-à-dire au hasard.",
+  "fonctionnalites": "Une phase explicite entre la fin d'un tour et le début du suivant : poison, brûlure, réveil, effets déclenchés « entre les tours », expiration des effets « jusqu'à la fin de ce tour », retrait des marqueurs temporaires, vérification des K.O. provoqués par ces effets et prise des récompenses correspondantes.",
+  "mission": [
+    "Implémenter la phase et son ordre, point par point depuis `REGLES.md`.",
+    "Gérer les K.O. survenus pendant cette phase (hors attaque) et la promotion qui s'ensuit.",
+    "Nettoyer les effets temporaires et journaliser chaque expiration (sinon les effets « jusqu'à la fin du tour » deviennent éternels sans que rien ne le dise).",
+    "Tests : un Pokémon empoisonné meurt entre les tours, l'adversaire prend sa récompense, la promotion est demandée au bon joueur."
+  ],
+  "acceptation": [
+    "L'ordre de la phase est testé sur un cas qui combine poison, brûlure et réveil sur les deux joueurs.",
+    "Un K.O. survenu dans cette phase donne bien ses récompenses et déclenche la promotion.",
+    "Aucun effet temporaire ne survit à la phase sans une entrée de journal qui l'explique."
+  ],
+  "livrables": ["phase intermédiaire ordonnée", "expiration journalisée des effets"],
+  "risques": "Oublier que des K.O. arrivent hors des attaques : le code de victoire ne doit pas vivre uniquement dans la résolution d'attaque."
+},
+{
+  "id": "j-mode-solo",
+  "titre": "Partie d'entraînement contre un bot",
+  "piste": "R", "couloir": "J-MOT", "jalon": "J4",
+  "priorite": "P2", "taille": "S", "complexite": 2, "difficulte": 2,
+  "decision": "DJ7",
+  "apres": ["j-simulation-bots", "j-partie-service"],
+  "gain": "Le jeu est privé entre quelques comptes invités : il y aura des soirs sans adversaire. Le bot de simulation existe déjà pour les tests — l'ouvrir aux joueurs coûte peu et évite un écran d'attente vide.",
+  "fonctionnalites": "Lancer une partie contre le bot heuristique depuis le salon, trois niveaux (hasard, correct, coriace), partie non comptée au classement et marquée « entraînement » dans l'historique, abandon libre, temps de réflexion du bot volontairement visible pour rester lisible.",
+  "mission": [
+    "Brancher le bot de `j-simulation-bots` comme deuxième joueur d'une partie ordinaire du service.",
+    "Trois niveaux d'heuristique, et un délai simulé pour que le joueur voie ce qui se passe.",
+    "Marquer la partie « entraînement » : elle entre dans l'historique mais ne touche ni classement ni séries.",
+    "Vérifier que le bot n'accède jamais à l'information cachée (il joue avec la vue du joueur, pas avec l'état complet)."
+  ],
+  "acceptation": [
+    "Une partie contre le bot se joue de bout en bout et se reprend après un F5.",
+    "Le bot n'utilise que `vue(etat, bot)` — vérifié par un test.",
+    "La partie apparaît dans l'historique en « entraînement » et n'affecte pas le classement."
+  ],
+  "livrables": ["adversaire bot dans le salon", "trois niveaux"],
+  "risques": "Un bot qui triche en lisant la main adverse est indétectable côté joueur et ruine la confiance : la contrainte de vue est un test, pas une intention."
+}
+]

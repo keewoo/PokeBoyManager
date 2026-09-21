@@ -1,0 +1,116 @@
+[
+{
+  "id": "j-fin-effets-compte",
+  "titre": "Ce qu'une partie laisse sur le compte : écriture unique et exacte",
+  "piste": "C", "couloir": "J-SRV", "jalon": "J4",
+  "priorite": "P0", "taille": "M", "complexite": 3, "difficulte": 4,
+  "decision": "DJ6",
+  "apres": ["j-ko-recompenses", "j-deconnexion-abandon"],
+  "gain": "C'est la demande de JF (« la fin de jeu, avec ses effets sur le compte joueur »). Le piège est technique : une partie peut se terminer deux fois — reprise, rejeu, double événement — et doubler les victoires.",
+  "fonctionnalites": "À la clôture d'une partie : écriture de son résultat (vainqueur, raison, durée, tours), mise à jour des compteurs du joueur (parties, victoires, défaites, série en cours et meilleure série, temps de jeu), statistiques par deck et par adversaire, attribution des badges, mise à jour du classement privé si activé. Le tout en une transaction idempotente, déclenchée par un événement de fin unique.",
+  "mission": [
+    "Poser une clé d'idempotence sur la partie : deux clôtures ne produisent qu'une écriture (contrainte en base, pas un `if`).",
+    "Recalculer les statistiques de fin depuis le journal, jamais depuis des compteurs tenus pendant la partie.",
+    "Traiter les fins anormales (abandon, désertion, temps) avec le même chemin d'écriture.",
+    "Prévoir la reprise après panne : une partie close dont l'écriture a échoué est reprise par un balayage, et le signale.",
+    "Tests : clôture rejouée deux fois, clôture pendant une reprise, clôture d'une partie d'entraînement (aucun effet de classement)."
+  ],
+  "acceptation": [
+    "Rejouer la clôture d'une partie ne modifie rien la deuxième fois (test explicite).",
+    "Les statistiques recalculées depuis le journal correspondent à la partie jouée.",
+    "Une partie d'entraînement contre le bot n'affecte ni classement ni série."
+  ],
+  "livrables": ["clôture idempotente", "statistiques recalculées depuis le journal"],
+  "risques": "Compter les victoires au fil de l'eau : c'est la panne muette classique — personne ne remarque un compteur faux avant que quelqu'un ne compte."
+},
+{
+  "id": "j-stats-joueur",
+  "titre": "Mes parties : historique, statistiques et ce que ça dit de mes decks",
+  "piste": "C", "couloir": "J-UI", "jalon": "J4",
+  "priorite": "P1", "taille": "M", "complexite": 2, "difficulte": 2,
+  "apres": ["j-fin-effets-compte", "j-partie-fin-ui"],
+  "gain": "C'est ce qui donne une suite aux parties : on voit ce qui marche, avec quel deck, contre qui — et le gestionnaire de decks s'en nourrit.",
+  "fonctionnalites": "Liste des parties (adversaire, deck, résultat, durée, date, lien vers le replay), filtres, taux de victoire par deck et par adversaire, cartes les plus jouées, attaques les plus décisives, temps de jeu, séries. Vue « ce deck gagne surtout contre les decks Eau ».",
+  "mission": [
+    "Construire les agrégats à partir des résultats de parties, avec des calculs lisibles et testés.",
+    "Relier chaque ligne à son replay.",
+    "Brancher les statistiques par deck sur la fiche de deck du gestionnaire (`v7-decks-stats`).",
+    "Rester honnête sur les petits nombres : trois parties ne font pas un taux de victoire."
+  ],
+  "acceptation": [
+    "Les agrégats correspondent aux parties réellement jouées (vérifié sur un jeu de données de test).",
+    "Un taux calculé sur moins de cinq parties est signalé comme non significatif.",
+    "La page se charge en moins d'une seconde avec cent parties."
+  ],
+  "livrables": ["page Mes parties", "agrégats par deck et adversaire", "liaison avec la fiche de deck"],
+  "risques": "Des statistiques flatteuses calculées sur trois parties : elles trompent le joueur sur son deck et faussent ses choix."
+},
+{
+  "id": "j-classement-prive",
+  "titre": "Classement privé entre comptes invités",
+  "piste": "C", "couloir": "J-SRV", "jalon": "J4",
+  "priorite": "P2", "taille": "S", "complexite": 2, "difficulte": 2,
+  "decision": "DJ6",
+  "apres": ["j-fin-effets-compte"],
+  "gain": "Entre deux ou trois joueurs, un tableau amical suffit à donner un enjeu. Mais c'est aussi ce qui peut transformer un jeu entre frères en dispute : le format se choisit avec JF (DJ6).",
+  "fonctionnalites": "Tableau des comptes invités, points ou simple décompte de victoires, évolution dans le temps, parties d'entraînement exclues, pas de saison ni de perte de points sauf si DJ6 en décide autrement, possibilité de désactiver entièrement le classement.",
+  "mission": [
+    "Implémenter le calcul retenu en DJ6, en le gardant remplaçable (la formule n'est pas dans le code de clôture).",
+    "Exclure les parties d'entraînement et les parties closes par désertion selon la règle choisie.",
+    "Permettre à JF de désactiver le classement sans déployer.",
+    "Tests : recalcul complet du classement depuis l'historique donne le même résultat que le calcul incrémental."
+  ],
+  "acceptation": [
+    "Le classement se recalcule intégralement depuis l'historique et retrouve le même état.",
+    "La désactivation est un réglage, pas un déploiement.",
+    "Les parties d'entraînement n'y figurent jamais."
+  ],
+  "livrables": ["classement privé paramétrable"],
+  "risques": "Un classement incrémental non recalculable : la première erreur devient définitive."
+},
+{
+  "id": "j-profil-jeu",
+  "titre": "Profil de joueur : avatar, carte fétiche, badges",
+  "piste": "C", "couloir": "J-UI", "jalon": "J4",
+  "priorite": "P2", "taille": "S", "complexite": 2, "difficulte": 1,
+  "decision": "DJ6",
+  "apres": ["j-stats-joueur"],
+  "gain": "Des récompenses symboliques, gratuites, sans monnaie ni achat : c'est ce qui fait revenir un enfant sans rien lui vendre.",
+  "fonctionnalites": "Avatar et pseudo repris du compte, carte fétiche choisie dans sa collection et affichée à l'adversaire au lancement, badges (première victoire, K.O. en un coup, victoire sans perdre de récompense, dix parties, deck monotype victorieux), décors débloqués, vitrine de profil.",
+  "mission": [
+    "Définir la liste des badges avec JF et Aymeric, en évitant tout badge qui pousse à jouer longtemps plutôt que bien.",
+    "Calculer l'attribution à la clôture d'une partie, de façon idempotente.",
+    "Afficher la carte fétiche des deux côtés au moment du lancement.",
+    "Aucun achat, aucune monnaie, aucune récompense aléatoire."
+  ],
+  "acceptation": [
+    "Un badge ne peut être attribué deux fois.",
+    "Aucun mécanisme ne récompense le temps passé plutôt que le jeu lui-même.",
+    "La carte fétiche s'affiche au lancement, avec le rendu choisi (photo ou officielle)."
+  ],
+  "livrables": ["badges", "carte fétiche", "vitrine de profil"],
+  "risques": "Des badges de temps de jeu : ils transforment un jeu en obligation quotidienne, ce qui n'est pas ce qu'on veut pour un enfant de onze ans."
+},
+{
+  "id": "j-notifications-jeu",
+  "titre": "Être prévenu : invitation reçue, c'est ton tour, partie reprise",
+  "piste": "C", "couloir": "J-UI", "jalon": "J4",
+  "priorite": "P2", "taille": "S", "complexite": 2, "difficulte": 2,
+  "apres": ["j-invitations", "j-timer"],
+  "gain": "Un jeu à deux où personne ne sait que l'autre attend ne se joue pas. Une notification bien placée remplace dix messages.",
+  "fonctionnalites": "Dans l'application : invitation reçue, adversaire trouvé, c'est ton tour, il te reste une minute, l'adversaire est revenu, partie terminée par forfait. Hors application : notification web (PWA) quand elle existe, e-mail seulement pour l'invitation. Réglages par type, silence nocturne.",
+  "mission": [
+    "Poser le canal de notification dans l'application et ses réglages.",
+    "Brancher les notifications hors application sur la PWA (`v6-pwa`) quand elle existe, sans en dépendre.",
+    "Limiter strictement le nombre de notifications par partie : au-delà, c'est du harcèlement.",
+    "Respecter un silence nocturne configurable — le joueur est un enfant."
+  ],
+  "acceptation": [
+    "Chaque type de notification est désactivable séparément.",
+    "Le silence nocturne est respecté, y compris pour les invitations.",
+    "Aucune partie ne produit plus de notifications que le plafond fixé."
+  ],
+  "livrables": ["notifications en application", "réglages et silence nocturne"],
+  "risques": "Notifier chaque tour : le jeu devient une sonnerie permanente et se fait couper au niveau du système, y compris pour les invitations."
+}
+]

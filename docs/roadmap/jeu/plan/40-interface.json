@@ -1,0 +1,202 @@
+[
+{
+  "id": "j-salon-partie",
+  "titre": "Salon de jeu : jouer, inviter, reprendre, s'entraîner",
+  "piste": "U", "couloir": "J-UI", "jalon": "J1",
+  "priorite": "P0", "taille": "S", "complexite": 2, "difficulte": 2,
+  "apres": ["j-file-attente", "j-invitations"],
+  "gain": "C'est l'écran d'où part tout le jeu. S'il est confus, la meilleure partie du monde ne sera jamais lancée.",
+  "fonctionnalites": "Un bouton « Jouer » qui demande le deck et entre dans la file ; la liste des joueurs en ligne avec invitation en un clic ; les parties en cours à reprendre, bien visibles ; l'entraînement contre le bot ; les invitations reçues ; le rappel du dernier résultat.",
+  "mission": [
+    "Dessiner l'écran depuis la maquette existante du jeu et l'étendre (file, invitations, reprise).",
+    "Mettre la reprise d'une partie en cours en tête : c'est l'action la plus urgente quand elle existe.",
+    "Afficher l'état réel de la file (attente, joueurs disponibles) sans faire attendre devant un écran muet.",
+    "Traiter le cas « personne en ligne » par une proposition concrète : inviter, ou s'entraîner."
+  ],
+  "acceptation": [
+    "Une partie en cours est visible et reprenable en un clic depuis l'accueil du jeu.",
+    "Le choix du deck affiche sa jouabilité avant l'entrée en file.",
+    "L'écran reste lisible sur téléphone."
+  ],
+  "livrables": ["écran salon", "entrée en file avec deck", "reprise visible"],
+  "risques": "Cacher la partie en cours sous un onglet : le joueur croit l'avoir perdue et en lance une autre, ce qui bloque les deux."
+},
+{
+  "id": "j-plateau-layout",
+  "titre": "Plateau : la table de jeu, du grand écran au téléphone",
+  "piste": "U", "couloir": "J-UI", "jalon": "J1",
+  "priorite": "P0", "taille": "L", "complexite": 4, "difficulte": 4,
+  "apres": ["j-temps-reel", "j-salon-partie"],
+  "gain": "Tout le jeu se voit ici. La difficulté n'est pas graphique, elle est spatiale : neuf zones par joueur doivent tenir sur un écran de téléphone sans qu'on perde de vue l'essentiel.",
+  "fonctionnalites": "Disposition des deux camps (actif, banc de cinq, main, pioche, défausse, six récompenses, Stade partagé), zoom sur une carte au survol ou au maintien, consultation des zones publiques (défausse), compteur des zones cachées, bascule bureau/tablette/téléphone, orientation paysage recommandée sur mobile.",
+  "mission": [
+    "Poser la grille responsive et la hiérarchie visuelle : l'actif adverse et le sien dominent, la main reste accessible.",
+    "Implémenter le zoom de carte (texte lisible, attaques, coûts) sans quitter la partie.",
+    "Rendre consultables les zones publiques et afficher les compteurs des zones cachées.",
+    "Vérifier la lisibilité réelle sur un téléphone d'enfant (petit écran, doigt, lumière) avant de continuer."
+  ],
+  "acceptation": [
+    "Toutes les zones sont atteignables sans défilement sur un écran de 390 px de large en paysage.",
+    "Le texte d'une carte zoomée est lisible sans pincer l'écran.",
+    "Le plateau se redessine sans perdre l'état lors d'une rotation d'écran."
+  ],
+  "livrables": ["plateau responsive", "zoom de carte", "consultation des zones"],
+  "risques": "Dessiner d'abord pour le grand écran : le plateau devient injouable sur téléphone, qui sera pourtant l'écran le plus utilisé."
+},
+{
+  "id": "j-plateau-interactions",
+  "titre": "Jouer un coup : cibles valides, annulation, confirmation",
+  "piste": "U", "couloir": "J-UI", "jalon": "J1",
+  "priorite": "P0", "taille": "M", "complexite": 4, "difficulte": 4,
+  "apres": ["j-plateau-layout", "j-actions-legales"],
+  "gain": "C'est là que le joueur sent si le jeu est bien fait. Et c'est là que le moteur paie : les cibles valides viennent de lui, l'interface ne recalcule aucune règle.",
+  "fonctionnalites": "Glisser-déposer et tap-tap (les deux marchent), mise en évidence des cibles valides dès qu'une carte est saisie, actions grisées avec leur raison au survol, annulation tant que le coup n'est pas validé, confirmation explicite des coups irréversibles (attaquer, défausser, passer le tour), retour tactile et sonore.",
+  "mission": [
+    "Consommer `actions_legales` pour illuminer les cibles ; aucune règle n'est réécrite côté client.",
+    "Implémenter les deux modes d'interaction et les rendre interchangeables en cours de partie.",
+    "Afficher la raison d'un refus telle que le moteur la donne, en langage clair.",
+    "Distinguer coups annulables et coups irréversibles, et ne demander confirmation que pour les seconds.",
+    "Empêcher le double envoi d'une action (clic répété, réseau lent) par un verrou d'interface et l'idempotence côté serveur."
+  ],
+  "acceptation": [
+    "Aucune règle du jeu n'est implémentée côté client (revue de code explicite dans le compte rendu).",
+    "Un coup refusé affiche la raison du moteur, pas un message générique.",
+    "Un double clic ne joue jamais deux fois la même action."
+  ],
+  "livrables": ["interactions glisser-déposer et tap-tap", "cibles illuminées", "annulation et confirmation"],
+  "risques": "Recopier « juste une petite règle » côté client pour éviter un aller-retour : c'est le début de deux moteurs divergents, et le client finit par proposer des coups que le serveur refuse."
+},
+{
+  "id": "j-plateau-etat-visuel",
+  "titre": "Lire le plateau d'un coup d'œil : dégâts, énergies, états, récompenses",
+  "piste": "U", "couloir": "J-UI", "jalon": "J1",
+  "priorite": "P0", "taille": "M", "complexite": 3, "difficulte": 3,
+  "apres": ["j-plateau-layout"],
+  "gain": "Un enfant doit comprendre la situation sans lire un tableau de chiffres : c'est ce qui sépare un jeu d'un formulaire.",
+  "fonctionnalites": "Compteurs de dégâts posés sur la carte (comme les vrais jetons) avec PV restants, pastilles d'énergies typées empilées, Outil visible, états spéciaux montrés par l'orientation de la carte (couchée pour endormi, tournée pour confus) et par une icône, récompenses restantes de chaque côté, nombre de cartes en main et en pioche, mise en évidence du Pokémon qui vient d'agir.",
+  "mission": [
+    "Dessiner chaque indicateur à partir de l'état projeté, sans recalcul.",
+    "Reprendre les codes de la vraie table (jetons, rotation de carte) : c'est ce que l'enfant connaît déjà.",
+    "Doubler chaque couleur d'un signe (type d'énergie, état) pour rester lisible en cas de daltonisme.",
+    "Afficher les PV restants en plus des compteurs de dégâts — le calcul mental ne doit pas être imposé."
+  ],
+  "acceptation": [
+    "L'état complet d'un Pokémon (dégâts, énergies, outil, états) se lit sans clic.",
+    "Aucun indicateur ne dépend uniquement de la couleur.",
+    "Les PV restants sont exacts, y compris avec un Outil qui ajoute des PV."
+  ],
+  "livrables": ["indicateurs de plateau complets"],
+  "risques": "Afficher les dégâts comme des PV soustraits : dès qu'un effet soigne ou change les PV maximum, l'affichage ment."
+},
+{
+  "id": "j-plateau-decisions",
+  "titre": "Fenêtres de décision : choisir des cartes, ordonner, répondre pendant le tour adverse",
+  "piste": "U", "couloir": "J-UI", "jalon": "J2",
+  "priorite": "P0", "taille": "M", "complexite": 4, "difficulte": 4,
+  "apres": ["j-plateau-interactions", "j-effets-choix"],
+  "gain": "C'est l'interface des cartes à effet. Sans elle, les Objets et Supporters restent injouables même quand le moteur sait les résoudre.",
+  "fonctionnalites": "Sélecteurs adaptés à chaque type de demande : choisir N cartes dans un ensemble (pioche, défausse, main), ordonner des cartes, oui/non, choisir un Pokémon en jeu, choisir un type ou un nombre ; affichage du temps restant ; demandes reçues pendant le tour adverse, annoncées clairement ; réponse par défaut visible avant l'expiration.",
+  "mission": [
+    "Construire un composant générique piloté par la description de la demande, pas un écran par carte.",
+    "Traiter le cas « c'est à l'adversaire de décider » : le joueur actif voit qu'il attend et pourquoi.",
+    "Afficher le compte à rebours de la décision et ce qui se passera à l'expiration.",
+    "Rendre les grands ensembles utilisables : recherche et filtres dans une pioche de soixante cartes.",
+    "Tests d'interface : demande imbriquée, expiration, reprise après F5 au milieu d'une demande."
+  ],
+  "acceptation": [
+    "Toute demande du moteur s'affiche correctement sans code spécifique à la carte.",
+    "Chercher une carte dans la pioche prend moins de cinq secondes (recherche et filtres).",
+    "L'attente d'une décision adverse est explicite des deux côtés."
+  ],
+  "livrables": ["composant de décision générique", "recherche dans les grands ensembles"],
+  "risques": "Un écran par carte : le nombre de cartes rend l'approche impossible dès la deuxième extension."
+},
+{
+  "id": "j-plateau-journal",
+  "titre": "Journal de partie : ce qui vient de se passer, en français",
+  "piste": "U", "couloir": "J-UI", "jalon": "J1",
+  "priorite": "P0", "taille": "S", "complexite": 2, "difficulte": 2,
+  "apres": ["j-plateau-etat-visuel"],
+  "gain": "C'est ce qui rend le jeu compréhensible quand on apprend : « Aymeric attache une Énergie Feu à Salamèche, puis attaque : 60 dégâts, ×2 faiblesse = 120 ». Sans ce fil, l'enfant subit des changements qu'il ne relie à rien.",
+  "fonctionnalites": "Fil des coups en langage naturel, dernier coup mis en évidence sur le plateau, détail du calcul des dégâts, filtres (mes coups, ceux de l'adversaire, effets automatiques), retour visuel sur un coup passé, tout en restant dans la partie.",
+  "mission": [
+    "Traduire les événements du moteur en phrases françaises, avec les noms de cartes et les images en vignette.",
+    "Relier chaque ligne du journal à l'endroit du plateau concerné (surbrillance au survol).",
+    "Inclure les effets automatiques (poison entre les tours, expiration d'un blocage) : ce sont ceux qu'on ne comprend pas autrement.",
+    "Garder le fil lisible sur téléphone (panneau escamotable)."
+  ],
+  "acceptation": [
+    "Chaque événement du moteur a sa formulation française — aucun `event_type` brut affiché.",
+    "Le détail du calcul de dégâts est consultable pour chaque attaque.",
+    "Les effets automatiques apparaissent au journal."
+  ],
+  "livrables": ["journal en langage naturel", "liaison journal ↔ plateau"],
+  "risques": "Afficher les identifiants techniques quand une traduction manque : mieux vaut un test qui échoue en CI sur un événement non traduit."
+},
+{
+  "id": "j-plateau-aide",
+  "titre": "Aide en jeu : pourquoi je ne peux pas faire ça, et que puis-je faire",
+  "piste": "U", "couloir": "J-UI", "jalon": "J3",
+  "priorite": "P1", "taille": "M", "complexite": 3, "difficulte": 3,
+  "apres": ["j-plateau-journal"],
+  "gain": "JF vise un enfant de onze ans qui ne connaît pas toutes les règles. Un jeu qui explique ses refus s'apprend en jouant ; un jeu muet se désinstalle.",
+  "fonctionnalites": "Rappel de règle contextuel (le refus du moteur cite une règle, l'aide l'explique en une phrase), suggestion « voici ce que tu peux faire » à partir des actions légales, première partie guidée pas à pas, glossaire des mots du jeu, rappel de l'objectif (« prends six récompenses »).",
+  "mission": [
+    "Associer à chaque identifiant de règle du corpus une explication courte, écrite pour un enfant.",
+    "Proposer les coups possibles quand le joueur hésite plus de N secondes, sans jamais jouer à sa place.",
+    "Écrire le parcours guidé de la première partie (contre le bot) : poser, attacher, attaquer, prendre une récompense.",
+    "Relire les textes avec JF : c'est le lot où le ton compte plus que le code."
+  ],
+  "acceptation": [
+    "Chaque raison de refus produite par le moteur a son explication en français simple.",
+    "La première partie guidée se termine sans aide extérieure par un joueur qui n'a jamais joué.",
+    "L'aide ne joue jamais le coup à la place du joueur."
+  ],
+  "livrables": ["explications par règle", "partie guidée", "glossaire"],
+  "risques": "Écrire l'aide à partir du code plutôt que du corpus de règles : les deux divergent, et l'aide explique des règles qui ne sont pas celles appliquées."
+},
+{
+  "id": "j-partie-fin-ui",
+  "titre": "Fin de partie : qui a gagné, pourquoi, et ce qu'on en retient",
+  "piste": "U", "couloir": "J-UI", "jalon": "J4",
+  "priorite": "P0", "taille": "S", "complexite": 2, "difficulte": 2,
+  "apres": ["j-plateau-journal", "j-ko-recompenses"],
+  "gain": "La fin est le moment qui donne envie de rejouer, ou pas. C'est aussi là que se voit ce que la partie a laissé sur le compte.",
+  "fonctionnalites": "Annonce du vainqueur et de la raison (six récompenses, banc vide, pioche vide, abandon, temps), récapitulatif (durée, nombre de tours, dégâts infligés, cartes jouées, meilleur coup), effet sur le compte (série en cours, statistiques mises à jour, badge obtenu), boutons rejouer / revanche / retour au salon, lien vers le replay.",
+  "mission": [
+    "Écrire l'écran pour les deux issues, sans humilier le perdant (pas de « défaite écrasante »).",
+    "Afficher ce qui a changé sur le compte, avec un lien vers l'historique.",
+    "Proposer la revanche immédiate, qui relance une partie avec les mêmes joueurs et decks.",
+    "Traiter les fins anormales (abandon, désertion, temps) avec le même soin que les fins normales."
+  ],
+  "acceptation": [
+    "Chaque raison de fin possible a son libellé propre.",
+    "La revanche relance une partie sans repasser par la file.",
+    "Le récapitulatif est exact, recalculé depuis le journal et non compté au fil de l'eau."
+  ],
+  "livrables": ["écran de fin", "revanche", "récapitulatif depuis le journal"],
+  "risques": "Compter les statistiques au fil de la partie : une reprise après F5 les double. Elles se recalculent depuis le journal."
+},
+{
+  "id": "j-accessibilite-jeu",
+  "titre": "Confort et accessibilité : jouable par un enfant, lisible par tous",
+  "piste": "U", "couloir": "J-UI", "jalon": "J3",
+  "priorite": "P1", "taille": "S", "complexite": 2, "difficulte": 3,
+  "apres": ["j-plateau-decisions", "j-anim-socle"],
+  "gain": "Le public de ce jeu est un enfant et son entourage. Contraste, taille des cibles tactiles, animations coupables et daltonisme ne sont pas des options tardives : ce sont des conditions pour que la partie se joue.",
+  "fonctionnalites": "Contraste conforme, cibles tactiles suffisantes, navigation clavier complète, respect de `prefers-reduced-motion` (animations réduites ou supprimées), mode « temps rallongé » pour les décisions, taille de texte réglable, types d'énergie identifiables autrement que par la couleur, annonces pour lecteur d'écran des événements importants.",
+  "mission": [
+    "Passer l'audit d'accessibilité du projet sur les écrans de jeu (le même que pour le reste du produit).",
+    "Rendre chaque animation coupable, globalement et individuellement.",
+    "Vérifier la jouabilité au clavier seul, de la file d'attente à la fin de partie.",
+    "Ajouter le mode temps rallongé et le brancher sur les horloges (DJ4)."
+  ],
+  "acceptation": [
+    "L'audit passe sur tous les écrans de jeu.",
+    "Une partie complète se joue au clavier seul.",
+    "`prefers-reduced-motion` supprime les animations sans changer la lisibilité de l'état."
+  ],
+  "livrables": ["audit passé", "navigation clavier", "mode temps rallongé"],
+  "risques": "Traiter l'accessibilité après les animations : les effets visuels sont alors tellement intriqués qu'on ne peut plus les couper proprement."
+}
+]

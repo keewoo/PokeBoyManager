@@ -1,0 +1,502 @@
+[
+  {
+    "id": "j-effets-architecture",
+    "titre": "Pile d'effets et déclencheurs : l'architecture qui accueille toutes les cartes",
+    "piste": "E",
+    "couloir": "J-EFF",
+    "jalon": "J2",
+    "priorite": "P0",
+    "taille": "L",
+    "complexite": 5,
+    "difficulte": 5,
+    "decision": "D9",
+    "apres": [
+      "j-checkup",
+      "j-ko-recompenses"
+    ],
+    "gain": "C'est le lot qui décide si les mille cartes suivantes coûtent une heure ou une semaine chacune. Un moteur qui traite les effets au fil de l'eau se réécrit à la première carte qui dit « votre adversaire ne peut pas ».",
+    "fonctionnalites": "Un bus d'événements de jeu (avant et après les dégâts, à la pose, à l'évolution, au K.O., au début et à la fin du tour, à l'attachement d'énergie, à la pioche, entre les tours), une pile d'effets résolue en dernier entré premier sorti, des fenêtres d'interruption, la distinction entre effets ponctuels et effets continus, et des verrous nommés (« pas de Supporter ce tour », « ce Pokémon ne peut pas attaquer », « les talents sont sans effet »).",
+    "mission": [
+      "Définir la liste des événements et leurs charges utiles, à partir des besoins réels relevés sur 200 cartes prises au hasard du catalogue.",
+      "Implémenter la pile, l'ordre de résolution et les fenêtres d'interruption ; toute résolution est journalisée avec sa source (« à cause de l'Outil X »).",
+      "Implémenter les effets continus comme des modificateurs consultés au calcul, jamais comme des mutations de l'état (sinon leur retrait est impossible à faire proprement).",
+      "Implémenter les verrous et leur portée (ce tour, tant que ce Pokémon est actif, tant que ce Stade est en jeu).",
+      "Documenter l'architecture dans `docs/jeu/EFFETS.md` avec trois exemples complets de bout en bout."
+    ],
+    "acceptation": [
+      "Les 200 cartes de l'échantillon sont exprimables sans ajouter d'événement nouveau — ou la liste est complétée et le test refait.",
+      "Le retrait d'un effet continu (Outil défaussé, Stade remplacé) restaure exactement l'état antérieur du calcul.",
+      "Chaque résolution d'effet est journalisée avec sa carte source.",
+      "Le moteur socle (`j-machine-tour`, `j-degats-resolution`) n'a pas été modifié pour accueillir les effets : ils se branchent sur les points d'accroche existants."
+    ],
+    "livrables": [
+      "bus d'événements + pile d'effets",
+      "effets continus par modificateurs",
+      "docs/jeu/EFFETS.md"
+    ],
+    "risques": "Sous-estimer les effets qui modifient les règles elles-mêmes (« les attaques de votre adversaire coûtent une énergie de plus », « les Pokémon de base ne peuvent pas être mis K.O. »). Si la pile ne sait pas les porter, ils seront codés en dur dans le socle, et le socle pourrira."
+  },
+  {
+    "id": "j-effets-dsl",
+    "titre": "Langage d'effets : décrire ce que fait une carte, sans écrire de code par carte",
+    "piste": "E",
+    "couloir": "J-EFF",
+    "jalon": "J2",
+    "priorite": "P0",
+    "taille": "L",
+    "complexite": 5,
+    "difficulte": 5,
+    "apres": [
+      "j-effets-architecture"
+    ],
+    "gain": "Dix mille cartes ne s'écrivent pas en dix mille fonctions Python. Un langage déclaratif rend les cartes lisibles, relisibles, testables, et écrivables par une IA sous contrôle.",
+    "fonctionnalites": "Des primitives (piocher, chercher dans la pioche, défausser, attacher, déplacer, soigner, poser des compteurs, mélanger, révéler, regarder, choisir, pile ou face, changer l'actif, poser un état spécial, annuler, empêcher), des sélecteurs de cibles (mon actif, un de mes Pokémon de banc, un Pokémon de base dans ma pioche, une carte Objet de ma défausse), des conditions, des coûts, des répétitions et des branchements. Le tout sérialisé, versionné, validé par un schéma.",
+    "mission": [
+      "Concevoir le jeu de primitives à partir d'un dépouillement réel : classer les textes d'effet de 500 cartes et en extraire le vocabulaire minimal qui les couvre.",
+      "Écrire le schéma du langage (JSON Schema) et son interpréteur au-dessus de la pile d'effets.",
+      "Rendre chaque primitive testable isolément, avec un état de départ et un état attendu.",
+      "Gérer les cibles vides et les effets impossibles : un effet qui ne peut rien faire ne bloque pas la partie, il le dit dans le journal.",
+      "Écrire `docs/jeu/DSL.md` : chaque primitive, ses paramètres, un exemple de carte réelle."
+    ],
+    "acceptation": [
+      "Le vocabulaire couvre au moins 80 % des 500 textes dépouillés sans primitive « code libre ».",
+      "Chaque primitive a ses tests unitaires, y compris le cas « aucune cible ».",
+      "Un script non conforme au schéma est refusé au chargement, pas en pleine partie.",
+      "Le langage est versionné : un script écrit pour la v1 reste lisible quand la v2 sort."
+    ],
+    "livrables": [
+      "schéma du langage + interpréteur",
+      "docs/jeu/DSL.md",
+      "tests par primitive"
+    ],
+    "risques": "La primitive fourre-tout qui exécute du code arbitraire : elle apparaît au bout de trois jours, et à partir de là plus rien n'est vérifiable ni générable. Si une carte ne s'exprime pas, elle est déclarée non supportée — c'est la règle D9."
+  },
+  {
+    "id": "j-effets-choix",
+    "titre": "Demandes de décision : quand le moteur doit attendre un joueur — y compris l'adversaire",
+    "piste": "E",
+    "couloir": "J-EFF",
+    "jalon": "J2",
+    "priorite": "P0",
+    "taille": "M",
+    "complexite": 4,
+    "difficulte": 5,
+    "apres": [
+      "j-effets-dsl"
+    ],
+    "gain": "C'est le point où beaucoup de moteurs se cassent : une carte demande à l'ADVERSAIRE de choisir, pendant le tour de l'autre. Il faut une partie qui sait se mettre en pause, en ligne, avec une horloge et une reprise après coupure.",
+    "fonctionnalites": "Un mécanisme de demande : à qui, quoi choisir (une carte, plusieurs, un ordre, oui/non, un type, un nombre), combien, obligatoire ou facultatif, parmi quel ensemble (visible ou caché), avec une réponse par défaut et un délai. Le moteur suspend la résolution, l'état porte la demande en cours, et la reprise après F5 retrouve la demande intacte.",
+    "mission": [
+      "Modéliser la demande dans l'état (donc sérialisée, donc reprise) et non dans une variable d'exécution.",
+      "Traiter les demandes adressées à l'adversaire pendant le tour courant, avec leur propre horloge.",
+      "Définir la réponse par défaut de chaque type de demande (le premier choix valide, ou l'abandon de l'effet facultatif) pour l'expiration du délai.",
+      "Empêcher toute autre action tant qu'une demande est en cours, sauf l'abandon.",
+      "Tests : demande à l'adversaire, expiration, reprise après reconnexion au milieu d'une demande, demande imbriquée (un effet qui en déclenche un autre)."
+    ],
+    "acceptation": [
+      "Une partie interrompue au milieu d'une demande reprend exactement à cette demande, avec le temps restant.",
+      "Les demandes imbriquées se résolvent dans le bon ordre et se voient dans le journal.",
+      "L'expiration applique la réponse par défaut et l'écrit dans le journal."
+    ],
+    "livrables": [
+      "demandes de décision dans l'état",
+      "réponses par défaut",
+      "horloge par demande"
+    ],
+    "risques": "Implémenter les demandes en bloquant un fil d'exécution côté serveur : une partie sur deux reste bloquée à la première déconnexion. La demande est une donnée, pas une attente de code."
+  },
+  {
+    "id": "j-cartes-pokemon",
+    "titre": "Cartes Pokémon : base, évolutions, marqueurs de règle",
+    "piste": "E",
+    "couloir": "J-EFF",
+    "jalon": "J1",
+    "priorite": "P0",
+    "taille": "M",
+    "complexite": 3,
+    "difficulte": 3,
+    "apres": [
+      "j-degats-resolution",
+      "j-retraite-banc"
+    ],
+    "gain": "Sans elles il n'y a pas de partie du tout : ce sont les seules cartes indispensables au jalon J1.",
+    "fonctionnalites": "Pokémon de base posables au banc, évolutions de stade 1 et 2 (sur le bon Pokémon, pas le tour de sa pose, pas au premier tour), PV, type, faiblesse, résistance, coût de retraite, marqueur de règle (récompenses données), conservation des énergies et des compteurs de dégâts à l'évolution, guérison des états spéciaux à l'évolution.",
+    "mission": [
+      "Charger les cartes Pokémon sans passer par le langage d'effets : à ce stade, seules les attaques à dégâts secs sont jouables ; les attaques à effet arrivent avec `j-cartes-attaques-effets`.",
+      "Charger ces caractéristiques depuis le catalogue (`cards.attacks`, `weaknesses`, `resistances`, `retreat_cost`, `rule_marker`) plutôt que de les redéclarer.",
+      "Implémenter la pile d'évolution et ce qu'elle conserve ou efface.",
+      "Traiter les cas particuliers de pose (Pokémon qui arrivent directement en jeu par un effet).",
+      "Tests : évolution interdite le tour de la pose, évolution qui soigne le sommeil, K.O. d'une pile d'évolution qui défausse toute la pile."
+    ],
+    "acceptation": [
+      "Aucune caractéristique de Pokémon n'est écrite en dur dans le moteur.",
+      "Une carte du catalogue dont le marqueur de règle est inconnu est refusée avec un message clair, jamais jouée par défaut.",
+      "Les tests d'évolution couvrent les six cas de `cas-de-regles.yaml`."
+    ],
+    "livrables": [
+      "cartes Pokémon jouables depuis le catalogue"
+    ],
+    "risques": "Les données du catalogue sont hétérogènes selon la source (TCGdex / Pokémon TCG API) : les champs manquants doivent bloquer la carte, pas être devinés."
+  },
+  {
+    "id": "j-cartes-energies",
+    "titre": "Énergies : de base fournies, spéciales possédées",
+    "piste": "E",
+    "couloir": "J-EFF",
+    "jalon": "J1",
+    "priorite": "P0",
+    "taille": "M",
+    "complexite": 3,
+    "difficulte": 3,
+    "decision": "D10",
+    "apres": [
+      "j-cartes-pokemon"
+    ],
+    "gain": "Les énergies décident de ce qu'on peut attaquer et quand. La règle de JF (énergies de base illimitées, spéciales possédées) est déjà tranchée : le moteur doit l'appliquer sans que le joueur ait à y penser.",
+    "fonctionnalites": "Énergies de base fournies en quantité illimitée et non décomptées de la collection (D10) ; énergies spéciales traitées comme des cartes ordinaires (possession et règle des quatre exemplaires) ; une énergie attachée par tour ; énergies qui fournissent plusieurs unités ou plusieurs types ; énergies porteuses d'effets (soins, dégâts supplémentaires, coût de retraite modifié) ; défausse et déplacement d'énergies.",
+    "mission": [
+      "Représenter la fourniture d'énergie comme une capacité de la carte (types et quantités fournis), pas comme un type figé.",
+      "Implémenter le paiement d'un coût d'attaque à partir des énergies attachées, y compris les incolores et les fournitures multiples — avec un algorithme qui trouve une combinaison valide et l'explique.",
+      "Brancher les effets portés par les énergies spéciales sur la pile d'effets.",
+      "Tests : coût mixte payé par une énergie double incolore, énergie spéciale qui ne compte que pour un type, défausse d'énergie à la retraite."
+    ],
+    "acceptation": [
+      "Le paiement d'un coût trouve une combinaison valide quand elle existe, et l'explique dans le journal.",
+      "Les énergies de base n'apparaissent jamais dans le décompte de la collection.",
+      "Les énergies spéciales sont soumises à la règle des quatre, vérifié avec le service de légalité des decks."
+    ],
+    "livrables": [
+      "fourniture d'énergie générique",
+      "paiement de coût expliqué"
+    ],
+    "risques": "Coder le paiement comme une simple comparaison de compteurs : les énergies multi-types rendent le problème combinatoire, et une mauvaise combinaison refuse une attaque parfaitement légale."
+  },
+  {
+    "id": "j-cartes-objets",
+    "titre": "Cartes Objet, dont les appâts qui forcent l'échange de l'actif adverse",
+    "piste": "E",
+    "couloir": "J-EFF",
+    "jalon": "J2",
+    "priorite": "P0",
+    "taille": "M",
+    "complexite": 4,
+    "difficulte": 4,
+    "apres": [
+      "j-effets-choix"
+    ],
+    "gain": "Les Objets sont la moitié d'un deck moderne, et l'appât — sortir du banc le Pokémon fragile de l'adversaire pour l'achever — est le geste tactique que JF a explicitement demandé.",
+    "fonctionnalites": "Objets jouables en nombre illimité pendant son tour : recherche dans la pioche, pioche, défausse, soins, déplacement d'énergie, retrait d'outil, changement d'actif de son côté, et **effets d'appât** qui forcent l'adversaire à promouvoir un Pokémon de son banc (type *Boss's Orders*, *Pokémon Catcher*). Restrictions portées par la carte (une fois par tour, conditions d'usage).",
+    "mission": [
+      "Exprimer ces familles dans le langage d'effets ; aucune ne doit demander de code spécifique.",
+      "Traiter l'appât comme un échange forcé (distinct de la retraite, sans coût, non bloqué par les états spéciaux du Pokémon échangé).",
+      "Gérer le cas où l'appât n'a pas de cible (banc adverse vide) : l'effet ne fait rien et le dit.",
+      "Tests : appât sur un banc vide, appât suivi d'une attaque, Objet joué pendant une demande de décision (refusé)."
+    ],
+    "acceptation": [
+      "L'appât change l'actif adverse sans consommer la retraite du tour et sans payer d'énergie.",
+      "Chaque famille d'Objet couverte a au moins trois cartes réelles scriptées et testées.",
+      "Un Objet sans cible valide n'est pas jouable, et la raison s'affiche."
+    ],
+    "livrables": [
+      "familles d'Objets scriptées",
+      "effet d'appât testé"
+    ],
+    "risques": "L'appât est aussi une carte qui déclenche des effets adverses (« quand ce Pokémon devient actif… ») : sans passage par le bus d'événements, ces déclencheurs seront oubliés."
+  },
+  {
+    "id": "j-cartes-supporters",
+    "titre": "Supporters : un par tour, et les effets qui perturbent l'adversaire",
+    "piste": "E",
+    "couloir": "J-EFF",
+    "jalon": "J2",
+    "priorite": "P0",
+    "taille": "M",
+    "complexite": 3,
+    "difficulte": 3,
+    "apres": [
+      "j-effets-choix"
+    ],
+    "gain": "Un Supporter par tour est la contrainte qui structure tout le rythme d'une partie ; ses effets de pioche et de perturbation sont ce qui rend un deck jouable.",
+    "fonctionnalites": "Limite d'un Supporter par tour (drapeau porté par l'état), effets de pioche et de recherche, effets qui agissent sur la main adverse (mélanger et repiocher, faire défausser), effets conditionnés (« seulement si vous avez moins de récompenses »), et interdiction par un verrou adverse.",
+    "mission": [
+      "Brancher la limite sur le drapeau de tour et la rendre visible dans les actions légales.",
+      "Scripter les familles : pioche pure, recherche, perturbation, conditionnels.",
+      "Traiter les effets qui touchent la main adverse en respectant la confidentialité : le joueur actif apprend le nombre, pas le contenu, sauf si la carte le dit.",
+      "Tests : deuxième Supporter refusé avec sa raison, Supporter sous verrou adverse, Supporter qui vide la pioche."
+    ],
+    "acceptation": [
+      "Un Supporter joué sous verrou est refusé avec la carte responsable nommée dans la raison.",
+      "Aucun effet ne révèle la main adverse au-delà de ce que la carte autorise (test de non-fuite).",
+      "Le drapeau survit à une reprise après F5."
+    ],
+    "livrables": [
+      "familles de Supporters scriptées",
+      "verrous respectés"
+    ],
+    "risques": "Les effets de perturbation sont ceux qui font fuir l'information cachée : chaque script doit passer le test de non-fuite de `j-autorite-vues`."
+  },
+  {
+    "id": "j-cartes-stades",
+    "titre": "Stades : un seul en jeu, des effets qui s'appliquent aux deux joueurs",
+    "piste": "E",
+    "couloir": "J-EFF",
+    "jalon": "J2",
+    "priorite": "P1",
+    "taille": "S",
+    "complexite": 3,
+    "difficulte": 3,
+    "apres": [
+      "j-effets-architecture"
+    ],
+    "gain": "Les Stades sont le premier vrai test de l'architecture d'effets continus : ils modifient les règles pour les deux joueurs, et leur remplacement doit tout défaire proprement.",
+    "fonctionnalites": "Un seul Stade en jeu ; jouer un Stade défausse le précédent (et un Stade identique ne peut pas être rejoué pour rien) ; effets continus symétriques ou conditionnels ; effets déclenchés par le Stade ; défausse par un effet.",
+    "mission": [
+      "Implémenter la zone Stade, partagée entre les deux joueurs, et sa règle de remplacement.",
+      "Exprimer les effets de Stade comme des modificateurs continus, retirés au remplacement.",
+      "Tests : remplacement d'un Stade qui donnait un bonus (le bonus disparaît au bon moment), Stade identique refusé, Stade qui modifie le coût de retraite des deux camps."
+    ],
+    "acceptation": [
+      "Le retrait d'un Stade restaure exactement les calculs antérieurs.",
+      "Le Stade appartient à la partie, pas à un joueur : les deux camps en subissent les effets.",
+      "Trois Stades réels sont scriptés et testés."
+    ],
+    "livrables": [
+      "zone Stade + effets continus symétriques"
+    ],
+    "risques": "Appliquer l'effet d'un Stade au moment où il est joué (mutation) au lieu de le consulter au calcul : son remplacement laisse alors des traces indélébiles."
+  },
+  {
+    "id": "j-cartes-outils",
+    "titre": "Outils Pokémon : un par Pokémon, attaché, défaussé au K.O.",
+    "piste": "E",
+    "couloir": "J-EFF",
+    "jalon": "J2",
+    "priorite": "P1",
+    "taille": "S",
+    "complexite": 3,
+    "difficulte": 3,
+    "apres": [
+      "j-effets-architecture"
+    ],
+    "gain": "Les Outils portent les modificateurs de dégâts et de PV les plus courants ; ils testent la bonne tenue des effets continus attachés à une cible.",
+    "fonctionnalites": "Un Outil par Pokémon, attaché lors de son tour, effets continus (PV supplémentaires, dégâts supplémentaires, coût de retraite réduit, protection), effets déclenchés, défausse à la mise K.O. du porteur, retrait par un effet adverse, interdiction d'attacher un deuxième Outil.",
+    "mission": [
+      "Attacher l'Outil au Pokémon dans l'état, avec son effet continu consulté au calcul.",
+      "Traiter les PV supplémentaires correctement : ils changent le seuil de K.O., pas les compteurs déjà posés — et leur retrait peut provoquer un K.O. immédiat.",
+      "Défausser l'Outil avec son porteur, et journaliser le retrait de ses effets.",
+      "Tests : retrait d'un Outil qui donnait des PV et K.O. immédiat, deuxième Outil refusé, Outil sur un Pokémon du banc."
+    ],
+    "acceptation": [
+      "Le retrait d'un Outil de PV provoque bien le K.O. si les compteurs dépassent le nouveau seuil.",
+      "Un Pokémon ne porte jamais deux Outils.",
+      "Trois Outils réels sont scriptés et testés."
+    ],
+    "livrables": [
+      "attachement d'Outils + effets continus ciblés"
+    ],
+    "risques": "Le cas « je retire l'Outil qui maintenait ce Pokémon en vie » est rarement testé et arrive en tournoi : il est dans la table de cas."
+  },
+  {
+    "id": "j-cartes-talents",
+    "titre": "Talents : passifs, activés une fois par tour, déclenchés — et annulables",
+    "piste": "E",
+    "couloir": "J-EFF",
+    "jalon": "J2",
+    "priorite": "P0",
+    "taille": "M",
+    "complexite": 5,
+    "difficulte": 5,
+    "decision": "D9",
+    "apres": [
+      "j-effets-architecture",
+      "j-effets-choix"
+    ],
+    "gain": "Les talents sont la partie la plus difficile du jeu moderne : ils agissent depuis le banc, en permanence, parfois pour annuler d'autres talents. C'est le vrai examen de passage de l'architecture d'effets.",
+    "fonctionnalites": "Trois natures de talents — continus (toujours actifs, y compris depuis le banc), activés (une fois par tour, à son tour), déclenchés (sur un événement) ; talents qui annulent les talents adverses ; talents qui modifient les règles (coûts, dégâts, pioche) ; désactivation quand le Pokémon est affecté d'un état spécial, selon la carte.",
+    "mission": [
+      "Représenter les trois natures et leur enregistrement automatique quand le Pokémon entre en jeu, leur retrait quand il en sort.",
+      "Résoudre l'annulation mutuelle de talents (un talent qui éteint les talents, éteint-il celui qui l'éteint ?) selon `REGLES.md`, et le tester explicitement.",
+      "Suivre les talents « une fois par tour » par Pokémon, et non par joueur.",
+      "Tests : talent de banc qui soigne entre les tours, talent annulé par un talent adverse, talent activé deux fois refusé."
+    ],
+    "acceptation": [
+      "Le cas d'annulation mutuelle est tranché par écrit et testé.",
+      "Un talent cesse d'agir dès que son Pokémon quitte le jeu, au même instant.",
+      "Cinq talents réels de natures différentes sont scriptés et testés."
+    ],
+    "livrables": [
+      "trois natures de talents",
+      "annulation de talents"
+    ],
+    "risques": "Les talents continus consultés au mauvais moment (au début du tour au lieu du calcul) donnent des résultats justes en apparence et faux dans les cas limites, ceux qu'un joueur remarque."
+  },
+  {
+    "id": "j-cartes-attaques-effets",
+    "titre": "Attaques à effet : pile ou face, dégâts variables, blocages, états infligés",
+    "piste": "E",
+    "couloir": "J-EFF",
+    "jalon": "J2",
+    "priorite": "P0",
+    "taille": "M",
+    "complexite": 4,
+    "difficulte": 4,
+    "apres": [
+      "j-effets-dsl",
+      "j-etats-speciaux"
+    ],
+    "gain": "Une attaque qui n'inflige que des dégâts est l'exception. Tant que les attaques à effet ne sont pas scriptées, aucun deck réel n'est jouable.",
+    "fonctionnalites": "Pile ou face (un, plusieurs, jusqu'à échec), dégâts variables (nombre d'énergies attachées, cartes en main, PV manquants, compteurs posés, récompenses restantes), dégâts au banc, auto-dégâts, défausse d'énergies en coût, soins, poses d'états spéciaux, blocage du tour suivant (« ce Pokémon ne peut pas attaquer au prochain tour »), effets conditionnés au type de la cible.",
+    "mission": [
+      "Scripter ces familles dans le langage d'effets, en réutilisant les primitives existantes.",
+      "Traiter les effets qui durent (blocage du tour suivant) via des marqueurs à expiration journalisée.",
+      "Journaliser chaque pile ou face avec sa graine et son résultat, pour que le joueur puisse vérifier.",
+      "Tests : attaque à dégâts variables sur trois états différents, blocage qui expire bien au bon tour, KO par auto-dégâts."
+    ],
+    "acceptation": [
+      "Chaque famille est couverte par au moins trois cartes réelles testées.",
+      "Un blocage « au prochain tour » expire exactement au bon moment, avec sa ligne de journal.",
+      "Tous les pile ou face sont rejouables depuis la graine."
+    ],
+    "livrables": [
+      "familles d'attaques à effet scriptées"
+    ],
+    "risques": "Les dégâts variables se calculent au moment de la résolution, pas de la déclaration : un joueur qui défausse une carte entre les deux obtiendrait sinon un résultat faux."
+  },
+  {
+    "id": "j-cartes-regles-speciales",
+    "titre": "Règles de cartes particulières : ACE SPEC, Radiant, VSTAR, GX, Prism Star",
+    "piste": "E",
+    "couloir": "J-EFF",
+    "jalon": "J2",
+    "priorite": "P1",
+    "taille": "S",
+    "complexite": 3,
+    "difficulte": 3,
+    "apres": [
+      "j-effets-dsl",
+      "j-ko-recompenses"
+    ],
+    "gain": "Ces règles ne concernent que quelques cartes, mais elles cassent les règles générales : les ignorer rend injouables des cartes que les joueurs possèdent et veulent jouer.",
+    "fonctionnalites": "Limites de deck propres (une seule carte ACE SPEC, un seul Pokémon Radiant), pouvoirs utilisables une fois par partie (VSTAR, GX), cartes Prism Star qui vont en zone perdue au lieu de la défausse, marqueurs de règle donnant deux ou trois récompenses.",
+    "mission": [
+      "Porter ces contraintes dans le service de légalité des decks (`v7-decks-legalite`) et dans le moteur.",
+      "Suivre l'usage « une fois par partie » dans l'état du joueur, pas dans celui de la carte.",
+      "Implémenter la zone perdue si le format la connaît (DJ1).",
+      "Tests : deux ACE SPEC refusées au deck, deuxième pouvoir VSTAR refusé en partie, Prism Star qui part en zone perdue."
+    ],
+    "acceptation": [
+      "Chaque règle particulière est vérifiée au deck ET en partie.",
+      "L'usage unique par partie survit à une reprise après F5.",
+      "Une carte portant une règle particulière inconnue est refusée au deck avec sa raison."
+    ],
+    "livrables": [
+      "règles particulières au deck et en partie"
+    ],
+    "risques": "Ces règles se trouvent dans le texte de la carte, pas dans un champ structuré du catalogue : leur détection fait partie de la compilation, et doit échouer bruyamment quand elle hésite."
+  },
+  {
+    "id": "j-effets-catalogue-compilation",
+    "titre": "Du catalogue aux cartes jouables : compilation, versions et errata",
+    "piste": "E",
+    "couloir": "J-EFF",
+    "jalon": "J2",
+    "priorite": "P0",
+    "taille": "L",
+    "complexite": 4,
+    "difficulte": 4,
+    "decision": "DJ2",
+    "apres": [
+      "j-effets-dsl",
+      "j-cartes-pokemon"
+    ],
+    "gain": "C'est le pont entre les trente mille cartes du catalogue et les cartes réellement jouables. Sans lui, chaque carte est un travail manuel sans mémoire.",
+    "fonctionnalites": "Une table `card_scripts` : carte, version du langage, script, statut (scripté / non supporté / à revoir), empreinte du texte source, auteur, date de validation, tests associés. Quand le texte d'une carte change en base (correction du catalogue, errata), l'empreinte ne correspond plus et le script repasse « à revoir » — il ne peut plus être joué tant qu'il n'a pas été confirmé.",
+    "mission": [
+      "Créer la table et ses migrations, avec l'empreinte du texte source par langue.",
+      "Écrire le chargeur qui, au lancement d'une partie, résout chaque carte du deck vers son script validé — et refuse la partie si l'une manque.",
+      "Détecter les textes modifiés et basculer automatiquement les scripts concernés en « à revoir ».",
+      "Regrouper les cartes par texte identique : des centaines de cartes partagent le même effet, un script doit pouvoir en couvrir plusieurs.",
+      "Commande de maintenance : importer, valider, lister, diffuser les scripts."
+    ],
+    "acceptation": [
+      "Une carte dont le texte a changé ne se joue plus avec l'ancien script : elle passe « à revoir » et le deck le dit.",
+      "Le regroupement par texte identique réduit mesurablement le nombre de scripts à écrire (chiffre publié dans le compte rendu).",
+      "Le lancement d'une partie avec une carte non scriptée est refusé avant la mise en place, jamais en plein milieu."
+    ],
+    "livrables": [
+      "table `card_scripts` + migrations",
+      "chargeur de partie",
+      "détection d'errata"
+    ],
+    "risques": "La tentation d'un repli « script manquant → effet neutre » : c'est précisément l'approximation interdite par D9. Une carte sans script bloque le deck, et le dit."
+  },
+  {
+    "id": "j-effets-assistance-ia",
+    "titre": "Assistance IA : proposer le script d'une carte, jamais le valider seule",
+    "piste": "E",
+    "couloir": "J-EFF",
+    "jalon": "J2",
+    "priorite": "P1",
+    "taille": "M",
+    "complexite": 4,
+    "difficulte": 4,
+    "decision": "DJ8",
+    "apres": [
+      "j-effets-catalogue-compilation"
+    ],
+    "gain": "Écrire des milliers de scripts à la main n'arrivera jamais au bout. L'IA du projet sait lire un texte de carte et proposer un script — à condition que rien n'entre en jeu sans être testé.",
+    "fonctionnalites": "Un passage par lots : pour chaque carte non scriptée, l'IA propose un script dans le langage, ET les cas de test qui le vérifient, ET son niveau de confiance. Le script n'est activé que si ses tests passent et qu'un humain a validé la famille. Budget plafonné, journalisation des coûts, reprise après interruption — comme `v4-insights-batch`.",
+    "mission": [
+      "Écrire le gabarit de requête : texte de la carte (FR et EN), schéma du langage, exemples validés proches, contraintes de sortie strictes.",
+      "Exécuter les tests proposés ET une batterie de tests de cohérence maison (l'effet ne crée ni ne détruit de cartes, l'état reste valide).",
+      "Mettre en file de relecture humaine par famille d'effet, pas carte par carte.",
+      "Plafonner le budget, journaliser le coût par carte, reprendre après interruption sans reprendre les cartes déjà traitées.",
+      "Mesurer : part des propositions acceptées sans retouche, part rejetée, coût par carte validée."
+    ],
+    "acceptation": [
+      "Aucun script n'entre en jeu sans tests verts ET validation humaine de sa famille — vérifié par une contrainte en base, pas par une consigne.",
+      "Le budget plafonné est respecté et le coût par carte validée est publié.",
+      "Une interruption au milieu d'un lot ne perd rien et ne retraite rien."
+    ],
+    "livrables": [
+      "passage par lots IA → scripts + tests",
+      "file de relecture par famille",
+      "mesures de rendement"
+    ],
+    "risques": "Un script plausible mais faux est plus dangereux qu'une carte non supportée : il fait perdre des parties sans que personne ne comprenne. Les tests de cohérence maison sont le vrai garde-fou, pas la confiance annoncée par le modèle."
+  },
+  {
+    "id": "j-effets-couverture-outil",
+    "titre": "Tableau de couverture : ce qui est jouable, ce qui manque, et pour qui",
+    "piste": "E",
+    "couloir": "J-EFF",
+    "jalon": "J2",
+    "priorite": "P1",
+    "taille": "S",
+    "complexite": 2,
+    "difficulte": 2,
+    "decision": "DJ2",
+    "apres": [
+      "j-effets-catalogue-compilation"
+    ],
+    "gain": "Sans cette vue, personne ne sait où en est le chantier des cartes, ni pourquoi le deck d'Aymeric est refusé. Avec elle, l'effort se dirige : on script d'abord ce que les joueurs possèdent vraiment.",
+    "fonctionnalites": "Couverture par extension, par famille d'effet et **par collection de joueur** ; liste des cartes qui bloquent le plus de decks ; état d'un deck (« jouable », « 3 cartes non supportées »), avec la raison par carte ; file de demande « je voudrais jouer cette carte » qui alimente la priorisation.",
+    "mission": [
+      "Calculer la couverture et l'exposer dans l'API et dans une page d'administration.",
+      "Classer les cartes manquantes par nombre de decks bloqués et par nombre de joueurs concernés.",
+      "Brancher le rapport de légalité du constructeur de deck (`v7-decks-legalite`) sur cette source : la raison « carte non supportée » y devient explicite.",
+      "Permettre à un joueur de signaler une carte qu'il veut jouer, et voir sa demande avancer."
+    ],
+    "acceptation": [
+      "Le constructeur de deck affiche, pour chaque carte refusée, si c'est la possession, la légalité ou le script qui bloque.",
+      "La page de couverture donne le chiffre par collection de joueur, pas seulement global.",
+      "La file de demandes est visible dans le compte rendu de chaque lot de scripts."
+    ],
+    "livrables": [
+      "API et page de couverture",
+      "raison explicite dans la légalité des decks",
+      "file de demandes"
+    ],
+    "risques": "Une couverture mesurée sur le catalogue entier (99 % de cartes que personne ne possède) donne un chiffre flatteur et inutile : la mesure qui compte est celle des collections réelles."
+  }
+]

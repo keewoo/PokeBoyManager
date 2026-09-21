@@ -31,6 +31,7 @@ SORTIE_HTML = ICI / "ROADMAP.html"
 PROMPTS = RACINE / "prompts"
 BACKLOG = RACINE / "BACKLOG.md"
 ARTEFACT = "https://claude.ai/artifact/2w2cvcLhUGZdorHNVvTahy"
+PLAN_JEU = ICI / "jeu" / "jeu.json"   # backlog du jeu, plan sans dates (build-jeu.py)
 
 MACHINES = {
     "devAI": {
@@ -253,12 +254,22 @@ def build(_a=None) -> int:
         prompts[it["id"]] = prompt(plan, it)
         (PROMPTS / f"{it['id']}.md").write_text(prompts[it["id"]] + "\n", encoding="utf-8")
     BACKLOG.write_text(backlog(plan, etat), encoding="utf-8")
+    # Backlog du jeu : plan séparé, sans dates, généré par docs/roadmap/jeu/build-jeu.py.
+    # Son absence ne bloque pas la génération, mais elle se DIT ici et dans l'onglet — un
+    # onglet vide sans explication est exactement le genre de panne muette qu'on ne remarque pas.
+    jeu = None
+    if PLAN_JEU.exists():
+        jeu = json.loads(PLAN_JEU.read_text(encoding="utf-8"))
+    else:
+        print(f"ATTENTION — {PLAN_JEU.relative_to(RACINE)} absent : l'onglet « Backlog du jeu » "
+              f"sera vide. Lancer d'abord : python3 docs/roadmap/jeu/build-jeu.py")
     data = dict(plan, etats=etat["etats"], decisions_prises=etat["decisions_prises"], prompts=prompts,
-                artefact=ARTEFACT, genere=maintenant())
+                jeu=jeu, artefact=ARTEFACT, genere=maintenant())
     html = GABARIT.read_text(encoding="utf-8").replace("/*__DATA__*/null", json.dumps(data, ensure_ascii=False).replace("</", "<\\/"))
     SORTIE_HTML.write_text(html, encoding="utf-8")
     sauver(etat)
-    print(f"ok — {len(plan['items'])} lots, {len(prompts)} prompts, BACKLOG.md et ROADMAP.html régénérés")
+    jeu_txt = f", {len(jeu['lots'])} lots de jeu" if jeu else ", backlog du jeu ABSENT"
+    print(f"ok — {len(plan['items'])} lots, {len(prompts)} prompts{jeu_txt}, BACKLOG.md et ROADMAP.html régénérés")
     return 0
 
 

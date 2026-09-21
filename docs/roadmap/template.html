@@ -183,6 +183,28 @@ footer.rf ul{margin:0;padding-left:18px}
 @media (max-width:640px){h1{font-size:27px}details.card>summary{grid-template-columns:auto 1fr}details.card>summary .gridT{grid-column:1/-1}.filters{position:static}}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 
+/* ================= BACKLOG DU JEU — plan sans dates ================= */
+.paliers{background:var(--surface);border:1px solid var(--line-2);border-radius:14px;padding:4px 16px}
+.pal{display:grid;grid-template-columns:104px minmax(0,1fr);gap:12px;align-items:start;padding:11px 0;border-bottom:1px solid var(--line)}
+.pal:last-child{border-bottom:none}
+.pal .pn{font-size:13px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+.pal .pn small{display:block;font-weight:500;color:var(--muted);font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+.pal .lots{display:flex;gap:6px;flex-wrap:wrap}
+.lotchip{font:600 12px "Space Grotesk",sans-serif;border:1px solid var(--line);background:var(--surface-2);color:var(--body);border-radius:999px;padding:4px 11px;cursor:pointer;display:inline-flex;gap:7px;align-items:center;max-width:100%}
+.lotchip:hover{border-color:var(--blue);color:var(--ink)}
+.lotchip .dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--pc,var(--muted))}
+.lotchip.crit{border-color:var(--orange);color:var(--ink)}
+.lotchip.crit::after{content:"◆";color:var(--orange);font-size:9px}
+.lotchip.off{opacity:.3}
+.jal.jb{background:var(--surface);border:1px solid var(--line-2)}
+.jal.jb .big{font-size:22px}
+.jal.jb .date{color:var(--blue)}
+.jal.jb .preuve{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:8px}
+.critline{display:flex;flex-wrap:wrap;gap:4px 2px;align-items:center;font-size:12.5px;color:var(--body)}
+.critline .arrow{color:var(--muted)}
+.jbmeta{display:flex;gap:6px 12px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted)}
+.jbcount{font-size:12.5px;color:var(--muted);margin:10px 0 6px}
+.jbnone{color:var(--muted);font-style:italic;font-size:12.5px}
 /* ================= MAQUETTE DU JEU (V7) — l'arène ================= */
 /* Dimensions : carte de référence 126x176 px sur un plateau conçu en 1920x1080, zone utile
    (« safe zone ») 1500x900 centrée. Tout est exprimé en em, avec 1em = largeur du plateau / 120,
@@ -557,6 +579,7 @@ footer.rf ul{margin:0;padding-left:18px}
   <div class="tabs" role="tablist" aria-label="Vues">
     <span class="brand">PokeBoyManager</span>
     <button class="tab" role="tab" id="tab-roadmap" aria-controls="view-roadmap" aria-selected="true">Roadmap &amp; backlog</button>
+    <button class="tab" role="tab" id="tab-jeubacklog" aria-controls="view-jeubacklog" aria-selected="false">Backlog du jeu</button>
     <button class="tab" role="tab" id="tab-maquette" aria-controls="view-maquette" aria-selected="false">Maquette du site</button>
     <button class="tab" role="tab" id="tab-jeu" aria-controls="view-jeu" aria-selected="false">Maquette du jeu</button>
   </div>
@@ -636,6 +659,69 @@ footer.rf ul{margin:0;padding-left:18px}
     </footer>
   </div>
 
+  <!-- ===================== BACKLOG DU JEU ===================== -->
+  <div id="view-jeubacklog" role="tabpanel" aria-labelledby="tab-jeubacklog" hidden>
+    <header>
+      <span class="eyebrow">PokeBoyManager · backlog du jeu · <b>plan sans dates</b>, ordonné par les dépendances</span>
+      <h1>Backlog du <b>jeu</b></h1>
+      <p class="lede" id="jb-objet"></p>
+      <div class="facts" id="jb-facts"></div>
+    </header>
+
+    <section class="rs" aria-label="Pourquoi une section à part">
+      <div class="todo"><div id="jb-apart"></div></div>
+    </section>
+
+    <section class="rs" aria-label="Principes">
+      <div class="sechead"><div><h2>Six principes</h2><p>Ils valent pour tous les lots du jeu : un lot qui les contredit est à réécrire, pas à discuter.</p></div></div>
+      <ul class="principles" id="jb-principes"></ul>
+    </section>
+
+    <section class="rs" aria-label="Jalons">
+      <div class="sechead"><div><h2>Cinq jalons, aucune date</h2><p>L'avancement se lit ici : ce que le jeu sait faire, et la preuve qu'on en attend. Les jalons se chevauchent — pendant que l'interface se construit, les cartes se scriptent dans un autre couloir.</p></div></div>
+      <div class="jalons" id="jb-jalons"></div>
+    </section>
+
+    <section class="rs" aria-label="Décisions">
+      <div class="sechead"><div><h2>Décisions à prendre par JF</h2><p>Aucune n'empêche de commencer : le palier 0 n'en dépend pas. Mais chacune bloque un lot précis, et la prendre tard coûte une reprise.</p></div></div>
+      <div class="tbl"><table><thead><tr><th>#</th><th>Question</th><th>Proposition du pilote</th><th>Bloque</th></tr></thead><tbody id="jb-decisions"></tbody></table></div>
+    </section>
+
+    <section class="rs" aria-label="Ordre d'exécution">
+      <div class="sechead"><div><h2>L'ordre — les paliers</h2><p>Le palier d'un lot est <b>calculé</b> depuis ses dépendances : palier 0 = rien devant lui. Deux lots d'un même palier partent ensemble s'ils sont dans des couloirs différents. Un losange orange marque le chemin critique.</p></div></div>
+      <div class="paliers" id="jb-paliers"></div>
+      <h4 style="margin-top:20px">Chemin critique</h4>
+      <p class="jbcount">La plus longue chaîne de dépendances, pondérée par la taille des lots. C'est elle qui fixe la durée du chantier.</p>
+      <div class="critline" id="jb-critique"></div>
+    </section>
+
+    <section class="rs" aria-label="Couloirs et pistes">
+      <div class="sechead"><div><h2>Couloirs et pistes</h2><p>Un couloir porte un lot à la fois, dans son propre worktree, sur la machine indiquée.</p></div></div>
+      <div class="tbl"><table><thead><tr><th>Couloir</th><th>Machine</th><th>Rôle</th><th>Lots</th></tr></thead><tbody id="jb-couloirs"></tbody></table></div>
+      <div class="tbl" style="margin-top:12px"><table><thead><tr><th>Piste</th><th>Nom</th><th>Ce qu'elle couvre</th><th>Lots</th></tr></thead><tbody id="jb-pistes"></tbody></table></div>
+    </section>
+
+    <section class="rs" aria-label="Les lots">
+      <div class="sechead"><div><h2>Les lots, un par un</h2><p>Chaque fiche porte sa mission, ses critères d'acceptation, ses livrables et le risque à surveiller — de quoi écrire le prompt du lot le jour où un couloir le prend.</p></div></div>
+      <div class="filters" role="toolbar" aria-label="Filtres du backlog du jeu">
+        <input id="jb-q" type="search" placeholder="Chercher un lot, une règle, une carte…" aria-label="Chercher dans le backlog du jeu">
+        <span class="sep" aria-hidden="true"></span>
+        <span id="jb-f-jalon"></span>
+        <span class="sep" aria-hidden="true"></span>
+        <span id="jb-f-piste"></span>
+        <span class="sep" aria-hidden="true"></span>
+        <button class="chip" id="jb-f-crit" aria-pressed="false">Chemin critique</button>
+        <button class="chip" id="jb-f-raz">Tout</button>
+      </div>
+      <p class="jbcount" id="jb-compte"></p>
+      <div class="cards" id="jb-cartes"></div>
+    </section>
+
+    <footer class="rf">
+      <div id="jb-corr"></div>
+    </footer>
+  </div>
+
   <!-- ===================== MAQUETTE ===================== -->
   <div id="view-maquette" role="tabpanel" aria-labelledby="tab-maquette" hidden>
     <div class="mk-intro">
@@ -673,7 +759,7 @@ const D = /*__DATA__*/null;
 
 /* ============================== ONGLETS ============================== */
 (function(){
-  const tabs = [['roadmap', 'tab-roadmap', 'view-roadmap'], ['maquette', 'tab-maquette', 'view-maquette'], ['jeu', 'tab-jeu', 'view-jeu']];
+  const tabs = [['roadmap', 'tab-roadmap', 'view-roadmap'], ['jeubacklog', 'tab-jeubacklog', 'view-jeubacklog'], ['maquette', 'tab-maquette', 'view-maquette'], ['jeu', 'tab-jeu', 'view-jeu']];
   function show(k){
     tabs.forEach(([n, t, v]) => { document.getElementById(t).setAttribute('aria-selected', n === k); document.getElementById(v).hidden = n !== k; });
     try { localStorage.setItem('pbm-tab', k); } catch (e) {}
@@ -682,6 +768,7 @@ const D = /*__DATA__*/null;
   let k = 'roadmap'; try { k = localStorage.getItem('pbm-tab') || 'roadmap'; } catch (e) {}
   if (location.hash === '#maquette') k = 'maquette';
   if (location.hash === '#jeu') k = 'jeu';
+  if (location.hash === '#backlog-jeu') k = 'jeubacklog';
   show(k);
   window.__showTab = show;
 })();
@@ -1527,6 +1614,163 @@ document.getElementById('view-jeu').addEventListener('click', e => {
   if (a === 'abandon') { G.fini = 'perdu'; ecran = 'fin'; rend(); return; }
 });
 rend();
+})();
+
+/* ============================== BACKLOG DU JEU ============================== */
+(function(){
+const J = (typeof D === 'object' && D) ? D.jeu : null;
+const root = document.getElementById('view-jeubacklog');
+if (!root) return;
+if (!J) {
+  root.innerHTML = '<div class="alert att" style="margin-top:20px">Le plan du jeu (<code>docs/roadmap/jeu/jeu.json</code>) n\'a pas été trouvé au moment de la génération : cet onglet est vide. Lancer <code>python3 docs/roadmap/jeu/build-jeu.py</code> puis <code>python3 docs/roadmap/suivi.py build</code>.</div>';
+  return;
+}
+const $ = s => root.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const md = s => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+const lots = J.lots || [];
+const parId = Object.fromEntries(lots.map(l => [l.id, l]));
+const nomPiste = Object.fromEntries((J.pistes || []).map(p => [p.id, p.nom]));
+const machine = Object.fromEntries((J.couloirs || []).map(c => [c.id, c.machine]));
+const COUL = { R:'#2C66D9', E:'#6B4FC8', S:'#0E7486', U:'#C85E0E', G:'#B8321F', C:'#1E7A57', Q:'#8E887B' };
+const POIDS = { S:1, M:2, L:3, XL:5 };
+const crit = new Set(J.chemin_critique || []);
+const maxPal = Math.max(...lots.map(l => l.palier));
+const suivants = {};
+lots.forEach(l => suivants[l.id] = []);
+lots.forEach(l => (l.apres || []).forEach(d => { if (suivants[d]) suivants[d].push(l.id); }));
+
+const lien = id => '<button class="lotchip' + (crit.has(id) ? ' crit' : '') + '" data-goto="' + esc(id) + '" style="--pc:' +
+  (COUL[(parId[id] || {}).piste] || 'var(--muted)') + '"><i class="dot"></i>' + esc(id) + '</button>';
+
+$('#jb-objet').innerHTML = md(J.objet);
+$('#jb-facts').innerHTML = [
+  '<span><b>' + lots.length + '</b> lots</span>',
+  '<span><b>' + (maxPal + 1) + '</b> paliers</span>',
+  '<span>chemin critique <b>' + (J.chemin_critique || []).length + '</b> lots</span>',
+  '<span><b>' + (J.jalons || []).length + '</b> jalons</span>',
+  '<span><b>' + (J.couloirs || []).length + '</b> couloirs</span>',
+  '<span><b>' + (J.decisions || []).length + '</b> décisions en attente</span>',
+  '<span>version <b>' + esc(J.version) + '</b> · ' + esc(J.date) + '</span>'
+].join('');
+$('#jb-apart').innerHTML = '<h4>Pourquoi une section à part</h4><p style="font-size:13.5px;color:var(--body)">' + md(J.pourquoi_a_part) + '</p>';
+$('#jb-principes').innerHTML = (J.principes || []).map(p => '<li>' + md(p) + '</li>').join('');
+
+$('#jb-jalons').innerHTML = (J.jalons || []).map(j => {
+  const dedans = lots.filter(l => l.jalon === j.id);
+  const poids = dedans.reduce((a, l) => a + (POIDS[l.taille] || 2), 0);
+  const pmin = Math.min(...dedans.map(l => l.palier)), pmax = Math.max(...dedans.map(l => l.palier));
+  return '<div class="jal jb"><div class="date">' + esc(j.id) + '</div>' +
+    '<div class="big">' + esc(j.nom) + '</div>' +
+    '<div class="jbmeta"><span><b>' + dedans.length + '</b> lots</span><span>poids ' + poids + '</span><span>paliers ' + pmin + ' → ' + pmax + '</span></div>' +
+    '<p>' + md(j.these) + '</p>' +
+    '<p class="preuve"><b>Preuve attendue.</b> ' + md(j.preuve) + '</p></div>';
+}).join('');
+
+$('#jb-decisions').innerHTML = (J.decisions || []).map(d =>
+  '<tr><td class="date">' + esc(d.id) + '</td><td style="color:var(--ink)">' + md(d.question) +
+  '<div style="color:var(--body);font-size:12.5px;margin-top:4px">' + md(d.enjeu) + '</div></td>' +
+  '<td>' + md(d.proposition) + '</td><td>' + (d.debloque || []).map(lien).join(' ') + '</td></tr>').join('');
+
+let rail = '';
+for (let r = 0; r <= maxPal; r++) {
+  const dedans = lots.filter(l => l.palier === r).sort((a, b) => a.id.localeCompare(b.id));
+  if (!dedans.length) continue;
+  const cl = [...new Set(dedans.map(l => l.couloir))].sort();
+  rail += '<div class="pal"><div class="pn">Palier ' + r + '<small>' + dedans.length + ' lot' + (dedans.length > 1 ? 's' : '') +
+    ' · ' + cl.join(' ') + '</small></div><div class="lots">' + dedans.map(l => lien(l.id)).join('') + '</div></div>';
+}
+$('#jb-paliers').innerHTML = rail;
+$('#jb-critique').innerHTML = (J.chemin_critique || []).map(lien).join('<span class="arrow">→</span>');
+
+$('#jb-couloirs').innerHTML = (J.couloirs || []).map(c =>
+  '<tr><td class="date"><code>' + esc(c.id) + '</code></td><td><span class="mach ' + esc(c.machine) + '">' + esc(c.machine) + '</span></td>' +
+  '<td>' + md(c.quoi) + '</td><td class="num">' + lots.filter(l => l.couloir === c.id).length + '</td></tr>').join('');
+$('#jb-pistes').innerHTML = (J.pistes || []).map(p =>
+  '<tr><td class="date"><span class="lotchip" style="--pc:' + (COUL[p.id] || 'var(--muted)') + ';cursor:default"><i class="dot"></i>' + esc(p.id) + '</span></td>' +
+  '<td style="color:var(--ink)">' + esc(p.nom) + '</td><td>' + md(p.quoi) + '</td><td class="num">' +
+  lots.filter(l => l.piste === p.id).length + '</td></tr>').join('');
+
+const ul = a => '<ul>' + (a || []).map(x => '<li>' + md(x) + '</li>').join('') + '</ul>';
+$('#jb-cartes').innerHTML = lots.slice().sort((a, b) => a.palier - b.palier || a.id.localeCompare(b.id)).map(l =>
+  '<details class="card" id="jb-' + esc(l.id) + '" data-id="' + esc(l.id) + '" data-jalon="' + esc(l.jalon) + '" data-piste="' + esc(l.piste) + '">' +
+  '<summary><span class="pill ' + esc(l.priorite) + '">' + esc(l.priorite) + '</span>' +
+  '<span class="sumtitle"><h3>' + esc(l.titre) + '</h3><span class="meta">' +
+  '<code>' + esc(l.id) + '</code><span>palier <b>' + l.palier + '</b></span><span>jalon <b>' + esc(l.jalon) + '</b></span>' +
+  '<span><i class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + (COUL[l.piste] || 'var(--muted)') + ';margin-right:4px"></i>' + esc(nomPiste[l.piste] || l.piste) + '</span>' +
+  '<span><code>' + esc(l.couloir) + '</code> ' + esc(machine[l.couloir] || '') + '</span><span>taille ' + esc(l.taille) + '</span>' +
+  (l.decision ? '<span class="tag decision">' + esc(l.decision) + '</span>' : '') +
+  (crit.has(l.id) ? '<span class="tag jalon">chemin critique</span>' : '') +
+  '</span></span></summary>' +
+  '<div class="cbody">' +
+  '<div class="blk"><h4>Pourquoi ce lot</h4><p>' + md(l.gain) + '</p></div>' +
+  '<div class="blk"><h4>Ce qu\'il fait</h4><p>' + md(l.fonctionnalites) + '</p></div>' +
+  '<div class="blk two"><div><h4>Mission</h4>' + ul(l.mission) + '</div><div><h4>Critères d\'acceptation</h4>' + ul(l.acceptation) + '</div></div>' +
+  '<div class="blk two"><div><h4>Livrables</h4>' + ul(l.livrables) + '</div><div><h4>Risque à surveiller</h4><p>' + md(l.risques) + '</p></div></div>' +
+  '<div class="blk"><h4>Enchaînement</h4><p class="seq">Vient après : ' +
+  ((l.apres || []).length ? (l.apres || []).map(lien).join(' ') : '<span class="jbnone">rien ne le précède</span>') +
+  '<br>Débloque : ' + (suivants[l.id].length ? suivants[l.id].sort().map(lien).join(' ') : '<span class="jbnone">rien n\'en dépend</span>') +
+  '</p></div></div></details>').join('');
+
+const cartes = [...root.querySelectorAll('#jb-cartes details.card')];
+const etat = { q: '', jalon: null, piste: null, crit: false };
+const chips = (cible, vals, cle, lib) => {
+  $(cible).innerHTML = vals.map(v => '<button class="chip" data-v="' + esc(v) + '" aria-pressed="false">' + esc(lib(v)) + '</button>').join(' ');
+  $(cible).addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    etat[cle] = etat[cle] === b.dataset.v ? null : b.dataset.v;
+    [...$(cible).querySelectorAll('.chip')].forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === etat[cle])));
+    filtrer();
+  });
+};
+function filtrer(){
+  let n = 0;
+  cartes.forEach(c => {
+    const l = parId[c.dataset.id];
+    const txt = JSON.stringify(l).toLowerCase();
+    const ok = (!etat.q || txt.includes(etat.q)) && (!etat.jalon || l.jalon === etat.jalon) &&
+               (!etat.piste || l.piste === etat.piste) && (!etat.crit || crit.has(l.id));
+    c.classList.toggle('hidden', !ok);
+    if (ok) n++;
+  });
+  $('#jb-compte').textContent = n + ' lot' + (n > 1 ? 's' : '') + ' affiché' + (n > 1 ? 's' : '') + ' sur ' + lots.length + '.';
+  root.querySelectorAll('.lotchip').forEach(b => {
+    const l = parId[b.dataset.goto]; if (!l) return;
+    const c = root.querySelector('#jb-' + CSS.escape(l.id));
+    b.classList.toggle('off', !!c && c.classList.contains('hidden'));
+  });
+}
+chips('#jb-f-jalon', (J.jalons || []).map(j => j.id), 'jalon', v => v);
+chips('#jb-f-piste', (J.pistes || []).map(p => p.id), 'piste', v => nomPiste[v] || v);
+$('#jb-q').addEventListener('input', e => { etat.q = e.target.value.trim().toLowerCase(); filtrer(); });
+$('#jb-f-crit').addEventListener('click', e => { etat.crit = !etat.crit; e.currentTarget.setAttribute('aria-pressed', String(etat.crit)); filtrer(); });
+$('#jb-f-raz').addEventListener('click', () => {
+  etat.q = ''; etat.jalon = null; etat.piste = null; etat.crit = false;
+  $('#jb-q').value = '';
+  root.querySelectorAll('.filters .chip').forEach(x => x.setAttribute('aria-pressed', 'false'));
+  filtrer();
+});
+root.addEventListener('click', e => {
+  const b = e.target.closest('[data-goto]'); if (!b) return;
+  const c = root.querySelector('#jb-' + CSS.escape(b.dataset.goto)); if (!c) return;
+  if (c.classList.contains('hidden')) { $('#jb-f-raz').click(); }
+  c.open = true;
+  c.scrollIntoView({ block: 'center', behavior: 'smooth' });
+});
+
+const corr = J.correspondance_plan_date || {};
+const couverts = new Set(Object.values(corr.remplaces || {}).flat());
+const nouveaux = lots.filter(l => !couverts.has(l.id));
+$('#jb-corr').innerHTML =
+  '<h4>Ce que ce backlog remplace dans le plan daté</h4><p>' + md(corr.note || '') + '</p>' +
+  '<ul>' + Object.entries(corr.remplaces || {}).map(([a, rs]) =>
+    '<li><code>' + esc(a) + '</code> → ' + rs.map(lien).join(' ') + '</li>').join('') + '</ul>' +
+  (nouveaux.length ? '<h4>Lots qui n\'existaient nulle part dans le plan daté</h4><p>' + nouveaux.map(l => lien(l.id)).join(' ') + '</p>' : '') +
+  '<h4>Préalables qui restent dans le plan daté</h4><ul>' +
+  Object.entries(corr.prealables_hors_section || {}).map(([i, q]) => '<li><code>' + esc(i) + '</code> — ' + md(q) + '</li>').join('') +
+  '</ul><p>Source : <code>docs/roadmap/jeu/plan/</code> · document : <code>docs/roadmap/jeu/BACKLOG-JEU.md</code> · régénération : <code>python3 docs/roadmap/jeu/build-jeu.py</code>.</p>';
+
+filtrer();
 })();
 
 </script>

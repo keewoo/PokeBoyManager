@@ -1,0 +1,159 @@
+{
+  "titre": "Backlog du jeu — plateau, moteur de règles et parties",
+  "version": "1.0",
+  "date": "2026-09-21",
+  "objet": "Deux joueurs s'affrontent en ligne avec les cartes qu'ils possèdent vraiment : recherche d'un adversaire, choix du deck, mise en place, partie au tour par tour sur un plateau animé, puis une fin de partie qui laisse une trace sur le compte. Le moteur applique les règles officielles et sait jouer les cartes — attaques, défense, appâts, Dresseurs, talents, états spéciaux — sans jamais approximer un effet qu'il ne connaît pas.",
+  "pourquoi_a_part": "Ce plan n'a ni date de début ni date de fin : le jeu est la partie la plus incertaine du produit, et une date y serait une fiction. L'ordre est donné par les dépendances entre lots (palier calculé), et l'avancement se lit en jalons fonctionnels — « une partie honnête tient debout », « toutes les cartes sont vraiment jouées », etc. Le plan daté du produit (docs/roadmap/roadmap.json) reste la référence pour tout le reste.",
+  "principes": [
+    "**Le serveur fait autorité.** Le client n'est qu'un écran : il n'apprend jamais la main de l'adversaire ni l'ordre de la pioche, et toute action qu'il propose est rejouée et validée côté serveur.",
+    "**Un effet non implémenté n'est jamais approximé** (D9). Une carte dont l'effet n'est pas scripté et testé est refusée à la construction du deck, en disant pourquoi. Le jeu préfère dire « je ne sais pas jouer cette carte » que de la jouer de travers.",
+    "**Tout est rejouable.** Une partie est un état initial, une graine d'aléatoire et un journal d'actions numéroté. Rejouer le journal doit redonner exactement le même état — c'est ce qui fait tenir la reprise après un F5, le replay, le support et l'anti-triche.",
+    "**Le moteur ne connaît ni HTTP ni React.** Fonctions pures, état sérialisable, aucune entrée/sortie : c'est la seule façon de le tester par milliers de cas et de le faire jouer par des bots.",
+    "**L'interface ne décide de rien.** Elle affiche les actions que le moteur déclare légales, et affiche la raison quand un coup est refusé. Aucune règle n'est réécrite côté écran.",
+    "**Le jeu est celui d'un enfant de onze ans.** Lisible sans connaître les règles, animé, sonore, indulgent : on peut annuler avant de valider, on comprend pourquoi un coup est interdit, et on n'attend jamais devant un écran muet."
+  ],
+  "pistes": [
+    { "id": "R", "nom": "Règles & moteur", "quoi": "L'état d'une partie, le tour, le combat, les récompenses — le cœur pur, sans réseau ni écran." },
+    { "id": "E", "nom": "Effets & cartes", "quoi": "Le langage d'effets, sa pile de résolution, et la traduction du catalogue en cartes réellement jouables." },
+    { "id": "S", "nom": "Serveur de parties", "quoi": "Appariement, session de partie, temps réel, horloges, reprise, anti-triche." },
+    { "id": "U", "nom": "Interface de jeu", "quoi": "Le plateau, les interactions, les fenêtres de décision, le journal lisible, la fin de partie." },
+    { "id": "G", "nom": "Graphisme & animations", "quoi": "Ma photo ou l'image officielle, les effets d'attaque par type, les apparitions, les décors, le son." },
+    { "id": "C", "nom": "Compte & progression", "quoi": "Ce qu'une partie laisse : historique, statistiques, classement privé, badges." },
+    { "id": "Q", "nom": "Qualité & exploitation", "quoi": "Cas de règles, bots de simulation, e2e à deux navigateurs, charge, observabilité, sécurité." }
+  ],
+  "couloirs": [
+    { "id": "J-MOT", "machine": "devAI", "quoi": "Moteur de règles (Python pur), tests de règles." },
+    { "id": "J-SRV", "machine": "devAI", "quoi": "Service de parties, temps réel, horloges, autorité et anti-triche." },
+    { "id": "J-EFF", "machine": "chimera", "quoi": "Langage d'effets, scripts de cartes, couverture du catalogue (gros volume, IA)." },
+    { "id": "J-UI", "machine": "chimera", "quoi": "Plateau, interactions, décisions, journal, écrans de partie." },
+    { "id": "J-GFX", "machine": "chimera", "quoi": "Assets, animations, effets typés, décors, son (GPU disponible)." },
+    { "id": "J-QUA", "machine": "chimera", "quoi": "Simulation, e2e Playwright à deux navigateurs, charge, observabilité." }
+  ],
+  "jalons": [
+    {
+      "id": "J1",
+      "nom": "Deux joueurs jouent une partie honnête",
+      "these": "Une partie complète se joue de bout en bout entre deux navigateurs, avec des Pokémon, des énergies et des attaques simples — sans Dresseur, sans talent, sans état spécial. Laid mais juste : les règles sont appliquées, la partie reprend après un F5, et le vainqueur est le bon.",
+      "preuve": "Une partie test jouée en entier à deux navigateurs, rejouable depuis son journal, gagnée par les six récompenses."
+    },
+    {
+      "id": "J2",
+      "nom": "Toutes les cartes du deck sont vraiment jouées",
+      "these": "Objets, Supporters, Stades, Outils, talents, états spéciaux, appâts, attaques à effet, énergies spéciales : ce que la carte dit, le moteur le fait. Et ce qu'il ne sait pas faire, il le refuse au deck au lieu de l'inventer.",
+      "preuve": "Un deck entièrement construit depuis la collection d'Aymeric est déclaré jouable, et chacune de ses cartes a un script testé."
+    },
+    {
+      "id": "J3",
+      "nom": "Le plateau donne envie d'y jouer",
+      "these": "La carte, c'est SA photo ou l'image officielle. Une attaque Feu brûle la carte d'en face, l'éclair fait trembler le plateau, certains Pokémon apparaissent au-dessus de leur carte. Le tout reste lisible, coupable en un clic, et respecte « animations réduites ».",
+      "preuve": "Une partie filmée où chaque type d'attaque a son effet, sans jamais faire perdre de vue l'état réel du jeu."
+    },
+    {
+      "id": "J4",
+      "nom": "La partie laisse une trace",
+      "these": "La fin de partie écrit sur le compte : historique, statistiques par deck, classement privé entre comptes invités, badges. On revient parce qu'il y a quelque chose à suivre.",
+      "preuve": "Après dix parties, la page « Mes parties » raconte qui gagne, avec quoi, et contre qui."
+    },
+    {
+      "id": "J5",
+      "nom": "Le jeu tient debout tout seul",
+      "these": "Des bots jouent des milliers de parties sans bloquer, l'e2e passe en CI, le petit serveur encaisse les parties simultanées prévues, et une règle qui casse se voit dans une métrique avant de se voir dans une plainte.",
+      "preuve": "10 000 parties simulées sans blocage ni état impossible, e2e vert en CI, tenue en charge mesurée et écrite."
+    }
+  ],
+  "decisions": [
+    {
+      "id": "DJ1",
+      "question": "Quelle version des règles fait foi ? Standard actuel (rotation), Étendu, ou un format « maison » sans rotation acceptant toute carte de la collection ?",
+      "enjeu": "Tout en dépend : faiblesse ×2 ou +30, résistance −30 ou −20, cumul des états spéciaux, règle du premier tour, nombre de récompenses. Le moteur doit encoder UNE version datée et citée, pas un mélange.",
+      "proposition": "Format maison sans rotation (on joue ce qu'on possède), mais avec le corpus de règles ACTUEL (faiblesse ×2, résistance −30, 6 récompenses, banc de 5, le joueur qui commence n'attaque pas à son premier tour). Une carte ancienne est jouée avec les règles actuelles.",
+      "debloque": ["j-regles-reference", "j-degats-resolution", "j-etats-speciaux"]
+    },
+    {
+      "id": "DJ2",
+      "question": "Quel périmètre de cartes scripter en premier ?",
+      "enjeu": "Il existe des dizaines de milliers de cartes ; les scripter toutes est sans fin. Mais un deck refusé pour une seule carte manquante gâche la première partie.",
+      "proposition": "Piloté par la collection : on script d'abord les cartes réellement possédées par les comptes invités, puis les cartes les plus fréquentes du catalogue. Le tableau de couverture dit à tout moment ce qui manque pour rendre un deck jouable.",
+      "debloque": ["j-effets-catalogue-compilation", "j-effets-couverture-outil"]
+    },
+    {
+      "id": "DJ3",
+      "question": "Les Pokémon peuvent-ils apparaître en image animée au-dessus de leur carte — et avec quelles images ?",
+      "enjeu": "JF le demande explicitement (« les faire apparaître dans un bel effet »). Or utiliser des sprites ou des modèles officiels hors de l'illustration de la carte est un usage d'images protégées, sur un espace privé sans revenu mais tout de même en ligne.",
+      "proposition": "Par défaut, l'apparition est fabriquée à partir de l'illustration de la carte elle-même (découpe du Pokémon par segmentation, détourage, mise en volume, particules) : aucune image nouvelle n'est introduite. Une liste restreinte de Pokémon « vedettes » reçoit une animation soignée. À trancher par JF avant tout autre choix d'assets.",
+      "debloque": ["j-anim-pokemon-apparition"]
+    },
+    {
+      "id": "DJ4",
+      "question": "Quelles durées ? Temps par tour, temps total par joueur, temps par décision.",
+      "enjeu": "Trop court, un enfant perd sur le chrono ; trop long, une partie abandonnée bloque une place et l'adversaire attend devant un écran mort.",
+      "proposition": "90 s par tour, 25 min par joueur sur la partie, 30 s par décision hors de son tour, avec 10 s de tolérance réseau et une pause automatique de 120 s en cas de déconnexion. Expiration = action par défaut si elle existe, sinon défaite au temps.",
+      "debloque": ["j-timer"]
+    },
+    {
+      "id": "DJ5",
+      "question": "La photo personnelle d'une carte est-elle montrée à l'adversaire ?",
+      "enjeu": "C'est le charme du produit (on joue avec SES cartes, cornées, avec leur reflet) — mais c'est une photo prise chez soi, éventuellement avec un bout de table, une main, un salon.",
+      "proposition": "Oui par défaut côté joueur, et réglage par deck : « mes cartes telles que je les ai photographiées » ou « images officielles ». L'adversaire voit ce que le joueur a choisi de montrer ; un réglage « ne jamais montrer mes photos » existe.",
+      "debloque": ["j-rendu-carte"]
+    },
+    {
+      "id": "DJ6",
+      "question": "Que laisse une partie sur le compte : un simple historique, ou une progression (points, saisons, badges) ?",
+      "enjeu": "Une progression donne envie de revenir, mais elle crée une pression de performance chez un enfant, et un classement entre deux frères se règle rarement bien.",
+      "proposition": "Historique et statistiques d'office ; classement privé et badges en option, activables par JF, sans saison ni perte de points.",
+      "debloque": ["j-fin-effets-compte", "j-classement-prive", "j-profil-jeu"]
+    },
+    {
+      "id": "DJ7",
+      "question": "Mode solo contre un bot ?",
+      "enjeu": "Le jeu est privé entre quelques comptes invités (D11) : il y aura des soirs sans adversaire. Le moteur et les bots de simulation rendent le solo presque gratuit — mais un bot qui joue mal donne une fausse idée du jeu.",
+      "proposition": "Oui, en réutilisant le bot heuristique de la simulation, annoncé comme « entraînement » et non compté au classement.",
+      "debloque": ["j-mode-solo"]
+    },
+    {
+      "id": "DJ8",
+      "question": "Jusqu'où l'IA écrit-elle les scripts de cartes, et sous quel contrôle ?",
+      "enjeu": "Scripter dix mille cartes à la main est hors de portée ; laisser une IA écrire des règles de jeu sans contrôle produit des parties injustes et indétectables.",
+      "proposition": "L'IA propose un script ET ses cas de test à partir du texte de la carte ; le script n'entre en jeu que si ses tests passent et qu'un humain a validé la famille d'effets. Budget plafonné, comme pour v4-insights-batch.",
+      "debloque": ["j-effets-assistance-ia"]
+    },
+    {
+      "id": "DJ9",
+      "question": "Sons et musique : activés par défaut ?",
+      "enjeu": "Le son fait beaucoup pour l'effet « vrai jeu », mais une partie ouverte en classe ou à côté d'un adulte qui travaille doit rester muette.",
+      "proposition": "Bruitages activés, musique coupée, réglage mémorisé par appareil.",
+      "debloque": ["j-son"]
+    },
+    {
+      "id": "DJ10",
+      "question": "Échanges entre joueurs pendant la partie : rien, emotes prédéfinies, ou chat libre ?",
+      "enjeu": "Les comptes sont privés et invités, mais l'un des joueurs est mineur. Un chat libre demande une modération que ce projet n'aura pas.",
+      "proposition": "Emotes prédéfinies seulement (« bien joué », « oups », « ton tour »), désactivables, jamais de texte libre.",
+      "debloque": ["j-echanges-emotes"]
+    }
+  ],
+  "correspondance_plan_date": {
+    "note": "Les lots V7 du plan daté étaient des blocs grossiers. Ce backlog les remplace par des lots exécutables. Les lots V7D (gestionnaire de decks) ne sont PAS repris ici : ils restent dans le plan daté et sont un préalable à la file d'attente.",
+    "remplaces": {
+      "v7-regles-moteur": ["j-regles-reference", "j-modele-etat", "j-aleatoire-determinisme", "j-journal-actions", "j-actions-legales", "j-machine-tour", "j-degats-resolution", "j-ko-recompenses", "j-retraite-banc", "j-checkup"],
+      "v7-regles-cartes": ["j-effets-architecture", "j-effets-dsl", "j-effets-choix", "j-etats-speciaux", "j-cartes-pokemon", "j-cartes-energies", "j-cartes-objets", "j-cartes-supporters", "j-cartes-stades", "j-cartes-outils", "j-cartes-talents", "j-cartes-attaques-effets", "j-cartes-regles-speciales", "j-effets-catalogue-compilation", "j-effets-assistance-ia", "j-effets-couverture-outil"],
+      "v7-file-attente": ["j-file-attente", "j-invitations", "j-lancement-partie", "j-initialisation"],
+      "v7-temps-reel": ["j-partie-service", "j-temps-reel", "j-deconnexion-abandon", "j-timer"],
+      "v7-anti-triche": ["j-autorite-vues", "j-securite-jeu"],
+      "v7-plateau": ["j-plateau-layout", "j-plateau-interactions", "j-plateau-etat-visuel", "j-plateau-decisions"],
+      "v7-partie-ui": ["j-plateau-journal", "j-plateau-aide", "j-partie-fin-ui", "j-salon-partie"],
+      "v7-images-jeu": ["j-rendu-carte", "j-assets-pipeline"],
+      "v7-effets-visuels": ["j-anim-socle", "j-anim-attaques-typees", "j-anim-evolution-ko", "j-anim-pokemon-apparition", "j-arene-decors", "j-son"],
+      "v7-stats-joueur": ["j-fin-effets-compte", "j-stats-joueur", "j-classement-prive", "j-profil-jeu"],
+      "v7-e2e-jeu": ["j-tests-regles", "j-simulation-bots", "j-e2e-deux-navigateurs", "j-charge-temps-reel", "j-observabilite-jeu"]
+    },
+    "prealables_hors_section": {
+      "v7-decks-api": "Un deck jouable, légal, construit avec ses propres cartes (règle D10 sur les énergies).",
+      "v7-decks-legalite": "Le rapport de légalité, auquel ce backlog ajoute une raison de plus : « carte non scriptée ».",
+      "v4-collection": "La collection, source des cartes jouables.",
+      "v2-catalogue-complet": "Attaques, faiblesses, résistances, coûts de retraite et textes d'effet de toutes les cartes.",
+      "v1-auth": "Les comptes, et la liste des comptes invités (D11)."
+    }
+  }
+}
