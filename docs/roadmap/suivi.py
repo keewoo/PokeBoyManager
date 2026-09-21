@@ -33,6 +33,11 @@ BACKLOG = RACINE / "BACKLOG.md"
 ARTEFACT = "https://claude.ai/artifact/2w2cvcLhUGZdorHNVvTahy"
 PLAN_JEU = ICI / "jeu" / "jeu.json"   # backlog du jeu, plan sans dates (build-jeu.py)
 
+# Un lot est ACQUIS pour l'aval dès qu'il est intégré dans main : le garde-fou d'ordre et le
+# contrôle de cohérence du plan doivent lire la MÊME liste, sinon ils divergent — c'est arrivé
+# (35 lots en « integre » que `verifier` refusait alors que `fini` les acceptait).
+ACQUIS = ("integre", "livre", "livre_uat", "attente_go_prod")
+
 MACHINES = {
     "devAI": {
         "hote": "devai",
@@ -82,7 +87,7 @@ def valider(plan: dict, etat: dict | None = None) -> list[str]:
     """
     err, par_id = [], {i["id"]: i for i in plan["items"]}
     etats = (etat or {}).get("etats", {})
-    fini = lambda x: etats.get(x, {}).get("statut") in ("integre", "livre", "livre_uat", "attente_go_prod")
+    fini = lambda x: etats.get(x, {}).get("statut") in ACQUIS
     couloirs = {c["id"] for c in plan["meta"]["couloirs"]}
     decisions = {d["id"]: d for d in plan["decisions"]}
     for i in plan["items"]:
@@ -280,7 +285,7 @@ def verifier(a) -> int:
         print(f"lot inconnu : {a.id}")
         return 1
     raisons = [f"dépendance {d} non livrée ({etat['etats'][d]['statut']})" for d in it["dependances"]
-               if etat["etats"][d]["statut"] not in ("livre", "livre_uat", "attente_go_prod")]
+               if etat["etats"][d]["statut"] not in ACQUIS]
     if it["decision"] and it["decision"] not in etat["decisions_prises"]:
         raisons.append(f"décision {it['decision']} non prise")
     if etat["etats"][a.id].get("derogation"):
