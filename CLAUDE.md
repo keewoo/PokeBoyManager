@@ -672,6 +672,48 @@ et/ou `format` (`UpdateDeckRequest`, partiel) ; `DeckCardOut` porte
 accès croisé B→404, CSRF). Back-end seul ; le constructeur qui les affiche est `v7-decks-ui`
 (couloir CH5).
 
+## Decks : import et export d'une liste (lot `v7-decks-import-export`)
+
+Récupérer un deck vu ailleurs ou partager le sien, sans tout ressaisir. Back-end seul (comme
+`v7-decks-api`/`v7-decks-legalite`) — l'écran qui consomme ces routes est `v7-decks-ui` (couloir
+CH5, pas encore livré).
+
+**Import** (`POST /me/decks/import`, session + CSRF, `pbm_api.decks.import_service.import_deck`) :
+une liste collée (`text`) → un deck « à compléter » + un rapport ligne par ligne. ⛔ Risque du lot :
+**une liste importée ne crée JAMAIS de cartes dans la collection** — elle ne touche que `decks`/
+`deck_cards` (catalogue), aucun `CollectionItem` (test `test_import_never_creates_collection_items`).
+- Analyseur tolérant (`pbm_api.decks.parsing`, logique pure) : quantité en tête (`3`, `3x`, `x3`,
+  implicite → 1 signalé), puces, en-têtes de section (`Pokémon: 12`, `Trainer`, `Total Cards: 60`)
+  ignorés, commentaires (`#`, `//`), extension + numéro de fin facultatifs (`PAF 234`, `234/197`,
+  `(PAF 234)`). Rien n'est rejeté en silence : toute ligne non triviale devient une entrée `card`.
+- Rapprochement : réutilise **tel quel** `catalog.search.match_candidates` (`v2-recherche`) — nom
+  (trigram FR/EN, tolérant aux fautes de frappe) + numéro (filtre strict), avec un **repli
+  progressif** noté sur la ligne (on lâche l'extension collée d'un autre site si elle ne
+  correspond pas à nos codes, puis le numéro). Statut par ligne : `matched` / `ambiguous`
+  (meilleure retenue + alternatives) / `not_found` (introuvable au catalogue, **non ajoutée**) /
+  `section`. Possession (`owned`/`missing`) comptée par le **même** chemin que la légalité
+  (`service._owned_counts` + `energy.is_basic_energy` : une Énergie de base n'est jamais manquante).
+- `dry_run=true` : rapport seul, aucun deck créé (aperçu avant validation). Garde-fou :
+  `MAX_IMPORT_LINES` = 400 (au-delà, tronqué **et signalé**), quantité écrêtée à 60 par carte.
+
+**Export** (`GET /me/decks/{id}/export?fmt=text|pdf`, borné au propriétaire → 404 sinon,
+`pbm_api.decks.export`) :
+- **texte** : `quantité nom EXTENSION numéro`, groupé par type, en-tête en commentaire (`#`).
+  Volontairement **re-lisible par l'analyseur d'import** — un export ré-importé redonne le même
+  deck (`test_export_text_round_trips`).
+- **PDF** (`fpdf2`, ajouté aux dépendances) : vignettes + liste. Les images (basse définition,
+  `cards/{id}/low.webp` du stockage objet, même clé que le proxy `/img/cards/{id}`) sont
+  **préchargées en async dans la route** puis passées à un rendu synchrone ; une carte sans
+  vignette montre un **cadre nommé**, jamais un trou ni un 500. Police cœur Helvetica (pas de TTF
+  à télécharger sur le réseau lent de chimera) ; textes réduits au latin-1 pour ne jamais faire
+  échouer le rendu sur un caractère hors jeu.
+
+Aucune migration (ni table ni colonne) : le lot ne fait que lire le catalogue et écrire des decks
+via le modèle existant. Tests : `test_deck_parsing.py` (analyseur pur), `test_deck_import.py`
+(import, accès croisé B→404, jamais la collection, liste de tournoi avec sections, fautes de
+frappe, carte hors catalogue, dry-run, CSRF), `test_deck_export.py` (round-trip texte, PDF valide,
+vignette réellement embarquée, 404).
+
 ## Règles de la flotte applicables ici (résumé de `~/.claude/CLAUDE.md`)
 
 - On construit sur chimera (32 Go, 16 threads) et on ne construit jamais sur la machine qui sert.

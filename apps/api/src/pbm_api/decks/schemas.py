@@ -109,3 +109,70 @@ class DeckDetail(BaseModel):
 
 class DeckListResponse(BaseModel):
     decks: list[DeckSummary]
+
+
+# ----------------------------------------------------- import / export (v7-decks-import-export)
+
+
+class ImportDeckRequest(BaseModel):
+    """Liste de deck collée à importer (mission `v7-decks-import-export`).
+
+    `dry_run=True` ne crée aucun deck : il renvoie seulement le rapport (aperçu avant validation).
+    Une liste importée ne crée JAMAIS de cartes dans la collection (risque du lot)."""
+
+    text: str = Field(min_length=1, max_length=20000)
+    name: str | None = Field(default=None, min_length=1, max_length=120)
+    format: DeckFormat = "standard"
+    dry_run: bool = False
+
+    @field_validator("name")
+    @classmethod
+    def _strip_name(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        return stripped or None
+
+
+class ImportCandidateOut(BaseModel):
+    card_id: uuid.UUID
+    name: str
+    set_code: str
+    set_name: str
+    number: str
+    score: float
+
+
+class ImportLineOut(BaseModel):
+    line_no: int
+    raw: str
+    # "matched" | "ambiguous" | "not_found" | "section"
+    status: str
+    quantity: int
+    parsed_name: str | None = None
+    parsed_set: str | None = None
+    parsed_number: str | None = None
+    notes: list[str] = Field(default_factory=list)
+    card: ImportCandidateOut | None = None
+    alternatives: list[ImportCandidateOut] = Field(default_factory=list)
+    owned: int = 0
+    missing: int = 0
+
+
+class ImportReportOut(BaseModel):
+    matched: int
+    ambiguous: int
+    not_found: int
+    sections_ignored: int
+    cards_added: int
+    distinct_cards: int
+    truncated: bool
+    warnings: list[str] = Field(default_factory=list)
+    lines: list[ImportLineOut] = Field(default_factory=list)
+
+
+class ImportDeckResponse(BaseModel):
+    """Rapport d'import + le deck créé (`None` si `dry_run`)."""
+
+    report: ImportReportOut
+    deck: DeckDetail | None = None
