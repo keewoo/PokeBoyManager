@@ -2717,41 +2717,41 @@
       "compte_rendu": {}
     },
     "v6-import-export": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
+      "statut": "livre_uat",
+      "machine": "devAI",
+      "branche": "roadmap/v6-import-export",
+      "debut_reel": "2026-09-21",
       "fin_reelle": null,
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit fce4b05 : pbm_api.imports (parser+service+router), pbm_api.wishlist, export CSV synchrone",
+          "maj": "2026-09-21T15:13+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "apps/api : 660 passed (test_csv_import.py, test_wishlist_routes.py, ajouts test_export.py) ; apps/web : pnpm test vert (wishlist-view.test.tsx, ajouts upload-view.test.tsx)",
+          "maj": "2026-09-21T15:13+0200"
         },
         "securite": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "accès croisé testé (import upload, wishlist item, export csv scopé à la session) ; aucun secret dans le dépôt",
+          "maj": "2026-09-21T15:13+0200"
         },
         "maquette": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "aucune maquette pour ce lot post-MVP (ROADMAP.html ne couvre que les 8 écrans du MVP) — conçu sur les patrons visuels existants (ManualAddForm, DetectionCard, EmptyState)",
+          "maj": "2026-09-21T15:13+0200"
         },
         "doc_tech": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "CLAUDE.md § Import/export CSV et liste de souhaits",
+          "maj": "2026-09-21T15:13+0200"
         },
         "release_uat": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "Suites complètes vertes sur devAI (machine assignée à ce lot, cf. prompt § A) : apps/api 660 passed/2 pré-existants hors périmètre (pg_dump absent), apps/web lint+type-check+test+build verts. Pas de recette chimera : ce lot n'y était pas assigné.",
+          "maj": "2026-09-21T15:13+0200"
         },
         "release_prod": {
           "etat": "a_faire",
@@ -2759,18 +2759,100 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "docs/roadmap/suivi.py build : BACKLOG.md et ROADMAP.html régénérés",
+          "maj": "2026-09-21T15:13+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "compte rendu écrit dans etat.json (résumé/livrable/preuve/écart/reste)",
+          "maj": "2026-09-21T15:13+0200"
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-21T14:28+0200",
+          "machine": "devAI",
+          "evenement": "démarrage",
+          "detail": "roadmap/v6-import-export"
+        },
+        {
+          "quand": "2026-09-21T15:13+0200",
+          "machine": "devAI",
+          "evenement": "tâche dev → fait",
+          "detail": "commit fce4b05 : pbm_api.imports (parser+service+router), pbm_api.wishlist, export CSV synchrone"
+        },
+        {
+          "quand": "2026-09-21T15:13+0200",
+          "machine": "devAI",
+          "evenement": "tâche tests → fait",
+          "detail": "apps/api : 660 passed (test_csv_import.py, test_wishlist_routes.py, ajouts test_export.py) ; apps/web : pnpm test vert (wishlist-view.test.tsx, ajouts upload-view.test.tsx)"
+        },
+        {
+          "quand": "2026-09-21T15:13+0200",
+          "machine": "devAI",
+          "evenement": "tâche securite → fait",
+          "detail": "accès croisé testé (import upload, wishlist item, export csv scopé à la session) ; aucun secret dans le dépôt"
+        },
+        {
+          "quand": "2026-09-21T15:13+0200",
+          "machine": "devAI",
+          "evenement": "tâche maquette → fait",
+          "detail": "aucune maquette pour ce lot post-MVP (ROADMAP.html ne couvre que les 8 écrans du MVP) — conçu sur les patrons visuels existants (ManualAddForm, DetectionCard, EmptyState)"
+        },
+        {
+          "quand": "2026-09-21T15:13+0200",
+          "machine": "devAI",
+          "evenement": "tâche doc_tech → fait",
+          "detail": "CLAUDE.md § Import/export CSV et liste de souhaits"
+        },
+        {
+          "quand": "2026-09-21T15:13+0200",
+          "machine": "devAI",
+          "evenement": "tâche release_uat → fait",
+          "detail": "Suites complètes vertes sur devAI (machine assignée à ce lot, cf. prompt § A) : apps/api 660 passed/2 pré-existants hors périmètre (pg_dump absent), apps/web lint+type-check+test+build verts. Pas de recette chimera : ce lot n'y était pas assigné."
+        },
+        {
+          "quand": "2026-09-21T15:13+0200",
+          "machine": "devAI",
+          "evenement": "compte rendu publié",
+          "detail": ""
+        },
+        {
+          "quand": "2026-09-21T15:13+0200",
+          "machine": "devAI",
+          "evenement": "statut → livre_uat",
+          "detail": ""
+        },
+        {
+          "quand": "2026-09-21T15:13+0200",
+          "machine": "devAI",
+          "evenement": "tâche backlog → fait",
+          "detail": "docs/roadmap/suivi.py build : BACKLOG.md et ROADMAP.html régénérés"
+        },
+        {
+          "quand": "2026-09-21T15:13+0200",
+          "machine": "devAI",
+          "evenement": "tâche compte_rendu → fait",
+          "detail": "compte rendu écrit dans etat.json (résumé/livrable/preuve/écart/reste)"
+        }
+      ],
+      "compte_rendu": {
+        "resume": "Import CSV en job réutilisant l'écran de validation existant (même moteur de rapprochement que l'identification photo), export CSV synchrone de la collection, liste de souhaits avec prix cible comparé au marché.",
+        "livrables": [
+          "POST /me/imports + worker import_csv_task (pbm_api.imports) ; GET /me/export/collection.csv ; /me/wishlist CRUD (pbm_api.wishlist, table wishlist_items) ; pages /ajouter (panneau CSV) et /souhaits."
+        ],
+        "preuves": [
+          "PR https://github.com/keewoo/PokeBoyManager/pull/new/roadmap/v6-import-export (commit fce4b05) ; apps/api : uv run pytest -q → 660 passed, 2 deselected (pg_dump absent de devAI, sans rapport) ; uv run ruff check . → clean ; apps/web : pnpm lint/type-check/test/build → verts (dont wishlist-view.test.tsx, ajouts upload-view.test.tsx)."
+        ],
+        "ecarts": [
+          "Session démarrée sur un worktree où une exécution précédente de ce même lot avait déjà livré la liste de souhaits et l'export CSV, et où une SECONDE session concurrente construisait en parallèle l'import CSV sous un nom de module différent (pbm_api.csv_import vs pbm_api.imports) — collision détectée en cours de route (fichiers modifiés hors de mes propres écritures, cf. config.py). Résolu en adoptant l'implémentation la plus aboutie (pbm_api.imports, déjà câblée dans worker.py/uploads/service.py) et en supprimant mon propre doublon plutôt que de laisser deux implémentations coexister. À signaler : deux sessions autonomes actives simultanément sur le même worktree wt-v6-import-export (PID 74469 constaté encore actif en fin de session) — vérifier qu'aucun lancement en double n'a eu lieu côté pilote. Pas de recette sur chimera (lot assigné à devAI par le prompt) ; docs/roadmap/suivi.py avancé d'un commit amont (7f747b5, fast-forward) sans rapport avec ce lot."
+        ],
+        "reste": [
+          "Revue de la PR, fusion dans main, décision GO PROD de JF (release_prod), mise à jour BACKLOG.md/ROADMAP.html (build)."
+        ]
+      },
+      "attente": null
     },
     "v6-gradation": {
       "statut": "a_faire",
