@@ -2467,11 +2467,11 @@
       "attente": null
     },
     "v5-prod": {
-      "statut": "a_faire",
+      "statut": "livre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
-      "fin_reelle": null,
+      "fin_reelle": "2026-09-21",
       "taches": {
         "dev": {
           "etat": "a_faire",
@@ -2519,8 +2519,34 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-21T14:15+0200",
+          "machine": "?",
+          "evenement": "statut → livre",
+          "detail": ""
+        },
+        {
+          "quand": "2026-09-21T14:15+0200",
+          "machine": "?",
+          "evenement": "compte rendu publié",
+          "detail": ""
+        }
+      ],
+      "compte_rendu": {
+        "resume": "MVP mis en production le 20/09 à 15h39 sur le serveur de kailo.life : commit 5873a9c, CI verte, 3 services systemd actifs, HTTPS émis pour pokeboy.acx-connect.com, catalogue complet chargé (22 169 cartes, 202 extensions, 19 446 cartes avec prix), compte d'Aymeric créé avec sa clé Anthropic chiffrée. kailo.life et ACX non affectés, vérifiés avant et après chaque étape.",
+        "livrables": [
+          "PROD en service sur pokeboy.acx-connect.com",
+          "catalogue et prix chargés",
+          "compte d'Aymeric créé"
+        ],
+        "preuves": [],
+        "ecarts": [],
+        "reste": [
+          "Sauvegardes à éprouver sur une vraie restauration ; surveillance à compléter."
+        ]
+      },
+      "attente": null
     },
     "v6-contrefacon": {
       "statut": "a_faire",
@@ -3224,7 +3250,7 @@
       "compte_rendu": {}
     },
     "v7-decks-api": {
-      "statut": "a_faire",
+      "statut": "integre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
@@ -3276,8 +3302,30 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-21T14:15+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": ""
+        },
+        {
+          "quand": "2026-09-21T14:15+0200",
+          "machine": "?",
+          "evenement": "compte rendu publié",
+          "detail": ""
+        }
+      ],
+      "compte_rendu": {
+        "resume": "Modèle de decks, CRUD filtré par utilisateur et contrôle de légalité (60 cartes, 4 exemplaires, énergies de base fournies selon D10) fusionnés dans main (commit ce5cb05). La session s'est arrêtée avant d'écrire sa conclusion, en attendant la CI : le travail est livré, pas le compte rendu.",
+        "livrables": [],
+        "preuves": [],
+        "ecarts": [],
+        "reste": [
+          "Compte rendu détaillé à reprendre au prochain passage."
+        ]
+      },
+      "attente": null
     },
     "v7-decks-ui": {
       "statut": "a_faire",
@@ -4286,6 +4334,395 @@
       },
       "journal": [],
       "compte_rendu": {}
+    },
+    "h1-hotfix-reconnaissance": {
+      "statut": "integre",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : back-end",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [
+        {
+          "quand": "2026-09-21T14:15+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": ""
+        }
+      ],
+      "compte_rendu": {},
+      "attente": null
+    },
+    "h1-formats-image": {
+      "statut": "integre",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : back-end",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [
+        {
+          "quand": "2026-09-21T14:15+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": ""
+        }
+      ],
+      "compte_rendu": {},
+      "attente": null
+    },
+    "h1-jobs-flotte": {
+      "statut": "integre",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : infra",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [
+        {
+          "quand": "2026-09-21T14:15+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": ""
+        }
+      ],
+      "compte_rendu": {},
+      "attente": null
+    },
+    "h1-front-accueil": {
+      "statut": "integre",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [
+        {
+          "quand": "2026-09-21T14:15+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": ""
+        }
+      ],
+      "compte_rendu": {},
+      "attente": null
+    },
+    "h1-parcours-validation": {
+      "statut": "integre",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [
+        {
+          "quand": "2026-09-21T14:15+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": ""
+        }
+      ],
+      "compte_rendu": {},
+      "attente": null
+    },
+    "v4-insights-run": {
+      "statut": "en_cours",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : back-end",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [
+        {
+          "quand": "2026-09-21T14:15+0200",
+          "machine": "?",
+          "evenement": "statut → en_cours",
+          "detail": "en file sur devAI ; 0,15 € dépensés à ce jour, budget 50 €"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": {
+        "quand": "2026-09-21T14:15+0200",
+        "raisons": [
+          "en file sur devAI ; 0,15 € dépensés à ce jour, budget 50 €"
+        ]
+      }
     }
   },
   "decisions_prises": {
@@ -4305,9 +4742,9 @@
       "quand": "2026-09-19T19:59+0200"
     },
     "D4": {
-      "prise": "RÉVISÉE par JF le 19/09 : « autant tout prendre dès le premier tir » — une clé IA PLATEFORME sert à pré-générer l'histoire et l'étude en jeu de toutes les cartes (lot v4-insights-batch, budget plafonné). Sans clé personnelle, la reconnaissance reste désactivée (ajout manuel possible). À FOURNIR par JF : la clé plateforme (distincte de celle d'Aymeric) et le budget maximal.",
+      "prise": "JF le 21/09 : génération des fiches avec la clé d'Aymeric — plafond 50 €, contenu réduit (2 anecdotes en français + règles de jeu), ciblage large visant 80 % des cartes, priorité aux cartes possédées. Le lot s'arrête là où le budget s'arrête, sans redemander d'arbitrage.",
       "par": "JF",
-      "quand": "2026-09-19T21:36+0200"
+      "quand": "2026-09-21T14:15+0200"
     },
     "D7": {
       "prise": "DÉFAUT PROVISOIRE (recommandation devAI du 19/09, à confirmer par JF) : photos sur le disque local du serveur (/srv/pokeboy/<env>/data/photos) au lancement ; l'application garde une interface de stockage à deux implémentations (disque local en UAT/PROD, S3/MinIO en dev) ; UpCloud Object Storage à chiffrer si le volume l'exige. Photos conservées jusqu'à suppression.",

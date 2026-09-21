@@ -253,6 +253,14 @@
       "fin": "2027-03-26",
       "these": "Après le MVP : construire des decks avec SES cartes (l'IA peut en proposer un selon les types voulus), puis s'affronter à deux, en ligne, au tour par tour, sur un plateau graphique — avec sa propre photo ou l'image officielle de chaque carte.",
       "gain": "La collection ne se regarde plus, elle se joue."
+    },
+    {
+      "id": "H1",
+      "nom": "Après la mise en ligne — correctifs du premier jour",
+      "debut": "2026-09-20",
+      "fin": "2026-09-21",
+      "these": "Le MVP en ligne a révélé ce qu'aucun test n'avait vu : formats de photo refusés, appel IA rejeté, écran de validation muet, traitements lourds sur la machine qui sert, URL de développement figées dans le site.",
+      "gain": "Un produit réellement utilisable par quelqu'un d'autre que ses auteurs."
     }
   ],
   "echeances": [
@@ -322,11 +330,12 @@
     },
     {
       "id": "D4",
-      "date": "2026-10-05",
-      "quoi": "Sans clé IA personnelle : reconnaissance désactivée (saisie manuelle seulement) ou quota d'essai offert sur une clé plateforme (coût à plafonner).",
+      "date": "2026-09-19",
+      "quoi": "Sans clé IA personnelle : reconnaissance désactivée (ajout manuel possible). RÉVISÉE le 19/09 puis le 21/09 : la clé d'Aymeric sert à pré-générer les fiches, plafond 50 €, contenu réduit à 2 anecdotes en français + règles de jeu, ciblage large (80 % des cartes).",
       "debloque": [
         "v1-byok",
-        "v4-insights-batch"
+        "v4-insights-batch",
+        "v4-insights-run"
       ]
     },
     {
@@ -2503,6 +2512,199 @@
       ],
       "taches_na": {
         "maquette": "tests"
+      }
+    },
+    {
+      "id": "h1-hotfix-reconnaissance",
+      "debut": "2026-09-20",
+      "fin": "2026-09-20",
+      "priorite": "P0",
+      "taille": "S",
+      "complexite": 3,
+      "difficulte": 4,
+      "titre": "La reconnaissance échouait : schéma JSON refusé par Anthropic",
+      "gain": "Sans ce correctif, le cœur du produit ne marchait pas en production : chaque photo finissait en « erreur 400 » invisible.",
+      "fonctionnalites": "Reconnaissance rétablie ; l'erreur du fournisseur remonte à l'écran et dans le suivi du job.",
+      "risques": "Diagnostiqué contre l'API réelle : les contraintes Pydantic (`minimum`, `maxLength`…) laissées dans le schéma ne sont pas acceptées.",
+      "tenants": "Envoi de photos, coffre de clés.",
+      "aboutissants": "Parcours de validation.",
+      "refs": [
+        "~/dev/logs/pbm-hotfix-reco-rapport.md"
+      ],
+      "mission": [
+        "(livré) Schéma nettoyé, erreur rendue visible, preuve de bout en bout en PROD."
+      ],
+      "livrables": [
+        "job de reconnaissance réussi en PROD"
+      ],
+      "taches_na": {
+        "maquette": "back-end"
+      },
+      "couloir": "DA2",
+      "decision": null,
+      "dependances": [],
+      "vague": "H1",
+      "piste": "F"
+    },
+    {
+      "id": "h1-formats-image",
+      "debut": "2026-09-20",
+      "fin": "2026-09-21",
+      "priorite": "P0",
+      "taille": "S",
+      "complexite": 2,
+      "difficulte": 2,
+      "titre": "Photos de téléphone refusées : MPO, HEIC et WEBP acceptés",
+      "gain": "Les photos d'iPhone et d'Android sont souvent en MPO ; elles étaient rejetées.",
+      "fonctionnalites": "JPEG, MPO, PNG, HEIC/HEIF, WEBP ; orientation EXIF appliquée ; message clair en cas de refus.",
+      "risques": "Se fier au contenu réel du fichier, pas au type déclaré.",
+      "tenants": "Envoi de photos.",
+      "aboutissants": "Reconnaissance sur de vraies photos.",
+      "refs": [
+        "~/dev/logs/pbm-hotfix-formats-rapport.md"
+      ],
+      "mission": [
+        "(livré) Formats élargis, orientation, tests par format."
+      ],
+      "livrables": [
+        "envoi d'une photo de téléphone réussi"
+      ],
+      "taches_na": {
+        "maquette": "back-end"
+      },
+      "couloir": "DA2",
+      "decision": null,
+      "dependances": [],
+      "vague": "H1",
+      "piste": "F"
+    },
+    {
+      "id": "h1-jobs-flotte",
+      "debut": "2026-09-20",
+      "fin": "2026-09-20",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "Les traitements lourds quittent la machine qui sert",
+      "gain": "Le relevé des 22 000 prix tournait sur le serveur de kailo.life : 1 h 20 pour zéro prix écrit.",
+      "fonctionnalites": "Le worker de PROD refuse un traitement lourd ; relevés et imports sur chimera ; sonde de fraîcheur des prix.",
+      "risques": "Un refus se dit dans `jobs.error`, jamais une exécution à moitié.",
+      "tenants": "Relevé de prix, import du catalogue.",
+      "aboutissants": "Serveur de PROD disponible.",
+      "refs": [
+        "docs/infra/JOBS-LOURDS.md"
+      ],
+      "mission": [
+        "(livré) Garde côté worker, enchaînement sur la flotte, planification sur devAI, sonde."
+      ],
+      "livrables": [
+        "prix du jour importés depuis la flotte"
+      ],
+      "taches_na": {
+        "maquette": "infra"
+      },
+      "couloir": "DA2",
+      "decision": null,
+      "dependances": [],
+      "vague": "H1",
+      "piste": "F"
+    },
+    {
+      "id": "h1-front-accueil",
+      "debut": "2026-09-20",
+      "fin": "2026-09-20",
+      "priorite": "P1",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 2,
+      "titre": "Accueil crédible, site responsive, fin des URL de développement",
+      "gain": "L'accueil montrait neuf rectangles vides et le site appelait `localhost` depuis le navigateur des visiteurs.",
+      "fonctionnalites": "Illustration d'accueil, vraies cartes du catalogue, navigation selon l'état de connexion, appels API sur la même origine.",
+      "risques": "Deux gardes : un test échoue si un build contient `localhost`, un autre s'il existe un défilement horizontal.",
+      "tenants": "Catalogue, design system.",
+      "aboutissants": "Site présentable.",
+      "refs": [
+        "~/dev/logs/pbm-front-rapport.md"
+      ],
+      "mission": [
+        "(livré) Accueil refait, responsive mesuré, configuration d'API corrigée."
+      ],
+      "livrables": [
+        "accueil en production",
+        "aucune URL localhost servie"
+      ],
+      "taches_na": {},
+      "couloir": "DA2",
+      "decision": null,
+      "dependances": [],
+      "vague": "H1",
+      "piste": "F"
+    },
+    {
+      "id": "h1-parcours-validation",
+      "debut": "2026-09-21",
+      "fin": "2026-09-21",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "Après la reconnaissance, l'utilisateur voit ses cartes et les ajoute",
+      "gain": "143 détections restaient invisibles et la collection restait vide.",
+      "fonctionnalites": "Écran de validation atteint automatiquement, détections en attente retrouvées, ajout réel, journaux du worker, jobs bloqués expirés.",
+      "risques": "Aucune étape silencieuse : un job en échec se voit à l'écran.",
+      "tenants": "Reconnaissance, collection.",
+      "aboutissants": "Produit utilisable de bout en bout.",
+      "refs": [
+        "~/dev/logs/pbm-validation-rapport.md"
+      ],
+      "mission": [
+        "(livré) Parcours complet, reprise des détections, journalisation, expiration des jobs."
+      ],
+      "livrables": [
+        "cartes ajoutées à la collection depuis une photo"
+      ],
+      "taches_na": {},
+      "couloir": "DA2",
+      "decision": null,
+      "dependances": [],
+      "vague": "H1",
+      "piste": "F"
+    },
+    {
+      "id": "v4-insights-run",
+      "vague": "V6",
+      "piste": "C",
+      "couloir": "CH2",
+      "debut": "2026-09-21",
+      "fin": "2026-09-22",
+      "priorite": "P1",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "Génération des fiches : 2 anecdotes en français et règles de jeu, sur 80 % des cartes",
+      "gain": "Les fiches s'ouvrent sans aucun appel IA pour la quasi-totalité des cartes consultables.",
+      "fonctionnalites": "2 anecdotes sourcées en français + règles de jeu ; priorité aux cartes possédées, puis extensions récentes, cartes chères, cartes consultées.",
+      "risques": "Dépense sur la clé d'Aymeric : plafond **50 €**, arrêt net, compteur cumulatif. Requêtes groupées avec cache de prompt, contrôle anti-mélange. Deux tentatives se sont arrêtées avant la génération — 0,15 € dépensés à ce jour.",
+      "tenants": "Pipeline v4-insights-batch, catalogue complet, clé fournie par JF.",
+      "aboutissants": "Fiches instantanées.",
+      "dependances": [
+        "v4-insights-batch"
+      ],
+      "decision": "D4",
+      "refs": [
+        "~/dev/logs/pbm-insights-progres.log"
+      ],
+      "mission": [
+        "Reprendre sans regénérer : dire au démarrage où sont les lignes déjà produites et combien sont reprises.",
+        "Générer par paquets sur chimera, importer en PROD, vérifier qu'une fiche s'ouvre sans appel IA.",
+        "Publier le coût réel et la couverture atteinte."
+      ],
+      "livrables": [
+        "80 % du catalogue couvert ou budget atteint, chiffré"
+      ],
+      "taches_na": {
+        "maquette": "back-end"
       }
     }
   ]

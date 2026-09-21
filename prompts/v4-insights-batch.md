@@ -69,7 +69,7 @@ Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_va
 - `v4-jeu` — Étude d'utilisation en jeu (légalité, attaques, présence en tournoi)
 - `v2-catalogue-complet` — Base de référence complète : toutes les cartes, toutes leurs infos, tous les prix — avant la première photo
 
-**Décision D4** (avant le 5 oct.) : Sans clé IA personnelle : reconnaissance désactivée (saisie manuelle seulement) ou quota d'essai offert sur une clé plateforme (coût à plafonner). — lis la décision prise dans `etat.json` (`decisions_prises`) et applique-la à la lettre.
+**Décision D4** (avant le 19 sept.) : Sans clé IA personnelle : reconnaissance désactivée (ajout manuel possible). RÉVISÉE le 19/09 puis le 21/09 : la clé d'Aymeric sert à pré-générer les fiches, plafond 50 €, contenu réduit à 2 anecdotes en français + règles de jeu, ciblage large (80 % des cartes). — lis la décision prise dans `etat.json` (`decisions_prises`) et applique-la à la lettre.
 
 ## 3. Mission
 

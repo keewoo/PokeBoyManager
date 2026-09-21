@@ -81,7 +81,7 @@ _Un espace qui garde des clés IA et des photos privées ne sort qu'après une r
 | `v5-rgpd` | P1 | Exporter mes données et supprimer mon compte | DA1 (devAI) | 19 sept. → 19 sept. | v1-byok | — | Intégré (main) | [prompt](prompts/v5-rgpd.md) |
 | `v5-securite` | P0 | Revue de sécurité avant ouverture | DA1 (devAI) | 20 sept. → 20 sept. | v4-fiche, v5-rgpd, v3-validation | — | Intégré (main) | [prompt](prompts/v5-securite.md) |
 | `v5-e2e` | P1 | Parcours e2e Playwright en CI | CH3 (chimera) | 6 nov. → 11 nov. | v4-fiche | — | En cours | [prompt](prompts/v5-e2e.md) |
-| `v5-prod` | P0 | Mise en PROD : domaine, sauvegardes, surveillance (sans UAT) | DA2 (devAI) | 16 nov. → 20 nov. | v5-securite, v5-e2e | D8 | À faire | [prompt](prompts/v5-prod.md) |
+| `v5-prod` | P0 | Mise en PROD : domaine, sauvegardes, surveillance (sans UAT) | DA2 (devAI) | 16 nov. → 20 nov. | v5-securite, v5-e2e | D8 | Livré | [prompt](prompts/v5-prod.md) |
 
 ## V6 — Après le MVP (23 nov. → 18 déc.)
 
@@ -89,6 +89,7 @@ _Ce qui rend le produit meilleur que la concurrence, une fois le socle en servic
 
 | Lot | Prio | Titre | Couloir | Prévu | Dépend de | Décision | Statut | Prompt |
 |---|---|---|---|---|---|---|---|---|
+| `v4-insights-run` | P1 | Génération des fiches : 2 anecdotes en français et règles de jeu, sur 80 % des cartes | CH2 (chimera) | 21 sept. → 22 sept. | v4-insights-batch | D4 | En cours | [prompt](prompts/v4-insights-run.md) |
 | `v6-contrefacon` | P2 | Détection des contrefaçons probables | CH2 (chimera) | 23 nov. → 2 déc. | v3-etat | — | À faire | [prompt](prompts/v6-contrefacon.md) |
 | `v6-alertes` | P2 | Alertes de prix et récapitulatif hebdomadaire par e-mail | CH3 (chimera) | 23 nov. → 25 nov. | v4-dashboard | — | À faire | [prompt](prompts/v6-alertes.md) |
 | `v6-pwa` | P2 | Application mobile installable (PWA) et scan en direct | CH1 (chimera) | 23 nov. → 4 déc. | v5-prod | — | À faire | [prompt](prompts/v6-pwa.md) |
@@ -101,7 +102,7 @@ _Avant le jeu lui-même : construire, nommer, corriger et partager des decks à 
 
 | Lot | Prio | Titre | Couloir | Prévu | Dépend de | Décision | Statut | Prompt |
 |---|---|---|---|---|---|---|---|---|
-| `v7-decks-api` | P0 | Decks : création, légalité et sauvegarde, uniquement avec ses cartes | DA3 (devAI) | 22 sept. → 25 sept. | v4-collection | D10 | À faire | [prompt](prompts/v7-decks-api.md) |
+| `v7-decks-api` | P0 | Decks : création, légalité et sauvegarde, uniquement avec ses cartes | DA3 (devAI) | 22 sept. → 25 sept. | v4-collection | D10 | Intégré (main) | [prompt](prompts/v7-decks-api.md) |
 | `v7-decks-recherche` | P0 | Recherche de cartes du constructeur : trouver une carte en trois secondes | CH5 (chimera) | 22 sept. → 25 sept. | v4-collection | — | À faire | [prompt](prompts/v7-decks-recherche.md) |
 | `v7-decks-ui` | P0 | Constructeur de deck | CH5 (chimera) | 29 sept. → 2 oct. | v7-decks-api, v7-decks-recherche | — | À faire | [prompt](prompts/v7-decks-ui.md) |
 | `v7-decks-legalite` | P0 | Contrôle de légalité d'un deck, expliqué ligne par ligne | DA3 (devAI) | 29 sept. → 2 oct. | v7-decks-api | D10 | À faire | [prompt](prompts/v7-decks-legalite.md) |
@@ -129,6 +130,18 @@ _Après le MVP : construire des decks avec SES cartes (l'IA peut en proposer un 
 | `v7-stats-joueur` | P1 | Statistiques du joueur : parties, victoires, adversaires, decks | CH1 (chimera) | 15 mars → 19 mars | v7-partie-ui | — | À faire | [prompt](prompts/v7-stats-joueur.md) |
 | `v7-e2e-jeu` | P1 | Partie complète jouée automatiquement, à deux navigateurs | CH3 (chimera) | 22 mars → 26 mars | v7-partie-ui | — | À faire | [prompt](prompts/v7-e2e-jeu.md) |
 
+## H1 — Après la mise en ligne — correctifs du premier jour (20 sept. → 21 sept.)
+
+_Le MVP en ligne a révélé ce qu'aucun test n'avait vu : formats de photo refusés, appel IA rejeté, écran de validation muet, traitements lourds sur la machine qui sert, URL de développement figées dans le site._
+
+| Lot | Prio | Titre | Couloir | Prévu | Dépend de | Décision | Statut | Prompt |
+|---|---|---|---|---|---|---|---|---|
+| `h1-hotfix-reconnaissance` | P0 | La reconnaissance échouait : schéma JSON refusé par Anthropic | DA2 (devAI) | 20 sept. → 20 sept. | — | — | Intégré (main) | [prompt](prompts/h1-hotfix-reconnaissance.md) |
+| `h1-formats-image` | P0 | Photos de téléphone refusées : MPO, HEIC et WEBP acceptés | DA2 (devAI) | 20 sept. → 21 sept. | — | — | Intégré (main) | [prompt](prompts/h1-formats-image.md) |
+| `h1-jobs-flotte` | P0 | Les traitements lourds quittent la machine qui sert | DA2 (devAI) | 20 sept. → 20 sept. | — | — | Intégré (main) | [prompt](prompts/h1-jobs-flotte.md) |
+| `h1-front-accueil` | P1 | Accueil crédible, site responsive, fin des URL de développement | DA2 (devAI) | 20 sept. → 20 sept. | — | — | Intégré (main) | [prompt](prompts/h1-front-accueil.md) |
+| `h1-parcours-validation` | P0 | Après la reconnaissance, l'utilisateur voit ses cartes et les ajoute | DA2 (devAI) | 21 sept. → 21 sept. | — | — | Intégré (main) | [prompt](prompts/h1-parcours-validation.md) |
+
 ## Décisions de JF
 
 | # | Avant le | Décision | Prise | Débloque |
@@ -137,7 +150,7 @@ _Après le MVP : construire des decks avec SES cartes (l'IA peut en proposer un 
 | D5 | 2026-09-26 | Nom de domaine et fournisseur d'e-mails transactionnels (vérification d'adresse, mot de passe oublié) : Brevo, Resend ou SMTP existant. | Domaine choisi par JF le 19/09 : PROD https://pokeboy.acx-connect.com, UAT https://uat.pokeboy.acx-connect.com (enregistrements A vers 5.22.213.226, serveur de kailo.life / ACX ; acx-connect.com y pointe déjà). Fournisseur d'e-mails : DÉFAUT PROVISOIRE du pilote — SMTP configurable (Mailpit en dev) ; expéditeur prévu no-reply@acx-connect.com (MX Google Workspace) à confirmer par JF. | v1-auth |
 | D2 | 2026-10-02 | Hébergement UAT/PROD : nouveau petit VPS UpCloud (compte kailo) ou machine `sites-and-crons` ; base PostgreSQL managée ou conteneur + sauvegardes. | JF le 19/09 : PROD sur le même serveur que kailo.life (UpCloud « sites-and-crons », 5.22.213.226). **Pas d'UAT** (19/09, 23h15) : la recette se fait en local sur chimera, on déploie directement en PROD. Images construites sur chimera, serveur en pull + up -d (2 cœurs / 4 Go partagés avec kailo.life et ACX). | v5-prod |
 | D3 | 2026-10-02 | Source de prix : gratuit (Cardmarket via TCGdex + TCGplayer, historique construit par nos relevés) ou payant (historique rétroactif, ex. PriceCharting). | DÉFAUT PROVISOIRE du pilote (à confirmer par JF) : sources gratuites (Cardmarket via TCGdex, TCGplayer via Pokémon TCG API) ; historique construit par nos relevés quotidiens ; source payante branchable plus tard. | v2-prix |
-| D4 | 2026-10-05 | Sans clé IA personnelle : reconnaissance désactivée (saisie manuelle seulement) ou quota d'essai offert sur une clé plateforme (coût à plafonner). | RÉVISÉE par JF le 19/09 : « autant tout prendre dès le premier tir » — une clé IA PLATEFORME sert à pré-générer l'histoire et l'étude en jeu de toutes les cartes (lot v4-insights-batch, budget plafonné). Sans clé personnelle, la reconnaissance reste désactivée (ajout manuel possible). À FOURNIR par JF : la clé plateforme (distincte de celle d'Aymeric) et le budget maximal. | v1-byok, v4-insights-batch |
+| D4 | 2026-09-19 | Sans clé IA personnelle : reconnaissance désactivée (ajout manuel possible). RÉVISÉE le 19/09 puis le 21/09 : la clé d'Aymeric sert à pré-générer les fiches, plafond 50 €, contenu réduit à 2 anecdotes en français + règles de jeu, ciblage large (80 % des cartes). | JF le 21/09 : génération des fiches avec la clé d'Aymeric — plafond 50 €, contenu réduit (2 anecdotes en français + règles de jeu), ciblage large visant 80 % des cartes, priorité aux cartes possédées. Le lot s'arrête là où le budget s'arrête, sans redemander d'arbitrage. | v1-byok, v4-insights-batch, v4-insights-run |
 | D7 | 2026-10-07 | Stockage des photos (Object Storage UpCloud ou disque du VPS) et durée de conservation des photos d'origine. | DÉFAUT PROVISOIRE (recommandation devAI du 19/09, à confirmer par JF) : photos sur le disque local du serveur (/srv/pokeboy/<env>/data/photos) au lancement ; l'application garde une interface de stockage à deux implémentations (disque local en UAT/PROD, S3/MinIO en dev) ; UpCloud Object Storage à chiffrer si le volume l'exige. Photos conservées jusqu'à suppression. | v3-upload |
 | D6 | 2026-10-23 | Définir le « ranking » affiché sur la fiche : rang de rareté, rang de valeur dans la collection, percentile dans l'extension — un, deux ou les trois. | DÉFAUT PROVISOIRE du pilote (à confirmer par JF) : les trois classements — rang de rareté, rang de valeur dans la collection, percentile de valeur dans l'extension. | v4-ranking |
 | D8 | 2026-11-13 | Ouverture : sur invitation ou inscription libre ; nom public et mention « non affilié à Nintendo / The Pokémon Company ». | en attente | v5-prod |
