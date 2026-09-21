@@ -355,7 +355,7 @@
     },
     {
       "id": "D9",
-      "date": "2026-11-27",
+      "date": "2026-09-19",
       "quoi": "Périmètre des règles v1 du moteur de jeu : proposition — Pokémon de base et évolutions, énergies, attaques, faiblesse/résistance, retraite, banc, récompenses, conditions de victoire ; dresseurs, talents et états spéciaux en v2.",
       "debloque": [
         "v7-regles-moteur",
@@ -364,15 +364,16 @@
     },
     {
       "id": "D10",
-      "date": "2026-12-18",
+      "date": "2026-09-19",
       "quoi": "Un deck n'utilise que les cartes possédées — faut-il faire une exception pour les Énergies de base (illimitées, comme dans les decks papier) ? Proposition : oui, les Énergies de base sont fournies.",
       "debloque": [
-        "v7-decks-api"
+        "v7-decks-api",
+        "v7-decks-legalite"
       ]
     },
     {
       "id": "D11",
-      "date": "2027-01-09",
+      "date": "2026-09-19",
       "quoi": "Cadre du jeu en ligne (propriété intellectuelle) : partie privée entre comptes invités seulement, ou file d'attente ouverte à tous les inscrits ? Sans revenu ni publicité dans les deux cas.",
       "debloque": [
         "v7-file-attente"
