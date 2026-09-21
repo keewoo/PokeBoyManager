@@ -814,6 +814,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/export/collection.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Collection Csv
+         * @description Export CSV synchrone de la collection (mission `v6-import-export`) : pas de job, pas
+         *     d'archive — le même relevé que `collection.csv` dans l'export RGPD (`v5-rgpd`), sans les
+         *     photos ni le JSON. Scopé au seul utilisateur de la session, aucun id reçu du client : rien à
+         *     borner de plus qu'un `GET /me/collection`.
+         *
+         *     Déclarée AVANT `GET /me/export/{export_id}` : sinon `collection.csv` serait interprété comme
+         *     un identifiant d'export (UUID) et rejeté en 422, même précaution que
+         *     `pbm_api.routers.uploads.list_pending_validation`.
+         */
+        get: operations["export_collection_csv_me_export_collection_csv_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/export/{export_id}": {
         parameters: {
             query?: never;
@@ -933,6 +960,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/wishlist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Wishlist */
+        get: operations["list_wishlist_me_wishlist_get"];
+        put?: never;
+        /** Create Wishlist Item */
+        post: operations["create_wishlist_item_me_wishlist_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/wishlist/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Wishlist Item */
+        delete: operations["delete_wishlist_item_me_wishlist__item_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Wishlist Item */
+        patch: operations["update_wishlist_item_me_wishlist__item_id__patch"];
+        trace?: never;
+    };
+    "/me/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Import */
+        post: operations["create_import_me_imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1008,6 +1088,11 @@ export interface components {
             text: string;
             /** Source Url */
             source_url: string;
+        };
+        /** Body_create_import_me_imports_post */
+        Body_create_import_me_imports_post: {
+            /** File */
+            file: string;
         };
         /** Body_upload_avatar_me_avatar_post */
         Body_upload_avatar_me_avatar_post: {
@@ -1408,6 +1493,18 @@ export interface components {
             /** Uploads */
             uploads: components["schemas"]["UploadTarget"][];
         };
+        /** CreateWishlistItemRequest */
+        CreateWishlistItemRequest: {
+            /**
+             * Card Id
+             * Format: uuid
+             */
+            card_id: string;
+            /** Target Price Eur */
+            target_price_eur?: number | string | null;
+            /** Note */
+            note?: string | null;
+        };
         /** DashboardMoverCard */
         DashboardMoverCard: {
             /**
@@ -1683,6 +1780,20 @@ export interface components {
         HealthResponse: {
             /** Status */
             status: string;
+        };
+        /** ImportCsvResponse */
+        ImportCsvResponse: {
+            /**
+             * Upload Id
+             * Format: uuid
+             */
+            upload_id: string;
+            /**
+             * Job Id
+             * Format: uuid
+             */
+            job_id: string;
+            status: components["schemas"]["JobStatus"];
         };
         /** InGameStudyResponse */
         InGameStudyResponse: {
@@ -2029,6 +2140,18 @@ export interface components {
             birth_date: string;
         };
         /**
+         * UpdateWishlistItemRequest
+         * @description Mise à jour partielle (`exclude_unset=True` côté service), même convention que
+         *     `pbm_api.collection.schemas.UpdateCollectionItemRequest` : envoyer seulement le champ à
+         *     corriger, jamais reposer le reste.
+         */
+        UpdateWishlistItemRequest: {
+            /** Target Price Eur */
+            target_price_eur?: number | string | null;
+            /** Note */
+            note?: string | null;
+        };
+        /**
          * UploadDetailResponse
          * @description `GET /uploads/{id}` (mission `v3-validation` point 1) : état de l'envoi et de sa
          *     reconnaissance — chargement initial de l'écran de validation, et forme des instantanés du
@@ -2105,6 +2228,47 @@ export interface components {
         VerifyEmailRequest: {
             /** Token */
             token: string;
+        };
+        /** WishlistItemResponse */
+        WishlistItemResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Card Id
+             * Format: uuid
+             */
+            card_id: string;
+            /**
+             * Set Id
+             * Format: uuid
+             */
+            set_id: string;
+            /** Card Name */
+            card_name: string;
+            /** Card Number */
+            card_number: string;
+            /** Set Name */
+            set_name: string;
+            /** Set Code */
+            set_code: string;
+            /** Rarity */
+            rarity: string | null;
+            /** Target Price Eur */
+            target_price_eur: string | null;
+            /** Note */
+            note: string | null;
+            /** Current Price Eur */
+            current_price_eur: string | null;
+            /** Target Reached */
+            target_reached: boolean | null;
+        };
+        /** WishlistListResponse */
+        WishlistListResponse: {
+            /** Items */
+            items: components["schemas"]["WishlistItemResponse"][];
         };
     };
     responses: never;
@@ -3806,6 +3970,26 @@ export interface operations {
             };
         };
     };
+    export_collection_csv_me_export_collection_csv_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     get_export_me_export__export_id__get: {
         parameters: {
             query?: never;
@@ -4002,6 +4186,156 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MyCardItemOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_wishlist_me_wishlist_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WishlistListResponse"];
+                };
+            };
+        };
+    };
+    create_wishlist_item_me_wishlist_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWishlistItemRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WishlistItemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_wishlist_item_me_wishlist__item_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_wishlist_item_me_wishlist__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateWishlistItemRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WishlistItemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_import_me_imports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_create_import_me_imports_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportCsvResponse"];
                 };
             };
             /** @description Validation Error */

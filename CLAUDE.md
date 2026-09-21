@@ -633,6 +633,58 @@ Tests : `apps/api/tests/test_deck_legality.py` (moteur pur : D10, 60/4/possessio
 `apps/api/tests/test_deck_routes.py` (CRUD, accès croisé B→404, revalidation après vente, CSRF).
 Aucun écran dans ce lot (back-end) : le constructeur est `v7-decks-ui` (couloir CH5).
 
+## Import/export CSV et liste de souhaits (lot `v6-import-export`)
+
+**Import** (`pbm_api.imports`) : `POST /me/imports` (multipart, un fichier `.csv`) crée un `Upload`
+(`content_type="text/csv"`) et un `Job` — même schéma que `POST /uploads/{id}/complete` pour
+`detect_cards_task` (`pbm_api.queue.get_arq_pool`, worker `import_csv_task`). Le worker
+(`pbm_api.imports.service.run_import_for_upload`) parse le fichier
+(`pbm_api.imports.parser.parse_csv` — décodage `utf-8-sig`/`cp1252`/`latin-1`, séparateur
+détecté, alias d'en-têtes couvrant notre propre export ET les libellés anglais courants) puis
+rapproche chaque ligne du catalogue avec le **même moteur que l'identification**
+(`pbm_api.identification.reconciliation.reconcile`, mission risque) : chaque ligne devient une
+`CardExtraction` dont les champs renseignés portent une confiance de 1,0 (texte saisi, pas une
+lecture OCR). Une `Detection` est créée par ligne (`identification_method="import"`,
+`crop_s3_key=None`, `bbox={"reading_order", "source_line"}`) — **l'écran de validation existant
+est réutilisé tel quel** (`GET /uploads/{id}`, `/ajouter/validation`, `POST /detections/{id}/
+confirm|reject`, `POST /uploads/{id}/confirm-all`) : aucune route ni composant nouveau côté
+validation. Ce que le CSV portait sans équivalent dans `CardExtraction` (quantité, état en un
+mot, prix et date d'achat) est conservé dans `extraction.import_defaults` plutôt que perdu, sans
+schéma supplémentaire. `pbm_api.uploads.service.RECOGNITION_JOB_TYPES` réunit `detect_cards` et
+`import_csv` pour que `GET /uploads/{id}/events` (SSE) et `POST /uploads/{id}/retry-recognition`
+fonctionnent sur les deux origines sans code dupliqué. Front : panneau CSV dans `/ajouter`
+(`import-csv-panel.tsx`, visible même sans clé IA — D4, le rapprochement ne dépend d'aucun
+fournisseur) → redirige vers `/ajouter/validation?uploads=<id>`, exactement le parcours photo.
+
+**Export CSV synchrone** (`GET /me/export/collection.csv`) : pas de `Job`, pas de ZIP — le même
+relevé que `collection.csv` de l'export RGPD (`v5-rgpd`), réutilisant
+`pbm_api.export.service.collection_rows_for_user` et `pbm_api.export.archive.
+build_collection_csv` (extraite de `build_archive`, une seule fonction qui décide des colonnes).
+Bouton « Exporter en CSV » dans `Profil → Mes données` (`downloadCollectionCsv`,
+`apps/web/src/lib/api/export.ts` — fetch + blob, pas un lien direct pour rester scopé à la
+session courante). Ce même format (`carte`/`extension`/`numero`/`langue`/`variante`...) est l'un
+des alias reconnus par l'import, pour un aller-retour possible.
+
+**Liste de souhaits** (`pbm_api.wishlist`, table `wishlist_items` — migration `9cf1c808d8f6`) :
+`user_id`+`card_id` unique (`uq_wishlist_items_user_card`, `PATCH` sert à corriger le prix cible,
+un second `POST` renvoie 409), `target_price_eur` facultatif, `note` (280 car.). Jamais un
+exemplaire de la collection : pas de langue/variante/état, juste la carte visée. Prix courant
+comparé au prix cible via `pbm_api.pricing.valuation.reference_price_eur` (variante normale,
+même source que la fiche carte) — `target_reached` est `None` (pas `False`) tant qu'aucun prix
+courant ou aucun prix cible n'existe, jamais une fausse alerte. Routes `/me/wishlist[/{id}]`
+(`routers/wishlist.py`). Page `/souhaits` (`wishlist-view.tsx`) : recherche catalogue partagée
+avec `ManualAddForm`/`DetectionCard` (`searchCatalog`), badge « objectif atteint ».
+
+Aucune maquette n'existe pour ces trois écrans (`ROADMAP.html` ne couvre que les 8 écrans du MVP,
+ce lot est post-MVP) — conçus en suivant les patrons visuels déjà en place (`ManualAddForm`,
+`DetectionCard`, `EmptyState`).
+
+Tests : `apps/api/tests/test_csv_import.py` (parsing pur + route + rapprochement catalogue +
+réutilisation de l'écran de validation bout en bout + accès croisé),
+`apps/api/tests/test_wishlist_routes.py` (CRUD, `target_reached`, CSRF, accès croisé),
+`apps/api/tests/test_export.py` (ajout : export CSV synchrone, scopé à l'utilisateur).
+`apps/web/src/__tests__/wishlist-view.test.tsx`, ajouts à `upload-view.test.tsx` (panneau CSV).
+
 ## Règles de la flotte applicables ici (résumé de `~/.claude/CLAUDE.md`)
 
 - On construit sur chimera (32 Go, 16 threads) et on ne construit jamais sur la machine qui sert.

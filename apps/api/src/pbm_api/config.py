@@ -68,6 +68,19 @@ class Settings(BaseSettings):
     upload_max_size_bytes: int = 20 * 1024 * 1024
     upload_max_files_per_batch: int = 30
 
+    # --- Import CSV (lot v6-import-export) ---
+    # Un CSV est du texte, pas une photo : une taille bien plus basse que `upload_max_size_bytes`
+    # suffit largement et borne le nombre de lignes qu'un job peut avoir à rapprocher.
+    import_csv_max_size_bytes: int = 2 * 1024 * 1024
+    # Au-delà, le fichier est refusé avant tout job (mission « format générique et exports
+    # courants » — une collection réelle tient largement dessous ; un fichier plus gros est
+    # probablement un mauvais export, jamais rapproché en silence à moitié).
+    import_csv_max_rows: int = 2000
+    # Aucun appel réseau/IA dans ce job (juste du parsing + des requêtes SQL de rapprochement) :
+    # un délai bien plus court que `detect_job_timeout_seconds` suffit à couvrir même
+    # `import_csv_max_rows` lignes.
+    import_job_timeout_seconds: int = 120
+
     # --- Pré-génération par lots des anecdotes/étude en jeu (lot v4-insights-batch) ---
     # Clé PLATEFORME distincte de toute clé d'utilisateur (D4 révisée, 19/09) — jamais une clé
     # de `ai_credentials`. Vide par défaut : sans elle, `insights_batch.runner` refuse de

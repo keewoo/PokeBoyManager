@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pbm_api.auth.dependencies import get_current_user, require_csrf
 from pbm_api.db import get_session
 from pbm_api.export import service
+from pbm_api.export.archive import build_collection_csv
 from pbm_api.export.errors import (
     ExportArchiveMissingError,
     ExportNotFoundError,
@@ -58,6 +59,28 @@ async def request_export(
     export = await service.create_export(db, current_user)
     await arq_pool.enqueue_job("export_user_data_task", str(export.id))
     return _to_response(export)
+
+
+@router.get("/me/export/collection.csv")
+async def export_collection_csv(
+    db: Annotated[AsyncSession, Depends(get_session)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> Response:
+    """Export CSV synchrone de la collection (mission `v6-import-export`) : pas de job, pas
+    d'archive — le même relevé que `collection.csv` dans l'export RGPD (`v5-rgpd`), sans les
+    photos ni le JSON. Scopé au seul utilisateur de la session, aucun id reçu du client : rien à
+    borner de plus qu'un `GET /me/collection`.
+
+    Déclarée AVANT `GET /me/export/{export_id}` : sinon `collection.csv` serait interprété comme
+    un identifiant d'export (UUID) et rejeté en 422, même précaution que
+    `pbm_api.routers.uploads.list_pending_validation`."""
+    rows = await service.collection_rows_for_user(db, current_user.id)
+    csv_text = build_collection_csv(rows)
+    return Response(
+        content=csv_text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="collection.csv"'},
+    )
 
 
 @router.get("/me/export/{export_id}", response_model=ExportResponse)

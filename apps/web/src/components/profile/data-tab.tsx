@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiError } from "@/lib/api/client";
 import { deleteAccount } from "@/lib/api/profile";
-import { requestExport } from "@/lib/api/export";
+import { downloadCollectionCsv, requestExport } from "@/lib/api/export";
 import { deleteAccountSchema, type DeleteAccountFormValues } from "@/lib/validation/profile";
 
 export function DataTab() {
@@ -20,6 +20,8 @@ export function DataTab() {
   const [exportMessage, setExportMessage] = useState<{ variant: "success" | "error"; text: string } | null>(
     null
   );
+  const [csvPending, setCsvPending] = useState(false);
+  const [csvError, setCsvError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -67,6 +69,18 @@ export function DataTab() {
     }
   }
 
+  async function onDownloadCsv() {
+    setCsvPending(true);
+    setCsvError(null);
+    try {
+      await downloadCollectionCsv();
+    } catch (error) {
+      setCsvError(error instanceof ApiError ? error.message : "Impossible de télécharger ce fichier.");
+    } finally {
+      setCsvPending(false);
+    }
+  }
+
   return (
     <div className="flex max-w-xl flex-col gap-6 rounded-xl border border-border bg-card p-4">
       <div className="flex flex-col gap-2">
@@ -76,11 +90,19 @@ export function DataTab() {
           par e-mail et reste valable 24 heures.
         </p>
         {exportMessage && <FormNotice variant={exportMessage.variant}>{exportMessage.text}</FormNotice>}
-        <div>
+        <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" onClick={onRequestExport} disabled={exportPending}>
             {exportPending ? "Préparation…" : "Préparer l'export"}
           </Button>
+          <Button type="button" variant="ghost" onClick={onDownloadCsv} disabled={csvPending}>
+            {csvPending ? "Téléchargement…" : "Exporter en CSV"}
+          </Button>
         </div>
+        {csvError && <FormNotice variant="error">{csvError}</FormNotice>}
+        <p className="text-xs text-muted-foreground">
+          Le CSV seul (sans photos), tout de suite — même format que celui accepté par
+          l&apos;import.
+        </p>
       </div>
 
       <div className="flex flex-col gap-2 border-t border-border pt-5">

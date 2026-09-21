@@ -285,6 +285,64 @@ async def test_download_export_rejects_an_expired_token(
     assert response.status_code == 404
 
 
+# --- Export CSV synchrone (mission `v6-import-export`) -----------------------------------
+
+
+async def test_export_csv_requires_authentication(api_client: httpx.AsyncClient) -> None:
+    response = await api_client.get("/me/export/collection.csv")
+    assert response.status_code == 401
+
+
+async def test_export_csv_returns_the_same_rows_as_the_rgpd_archive(
+    api_client: httpx.AsyncClient, db_session, _local_photo_storage
+) -> None:
+    """Route synchrone (mission point 1) : pas de job, pas de ZIP — le même relevé que
+    `collection.csv` dans l'export RGPD. Avant ce lot, `GET /me/export/collection.csv` n'existait
+    pas (404) : ce test échoue sans la route et passe avec."""
+    email = _unique_email("export-csv")
+    await _register_verify_login(api_client, email)
+    result = await db_session.execute(select(User).where(User.email == email))
+    user = result.scalar_one()
+    item, card = await _add_collection_item_with_photo(
+        db_session, str(user.id), _local_photo_storage, photo=None
+    )
+
+    response = await api_client.get("/me/export/collection.csv")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/csv")
+    assert "collection.csv" in response.headers["content-disposition"]
+
+    rows = list(csv.DictReader(io.StringIO(response.text)))
+    assert len(rows) == 1
+    assert rows[0]["item_id"] == str(item.id)
+    assert rows[0]["carte"] == card.name
+    assert rows[0]["photo"] == ""
+
+
+async def test_export_csv_is_scoped_to_the_current_user(
+    api_client: httpx.AsyncClient, db_session, _local_photo_storage
+) -> None:
+    """B n'a jamais les lignes de A dans son propre export — même garantie que le reste de la
+    collection (`GET /me/collection`), pas un id à deviner ici, juste la session courante."""
+    email_a = _unique_email("export-csv-a")
+    await _register_verify_login(api_client, email_a)
+    result = await db_session.execute(select(User).where(User.email == email_a))
+    user_a = result.scalar_one()
+    await _add_collection_item_with_photo(
+        db_session, str(user_a.id), _local_photo_storage, photo=None
+    )
+
+    transport = httpx.ASGITransport(app=fastapi_app)
+    async with httpx.AsyncClient(transport=transport, base_url="https://testserver") as client_b:
+        client_b.email_sender = api_client.email_sender  # type: ignore[attr-defined]
+        await _register_verify_login(client_b, _unique_email("export-csv-b"))
+
+        response = await client_b.get("/me/export/collection.csv")
+        assert response.status_code == 200
+        rows = list(csv.DictReader(io.StringIO(response.text)))
+        assert rows == []
+
+
 async def test_a_still_queued_export_has_no_download_token_yet(
     api_client: httpx.AsyncClient,
 ) -> None:

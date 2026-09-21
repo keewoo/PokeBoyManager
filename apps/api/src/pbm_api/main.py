@@ -14,9 +14,11 @@ from pbm_api.routers.detections import router as detections_router
 from pbm_api.routers.export import router as export_router
 from pbm_api.routers.health import router as health_router
 from pbm_api.routers.images import router as images_router
+from pbm_api.routers.imports import router as imports_router
 from pbm_api.routers.in_game_study import router as in_game_study_router
 from pbm_api.routers.profile import router as profile_router
 from pbm_api.routers.uploads import router as uploads_router
+from pbm_api.routers.wishlist import router as wishlist_router
 from pbm_api.security.headers import SecurityHeadersMiddleware
 from pbm_api.security.log_filter import install_api_key_redaction, install_secret_url_redaction
 from pbm_api.security.validation_errors import install_validation_error_redaction
@@ -55,3 +57,5 @@ app.include_router(card_insights_router)
 app.include_router(export_router)
 app.include_router(in_game_study_router)
 app.include_router(cards_router)
+app.include_router(wishlist_router)
+app.include_router(imports_router)

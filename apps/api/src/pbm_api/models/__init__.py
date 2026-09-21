@@ -28,6 +28,7 @@ from pbm_api.models.identification import (
 from pbm_api.models.jobs import DataExport, Job, JobStatus
 from pbm_api.models.pricing import ExchangeRateDaily
 from pbm_api.models.users import AiCredential, AiProvider, EmailToken, EmailTokenKind, Session, User
+from pbm_api.models.wishlist import WishlistItem
 
 __all__ = [
     "Base",
@@ -62,4 +63,5 @@ __all__ = [
     "JobStatus",
     "DataExport",
     "ExchangeRateDaily",
+    "WishlistItem",
 ]

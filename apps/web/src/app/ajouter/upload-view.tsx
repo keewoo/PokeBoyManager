@@ -25,6 +25,8 @@ import {
 } from "@/lib/uploads-constraints";
 import { cn } from "@/lib/utils";
 
+import { ImportCsvPanel } from "./import-csv-panel";
+
 type ItemStatus = "pending" | "uploading" | "processing" | "done" | "error";
 
 type UploadItem = {
@@ -257,6 +259,9 @@ export function UploadView() {
         <Button asChild className="mt-2">
           <Link href="/profil">Configurer une clé dans Profil → Mon IA</Link>
         </Button>
+        <div className="mt-6 w-full max-w-md text-left">
+          <ImportCsvPanel />
+        </div>
       </div>
     );
   }
@@ -410,6 +415,8 @@ export function UploadView() {
           )}
         </>
       )}
+
+      <ImportCsvPanel />
     </div>
   );
 }

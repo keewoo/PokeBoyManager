@@ -29,6 +29,12 @@ from pbm_api.detection.service import run_detection_for_upload
 from pbm_api.email import get_email_sender
 from pbm_api.export.service import run_export
 from pbm_api.identification.service import run_identification_for_upload
+from pbm_api.imports.errors import (
+    ImportFileEmptyError,
+    ImportFileUndecodableError,
+    ImportTooManyRowsError,
+)
+from pbm_api.imports.service import run_import_for_upload
 from pbm_api.ingame.tournaments import LimitlessTcgClient
 from pbm_api.ingame.tournaments_job import refresh_tournament_presence
 from pbm_api.models import DataExport, Detection, Job, JobStatus, Upload, User
@@ -379,6 +385,77 @@ async def detect_cards_task(ctx: dict, job_id: str) -> dict:
     return await _run_detect_cards(job_id)
 
 
+async def _run_import_csv(job_id: str) -> dict:
+    """Import CSV (mission `v6-import-export`) : même patron que `_run_detect_cards` (un `Job`
+    par envoi, délai maximal explicite, écran de validation partagé) mais sans appel réseau ni IA
+    — juste du parsing et des requêtes SQL de rapprochement, un délai bien plus court suffit."""
+    async with async_session_factory() as session:
+        job = await session.get(Job, uuid.UUID(job_id))
+        if job is None:
+            raise LookupError(f"job {job_id} introuvable")
+
+        job.status = JobStatus.running
+        job.started_at = _now_naive_utc()
+        await session.commit()
+
+        upload_id = uuid.UUID(job.payload["upload_id"])
+        logger.info("job %s import_csv démarré (upload=%s)", job_id, upload_id)
+        upload = await session.get(Upload, upload_id)
+        storage = build_storage()
+        timeout = settings.import_job_timeout_seconds
+        try:
+            if upload is None:
+                raise LookupError(f"upload {upload_id} introuvable")
+            summary = await asyncio.wait_for(
+                run_import_for_upload(session, storage, upload), timeout=timeout
+            )
+            job.status = JobStatus.succeeded
+            job.result = {
+                "rows_parsed": summary.rows_parsed,
+                "rows_ignored": summary.rows_ignored,
+                "ignored_reasons": summary.ignored_reasons,
+                "detections_count": summary.detections_count,
+            }
+            report = job.result
+        except TimeoutError:
+            await session.rollback()
+            job = await session.get(Job, uuid.UUID(job_id))
+            message = f"Import interrompu : délai maximal de {timeout}s dépassé. Relance l'import."
+            job.status = JobStatus.failed
+            job.error = message
+            report = {"error": message, "timeout": True}
+            logger.warning("job %s import_csv: délai de %ss dépassé", job_id, timeout)
+        except (ImportFileEmptyError, ImportFileUndecodableError, ImportTooManyRowsError) as exc:
+            messages = {
+                ImportFileEmptyError: "Le fichier ne contient aucune ligne exploitable.",
+                ImportFileUndecodableError: "Le fichier n'a pas pu être lu (encodage non reconnu).",
+                ImportTooManyRowsError: (
+                    f"Le fichier dépasse {settings.import_csv_max_rows} lignes."
+                ),
+            }
+            message = messages[type(exc)]
+            job.status = JobStatus.failed
+            job.error = message
+            report = {"error": message}
+            logger.warning("job %s import_csv: fichier rejeté: %s", job_id, message)
+        except Exception as exc:
+            job.status = JobStatus.failed
+            job.error = str(exc)
+            report = {"error": str(exc)}
+            logger.exception("job %s import_csv: échec inattendu", job_id)
+        job.finished_at = _now_naive_utc()
+        await session.commit()
+        logger.info("job %s import_csv terminé: statut=%s", job_id, job.status.value)
+    return report
+
+
+async def import_csv_task(ctx: dict, job_id: str) -> dict:
+    """Import CSV d'une collection (mission `v6-import-export`) : un `Job` par envoi
+    (`POST /me/import`), rapprochement catalogue avec le moteur de l'identification, validation
+    humaine dans le même écran que la reconnaissance photo."""
+    return await _run_import_csv(job_id)
+
+
 async def _run_export(export_id: str) -> dict:
     async with async_session_factory() as session:
         export = await session.get(DataExport, uuid.UUID(export_id))
@@ -471,6 +548,7 @@ class WorkerSettings:
         daily_prices_task,
         daily_exchange_rates_task,
         detect_cards_task,
+        import_csv_task,
         export_user_data_task,
         weekly_tournament_presence_task,
     ]

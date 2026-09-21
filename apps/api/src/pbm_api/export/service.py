@@ -37,7 +37,12 @@ def _utc_now_naive() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
 
 
-async def _collection_rows(session: AsyncSession, user_id: uuid.UUID) -> list[ExportCollectionRow]:
+async def collection_rows_for_user(
+    session: AsyncSession, user_id: uuid.UUID
+) -> list[ExportCollectionRow]:
+    """Publique : réutilisée telle quelle par l'export CSV synchrone (mission
+    `v6-import-export`, `pbm_api.routers.export.export_collection_csv`) — même lecture de la
+    collection que l'export RGPD, jamais une seconde requête qui pourrait diverger."""
     result = await session.execute(
         select(CollectionItem, Card, Set)
         .join(Card, Card.id == CollectionItem.card_id)
@@ -91,7 +96,7 @@ async def run_export(
     await db.commit()
 
     try:
-        rows = await _collection_rows(db, user.id)
+        rows = await collection_rows_for_user(db, user.id)
         photos: dict[uuid.UUID, bytes] = {}
         for row in rows:
             if row.photo_s3_key is None:

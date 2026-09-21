@@ -59,6 +59,13 @@ ALLOWED_CONTENT_TYPES = frozenset(
 )
 
 JOB_TYPE = "detect_cards"
+# `"import_csv"` est `pbm_api.imports.service.JOB_TYPE` et `"text/csv"` son
+# `IMPORT_CONTENT_TYPE` — recopiés en dur ici (jamais importés) : `pbm_api.imports.service`
+# dépend déjà de ce module (`get_owned_upload`), les importer en retour créerait un cycle. Un
+# `Upload` n'a jamais les deux types de job à la fois, la réunion est donc sans ambiguïté.
+IMPORT_JOB_TYPE = "import_csv"
+IMPORT_CONTENT_TYPE = "text/csv"
+RECOGNITION_JOB_TYPES = (JOB_TYPE, IMPORT_JOB_TYPE)
 
 
 def _validate_file(file: UploadFileRequest) -> None:
@@ -236,7 +243,10 @@ async def get_latest_recognition_job(db: AsyncSession, upload_id: uuid.UUID) -> 
     file), qui donne la progression réelle de la reconnaissance."""
     result = await db.execute(
         select(Job)
-        .where(Job.type == JOB_TYPE, Job.payload["upload_id"].astext == str(upload_id))
+        .where(
+            Job.type.in_(RECOGNITION_JOB_TYPES),
+            Job.payload["upload_id"].astext == str(upload_id),
+        )
         .order_by(Job.created_at.desc())
         .limit(1)
     )
@@ -294,15 +304,20 @@ async def retry_recognition(
     upload = await get_owned_upload(db, user, upload_id)
     if upload.status != UploadStatus.processed:
         raise RecognitionUnavailableError("l'envoi n'a pas de photo traitée à reconnaître")
-    if not bool(await list_ai_keys(db, user)):
+    is_csv_import = upload.content_type == IMPORT_CONTENT_TYPE
+    # Un import CSV ne rapproche jamais avec l'IA (mission `v6-import-export`) : aucune clé n'est
+    # requise pour relancer son job, contrairement à une reconnaissance photo.
+    if not is_csv_import and not bool(await list_ai_keys(db, user)):
         raise RecognitionUnavailableError("aucune clé IA configurée")
 
     latest = await get_latest_recognition_job(db, upload_id)
     if latest is not None and latest.status in (JobStatus.queued, JobStatus.running):
         raise RecognitionInProgressError
 
+    job_type = IMPORT_JOB_TYPE if is_csv_import else JOB_TYPE
+    task_name = "import_csv_task" if is_csv_import else "detect_cards_task"
     job = Job(
-        type=JOB_TYPE,
+        type=job_type,
         status=JobStatus.queued,
         user_id=user.id,
         payload={"upload_id": str(upload.id)},
@@ -310,7 +325,7 @@ async def retry_recognition(
     db.add(job)
     await db.commit()
     await db.refresh(job)
-    await arq_pool.enqueue_job("detect_cards_task", str(job.id))
+    await arq_pool.enqueue_job(task_name, str(job.id))
     return job
 
 

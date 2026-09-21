@@ -19,6 +19,7 @@ const SESSION_LINKS: NavLink[] = [
   { href: "/", label: "Tableau de bord" },
   { href: "/collection", label: "Collection" },
   { href: "/ajouter", label: "Ajouter" },
+  { href: "/souhaits", label: "Souhaits" },
   { href: "/profil", label: "Profil" },
 ];
 

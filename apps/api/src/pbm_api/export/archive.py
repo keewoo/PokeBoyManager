@@ -102,6 +102,22 @@ def _row_to_csv_line(row: ExportCollectionRow, photo_filename: str | None) -> di
     }
 
 
+def build_collection_csv(
+    rows: list[ExportCollectionRow], photo_filenames: dict[uuid.UUID, str] | None = None
+) -> str:
+    """Le CSV `collection.csv` de l'archive d'export (mission `v5-rgpd`), réutilisé tel quel par
+    l'export CSV synchrone de la collection (mission `v6-import-export`) — une seule fonction qui
+    décide des colonnes, jamais deux formats qui pourraient diverger. `photo_filenames` est vide
+    pour l'export synchrone (pas de photos jointes, colonne `photo` vide)."""
+    photo_filenames = photo_filenames or {}
+    csv_buffer = io.StringIO()
+    writer = csv.DictWriter(csv_buffer, fieldnames=CSV_FIELDS)
+    writer.writeheader()
+    for row in rows:
+        writer.writerow(_row_to_csv_line(row, photo_filenames.get(row.item_id)))
+    return csv_buffer.getvalue()
+
+
 def build_archive(
     profile: dict[str, Any],
     rows: list[ExportCollectionRow],
@@ -120,11 +136,7 @@ def build_archive(
         "cartes": [_row_to_dict(row) for row in rows],
     }
 
-    csv_buffer = io.StringIO()
-    writer = csv.DictWriter(csv_buffer, fieldnames=CSV_FIELDS)
-    writer.writeheader()
-    for row in rows:
-        writer.writerow(_row_to_csv_line(row, photo_filenames.get(row.item_id)))
+    csv_text = build_collection_csv(rows, photo_filenames)
 
     buffer = io.BytesIO()
     with ZipFile(buffer, mode="w", compression=ZIP_DEFLATED) as zip_file:
@@ -136,7 +148,7 @@ def build_archive(
             COLLECTION_JSON_NAME,
             json.dumps(collection_json, indent=2, ensure_ascii=False, default=_json_default),
         )
-        zip_file.writestr(COLLECTION_CSV_NAME, csv_buffer.getvalue())
+        zip_file.writestr(COLLECTION_CSV_NAME, csv_text)
         for item_id, data in photos.items():
             zip_file.writestr(photo_filenames[item_id], data)
 

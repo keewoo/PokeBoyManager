@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import AjouterPage from "@/app/ajouter/page";
+import { createImport } from "@/lib/api/imports";
 import {
   ApiError,
   completeUpload,
@@ -30,6 +31,8 @@ vi.mock("@/lib/api/uploads", async () => {
   };
 });
 
+vi.mock("@/lib/api/imports", () => ({ createImport: vi.fn() }));
+
 function jpegFile(name = "carte.jpg", sizeBytes = 1024): File {
   const file = new File(["x".repeat(Math.min(sizeBytes, 1024))], name, { type: "image/jpeg" });
   Object.defineProperty(file, "size", { value: sizeBytes });
@@ -44,6 +47,7 @@ describe("Page /ajouter", () => {
     vi.mocked(completeUpload).mockReset();
     vi.mocked(listPendingValidations).mockReset();
     vi.mocked(listPendingValidations).mockResolvedValue([]);
+    vi.mocked(createImport).mockReset();
     push.mockReset();
   });
 
@@ -192,5 +196,37 @@ describe("Page /ajouter", () => {
     await user.click(screen.getByRole("button", { name: /lancer la reconnaissance/i }));
 
     expect(await screen.findByText(/photo trop volumineuse/i)).toBeInTheDocument();
+  });
+
+  it("propose l'import CSV même sans clé IA configurée (D4)", async () => {
+    vi.mocked(hasAnyAiKey).mockResolvedValue(false);
+    render(<AjouterPage />);
+
+    expect(
+      await screen.findByText(/importer une collection existante/i)
+    ).toBeInTheDocument();
+  });
+
+  it("importe un CSV et redirige vers l'écran de validation existant", async () => {
+    vi.mocked(hasAnyAiKey).mockResolvedValue(true);
+    vi.mocked(createImport).mockResolvedValue({
+      upload_id: "33333333-3333-3333-3333-333333333333",
+      job_id: "44444444-4444-4444-4444-444444444444",
+      status: "queued",
+    });
+
+    const user = userEvent.setup();
+    render(<AjouterPage />);
+    await screen.findByText(/importer une collection existante/i);
+
+    const csv = new File(["carte,numero\nPikachu,25\n"], "collection.csv", { type: "text/csv" });
+    await user.upload(screen.getByLabelText(/choisir un fichier csv/i), csv);
+    await user.click(screen.getByRole("button", { name: /^importer$/i }));
+
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith(
+        "/ajouter/validation?uploads=33333333-3333-3333-3333-333333333333"
+      )
+    );
   });
 });
