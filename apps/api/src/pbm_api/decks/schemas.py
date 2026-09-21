@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from decimal import Decimal
 from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
@@ -176,3 +177,52 @@ class ImportDeckResponse(BaseModel):
 
     report: ImportReportOut
     deck: DeckDetail | None = None
+# ---- recherche de cartes du constructeur (mission `v7-decks-recherche`) ----
+class DeckCardSearchItem(BaseModel):
+    """Une carte du CATALOGUE dans le constructeur, annotée pour l'utilisateur courant :
+    `owned_count` = exemplaires possédés, `in_deck_count` = exemplaires déjà dans le deck édité
+    (0 sans `deck_id`). `value_eur` = prix de référence de `card_value_rank` (`None` si non
+    encore relevé). `name` = nom localisé (FR par défaut), repli sur le nom canonique."""
+
+    card_id: uuid.UUID
+    set_id: uuid.UUID
+    number: str
+    name: str
+    set_name: str
+    set_code: str
+    series: str | None
+    rarity: str | None
+    supertype: str | None
+    hp: int | None
+    image_url: str | None
+    energy_type: str | None
+    is_basic_energy: bool
+    is_special_energy: bool
+    value_eur: Decimal | None
+    owned_count: int
+    in_deck_count: int
+    is_duplicate: bool
+
+
+class DeckCardSearchResponse(BaseModel):
+    items: list[DeckCardSearchItem]
+    next_cursor: str | None
+
+
+class DeckCardFacetSet(BaseModel):
+    set_id: uuid.UUID
+    name: str
+    code: str
+
+
+class DeckCardSearchFacets(BaseModel):
+    """Valeurs de filtre du constructeur, à l'échelle du catalogue, plus deux compteurs propres à
+    l'utilisateur pour les bascules « mes cartes » / « doublons »."""
+
+    sets: list[DeckCardFacetSet]
+    rarities: list[str]
+    card_types: list[str]
+    hp_min: int | None
+    hp_max: int | None
+    owned_card_count: int
+    duplicate_card_count: int

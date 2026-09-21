@@ -498,6 +498,46 @@ dans le moteur de légalité (`unsupported_card_ids`) mais neutre tant que ce mo
 sans lui, tout effet serait inconnu et aucun deck ne serait jamais légal. Il s'activera par un
 seul point d'intégration, sans autre changement.
 
+## Recherche de cartes du constructeur (lot `v7-decks-recherche`)
+
+Deux routes (`apps/api/src/pbm_api/routers/decks.py`, service `pbm_api.decks.card_search`),
+déclarées AVANT `/{deck_id}` (sinon FastAPI parse « cards » comme un UUID) :
+
+- `GET /me/decks/cards` : cherche dans le **catalogue** (~22 000 cartes, pas la collection —
+  comme `GET /catalog/search`), chaque carte annotée pour l'utilisateur de la session du nombre
+  **possédé** (`owned_count`, `is_duplicate` = ≥ 2) et **déjà placé dans le deck édité**
+  (`in_deck_count`, quand `deck_id` est fourni ET lui appartient — sinon 404, jamais 403).
+  Filtres cumulables : `q` (nom FR/EN accent-insensible **ou** numéro `25`/`025`/`236/217`,
+  `parse_query` de `v2-recherche`), `set_id`, `rarity`, `card_type` (supertype), `hp_min`/
+  `hp_max`, `owned` (mes cartes), `duplicates`. Tri `sort` (valeur/nom/numéro/date d'ajout, un
+  seul appel), pagination **par curseur keyset** (`cursor` = clé de tri + `card_id`, jamais
+  OFFSET). `value_eur` vient de la vue matérialisée `card_value_rank` (lot `v4-ranking`), déjà
+  rafraîchie par le job de prix — aucun calcul de prix lourd par requête.
+- `GET /me/decks/cards/facets` : valeurs de filtre à l'échelle du catalogue (sets, raretés,
+  types, bornes de PV) + `owned_card_count`/`duplicate_card_count` propres à l'utilisateur.
+
+**Isolation** : le catalogue est public, l'isolation porte sur les deux annotations (toujours
+calculées pour `user.id`, jamais un id du client) et sur `deck_id` (contrôle de propriété →
+404). Tests : `apps/api/tests/test_deck_card_search_routes.py` (filtres, comptes de possession,
+pagination, accès croisé — B a `owned_count=0` sur la carte de A, et `deck_id` de A → 404).
+
+**Index (migration `f4a1c8d0b7e2`)** : fonction `pbm_immutable_unaccent(text)` (unaccent figé sur
+son dictionnaire, donc IMMUTABLE et indexable) + index trigram fonctionnels
+`gin (pbm_immutable_unaccent(lower(name)) gin_trgm_ops)` sur `cards` et `card_names` (recherche
+par sous-chaîne accent-insensible), btree sur `cards(supertype|rarity|hp)`, composé
+`collection_items(user_id, card_id)`. La recherche appelle `pbm_immutable_unaccent` — la
+migration DOIT être jouée. Perf (mission point 2, p95 < 150 ms sur 22 000 cartes / 5 000
+exemplaires) : `uv run python scripts/measure_deck_card_search_performance.py` depuis `apps/api`
+(sème 22 000 cartes, rafraîchit `card_value_rank`, écrit `var/deck-card-search-performance.json`).
+
+**Reste (front)** : la navigation clavier (flèches/Entrée/Échap) et la conformité maquette de
+l'écran de recherche appartiennent au constructeur `v7-decks-ui` (couloir CH5), qui monte cet
+écran — la route lui rend déjà `owned_count`/`in_deck_count` pour un « ajouter » clavier sans
+aller-retour supplémentaire. Report explicite (compte rendu `v7-decks-recherche`), pas un repli
+silencieux. « Coût d'attaque » comme critère (cité au contexte, pas au point 1 ni à la définition
+de « fini ») est écarté ici : sur `attacks` (JSONB) il exigerait un index dédié pour tenir les
+150 ms — à traiter avec `v7-decks-ui` si le besoin se confirme.
+
 ## Prix (lot `v2-prix`)
 
 - Job `daily_prices_task` (arq, cron quotidien 06:00, `apps/api/src/pbm_api/worker.py`) : une

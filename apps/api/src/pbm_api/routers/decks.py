@@ -19,15 +19,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.auth.dependencies import get_current_user, require_csrf
 from pbm_api.db import get_session
+from pbm_api.decks import card_search, import_service, service
 from pbm_api.decks import export as export_mod
-from pbm_api.decks import import_service, service
+from pbm_api.decks.card_search import DeckCardSearchFilters, DeckCardSort
 from pbm_api.decks.errors import DeckCardNotFoundError, DeckNotFoundError
 from pbm_api.decks.export import ExportCard
 from pbm_api.decks.import_service import ImportResult
 from pbm_api.decks.legality import DeckLegality
 from pbm_api.decks.schemas import (
     CreateDeckRequest,
+    DeckCardFacetSet,
     DeckCardOut,
+    DeckCardSearchFacets,
+    DeckCardSearchItem,
+    DeckCardSearchResponse,
     DeckDetail,
     DeckLegalityOut,
     DeckListResponse,
@@ -159,6 +164,92 @@ async def list_decks(
             )
             for deck, report in decks
         ]
+    )
+
+
+# ---- recherche de cartes du constructeur (mission `v7-decks-recherche`) --------------------
+# Routes littérales `/cards` et `/cards/facets` déclarées AVANT `/{deck_id}` : FastAPI parserait
+# sinon "cards" comme un UUID de deck et renverrait 422 (même précaution que `routers/collection`).
+@router.get("/cards/facets", response_model=DeckCardSearchFacets)
+async def deck_card_facets(
+    session: Annotated[AsyncSession, Depends(get_session)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> DeckCardSearchFacets:
+    facets = await card_search.get_facets(session, current_user)
+    return DeckCardSearchFacets(
+        sets=[DeckCardFacetSet(set_id=s, name=n, code=c) for s, n, c in facets.sets],
+        rarities=facets.rarities,
+        card_types=facets.card_types,
+        hp_min=facets.hp_min,
+        hp_max=facets.hp_max,
+        owned_card_count=facets.owned_card_count,
+        duplicate_card_count=facets.duplicate_card_count,
+    )
+
+
+@router.get("/cards", response_model=DeckCardSearchResponse)
+async def search_deck_cards(
+    session: Annotated[AsyncSession, Depends(get_session)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    q: Annotated[str | None, Query(max_length=255)] = None,
+    set_id: Annotated[list[uuid.UUID] | None, Query()] = None,
+    rarity: Annotated[list[str] | None, Query()] = None,
+    card_type: Annotated[list[str] | None, Query()] = None,
+    hp_min: Annotated[int | None, Query(ge=0)] = None,
+    hp_max: Annotated[int | None, Query(ge=0)] = None,
+    owned: bool = False,
+    duplicates: bool = False,
+    deck_id: uuid.UUID | None = None,
+    lang: Annotated[str | None, Query(min_length=2, max_length=8)] = None,
+    sort: DeckCardSort = DeckCardSort.name_asc,
+    cursor: str | None = None,
+    limit: Annotated[int, Query(ge=1, le=card_search.MAX_LIMIT)] = card_search.DEFAULT_LIMIT,
+) -> DeckCardSearchResponse:
+    """Cherche dans le catalogue, chaque carte annotée du nombre possédé et déjà dans le deck
+    (`deck_id`, s'il est fourni et appartient à l'utilisateur — sinon 404). Filtres cumulables,
+    tri, pagination par curseur (voir `pbm_api.decks.card_search`)."""
+    filters = DeckCardSearchFilters(
+        q=q,
+        set_ids=frozenset(set_id or []),
+        rarities=frozenset(rarity or []),
+        card_types=frozenset(card_type or []),
+        hp_min=hp_min,
+        hp_max=hp_max,
+        owned_only=owned,
+        duplicates_only=duplicates,
+        lang=lang,
+    )
+    try:
+        page = await card_search.search_deck_cards(
+            session, current_user, filters, sort, deck_id, cursor, limit
+        )
+    except DeckNotFoundError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, DECK_NOT_FOUND_MESSAGE) from None
+    return DeckCardSearchResponse(
+        items=[
+            DeckCardSearchItem(
+                card_id=r.card_id,
+                set_id=r.set_id,
+                number=r.number,
+                name=r.name,
+                set_name=r.set_name,
+                set_code=r.set_code,
+                series=r.series,
+                rarity=r.rarity,
+                supertype=r.supertype,
+                hp=r.hp,
+                image_url=r.image_url,
+                energy_type=r.energy_type,
+                is_basic_energy=r.is_basic_energy,
+                is_special_energy=r.is_special_energy,
+                value_eur=r.value_eur,
+                owned_count=r.owned_count,
+                in_deck_count=r.in_deck_count,
+                is_duplicate=r.is_duplicate,
+            )
+            for r in page.results
+        ],
+        next_cursor=page.next_cursor,
     )
 
 
