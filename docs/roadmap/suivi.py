@@ -73,12 +73,20 @@ def sauver(etat: dict) -> None:
     ETAT.write_text(json.dumps(etat, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
-def valider(plan: dict) -> list[str]:
-    """Refuse un plan incohérent : dépendance inconnue ou mal datée, couloir en double, décision orpheline."""
+def valider(plan: dict, etat: dict | None = None) -> list[str]:
+    """Refuse un plan incohérent : dépendance inconnue ou mal datée, couloir en double, décision orpheline.
+
+    Les lots DÉJÀ LIVRÉS ne sont plus contrôlés sur les dates : la réalité a eu lieu (plusieurs lots
+    le même jour, dans le même couloir), et on ne réécrit pas l'histoire pour satisfaire le plan.
+    """
     err, par_id = [], {i["id"]: i for i in plan["items"]}
+    etats = (etat or {}).get("etats", {})
+    fini = lambda x: etats.get(x, {}).get("statut") in ("integre", "livre", "livre_uat", "attente_go_prod")
     couloirs = {c["id"] for c in plan["meta"]["couloirs"]}
     decisions = {d["id"]: d for d in plan["decisions"]}
     for i in plan["items"]:
+        if fini(i["id"]):
+            continue
         if i["couloir"] not in couloirs:
             err.append(f"{i['id']} : couloir inconnu {i['couloir']}")
         if i["debut"] > i["fin"]:
@@ -86,7 +94,7 @@ def valider(plan: dict) -> list[str]:
         for d in i["dependances"]:
             if d not in par_id:
                 err.append(f"{i['id']} : dépendance inconnue {d}")
-            elif par_id[d]["fin"] >= i["debut"]:
+            elif not fini(d) and par_id[d]["fin"] >= i["debut"]:
                 err.append(f"{i['id']} commence le {i['debut']} mais {d} finit le {par_id[d]['fin']}")
         if i["decision"]:
             if i["decision"] not in decisions:
@@ -94,7 +102,7 @@ def valider(plan: dict) -> list[str]:
             elif decisions[i["decision"]]["date"] > i["debut"]:
                 err.append(f"{i['id']} commence avant sa décision {i['decision']}")
     for c in couloirs:
-        its = sorted((i for i in plan["items"] if i["couloir"] == c), key=lambda x: x["debut"])
+        its = sorted((i for i in plan["items"] if i["couloir"] == c and not fini(i["id"])), key=lambda x: x["debut"])
         for a, b in zip(its, its[1:]):
             if b["debut"] <= a["fin"]:
                 err.append(f"couloir {c} : {a['id']} et {b['id']} se chevauchent")
@@ -235,7 +243,7 @@ def backlog(plan: dict, etat: dict) -> str:
 # ---------------------------------------------------------------- commandes
 def build(_a=None) -> int:
     plan, etat = charger()
-    err = valider(plan)
+    err = valider(plan, etat)
     if err:
         print("PLAN INCOHÉRENT — rien n'est généré :", *err, sep="\n  - ")
         return 1

@@ -3,7 +3,7 @@
 > Prompt GÉNÉRÉ depuis `docs/roadmap/roadmap.json` par `docs/roadmap/suivi.py build` — ne pas éditer à la main.
 > Suivi : `docs/roadmap/ROADMAP.html` (onglets Roadmap et Maquette) · processus : `docs/roadmap/PROCESSUS.md`.
 
-**P0** · piste Jeu — decks et parties · couloir **DA1** — API, comptes & données (**devAI**) · prévu du 4 janv. au 8 janv. · jalon **En ligne** · taille M · complexité 3/5 · difficulté 2/5
+**P0** · piste Jeu — decks et parties · couloir **DA3** — Decks — API, légalité, synchronisation (**devAI**) · prévu du 22 sept. au 25 sept. · jalon **MVP en UAT** · taille M · complexité 3/5 · difficulté 2/5
 
 ## A. Où tourne cette session ? — à trancher AVANT tout le reste
 
@@ -66,9 +66,9 @@ Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_va
 **Aboutissants — ce que ça ouvre.** Constructeur de deck, proposition par l'IA, file d'attente.
 
 **Dépend de :**
-- `v7-regles-moteur` — Moteur de règles du jeu (socle) : zones, tour, attaques, récompenses
+- `v4-collection` — Page collection : grille, filtres, tris et valeur totale
 
-**Décision D10** (avant le 18 déc.) : Un deck n'utilise que les cartes possédées — faut-il faire une exception pour les Énergies de base (illimitées, comme dans les decks papier) ? Proposition : oui, les Énergies de base sont fournies. — lis la décision prise dans `etat.json` (`decisions_prises`) et applique-la à la lettre.
+**Décision D10** (avant le 19 sept.) : Un deck n'utilise que les cartes possédées — faut-il faire une exception pour les Énergies de base (illimitées, comme dans les decks papier) ? Proposition : oui, les Énergies de base sont fournies. — lis la décision prise dans `etat.json` (`decisions_prises`) et applique-la à la lettre.
 
 ## 3. Mission
 

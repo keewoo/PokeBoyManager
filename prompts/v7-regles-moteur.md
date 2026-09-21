@@ -68,7 +68,7 @@ Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_va
 **Dépend de :**
 - aucune
 
-**Décision D9** (avant le 27 nov.) : Périmètre des règles v1 du moteur de jeu : proposition — Pokémon de base et évolutions, énergies, attaques, faiblesse/résistance, retraite, banc, récompenses, conditions de victoire ; dresseurs, talents et états spéciaux en v2. — lis la décision prise dans `etat.json` (`decisions_prises`) et applique-la à la lettre.
+**Décision D9** (avant le 19 sept.) : Périmètre des règles v1 du moteur de jeu : proposition — Pokémon de base et évolutions, énergies, attaques, faiblesse/résistance, retraite, banc, récompenses, conditions de victoire ; dresseurs, talents et états spéciaux en v2. — lis la décision prise dans `etat.json` (`decisions_prises`) et applique-la à la lettre.
 
 ## 3. Mission
 

@@ -3,7 +3,7 @@
 > Prompt GÉNÉRÉ depuis `docs/roadmap/roadmap.json` par `docs/roadmap/suivi.py build` — ne pas éditer à la main.
 > Suivi : `docs/roadmap/ROADMAP.html` (onglets Roadmap et Maquette) · processus : `docs/roadmap/PROCESSUS.md`.
 
-**P0** · piste Fondations & livraison · couloir **DA1** — API, comptes & données (**devAI**) · prévu du 24 sept. au 25 sept. · jalon **MVP en UAT** · taille M · complexité 3/5 · difficulté 2/5
+**P0** · piste Fondations & livraison · couloir **DA1** — API, comptes & données (**devAI**) · prévu du 19 sept. au 19 sept. · jalon **MVP en UAT** · taille M · complexité 3/5 · difficulté 2/5
 
 ## A. Où tourne cette session ? — à trancher AVANT tout le reste
 

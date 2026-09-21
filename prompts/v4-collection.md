@@ -3,7 +3,7 @@
 > Prompt GÉNÉRÉ depuis `docs/roadmap/roadmap.json` par `docs/roadmap/suivi.py build` — ne pas éditer à la main.
 > Suivi : `docs/roadmap/ROADMAP.html` (onglets Roadmap et Maquette) · processus : `docs/roadmap/PROCESSUS.md`.
 
-**P0** · piste Collection & fiche carte · couloir **CH1** — Front — comptes, accueil & collection (**chimera**) · prévu du 28 oct. au 30 oct. · jalon **MVP en UAT** · taille M · complexité 3/5 · difficulté 2/5
+**P0** · piste Collection & fiche carte · couloir **CH1** — Front — comptes, accueil & collection (**chimera**) · prévu du 20 sept. au 20 sept. · jalon **MVP en UAT** · taille M · complexité 3/5 · difficulté 2/5
 
 ## A. Où tourne cette session ? — à trancher AVANT tout le reste
 

@@ -69,7 +69,7 @@ Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_va
 - `v7-regles-cartes` — Cartes Dresseur, talents et états spéciaux
 - `v7-decks-api` — Decks : création, légalité et sauvegarde, uniquement avec ses cartes
 
-**Décision D11** (avant le 9 janv.) : Cadre du jeu en ligne (propriété intellectuelle) : partie privée entre comptes invités seulement, ou file d'attente ouverte à tous les inscrits ? Sans revenu ni publicité dans les deux cas. — lis la décision prise dans `etat.json` (`decisions_prises`) et applique-la à la lettre.
+**Décision D11** (avant le 19 sept.) : Cadre du jeu en ligne (propriété intellectuelle) : partie privée entre comptes invités seulement, ou file d'attente ouverte à tous les inscrits ? Sans revenu ni publicité dans les deux cas. — lis la décision prise dans `etat.json` (`decisions_prises`) et applique-la à la lettre.
 
 ## 3. Mission
 

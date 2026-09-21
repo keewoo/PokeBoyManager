@@ -3,7 +3,7 @@
 > Prompt GÉNÉRÉ depuis `docs/roadmap/roadmap.json` par `docs/roadmap/suivi.py build` — ne pas éditer à la main.
 > Suivi : `docs/roadmap/ROADMAP.html` (onglets Roadmap et Maquette) · processus : `docs/roadmap/PROCESSUS.md`.
 
-**P1** · piste Compte privé & sécurité · couloir **DA1** — API, comptes & données (**devAI**) · prévu du 28 oct. au 29 oct. · jalon **MVP en UAT** · taille S · complexité 2/5 · difficulté 2/5
+**P1** · piste Compte privé & sécurité · couloir **DA1** — API, comptes & données (**devAI**) · prévu du 19 sept. au 19 sept. · jalon **MVP en UAT** · taille S · complexité 2/5 · difficulté 2/5
 
 ## A. Où tourne cette session ? — à trancher AVANT tout le reste
 

@@ -1,9 +1,9 @@
-# Lot `v1-pages-auth` — Pages inscription, connexion, vérification et mot de passe oublié
+# Lot `v7-decks-stats` — Fiche d'un deck : composition, courbe d'énergie et valeur
 
 > Prompt GÉNÉRÉ depuis `docs/roadmap/roadmap.json` par `docs/roadmap/suivi.py build` — ne pas éditer à la main.
 > Suivi : `docs/roadmap/ROADMAP.html` (onglets Roadmap et Maquette) · processus : `docs/roadmap/PROCESSUS.md`.
 
-**P0** · piste Compte privé & sécurité · couloir **CH1** — Front — comptes, accueil & collection (**chimera**) · prévu du 19 sept. au 19 sept. · jalon **MVP en UAT** · taille M · complexité 2/5 · difficulté 2/5
+**P1** · piste Jeu — decks et parties · couloir **CH5** — Decks — écrans, recherche, assistant (**chimera**) · prévu du 5 oct. au 8 oct. · jalon **MVP en UAT** · taille M · complexité 3/5 · difficulté 2/5
 
 ## A. Où tourne cette session ? — à trancher AVANT tout le reste
 
@@ -14,16 +14,16 @@ Ce lot **s'exécute sur chimera**. Lance `hostname -s` :
 
 ## P. Mode PILOTE
 
-1. Garde-fou : `python3 docs/roadmap/suivi.py verifier v1-pages-auth`. Code 2 → présente les raisons à JF et demande-lui quoi faire ; ne passe jamais outre sans son « oui » explicite.
+1. Garde-fou : `python3 docs/roadmap/suivi.py verifier v7-decks-stats`. Code 2 → présente les raisons à JF et demande-lui quoi faire ; ne passe jamais outre sans son « oui » explicite.
 2. Prépare le worktree sur chimera :
 
 ```bash
-ssh chimera 'wsl -d Ubuntu-24.04 -u upgreg -- bash -lc "cd ~/dev/pokeboy && git fetch -q origin && git worktree add ../wt-v1-pages-auth -b roadmap/v1-pages-auth origin/main && mkdir -p ~/dev/logs"'
+ssh chimera 'wsl -d Ubuntu-24.04 -u upgreg -- bash -lc "cd ~/dev/pokeboy && git fetch -q origin && git worktree add ../wt-v7-decks-stats -b roadmap/v7-decks-stats origin/main && mkdir -p ~/dev/logs"'
 ```
 
-3. Lance le lot autonome : par le mécanisme de lots de chimera (`~/dev/lots/launch-lot.sh`, étendu au dépôt `~/dev/pokeboy` par le lot `v0-flotte`), **lancé côté Windows** — un `nohup` interne à la WSL meurt avec la session. Journal : `~/dev/logs/v1-pages-auth.log`.
+3. Lance le lot autonome : par le mécanisme de lots de chimera (`~/dev/lots/launch-lot.sh`, étendu au dépôt `~/dev/pokeboy` par le lot `v0-flotte`), **lancé côté Windows** — un `nohup` interne à la WSL meurt avec la session. Journal : `~/dev/logs/v7-decks-stats.log`.
 4. **3 minutes plus tard**, lis le journal du lot. Journal vide et processus mort = lot mort au démarrage : relance UNE fois, puis arrête-toi et alerte JF avec la cause. Un lot silencieux n'est jamais une conclusion.
-5. À la fin : `git fetch` et lis le compte rendu du lot dans `docs/roadmap/etat.json` de la branche `roadmap/v1-pages-auth` ; résume à JF : statut, grille, preuves, décisions attendues.
+5. À la fin : `git fetch` et lis le compte rendu du lot dans `docs/roadmap/etat.json` de la branche `roadmap/v7-decks-stats` ; résume à JF : statut, grille, preuves, décisions attendues.
 
 ---
 
@@ -31,15 +31,15 @@ ssh chimera 'wsl -d Ubuntu-24.04 -u upgreg -- bash -lc "cd ~/dev/pokeboy && git 
 
 ## 0. Garde-fou d'ordre — avant toute ligne de code
 
-Dépôt : `~/dev/pokeboy (WSL Ubuntu-24.04, utilisateur upgreg)`. Travaille dans ton **worktree** `../wt-v1-pages-auth`, branche `roadmap/v1-pages-auth` depuis `origin/main` — jamais dans l'arbre commun, jamais `git stash`, jamais `git add -A`.
+Dépôt : `~/dev/pokeboy (WSL Ubuntu-24.04, utilisateur upgreg)`. Travaille dans ton **worktree** `../wt-v7-decks-stats`, branche `roadmap/v7-decks-stats` depuis `origin/main` — jamais dans l'arbre commun, jamais `git stash`, jamais `git add -A`.
 
 ```bash
-python3 docs/roadmap/suivi.py verifier v1-pages-auth
-python3 docs/roadmap/suivi.py demarrer v1-pages-auth --machine "$(hostname -s)" --branche roadmap/v1-pages-auth
+python3 docs/roadmap/suivi.py verifier v7-decks-stats
+python3 docs/roadmap/suivi.py demarrer v7-decks-stats --machine "$(hostname -s)" --branche roadmap/v7-decks-stats
 ```
 
 - **Code 0** → continuer.
-- **Code 2 — ordre non tenu** (dépendance non livrée, décision non prise) → ne rien coder. Session interactive : demande à JF. Lot autonome : `suivi.py statut v1-pages-auth attente_validation --motif "<raisons>"`, section 7, dernier message `ATTENTE VALIDATION — v1-pages-auth — <raisons>`.
+- **Code 2 — ordre non tenu** (dépendance non livrée, décision non prise) → ne rien coder. Session interactive : demande à JF. Lot autonome : `suivi.py statut v7-decks-stats attente_validation --motif "<raisons>"`, section 7, dernier message `ATTENTE VALIDATION — v7-decks-stats — <raisons>`.
 - Tu n'accordes **jamais** toi-même une dérogation.
 
 ## 1. Cadre — relire avant d'agir
@@ -57,32 +57,30 @@ Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_va
 
 ## 2. Contexte
 
-**Gain.** Le parcours d'entrée est complet côté utilisateur.
+**Gain.** Pour améliorer un deck, il faut le voir : ce qu'il coûte à jouer, ce qu'il contient, ce qu'il vaut.
 
-**Fonctionnalités.** Formulaires validés (zod), messages d'erreur utiles, indicateur de robustesse du mot de passe, écrans « vérifie ta boîte mail ».
+**Fonctionnalités.** Répartition par type et par rôle (attaquants, murs, soutien, énergies), courbe des coûts d'attaque, PV moyens, lignes d'évolution complètes ou non, nombre de cartes spéciales, valeur marchande totale du deck, part de doublons utilisés.
 
-**Tenants — ce qu'il faut avant.** API d'authentification, design system.
+**Tenants — ce qu'il faut avant.** Constructeur, catalogue, prix.
 
-**Aboutissants — ce que ça ouvre.** Profil, toutes les pages privées.
+**Aboutissants — ce que ça ouvre.** Améliorations proposées par l'IA.
 
 **Dépend de :**
-- `v1-auth` — Comptes : inscription, connexion, vérification d'e-mail, mot de passe oublié
-- `v0-design-system` — Design system et squelette des pages (d'après la maquette)
+- `v7-decks-ui` — Constructeur de deck
 
 ## 3. Mission
 
-1. Pages `/inscription`, `/connexion`, `/verifier`, `/mot-de-passe-oublie`, `/reinitialiser` conformes à la maquette.
-2. Garde de route côté Next.js (middleware) : pages privées → `/connexion?next=…`.
-3. Tests composants (Vitest) et un e2e Playwright du parcours inscription → vérification → connexion.
+1. Agrégats calculés côté serveur et exposés par l'API ; graphiques sobres côté écran (courbe des coûts, répartition par type).
+2. Valeur du deck calculée avec le service de valorisation existant.
+3. Tests sur des decks connus.
 
 ## 4. Risques & pièges
 
-Ne jamais afficher « cet e-mail n'existe pas ».
+Les chiffres viennent du catalogue et de la collection, jamais d'une estimation du modèle.
 
 ## 5. Livrables — définition de « fini »
 
-- 5 pages
-- e2e d'inscription vert
+- fiche de deck chiffrée
 - CI GitHub Actions verte sur la PR (elle fait foi, pas une suite verte sur une machine).
 - Aucun secret dans le dépôt, les journaux ou les sorties.
 
@@ -107,12 +105,12 @@ Grille de tâches du lot :
 - `compte_rendu` — Compte rendu dans le suivi
 
 ```bash
-python3 docs/roadmap/suivi.py tache v1-pages-auth <tache> fait "<preuve : commit, test, URL, capture>"
-python3 docs/roadmap/suivi.py compte-rendu v1-pages-auth --resume "…" --livrable "…" --preuve "…" --ecart "…" --reste "…"
-python3 docs/roadmap/suivi.py statut v1-pages-auth <livre_uat|attente_go_prod|livre|bloque>
+python3 docs/roadmap/suivi.py tache v7-decks-stats <tache> fait "<preuve : commit, test, URL, capture>"
+python3 docs/roadmap/suivi.py compte-rendu v7-decks-stats --resume "…" --livrable "…" --preuve "…" --ecart "…" --reste "…"
+python3 docs/roadmap/suivi.py statut v7-decks-stats <livre_uat|attente_go_prod|livre|bloque>
 python3 docs/roadmap/suivi.py build
 git add docs/roadmap/etat.json docs/roadmap/ROADMAP.html BACKLOG.md prompts/ <tes fichiers>   # jamais git add -A
-git commit -m "v1-pages-auth: …" && git push -u origin roadmap/v1-pages-auth && gh pr create --fill
+git commit -m "v7-decks-stats: …" && git push -u origin roadmap/v7-decks-stats && gh pr create --fill
 ```
 
 Puis republie la page : lis l'artefact https://claude.ai/artifact/2w2cvcLhUGZdorHNVvTahy (action `read`) et publie `docs/roadmap/ROADMAP.html` avec ce même `url`.

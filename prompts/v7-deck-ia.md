@@ -3,7 +3,7 @@
 > Prompt GÉNÉRÉ depuis `docs/roadmap/roadmap.json` par `docs/roadmap/suivi.py build` — ne pas éditer à la main.
 > Suivi : `docs/roadmap/ROADMAP.html` (onglets Roadmap et Maquette) · processus : `docs/roadmap/PROCESSUS.md`.
 
-**P1** · piste Jeu — decks et parties · couloir **CH2** — IA & vision (**chimera**) · prévu du 18 janv. au 22 janv. · jalon **En ligne** · taille M · complexité 3/5 · difficulté 3/5
+**P1** · piste Jeu — decks et parties · couloir **CH5** — Decks — écrans, recherche, assistant (**chimera**) · prévu du 9 oct. au 13 oct. · jalon **MVP en UAT** · taille M · complexité 3/5 · difficulté 3/5
 
 ## A. Où tourne cette session ? — à trancher AVANT tout le reste
 
@@ -66,7 +66,8 @@ Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_va
 **Aboutissants — ce que ça ouvre.** —
 
 **Dépend de :**
-- `v7-decks-api` — Decks : création, légalité et sauvegarde, uniquement avec ses cartes
+- `v7-decks-legalite` — Contrôle de légalité d'un deck, expliqué ligne par ligne
+- `v7-decks-ui` — Constructeur de deck
 
 ## 3. Mission
 

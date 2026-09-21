@@ -3,7 +3,7 @@
 > Prompt GÉNÉRÉ depuis `docs/roadmap/roadmap.json` par `docs/roadmap/suivi.py build` — ne pas éditer à la main.
 > Suivi : `docs/roadmap/ROADMAP.html` (onglets Roadmap et Maquette) · processus : `docs/roadmap/PROCESSUS.md`.
 
-**P1** · piste IA — des photos aux cartes · couloir **CH2** — IA & vision (**chimera**) · prévu du 23 oct. au 27 oct. · jalon **MVP en UAT** · taille M · complexité 3/5 · difficulté 4/5
+**P1** · piste IA — des photos aux cartes · couloir **CH2** — IA & vision (**chimera**) · prévu du 19 sept. au 19 sept. · jalon **MVP en UAT** · taille M · complexité 3/5 · difficulté 4/5
 
 ## A. Où tourne cette session ? — à trancher AVANT tout le reste
 
