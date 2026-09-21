@@ -5615,6 +5615,11 @@
       "prise": "JF le 19/09 : NON à un périmètre réduit — les cartes Dresseur (Objets, Supporters, Stades, Outils), les talents et les états spéciaux font partie de la première version du jeu. Découpage : un socle de moteur (zones, tour, attaques, récompenses) puis un lot dédié aux effets de cartes, avec une règle stricte — un effet non implémenté n'est jamais approximé, la carte est refusée dans le deck et le dit.",
       "par": "JF",
       "quand": "2026-09-19T23:42+0200"
+    },
+    "D8": {
+      "prise": "Ouverture en inscription libre (JF, 21/09/2026). Nom public conservé : PokeBoyManager, avec la mention « non affilié à Nintendo / The Pokémon Company » en pied de page et dans les CGU. L'inscription libre suppose un envoi d'e-mails opérationnel : fournisseur retenu Resend (clé posée sur devAI, portée « envoi » uniquement) ; le domaine acx-connect.com reste à vérifier chez Resend, sans quoi la vérification d'adresse et le mot de passe oublié restent inopérants.",
+      "par": "JF",
+      "quand": "2026-09-21T17:36+0200"
     }
   }
 }
