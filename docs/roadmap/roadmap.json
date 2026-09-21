@@ -1236,7 +1236,7 @@
       "difficulte": 2,
       "titre": "Page collection : grille, filtres, tris et valeur totale",
       "gain": "La collection devient lisible et valorisée d'un coup d'œil.",
-      "fonctionnalites": "Grille ou liste ; filtres : extension, série, rareté, type, langue, état, variante, valeur min/max, date d'ajout, doublons, contrefaçons signalées ; recherche ; tris (valeur, variation 30 j, date, numéro) ; valeur totale et variation.",
+      "fonctionnalites": "Grille ou liste ; filtres : extension, série, rareté, type, langue, état, variante, valeur min/max, date d'ajout, doublons (filtre dédié, badge ×n sur la vignette, résumé « n cartes en double, valeur des exemplaires en trop », marquage à vendre ou à échanger, suppression d'un exemplaire, choix de l'exemplaire principal), contrefaçons signalées ; recherche ; tris (valeur, variation 30 j, date, numéro) ; valeur totale et variation.",
       "risques": "Performances à 5 000 cartes : pagination côté serveur, filtres en paramètres d'URL (partageables avec soi-même).",
       "tenants": "Validation (des cartes existent), prix.",
       "aboutissants": "Fiche carte, tableau de bord.",
@@ -1251,6 +1251,7 @@
       "mission": [
         "`GET /me/collection` (filtres, tri, pagination par curseur, agrégats : nombre, valeur totale, variation 7/30 j) ; `PATCH/DELETE /me/collection/{item}`.",
         "Page `/collection` conforme à la maquette, filtres en panneau latéral (tiroir sur mobile), état dans l'URL.",
+        "Doublons : regroupement par carte avec le nombre d'exemplaires, filtre « doublons seulement », actions par exemplaire (à vendre, à échanger, supprimer, exemplaire principal) et valeur des exemplaires en trop.",
         "Ajout manuel d'une carte (recherche catalogue) sans photo.",
         "Test de charge : 5 000 exemplaires, réponse < 300 ms."
       ],
@@ -1902,8 +1903,8 @@
       "difficulte": 2,
       "titre": "Constructeur de deck",
       "gain": "Construire un deck doit être agréable, sinon personne ne joue.",
-      "fonctionnalites": "Deux colonnes : ma collection filtrable d'un côté, le deck de l'autre ; compteur 60, répartition par type et par rôle, avertissements de légalité en direct, sauvegarde, duplication.",
-      "risques": "—",
+      "fonctionnalites": "Deux modes : **assistant IA** (types privilégiés, répartition par type, nombre de cartes avec 60 par défaut, énergies automatiques ou fixées, style de jeu, inclusion des lignes d'évolution, des cartes spéciales V/ex/GX/VMAX, des Méga et des Dresseurs) et **manuel** (recherche par nom, numéro, extension, type, rareté, avec ajout en un clic). Deux colonnes : options ou recherche à gauche, deck à droite avec contrôle de légalité en direct, raison du choix pour chaque carte proposée par l'IA, retrait d'un exemplaire ou de la carte entière, sauvegarde, duplication, suppression, export de la liste.",
+      "risques": "Une carte retirée de la collection (vendue, échangée, supprimée) doit **alerter dans le deck concerné** : le deck reste modifiable mais n'est plus jouable tant qu'il n'est pas complété, avec trois issues proposées (remplacer par une carte équivalente possédée, retirer du deck, voir la carte). Ne jamais corriger un deck en silence.",
       "tenants": "API des decks, design system.",
       "aboutissants": "File d'attente, partie.",
       "dependances": [
@@ -1917,7 +1918,8 @@
         "Page `/jeu/decks` et `/jeu/decks/[id]` conformes à la maquette du jeu.",
         "Glisser-déposer ou clic pour ajouter, **retirer un exemplaire** et **retirer complètement une carte du deck** (bouton dédié, pas seulement le décrément), compteurs en direct, messages de légalité.",
         "Tests d'interface et un e2e « construire un deck légal à partir de sa collection ».",
-        "Sur « Mes decks » : dupliquer et **supprimer un deck**, avec confirmation ; un deck supprimé ne doit pas disparaître d'une partie en cours."
+        "Sur « Mes decks » : dupliquer et **supprimer un deck**, avec confirmation ; un deck supprimé ne doit pas disparaître d'une partie en cours.",
+        "Réaction au changement de collection : à chaque suppression d'exemplaire, les decks concernés passent en « à compléter » avec l'alerte et les trois issues ; une partie en cours n'est pas affectée."
       ],
       "livrables": [
         "constructeur de deck utilisable"
@@ -1937,7 +1939,7 @@
       "difficulte": 3,
       "titre": "Deck proposé par l'IA du joueur, selon les types voulus",
       "gain": "Demander « fais-moi un deck Feu avec mes cartes » évite la page blanche.",
-      "fonctionnalites": "Choix des types privilégiés et d'une intention (agressif, défensif, équilibré) ; l'IA propose un deck légal pris dans la collection, explique ses choix carte par carte ; le joueur modifie puis sauve.",
+      "fonctionnalites": "Le joueur donne ses options (types privilégiés et leur part, nombre de cartes, énergies, style, inclusions) ; l'IA propose un deck légal pris dans sa collection, explique chaque carte en une ligne, et le joueur modifie puis sauve.",
       "risques": "Le deck proposé doit être **légal et possédé** : la proposition passe par le service de légalité avant d'être affichée — une proposition invalide est corrigée automatiquement, jamais montrée telle quelle. Un seul appel IA par proposition (principe « dès le premier tir »).",
       "tenants": "API des decks, couche fournisseurs IA, clé du joueur.",
       "aboutissants": "—",

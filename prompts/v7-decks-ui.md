@@ -59,7 +59,7 @@ Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_va
 
 **Gain.** Construire un deck doit être agréable, sinon personne ne joue.
 
-**Fonctionnalités.** Deux colonnes : ma collection filtrable d'un côté, le deck de l'autre ; compteur 60, répartition par type et par rôle, avertissements de légalité en direct, sauvegarde, duplication.
+**Fonctionnalités.** Deux modes : **assistant IA** (types privilégiés, répartition par type, nombre de cartes avec 60 par défaut, énergies automatiques ou fixées, style de jeu, inclusion des lignes d'évolution, des cartes spéciales V/ex/GX/VMAX, des Méga et des Dresseurs) et **manuel** (recherche par nom, numéro, extension, type, rareté, avec ajout en un clic). Deux colonnes : options ou recherche à gauche, deck à droite avec contrôle de légalité en direct, raison du choix pour chaque carte proposée par l'IA, retrait d'un exemplaire ou de la carte entière, sauvegarde, duplication, suppression, export de la liste.
 
 **Tenants — ce qu'il faut avant.** API des decks, design system.
 
@@ -74,10 +74,11 @@ Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_va
 2. Glisser-déposer ou clic pour ajouter, **retirer un exemplaire** et **retirer complètement une carte du deck** (bouton dédié, pas seulement le décrément), compteurs en direct, messages de légalité.
 3. Tests d'interface et un e2e « construire un deck légal à partir de sa collection ».
 4. Sur « Mes decks » : dupliquer et **supprimer un deck**, avec confirmation ; un deck supprimé ne doit pas disparaître d'une partie en cours.
+5. Réaction au changement de collection : à chaque suppression d'exemplaire, les decks concernés passent en « à compléter » avec l'alerte et les trois issues ; une partie en cours n'est pas affectée.
 
 ## 4. Risques & pièges
 
-—
+Une carte retirée de la collection (vendue, échangée, supprimée) doit **alerter dans le deck concerné** : le deck reste modifiable mais n'est plus jouable tant qu'il n'est pas complété, avec trois issues proposées (remplacer par une carte équivalente possédée, retirer du deck, voir la carte). Ne jamais corriger un deck en silence.
 
 ## 5. Livrables — définition de « fini »
 

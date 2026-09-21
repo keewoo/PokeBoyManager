@@ -59,7 +59,7 @@ Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_va
 
 **Gain.** La collection devient lisible et valorisée d'un coup d'œil.
 
-**Fonctionnalités.** Grille ou liste ; filtres : extension, série, rareté, type, langue, état, variante, valeur min/max, date d'ajout, doublons, contrefaçons signalées ; recherche ; tris (valeur, variation 30 j, date, numéro) ; valeur totale et variation.
+**Fonctionnalités.** Grille ou liste ; filtres : extension, série, rareté, type, langue, état, variante, valeur min/max, date d'ajout, doublons (filtre dédié, badge ×n sur la vignette, résumé « n cartes en double, valeur des exemplaires en trop », marquage à vendre ou à échanger, suppression d'un exemplaire, choix de l'exemplaire principal), contrefaçons signalées ; recherche ; tris (valeur, variation 30 j, date, numéro) ; valeur totale et variation.
 
 **Tenants — ce qu'il faut avant.** Validation (des cartes existent), prix.
 
@@ -73,8 +73,9 @@ Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_va
 
 1. `GET /me/collection` (filtres, tri, pagination par curseur, agrégats : nombre, valeur totale, variation 7/30 j) ; `PATCH/DELETE /me/collection/{item}`.
 2. Page `/collection` conforme à la maquette, filtres en panneau latéral (tiroir sur mobile), état dans l'URL.
-3. Ajout manuel d'une carte (recherche catalogue) sans photo.
-4. Test de charge : 5 000 exemplaires, réponse < 300 ms.
+3. Doublons : regroupement par carte avec le nombre d'exemplaires, filtre « doublons seulement », actions par exemplaire (à vendre, à échanger, supprimer, exemplaire principal) et valeur des exemplaires en trop.
+4. Ajout manuel d'une carte (recherche catalogue) sans photo.
+5. Test de charge : 5 000 exemplaires, réponse < 300 ms.
 
 ## 4. Risques & pièges
 

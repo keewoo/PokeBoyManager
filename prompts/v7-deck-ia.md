@@ -59,7 +59,7 @@ Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_va
 
 **Gain.** Demander « fais-moi un deck Feu avec mes cartes » évite la page blanche.
 
-**Fonctionnalités.** Choix des types privilégiés et d'une intention (agressif, défensif, équilibré) ; l'IA propose un deck légal pris dans la collection, explique ses choix carte par carte ; le joueur modifie puis sauve.
+**Fonctionnalités.** Le joueur donne ses options (types privilégiés et leur part, nombre de cartes, énergies, style, inclusions) ; l'IA propose un deck légal pris dans sa collection, explique chaque carte en une ligne, et le joueur modifie puis sauve.
 
 **Tenants — ce qu'il faut avant.** API des decks, couche fournisseurs IA, clé du joueur.
 
