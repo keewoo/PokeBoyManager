@@ -1,46 +1,79 @@
-"""Contrôle de légalité d'un deck — logique pure, sans accès base (mission `v7-decks-api`).
+"""Contrôle de légalité d'un deck — logique pure, sans accès base.
 
-Prend des faits déjà chargés (`DeckCardFact` : carte + quantité + nombre possédé) et rend un
-rapport lisible. Séparé de `service.py` pour être testable sans base et réutilisable par la
-liste comme par le détail. Recalculé à chaque lecture : aucune légalité n'est mémorisée, donc
-une carte vendue rend le deck injouable sans écriture (« revalidation quand la collection
-change », mission point 3).
+Socle posé par `v7-decks-api` (60 cartes, 4 exemplaires par nom, possession) ; étendu par
+`v7-decks-legalite` :
+  - chaque constat porte une **sévérité** (`bloquant` / `avertissement`) : seuls les constats
+    bloquants rendent le deck illégal, les avertissements informent sans interdire ;
+  - **au moins un Pokémon de base** — un deck sans Pokémon de base ne peut pas démarrer une
+    partie (bloquant) ;
+  - **légalité par format** (Standard / Étendu / Illimité, `pbm_api.decks.formats`) : une carte
+    explicitement hors du format choisi est signalée avec son explication (bloquant) ;
+  - **contrefaçons exclues** : les exemplaires signalés contrefaçon (`v6-contrefacon`) ne
+    comptent pas dans la possession ; leur exclusion est signalée (avertissement) pour expliquer
+    un décompte de possession plus bas que le nombre d'exemplaires réellement en collection.
 
-Règles (décision D10) :
-  - exactement **60** cartes (Énergies de base comprises) ;
-  - **4** exemplaires maximum d'une même carte *par son nom*, **sauf Énergies de base**
-    (illimitées) ;
-  - un deck ne peut contenir que des cartes **possédées**, sauf les Énergies de base (fournies) ;
-    le manque est signalé, jamais corrigé en silence ;
-  - une carte dont l'effet n'est pas pris en charge par le moteur de règles (`v7-regles-cartes`)
-    est refusée — voir `unsupported_card_ids` (désactivé tant que le moteur n'existe pas).
+Une seule implémentation, exposée telle quelle par l'API et destinée à l'écran (risque du lot :
+« la même règle côté serveur et côté écran ») : jamais deux logiques qui divergent. Recalculé à
+chaque lecture, aucune légalité n'est mémorisée — une carte vendue ou signalée contrefaçon rend
+le deck injouable sans écriture (« revalidation quand la collection change »).
 """
 
 import uuid
 from dataclasses import dataclass, field
 
-from pbm_api.decks import energy
+from pbm_api.decks import energy, formats
 
 DECK_SIZE = 60
 MAX_COPIES_PER_NAME = 4
 
+# Sévérités : seul `BLOCKING` retire la légalité ; `WARNING` informe sans interdire.
+BLOCKING = "bloquant"
+WARNING = "avertissement"
+
+# Codes de constat (stables, réutilisés par l'écran).
+CODE_DECK_SIZE = "deck_size"
+CODE_COPY_LIMIT = "copy_limit"
+CODE_NOT_OWNED = "not_owned"
+CODE_NO_BASIC_POKEMON = "no_basic_pokemon"
+CODE_OUT_OF_FORMAT = "out_of_format"
+CODE_COUNTERFEIT_EXCLUDED = "counterfeit_excluded"
+CODE_UNSUPPORTED_EFFECT = "unsupported_effect"
+
+_POKEMON_SUPERTYPES = {"pokemon"}
+_BASIC_STAGES = {"base", "basic"}
+
+
+def is_basic_pokemon(supertype: str | None, stage: str | None) -> bool:
+    """Vrai pour un Pokémon au stade de base (TCGdex `stage="Base"`, en anglais `"Basic"`)."""
+    if energy.normalize(supertype) not in _POKEMON_SUPERTYPES:
+        return False
+    return energy.normalize(stage) in _BASIC_STAGES
+
 
 @dataclass(frozen=True)
 class DeckCardFact:
-    """Une entrée de deck enrichie de ce qu'il faut pour juger sa légalité."""
+    """Une entrée de deck enrichie de ce qu'il faut pour juger sa légalité.
+
+    `stage`/`legal_standard`/`legal_expanded` viennent du catalogue ; `counterfeit_owned` est le
+    nombre d'exemplaires possédés mais signalés contrefaçon (déjà exclus de `owned`)."""
 
     card_id: uuid.UUID
     name: str
     supertype: str | None
     energy_type: str | None
     quantity: int
-    owned: int  # exemplaires de CETTE carte (card_id) possédés par le propriétaire du deck
+    owned: int
+    stage: str | None = None
+    legal_standard: bool | None = None
+    legal_expanded: bool | None = None
+    counterfeit_owned: int = 0
 
 
 @dataclass
 class LegalityIssue:
-    code: str  # "deck_size" | "copy_limit" | "not_owned" | "unsupported_effect"
+    code: str
     message: str
+    severity: str = BLOCKING
     card_id: uuid.UUID | None = None
     card_name: str | None = None
     detail: dict | None = None
@@ -53,9 +86,12 @@ class CardLegality:
     quantity: int
     is_basic_energy: bool
     is_special_energy: bool
+    is_basic_pokemon: bool
     owned: int
     missing: int
     in_collection: bool
+    in_format: bool
+    counterfeit_excluded: int
 
 
 @dataclass
@@ -63,55 +99,102 @@ class DeckLegality:
     legal: bool
     card_count: int
     size_ok: bool
+    format: str
+    format_label: str
     issues: list[LegalityIssue] = field(default_factory=list)
     cards: list[CardLegality] = field(default_factory=list)
 
 
 def unsupported_card_ids(facts: list[DeckCardFact]) -> set[uuid.UUID]:
-    """Cartes dont l'effet n'est pas pris en charge par le moteur de règles.
+    """Cartes dont l'effet n'est pas pris en charge par le moteur de règles (`v7-regles-cartes`).
 
-    Point d'intégration de `v7-regles-cartes` : tant que le moteur n'existe pas dans ce dépôt,
-    on ne peut PAS déclarer un effet « non pris en charge » (sans moteur, ce serait tous les
-    effets — un deck jamais légal, absurde). On retourne donc l'ensemble vide, et le report ne
-    porte aucune issue de ce type. Report explicite dans le compte rendu du lot : cette
-    vérification s'activera quand le moteur atterrira, en remplaçant ce corps par un appel au
-    moteur — pas un repli silencieux, une dépendance non encore livrée."""
+    Point d'intégration : tant que le moteur n'existe pas dans le dépôt, on ne peut PAS déclarer
+    un effet « non pris en charge » (sans moteur ce serait tous les effets — un deck jamais
+    légal, absurde). On retourne l'ensemble vide, et le rapport ne porte aucune issue de ce type.
+    S'activera en remplaçant ce corps par un appel au moteur — report explicite, pas un repli
+    silencieux : une dépendance non encore livrée."""
     return set()
 
 
-def evaluate(facts: list[DeckCardFact]) -> DeckLegality:
+def evaluate(
+    facts: list[DeckCardFact], deck_format: str = formats.DEFAULT_FORMAT
+) -> DeckLegality:
+    if not formats.is_valid(deck_format):
+        deck_format = formats.DEFAULT_FORMAT
     card_count = sum(f.quantity for f in facts)
     issues: list[LegalityIssue] = []
     cards: list[CardLegality] = []
+    has_basic_pokemon = False
 
-    # Détail par carte + collecte des manques de possession.
+    # Détail par carte : possession, format, contrefaçon.
     for f in facts:
-        basic = energy.is_basic_energy(f.supertype, f.name, f.energy_type)
-        special = energy.is_special_energy(f.supertype, f.name, f.energy_type)
+        basic_e = energy.is_basic_energy(f.supertype, f.name, f.energy_type)
+        special_e = energy.is_special_energy(f.supertype, f.name, f.energy_type)
+        basic_p = is_basic_pokemon(f.supertype, f.stage)
+        if basic_p:
+            has_basic_pokemon = True
         # Énergie de base : fournie, jamais un manque de possession.
-        missing = 0 if basic else max(0, f.quantity - f.owned)
+        missing = 0 if basic_e else max(0, f.quantity - f.owned)
+        in_fmt = formats.card_in_format(
+            deck_format,
+            is_basic_energy=basic_e,
+            legal_standard=f.legal_standard,
+            legal_expanded=f.legal_expanded,
+        )
         cards.append(
             CardLegality(
                 card_id=f.card_id,
                 name=f.name,
                 quantity=f.quantity,
-                is_basic_energy=basic,
-                is_special_energy=special,
+                is_basic_energy=basic_e,
+                is_special_energy=special_e,
+                is_basic_pokemon=basic_p,
                 owned=f.owned,
                 missing=missing,
                 in_collection=f.owned > 0,
+                in_format=in_fmt,
+                counterfeit_excluded=f.counterfeit_owned,
             )
         )
         if missing > 0:
             issues.append(
                 LegalityIssue(
-                    code="not_owned",
+                    code=CODE_NOT_OWNED,
+                    severity=BLOCKING,
                     card_id=f.card_id,
                     card_name=f.name,
                     detail={"required": f.quantity, "owned": f.owned, "missing": missing},
                     message=(
                         f"Il manque {missing} exemplaire(s) de « {f.name} » dans votre "
                         f"collection ({f.owned} possédé(s), {f.quantity} dans le deck)."
+                    ),
+                )
+            )
+        if f.counterfeit_owned > 0:
+            issues.append(
+                LegalityIssue(
+                    code=CODE_COUNTERFEIT_EXCLUDED,
+                    severity=WARNING,
+                    card_id=f.card_id,
+                    card_name=f.name,
+                    detail={"counterfeit": f.counterfeit_owned},
+                    message=(
+                        f"{f.counterfeit_owned} exemplaire(s) de « {f.name} » signalé(s) comme "
+                        f"contrefaçon probable : exclus du décompte de possession."
+                    ),
+                )
+            )
+        if not in_fmt:
+            issues.append(
+                LegalityIssue(
+                    code=CODE_OUT_OF_FORMAT,
+                    severity=BLOCKING,
+                    card_id=f.card_id,
+                    card_name=f.name,
+                    detail={"format": deck_format},
+                    message=(
+                        f"« {f.name} » n'est pas autorisée en format "
+                        f"{formats.label(deck_format)}."
                     ),
                 )
             )
@@ -128,7 +211,8 @@ def evaluate(facts: list[DeckCardFact]) -> DeckLegality:
         if entry["count"] > MAX_COPIES_PER_NAME:
             issues.append(
                 LegalityIssue(
-                    code="copy_limit",
+                    code=CODE_COPY_LIMIT,
+                    severity=BLOCKING,
                     card_name=entry["name"],
                     detail={"count": entry["count"], "limit": MAX_COPIES_PER_NAME},
                     message=(
@@ -146,15 +230,29 @@ def evaluate(facts: list[DeckCardFact]) -> DeckLegality:
             name = by_id[cid].name if cid in by_id else str(cid)
             issues.append(
                 LegalityIssue(
-                    code="unsupported_effect",
+                    code=CODE_UNSUPPORTED_EFFECT,
+                    severity=BLOCKING,
                     card_id=cid,
                     card_name=name,
                     message=(
-                        f"« {name} » : effet pas encore pris en charge par le moteur "
-                        f"de règles."
+                        f"« {name} » : effet pas encore pris en charge par le moteur de règles."
                     ),
                 )
             )
+
+    # Au moins un Pokémon de base (un deck vide échoue déjà sur la taille : on n'ajoute ce
+    # constat que si le deck contient au moins une carte, pour ne pas doubler le bruit).
+    if card_count > 0 and not has_basic_pokemon:
+        issues.append(
+            LegalityIssue(
+                code=CODE_NO_BASIC_POKEMON,
+                severity=BLOCKING,
+                message=(
+                    "Un deck doit contenir au moins un Pokémon de base pour pouvoir démarrer "
+                    "une partie."
+                ),
+            )
+        )
 
     # Taille exacte (Énergies de base comprises).
     size_ok = card_count == DECK_SIZE
@@ -171,16 +269,20 @@ def evaluate(facts: list[DeckCardFact]) -> DeckLegality:
             )
         issues.append(
             LegalityIssue(
-                code="deck_size",
+                code=CODE_DECK_SIZE,
+                severity=BLOCKING,
                 detail={"count": card_count, "expected": DECK_SIZE},
                 message=message,
             )
         )
 
+    legal = not any(i.severity == BLOCKING for i in issues)
     return DeckLegality(
-        legal=not issues,
+        legal=legal,
         card_count=card_count,
         size_ok=size_ok,
+        format=deck_format,
+        format_label=formats.label(deck_format),
         issues=issues,
         cards=cards,
     )

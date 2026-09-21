@@ -1,10 +1,13 @@
-"""`/me/decks` — création, légalité et sauvegarde des decks (mission `v7-decks-api`).
+"""`/me/decks` — création, légalité (formats, sévérités) et sauvegarde des decks.
+
+Missions `v7-decks-api` (CRUD, socle de légalité) puis `v7-decks-legalite` (sévérité des
+constats, légalité par format choisi par le joueur, Pokémon de base, contrefaçons exclues).
 
 Toute route est bornée au propriétaire via `get_current_user` (jamais un identifiant reçu du
 client) ; les écritures exigent `require_csrf`. Un deck d'un autre utilisateur renvoie 404 (pas
 403 : pas de fuite d'existence). La légalité renvoyée est recalculée à chaque lecture sur la
 collection du moment — aucune écriture n'est nécessaire pour qu'un deck devienne injouable après
-la vente d'une carte (mission point 3).
+la vente ou le signalement contrefaçon d'une carte (mission point 3).
 """
 
 import uuid
@@ -26,8 +29,8 @@ from pbm_api.decks.schemas import (
     DeckListResponse,
     DeckSummary,
     LegalityIssueOut,
-    RenameDeckRequest,
     SetDeckCardRequest,
+    UpdateDeckRequest,
 )
 from pbm_api.decks.service import LoadedDeckCard
 from pbm_api.models import User
@@ -45,10 +48,13 @@ def _legality_out(report: DeckLegality) -> DeckLegalityOut:
         legal=report.legal,
         card_count=report.card_count,
         size_ok=report.size_ok,
+        format=report.format,
+        format_label=report.format_label,
         issues=[
             LegalityIssueOut(
                 code=i.code,
                 message=i.message,
+                severity=i.severity,
                 card_id=i.card_id,
                 card_name=i.card_name,
                 detail=i.detail,
@@ -76,15 +82,19 @@ def _detail_response(
             quantity=c.quantity,
             is_basic_energy=per_card[c.card_id].is_basic_energy,
             is_special_energy=per_card[c.card_id].is_special_energy,
+            is_basic_pokemon=per_card[c.card_id].is_basic_pokemon,
             owned=per_card[c.card_id].owned,
             missing=per_card[c.card_id].missing,
             in_collection=per_card[c.card_id].in_collection,
+            in_format=per_card[c.card_id].in_format,
+            counterfeit_excluded=per_card[c.card_id].counterfeit_excluded,
         )
         for c in loaded
     ]
     return DeckDetail(
         id=deck.id,
         name=deck.name,
+        format=deck.format,
         created_at=deck.created_at,
         updated_at=deck.updated_at,
         cards=cards,
@@ -118,6 +128,7 @@ async def list_decks(
             DeckSummary(
                 id=deck.id,
                 name=deck.name,
+                format=deck.format,
                 card_count=report.card_count,
                 legal=report.legal,
                 created_at=deck.created_at,
@@ -142,15 +153,17 @@ async def get_deck(
 
 
 @router.patch("/{deck_id}", response_model=DeckDetail)
-async def rename_deck(
+async def update_deck(
     deck_id: uuid.UUID,
-    payload: RenameDeckRequest,
+    payload: UpdateDeckRequest,
     session: Annotated[AsyncSession, Depends(get_session)],
     current_user: Annotated[User, Depends(get_current_user)],
     _csrf: Annotated[None, Depends(require_csrf)],
 ) -> DeckDetail:
     try:
-        await service.rename_deck(session, current_user, deck_id, payload.name)
+        await service.update_deck(
+            session, current_user, deck_id, name=payload.name, deck_format=payload.format
+        )
         deck, loaded, report = await service.deck_detail(session, current_user, deck_id)
     except DeckNotFoundError:
         raise HTTPException(status.HTTP_404_NOT_FOUND, DECK_NOT_FOUND_MESSAGE) from None

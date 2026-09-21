@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import ForeignKey, Integer, String, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -24,6 +24,12 @@ class Deck(Base, TimestampMixin):
         PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     name: Mapped[str] = mapped_column(String(120), nullable=False)
+    # Format de jeu choisi par le joueur (Standard / Étendu / Illimité, `pbm_api.decks.
+    # formats`) — sert au contrôle de légalité par format (lot `v7-decks-legalite`). Défaut
+    # "standard" ; `server_default` pour les decks créés avant la colonne.
+    format: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="standard", server_default=text("'standard'")
+    )
 
 
 class DeckCard(Base, TimestampMixin):

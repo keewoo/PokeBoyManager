@@ -633,6 +633,45 @@ Tests : `apps/api/tests/test_deck_legality.py` (moteur pur : D10, 60/4/possessio
 `apps/api/tests/test_deck_routes.py` (CRUD, accès croisé B→404, revalidation après vente, CSRF).
 Aucun écran dans ce lot (back-end) : le constructeur est `v7-decks-ui` (couloir CH5).
 
+## Decks : légalité, formats et sévérités (lot `v7-decks-legalite`)
+
+Étend le contrôle de légalité de `v7-decks-api` — une **seule** implémentation
+(`pbm_api.decks.legality.evaluate`), exposée telle quelle par l'API et destinée à l'écran, jamais
+deux logiques qui divergent (risque du lot). Quatre ajouts :
+
+- **Sévérité** par constat (`LegalityIssue.severity` : `bloquant` / `avertissement`). Seul un
+  constat bloquant retire la légalité (`DeckLegality.legal = aucun bloquant`) ; un avertissement
+  informe sans interdire.
+- **Au moins un Pokémon de base** (`legality.is_basic_pokemon`, `Card.stage` = TCGdex "Base") :
+  un deck sans Pokémon de base est injouable (bloquant, code `no_basic_pokemon`) — ajouté
+  seulement si le deck contient au moins une carte (un deck vide échoue déjà sur la taille, on ne
+  double pas le bruit).
+- **Légalité par format** (`pbm_api.decks.formats` : Standard / Étendu / Illimité) déduite du
+  catalogue (`Card.legal_standard`/`legal_expanded`). Format **choisi par le joueur**
+  (`Deck.format`, défaut `standard`, posé au `POST` et modifiable au `PATCH /me/decks/{id}`). Une
+  carte explicitement hors format (légalité `False`) est signalée (bloquant, code
+  `out_of_format`, avec l'explication) ; une légalité inconnue (`None`, vieilles cartes non
+  réévaluées) ne bloque pas — bénéfice du doute, jamais un repli qui bloquerait par défaut ; les
+  Énergies de base sont toujours autorisées.
+- **Contrefaçons exclues** : `service._owned_counts` sépare, en une requête, la possession (hors
+  contrefaçon) et les exemplaires signalés contrefaçon (`CollectionItem.counterfeit_suspected`,
+  `v6-contrefacon`). Les contrefaçons ne comptent pas dans la possession ; leur exclusion est un
+  avertissement (code `counterfeit_excluded`) qui explique un décompte plus bas — et peut donc
+  entraîner un `not_owned` bloquant.
+
+Point d'extension `v7-regles-cartes` inchangé et toujours neutre (`legality.unsupported_card_ids`
+retourne l'ensemble vide tant que le moteur n'existe pas — report explicite, pas un repli
+silencieux). Migration `a4e9c1d7b3f5` (`cards.stage`, `decks.format` défaut `standard`, alimentés
+à l'import par `catalog/import_service.py`). Schémas : `PATCH /me/decks/{id}` accepte `name`
+et/ou `format` (`UpdateDeckRequest`, partiel) ; `DeckCardOut` porte
+`is_basic_pokemon`/`in_format`/`counterfeit_excluded`, `DeckLegalityOut` porte
+`format`/`format_label` et chaque `issue` sa `severity`. Tests : `tests/test_deck_legality.py`
+(33 cas purs, dont les pièges de la mission : 5ᵉ exemplaire d'un même nom sous deux illustrations,
+Énergie spéciale non possédée, deck sans Pokémon de base, carte contrefaite),
+`tests/test_deck_routes.py` (format choisi + carte hors format, contrefaçon exclue, sévérités,
+accès croisé B→404, CSRF). Back-end seul ; le constructeur qui les affiche est `v7-decks-ui`
+(couloir CH5).
+
 ## Règles de la flotte applicables ici (résumé de `~/.claude/CLAUDE.md`)
 
 - On construit sur chimera (32 Go, 16 threads) et on ne construit jamais sur la machine qui sert.

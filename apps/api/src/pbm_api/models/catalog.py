@@ -76,6 +76,10 @@ class Card(Base, TimestampMixin):
     # possession et à la règle des 4).
     energy_type: Mapped[str | None] = mapped_column(String(16), nullable=True)
     hp: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Stade d'évolution TCGdex (`stage`, en français : "Base", "Niveau 1", "Niveau 2",
+    # ou une règle spéciale VMAX/VSTAR...). Sert au contrôle de légalité des decks (lot
+    # `v7-decks-legalite`, « au moins un Pokémon de base ») ; `None` hors Pokémon.
+    stage: Mapped[str | None] = mapped_column(String(32), nullable=True)
     # URL de base TCGdex sans extension (ex: ".../sv/sv03.5/006") : le proxy /img/cards/{id}
     # y ajoute "/high.webp" ou "/low.webp" selon la définition demandée.
     image_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
