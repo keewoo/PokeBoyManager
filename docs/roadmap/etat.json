@@ -2403,21 +2403,21 @@
       "attente": null
     },
     "v5-e2e": {
-      "statut": "en_cours",
+      "statut": "integre",
       "machine": "chimera",
       "branche": "roadmap/v5-e2e",
       "debut_reel": "2026-09-20",
-      "fin_reelle": null,
+      "fin_reelle": "2026-09-20",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit addd04b06 intégré dans main — voir docs/roadmap/comptes-rendus/v5-e2e.md",
+          "maj": "2026-09-20T12:11+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit addd04b06 intégré dans main — voir docs/roadmap/comptes-rendus/v5-e2e.md",
+          "maj": "2026-09-20T12:11+0200"
         },
         "securite": {
           "etat": "a_faire",
@@ -2445,14 +2445,14 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit addd04b06 intégré dans main — voir docs/roadmap/comptes-rendus/v5-e2e.md",
+          "maj": "2026-09-20T12:11+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "commit addd04b06 intégré dans main — voir docs/roadmap/comptes-rendus/v5-e2e.md",
+          "maj": "2026-09-20T12:11+0200"
         }
       },
       "journal": [
@@ -2461,9 +2461,36 @@
           "machine": "chimera",
           "evenement": "démarré",
           "detail": "roadmap/v5-e2e"
+        },
+        {
+          "quand": "2026-09-20T12:11+0200",
+          "machine": "chimera",
+          "evenement": "intégré dans main",
+          "detail": "commit addd04b06"
         }
       ],
-      "compte_rendu": {},
+      "compte_rendu": {
+        "resume": "Parcours e2e complet exercé de bout en bout par le navigateur : inscription → vérification (Mailpit) → clé IA (simulée) → envoi de la photo de référence 3×3 → validation → collection filtrée → fiche carte (`apps/web/e2e/parcours-complet.spec.ts`).",
+        "livrables": [
+          "`apps/api/src/pbm_api/ai/simulated_provider.py` — `SimulatedProvider(AIProvider)`, activé par le",
+          "`apps/web/playwright.config.ts` — troisième entrée `webServer` : un vrai worker arq",
+          "`apps/api/scripts/generate_e2e_reference_photo.py` — écrit la « photo de référence » du classeur",
+          "`apps/api/scripts/seed_e2e_reference_catalog.py` — sème (idempotent) les neuf cartes de",
+          "`apps/api/tests/test_ai_providers.py` — trois tests unitaires sur `SimulatedProvider`/le drapeau",
+          "Correction d'un bogue latent trouvé en relançant `pbm_api.seed.seed()` : `User` exige",
+          "`apps/web/src/lib/config.ts::getUploadOrigin` + `apps/web/src/middleware.ts` + `.env.example`",
+          "`apps/api/scripts/seed_e2e_second_user.py` — second utilisateur du test d'accès croisé, seedé"
+        ],
+        "preuves": [],
+        "ecarts": [
+          "La mission attendait implicitement une diversité de cartes en collection (« collection",
+          "`test_catalogue_seed.py` (2 tests, pré-existants, hors périmètre de ce lot) échoue sur ce poste",
+          "`auth.spec.ts` avait déjà flakyé sous charge concurrente sur chimera (case CGU) pendant cette"
+        ],
+        "reste": [
+          "Rien d'identifié dans le périmètre de ce lot. Le test manuel hebdomadaire avec une vraie clé IA"
+        ]
+      },
       "attente": null
     },
     "v5-prod": {

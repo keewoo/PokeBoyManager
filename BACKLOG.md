@@ -80,7 +80,7 @@ _Un espace qui garde des clés IA et des photos privées ne sort qu'après une r
 |---|---|---|---|---|---|---|---|---|
 | `v5-rgpd` | P1 | Exporter mes données et supprimer mon compte | DA1 (devAI) | 19 sept. → 19 sept. | v1-byok | — | Intégré (main) | [prompt](prompts/v5-rgpd.md) |
 | `v5-securite` | P0 | Revue de sécurité avant ouverture | DA1 (devAI) | 20 sept. → 20 sept. | v4-fiche, v5-rgpd, v3-validation | — | Intégré (main) | [prompt](prompts/v5-securite.md) |
-| `v5-e2e` | P1 | Parcours e2e Playwright en CI | CH3 (chimera) | 6 nov. → 11 nov. | v4-fiche | — | En cours | [prompt](prompts/v5-e2e.md) |
+| `v5-e2e` | P1 | Parcours e2e Playwright en CI | CH3 (chimera) | 6 nov. → 11 nov. | v4-fiche | — | Intégré (main) | [prompt](prompts/v5-e2e.md) |
 | `v5-prod` | P0 | Mise en PROD : domaine, sauvegardes, surveillance (sans UAT) | DA2 (devAI) | 16 nov. → 20 nov. | v5-securite, v5-e2e | D8 | Livré | [prompt](prompts/v5-prod.md) |
 
 ## V6 — Après le MVP (23 nov. → 18 déc.)
