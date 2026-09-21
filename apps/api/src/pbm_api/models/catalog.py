@@ -68,6 +68,13 @@ class Card(Base, TimestampMixin):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     rarity: Mapped[str | None] = mapped_column(String(64), nullable=True)
     supertype: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # Type d'énergie tel qu'exposé par TCGdex (`energyType`) : "Normal" pour une Énergie de base,
+    # "Special" pour une Énergie spéciale — `None` pour toute carte non-Énergie, et pour les
+    # Énergies importées avant l'ajout de cette colonne (le rapprochement retombe alors sur le
+    # nom, voir `pbm_api.decks.energy`). Sert au contrôle de légalité des decks (lot
+    # `v7-decks-api`, décision D10 : Énergies de base illimitées, Énergies spéciales soumises à
+    # possession et à la règle des 4).
+    energy_type: Mapped[str | None] = mapped_column(String(16), nullable=True)
     hp: Mapped[int | None] = mapped_column(Integer, nullable=True)
     # URL de base TCGdex sans extension (ex: ".../sv/sv03.5/006") : le proxy /img/cards/{id}
     # y ajoute "/high.webp" ou "/low.webp" selon la définition demandée.

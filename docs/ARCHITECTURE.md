@@ -418,6 +418,36 @@ Essais manuels (aucune clé IA réelle sur chimera) : `scripts/test_ingame_manua
 complet avec une vraie clé), `scripts/prove_ingame_20_cards.py` (preuve du livrable sur 20
 cartes réelles, réseau réel vers Limitless TCG, synthèse simulée).
 
+## Decks et légalité (lot `v7-decks-api`)
+
+Un joueur construit des decks à partir de sa collection réelle. Deux tables (`pbm_api.models.
+decks`) : `decks` (propriétaire, nom) et `deck_cards` (une carte du **catalogue** + une quantité,
+unicité `(deck_id, card_id)`). Le choix de référencer le catalogue et non un exemplaire précis
+(`collection_items.id`) est **imposé par la décision D10** : une Énergie de base fait partie d'un
+deck sans jamais être possédée. « Uniquement avec ses cartes » est donc un contrôle de légalité —
+la possession est comptée sur `collection_items` au moment de la lecture — et non une clé
+étrangère : vendre une carte rend le deck injouable tout en le laissant lisible et modifiable.
+
+La légalité (`pbm_api.decks.legality`) est **recalculée à chaque lecture, jamais mémorisée** :
+c'est ce qui rend la revalidation automatique quand la collection change, sans aucune écriture.
+Trois règles (décision D10) : exactement **60** cartes ; **4** exemplaires maximum d'un même
+**nom** (deux impressions cumulées), *sauf* Énergies de base ; possession requise, *sauf* Énergies
+de base. Le rapport nomme précisément ce qui bloque (`issues`, codes `deck_size` / `copy_limit`
+/ `not_owned` / `unsupported_effect`).
+
+Le régime d'une Énergie dépend de sa nature (`pbm_api.decks.energy`) : **de base** = fournie en
+quantité illimitée, hors collection et hors règle des 4 (mais comptée dans les 60) ; **spéciale**
+= carte ordinaire (possession + règle des 4). La nature vient de `Card.energy_type` (TCGdex
+`energyType`, colonne peuplée à l'import) ; pour les cartes importées avant cette colonne, un
+repli déterministe sur le nom tranche — l'ensemble des Énergies de base est fermé et connu
+(jamais la rareté, qui ne discrimine pas). C'est une application directe du principe « la base
+sait » : dès qu'un ré-import peuplera `energy_type`, la classification cesse de dépendre du nom.
+
+Le contrôle « effet non pris en charge par le moteur de règles » (`v7-regles-cartes`) est prévu
+dans le moteur de légalité (`unsupported_card_ids`) mais neutre tant que ce moteur n'existe pas :
+sans lui, tout effet serait inconnu et aucun deck ne serait jamais légal. Il s'activera par un
+seul point d'intégration, sans autre changement.
+
 ## Prix (lot `v2-prix`)
 
 - Job `daily_prices_task` (arq, cron quotidien 06:00, `apps/api/src/pbm_api/worker.py`) : une

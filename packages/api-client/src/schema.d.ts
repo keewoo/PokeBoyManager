@@ -443,6 +443,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/uploads/pending-validation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Pending Validation
+         * @description Envois encore à valider (mission point 2) : point d'entrée de reprise depuis « Ajouter des
+         *     photos » — un envoi ancien avec des détections en attente reste toujours accessible.
+         *     Déclarée AVANT `GET /uploads/{upload_id}` : sinon « pending-validation » serait interprété
+         *     comme un identifiant d'envoi (UUID) et rejeté en 422.
+         */
+        get: operations["list_pending_validation_uploads_pending_validation_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/{upload_id}/retry-recognition": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry Recognition
+         * @description Relance la reconnaissance d'un envoi (mission point 6) : après un job en échec ou un délai
+         *     dépassé, l'utilisateur peut réessayer sans renvoyer la photo. Le pipeline ne redécoupe pas si
+         *     des recadrages existent déjà (`pbm_api.worker`).
+         */
+        post: operations["retry_recognition_uploads__upload_id__retry_recognition_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/uploads/{upload_id}": {
         parameters: {
             query?: never;
@@ -629,6 +674,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/decks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Decks */
+        get: operations["list_decks_me_decks_get"];
+        put?: never;
+        /** Create Deck */
+        post: operations["create_deck_me_decks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/decks/{deck_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Deck */
+        get: operations["get_deck_me_decks__deck_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Deck */
+        delete: operations["delete_deck_me_decks__deck_id__delete"];
+        options?: never;
+        head?: never;
+        /** Rename Deck */
+        patch: operations["rename_deck_me_decks__deck_id__patch"];
+        trace?: never;
+    };
+    "/me/decks/{deck_id}/duplicate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Duplicate Deck */
+        post: operations["duplicate_deck_me_decks__deck_id__duplicate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/decks/{deck_id}/cards/{card_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set Deck Card */
+        put: operations["set_deck_card_me_decks__deck_id__cards__card_id__put"];
+        post?: never;
+        /** Remove Deck Card */
+        delete: operations["remove_deck_card_me_decks__deck_id__cards__card_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/dashboard": {
         parameters: {
             query?: never;
@@ -740,6 +857,23 @@ export interface paths {
         };
         /** Get In Game Study */
         get: operations["get_in_game_study_cards__card_id__in_game_study_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cards/featured": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Featured Cards */
+        get: operations["get_featured_cards_cards_featured_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1257,6 +1391,13 @@ export interface components {
             /** Collection Item Ids */
             collection_item_ids: string[];
         };
+        /** CreateDeckRequest */
+        CreateDeckRequest: {
+            /** Name */
+            name: string;
+            /** Cards */
+            cards?: components["schemas"]["DeckCardInput"][];
+        };
         /** CreateUploadsRequest */
         CreateUploadsRequest: {
             /** Files */
@@ -1343,6 +1484,118 @@ export interface components {
             /** Total Value Eur */
             total_value_eur: string;
         };
+        /** DeckCardInput */
+        DeckCardInput: {
+            /**
+             * Card Id
+             * Format: uuid
+             */
+            card_id: string;
+            /** Quantity */
+            quantity: number;
+        };
+        /** DeckCardOut */
+        DeckCardOut: {
+            /**
+             * Card Id
+             * Format: uuid
+             */
+            card_id: string;
+            /** Card Name */
+            card_name: string;
+            /** Card Number */
+            card_number: string;
+            /**
+             * Set Id
+             * Format: uuid
+             */
+            set_id: string;
+            /** Set Name */
+            set_name: string;
+            /** Set Code */
+            set_code: string;
+            /** Image Url */
+            image_url: string | null;
+            /** Supertype */
+            supertype: string | null;
+            /** Rarity */
+            rarity: string | null;
+            /** Quantity */
+            quantity: number;
+            /** Is Basic Energy */
+            is_basic_energy: boolean;
+            /** Is Special Energy */
+            is_special_energy: boolean;
+            /** Owned */
+            owned: number;
+            /** Missing */
+            missing: number;
+            /** In Collection */
+            in_collection: boolean;
+        };
+        /** DeckDetail */
+        DeckDetail: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Cards */
+            cards: components["schemas"]["DeckCardOut"][];
+            legality: components["schemas"]["DeckLegalityOut"];
+        };
+        /** DeckLegalityOut */
+        DeckLegalityOut: {
+            /** Legal */
+            legal: boolean;
+            /** Card Count */
+            card_count: number;
+            /** Size Ok */
+            size_ok: boolean;
+            /** Issues */
+            issues: components["schemas"]["LegalityIssueOut"][];
+        };
+        /** DeckListResponse */
+        DeckListResponse: {
+            /** Decks */
+            decks: components["schemas"]["DeckSummary"][];
+        };
+        /** DeckSummary */
+        DeckSummary: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Card Count */
+            card_count: number;
+            /** Legal */
+            legal: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
         /** DeleteAccountRequest */
         DeleteAccountRequest: {
             /** Password */
@@ -1394,6 +1647,25 @@ export interface components {
             /** Completed At */
             completed_at: string | null;
         };
+        /**
+         * FeaturedCardOut
+         * @description Neuf du tableau de démonstration de l'accueil visiteur (mission `pbm-front-accueil`,
+         *     point 1) — jamais de prix ni de rareté ici : de vraies données, mais pas une fiche
+         *     complète, la route est publique (pas de session).
+         */
+        FeaturedCardOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Number */
+            number: string;
+            /** Set Name */
+            set_name: string;
+        };
         /** ForgotPasswordRequest */
         ForgotPasswordRequest: {
             /**
@@ -1443,6 +1715,21 @@ export interface components {
             standard: boolean | null;
             /** Expanded */
             expanded: boolean | null;
+        };
+        /** LegalityIssueOut */
+        LegalityIssueOut: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /** Card Id */
+            card_id?: string | null;
+            /** Card Name */
+            card_name?: string | null;
+            /** Detail */
+            detail?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** ListDetectionsResponse */
         ListDetectionsResponse: {
@@ -1506,6 +1793,33 @@ export interface components {
             position: number | null;
             /** Total Priced */
             total_priced: number;
+        };
+        /** PendingUploadItem */
+        PendingUploadItem: {
+            /**
+             * Upload Id
+             * Format: uuid
+             */
+            upload_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Pending Count */
+            pending_count: number;
+            /** Total Count */
+            total_count: number;
+        };
+        /**
+         * PendingUploadsResponse
+         * @description `GET /uploads/pending-validation` (lot `pbm-parcours-validation`, mission point 2) : les
+         *     envois de l'utilisateur qui ont encore des cartes à valider — point d'entrée de reprise depuis
+         *     « Ajouter des photos ».
+         */
+        PendingUploadsResponse: {
+            /** Uploads */
+            uploads: components["schemas"]["PendingUploadItem"][];
         };
         /** PriceHistoryPoint */
         PriceHistoryPoint: {
@@ -1596,6 +1910,11 @@ export interface components {
             detection_id: string;
             status: components["schemas"]["DetectionStatus"];
         };
+        /** RenameDeckRequest */
+        RenameDeckRequest: {
+            /** Name */
+            name: string;
+        };
         /** ReportCardInsightRequest */
         ReportCardInsightRequest: {
             /** Reason */
@@ -1607,6 +1926,20 @@ export interface components {
             token: string;
             /** Password */
             password: string;
+        };
+        /** RetryRecognitionResponse */
+        RetryRecognitionResponse: {
+            /**
+             * Upload Id
+             * Format: uuid
+             */
+            upload_id: string;
+            /**
+             * Job Id
+             * Format: uuid
+             */
+            job_id: string;
+            status: components["schemas"]["JobStatus"];
         };
         /** SessionResponse */
         SessionResponse: {
@@ -1623,6 +1956,11 @@ export interface components {
             created_at: string;
             /** Current */
             current: boolean;
+        };
+        /** SetDeckCardRequest */
+        SetDeckCardRequest: {
+            /** Quantity */
+            quantity: number;
         };
         /** StudyOut */
         StudyOut: {
@@ -2649,6 +2987,57 @@ export interface operations {
             };
         };
     };
+    list_pending_validation_uploads_pending_validation_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingUploadsResponse"];
+                };
+            };
+        };
+    };
+    retry_recognition_uploads__upload_id__retry_recognition_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                upload_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetryRecognitionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_upload_uploads__upload_id__get: {
         parameters: {
             query?: never;
@@ -3066,6 +3455,253 @@ export interface operations {
             };
         };
     };
+    list_decks_me_decks_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeckListResponse"];
+                };
+            };
+        };
+    };
+    create_deck_me_decks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDeckRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeckDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_deck_me_decks__deck_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                deck_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeckDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_deck_me_decks__deck_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                deck_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rename_deck_me_decks__deck_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                deck_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenameDeckRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeckDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    duplicate_deck_me_decks__deck_id__duplicate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                deck_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeckDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_deck_card_me_decks__deck_id__cards__card_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                deck_id: string;
+                card_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetDeckCardRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeckDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_deck_card_me_decks__deck_id__cards__card_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                deck_id: string;
+                card_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeckDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_dashboard_me_dashboard_get: {
         parameters: {
             query?: never;
@@ -3259,6 +3895,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_featured_cards_cards_featured_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeaturedCardOut"][];
                 };
             };
         };

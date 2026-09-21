@@ -19,6 +19,7 @@ from pbm_api.models.collection import (
     Upload,
     UploadStatus,
 )
+from pbm_api.models.decks import Deck, DeckCard
 from pbm_api.models.identification import (
     CardVisualIndex,
     IdentificationCache,
@@ -51,6 +52,8 @@ __all__ = [
     "UploadStatus",
     "Detection",
     "DetectionStatus",
+    "Deck",
+    "DeckCard",
     "CollectionItem",
     "IdentificationCache",
     "IdentificationCorrection",

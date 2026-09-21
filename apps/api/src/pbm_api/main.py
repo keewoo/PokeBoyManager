@@ -9,6 +9,7 @@ from pbm_api.routers.cards import router as cards_router
 from pbm_api.routers.catalog import router as catalog_router
 from pbm_api.routers.collection import router as collection_router
 from pbm_api.routers.dashboard import router as dashboard_router
+from pbm_api.routers.decks import router as decks_router
 from pbm_api.routers.detections import router as detections_router
 from pbm_api.routers.export import router as export_router
 from pbm_api.routers.health import router as health_router
@@ -48,6 +49,7 @@ app.include_router(profile_router)
 app.include_router(uploads_router)
 app.include_router(detections_router)
 app.include_router(collection_router)
+app.include_router(decks_router)
 app.include_router(dashboard_router)
 app.include_router(card_insights_router)
 app.include_router(export_router)

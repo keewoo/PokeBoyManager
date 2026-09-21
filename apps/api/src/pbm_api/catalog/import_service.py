@@ -126,6 +126,9 @@ async def _upsert_card(
     card.name = detail["name"]
     card.rarity = detail.get("rarity")
     card.supertype = detail.get("category")
+    # "Normal" (Énergie de base) / "Special" (Énergie spéciale) chez TCGdex, `None` hors Énergie
+    # — distingue les deux régimes de légalité des decks (lot `v7-decks-api`, D10).
+    card.energy_type = detail.get("energyType")
     card.hp = detail.get("hp")
     image_url = detail.get("image")
     if image_url is not None and not _is_safe_image_url(image_url):

@@ -587,6 +587,52 @@ navigateur** (les e2e précédentes sèment leur résultat directement en base) 
   (`scripts/seed_e2e_second_user.py`) plutôt que par `/auth/register`, pour ne pas alourdir ce
   compteur partagé.
 
+## Decks : légalité et sauvegarde (lot `v7-decks-api`)
+
+Routes (`apps/api/src/pbm_api/routers/decks.py`, préfixe `/me/decks`, toutes bornées au
+propriétaire via la session — jamais un id reçu du client, un deck d'autrui renvoie 404, pas
+403) : `POST /me/decks` (création, cartes initiales facultatives), `GET /me/decks` (liste +
+légalité par deck), `GET /me/decks/{id}` (détail + rapport de légalité), `PATCH /me/decks/{id}`
+(renommer), `DELETE /me/decks/{id}`, `POST /me/decks/{id}/duplicate`,
+`PUT /me/decks/{id}/cards/{card_id}` (poser/mettre à jour une quantité, idempotent),
+`DELETE /me/decks/{id}/cards/{card_id}`. Écritures protégées par `require_csrf`.
+
+Modèle (`pbm_api.models.decks`) : `decks` (nom, propriétaire) et `deck_cards` (`card_id` du
+CATALOGUE + `quantity`, unicité `(deck_id, card_id)`). `deck_cards` référence le catalogue, PAS
+un `collection_items.id` : imposé par D10 (une Énergie de base fait partie d'un deck sans être
+possédée) et robustesse — vendre un exemplaire rend le deck injouable mais le laisse lisible et
+modifiable (risque du lot), ce qu'une FK vers la collection casserait. « Uniquement avec ses
+cartes » est donc un CONTRÔLE DE LÉGALITÉ (possession comptée sur `collection_items`), pas une
+clé étrangère.
+
+Légalité (`pbm_api.decks.legality`, logique pure, testable sans base) — recalculée à CHAQUE
+lecture, jamais mémorisée : une carte vendue rend le deck injouable sans aucune écriture
+(« revalidation quand la collection change », mission point 3). Règles (D10) : exactement 60
+cartes ; 4 exemplaires maximum par NOM (deux impressions d'un même nom cumulées), sauf Énergies
+de base ; possession requise sauf Énergies de base ; rapport lisible (`issues`, codes
+`deck_size`/`copy_limit`/`not_owned`/`unsupported_effect`).
+
+Classement des Énergies (`pbm_api.decks.energy`, décision D10) : Énergie de BASE = illimitée,
+fournie, jamais décomptée de la collection, hors règle des 4 (mais comptée dans les 60) ; Énergie
+SPÉCIALE = carte comme les autres (possession + règle des 4). Source de vérité : `Card.energy_type`
+(TCGdex `energyType`, colonne ajoutée par ce lot, peuplée à l'import) ; à défaut (cartes importées
+avant la colonne, `energy_type IS NULL`), repli sur le nom — l'ensemble des Énergies de base est
+fermé, calibré sur les 514 cartes `supertype = "Énergie"` du catalogue (l'Éclair s'écrit
+« Énergie Électrique » ET « Énergie Electrik », la casse varie). Jamais sur la rareté (une Énergie
+de base existe en « Commune » comme en « Magnifique rare »).
+
+Effet non pris en charge : la vérification « une carte dont l'effet n'est pas géré par le moteur
+(`v7-regles-cartes`) est refusée » est câblée (`legality.unsupported_card_ids`, code
+`unsupported_effect`) mais NEUTRE tant que ce moteur n'existe pas dans le dépôt — sans moteur,
+tout effet serait « non pris en charge » et aucun deck ne serait jamais légal. S'activera en
+remplaçant le corps de cette fonction par un appel au moteur, sans autre changement — report
+explicite dans le compte rendu, pas un repli silencieux.
+
+Migration `d1c7a3f0b2e4` (tables `decks`/`deck_cards` + colonne `cards.energy_type`, nullable).
+Tests : `apps/api/tests/test_deck_legality.py` (moteur pur : D10, 60/4/possession),
+`apps/api/tests/test_deck_routes.py` (CRUD, accès croisé B→404, revalidation après vente, CSRF).
+Aucun écran dans ce lot (back-end) : le constructeur est `v7-decks-ui` (couloir CH5).
+
 ## Règles de la flotte applicables ici (résumé de `~/.claude/CLAUDE.md`)
 
 - On construit sur chimera (32 Go, 16 threads) et on ne construit jamais sur la machine qui sert.
