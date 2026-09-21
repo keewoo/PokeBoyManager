@@ -1915,8 +1915,9 @@
       ],
       "mission": [
         "Page `/jeu/decks` et `/jeu/decks/[id]` conformes à la maquette du jeu.",
-        "Glisser-déposer ou clic pour ajouter et retirer, compteurs en direct, messages de légalité.",
-        "Tests d'interface et un e2e « construire un deck légal à partir de sa collection »."
+        "Glisser-déposer ou clic pour ajouter, **retirer un exemplaire** et **retirer complètement une carte du deck** (bouton dédié, pas seulement le décrément), compteurs en direct, messages de légalité.",
+        "Tests d'interface et un e2e « construire un deck légal à partir de sa collection ».",
+        "Sur « Mes decks » : dupliquer et **supprimer un deck**, avec confirmation ; un deck supprimé ne doit pas disparaître d'une partie en cours."
       ],
       "livrables": [
         "constructeur de deck utilisable"

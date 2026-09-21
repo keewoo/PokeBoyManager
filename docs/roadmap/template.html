@@ -1297,7 +1297,7 @@ V.decks = () => `<div style="display:flex;justify-content:space-between;align-it
     ${[['Feu du dimanche','fire',60,true],['Éclair bricolé','elec',54,false],['Mono-Eau','water',60,true]].map(([n,t,c,ok]) => `<button class="panel" style="display:grid;gap:8px;text-align:left;cursor:pointer;border:1px solid var(--m-line)" data-gm="ecran:build">
       <div style="display:flex;gap:8px;align-items:center"><span class="badge" style="background:${ECOL[t]};color:#fff;border-color:transparent">${sym[t]}</span><b>${n}</b></div>
       <div class="bar60"><i style="width:${c / 60 * 100}%"></i></div>
-      <div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--m-muted)"><span class="mono">${c}/60 cartes</span>${ok ? '<span class="badge up">jouable</span>' : '<span class="badge down">incomplet</span>'}</div></button>`).join('')}
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--m-muted)"><span class="mono">${c}/60 cartes</span><span style="display:flex;gap:6px;align-items:center">${ok ? '<span class="badge up">jouable</span>' : '<span class="badge down">incomplet</span>'}<span class="mbtn ghost sm" title="Dupliquer">⧉</span><span class="mbtn ghost sm" title="Supprimer ce deck" style="color:var(--m-down)">✕</span></span></div></button>`).join('')}
   </div>
   <p class="ex-note" style="margin-top:16px">Un deck ne contient que des cartes que tu possèdes. Si tu en retires une de ta collection, le deck reste lisible mais devient injouable, avec la raison affichée.</p>`;
 
@@ -1318,7 +1318,7 @@ V.build = () => {
         <div>${manque.length ? `<span class="no">✗ cartes non possédées : ${manque.map(([k]) => byId[k].nom).join(', ')}</span>` : '<span class="ok">✓ toutes les cartes sont dans ta collection</span>'}</div>
         <div><span class="ok">✓ ${pkm} Pokémon</span> · <span class="ok">${total - pkm} énergies</span></div>
       </div>
-      <div class="dk-list" style="margin-top:12px">${Object.entries(deck).filter(([, v]) => v > 0).map(([k, v]) => `<div class="dk-row"><div>${art(byId[k])}</div><div><b>${esc(byId[k].nom)}</b><div class="ex-note">${byId[k].energie ? 'énergie de base' : esc(byId[k].num)}</div></div><span class="cnt">×${v}</span><span style="display:flex;gap:4px"><button data-gm="moins" data-c="${k}">−</button><button data-gm="plus" data-c="${k}">+</button></span></div>`).join('')}</div>
+      <div class="dk-list" style="margin-top:12px">${Object.entries(deck).filter(([, v]) => v > 0).map(([k, v]) => `<div class="dk-row"><div>${art(byId[k])}</div><div><b>${esc(byId[k].nom)}</b><div class="ex-note">${byId[k].energie ? 'énergie de base' : esc(byId[k].num)}</div></div><span class="cnt">×${v}</span><span style="display:flex;gap:4px"><button data-gm="moins" data-c="${k}" aria-label="Retirer un exemplaire">−</button><button data-gm="plus" data-c="${k}" aria-label="Ajouter un exemplaire">+</button><button data-gm="retirer" data-c="${k}" aria-label="Retirer cette carte du deck" title="Retirer du deck" style="color:var(--m-down);border-color:var(--m-down)">✕</button></span></div>`).join('')}</div>
       <div style="margin-top:12px"><button class="mbtn red" data-gm="ecran:file">Jouer avec ce deck</button></div>
     </div>
   </div>`;
@@ -1411,6 +1411,7 @@ document.getElementById('view-jeu').addEventListener('click', e => {
   if (a === 'demo:evo') { animeEvolution(); dit('<b>Salamèche</b> évolue en <b>Reptincel</b>.'); setTimeout(rend, 850); return; }
   if (a === 'demo:gx') { animeAttaque('Explo-Combustion', 150, true); dit('Démonstration : attaque de carte spéciale.'); return; }
   if (a.startsWith('ecran:')) { ecran = a.slice(6); sel = null; selIdx = -1; rend(); return; }
+  if (a === 'retirer') { delete deck[b.dataset.c]; rend(); return; }
   if (a === 'plus' || a === 'moins') { const c = b.dataset.c; deck[c] = Math.max(0, (deck[c] || 0) + (a === 'plus' ? 1 : -1)); rend(); return; }
   if (a === 'ia') { deck = {dracaufeu:1, salameche:4, psykokwak:2, pikachu:4, ronflex:3, 'energie-feu':14, 'energie-eau':4}; rend();
     const z = document.querySelector('#gm-page .legal'); if (z) z.insertAdjacentHTML('afterbegin', '<div class="ex-note">Proposition de ton IA (Claude) : priorité au Feu, 18 énergies, Ronflex comme mur. Toutes les cartes sont dans ta collection.</div>'); return; }

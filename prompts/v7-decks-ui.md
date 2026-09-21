@@ -71,8 +71,9 @@ Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_va
 ## 3. Mission
 
 1. Page `/jeu/decks` et `/jeu/decks/[id]` conformes à la maquette du jeu.
-2. Glisser-déposer ou clic pour ajouter et retirer, compteurs en direct, messages de légalité.
+2. Glisser-déposer ou clic pour ajouter, **retirer un exemplaire** et **retirer complètement une carte du deck** (bouton dédié, pas seulement le décrément), compteurs en direct, messages de légalité.
 3. Tests d'interface et un e2e « construire un deck légal à partir de sa collection ».
+4. Sur « Mes decks » : dupliquer et **supprimer un deck**, avec confirmation ; un deck supprimé ne doit pas disparaître d'une partie en cours.
 
 ## 4. Risques & pièges
 
