@@ -90,7 +90,7 @@ _Ce qui rend le produit meilleur que la concurrence, une fois le socle en servic
 | Lot | Prio | Titre | Couloir | Prévu | Dépend de | Décision | Statut | Prompt |
 |---|---|---|---|---|---|---|---|---|
 | `v4-insights-run` | P1 | Génération des fiches : 2 anecdotes en français et règles de jeu, sur 80 % des cartes | CH2 (chimera) | 21 sept. → 22 sept. | v4-insights-batch | D4 | En cours | [prompt](prompts/v4-insights-run.md) |
-| `v6-contrefacon` | P2 | Détection des contrefaçons probables | CH2 (chimera) | 23 nov. → 2 déc. | v3-etat | — | Livré UAT | [prompt](prompts/v6-contrefacon.md) |
+| `v6-contrefacon` | P2 | Détection des contrefaçons probables | CH2 (chimera) | 23 nov. → 2 déc. | v3-etat | — | Livré | [prompt](prompts/v6-contrefacon.md) |
 | `v6-alertes` | P2 | Alertes de prix et récapitulatif hebdomadaire par e-mail | CH3 (chimera) | 23 nov. → 25 nov. | v4-dashboard | — | À faire | [prompt](prompts/v6-alertes.md) |
 | `v6-pwa` | P2 | Application mobile installable (PWA) et scan en direct | CH1 (chimera) | 23 nov. → 4 déc. | v5-prod | — | À faire | [prompt](prompts/v6-pwa.md) |
 | `v6-import-export` | P3 | Import/export CSV et liste de souhaits | DA1 (devAI) | 23 nov. → 27 nov. | v5-prod | — | Livré | [prompt](prompts/v6-import-export.md) |

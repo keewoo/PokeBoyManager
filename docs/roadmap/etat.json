@@ -2576,11 +2576,11 @@
       "attente": null
     },
     "v6-contrefacon": {
-      "statut": "livre_uat",
+      "statut": "livre",
       "machine": "Chimaera",
       "branche": "roadmap/v6-contrefacon",
       "debut_reel": "2026-09-22",
-      "fin_reelle": null,
+      "fin_reelle": "2026-09-22",
       "taches": {
         "dev": {
           "etat": "fait",
@@ -2613,9 +2613,9 @@
           "maj": "2026-09-22T09:57+0200"
         },
         "release_prod": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "PROD https://pokeboy.acx-connect.com — release 20260922-103233, commit 07b229c, CI verte (api/web/e2e) ; /api/health 200, bascule sans retour arriere, voisins kailo.life/ACX inchanges",
+          "maj": "2026-09-22T10:36+0200"
         },
         "backlog": {
           "etat": "fait",
@@ -2699,6 +2699,18 @@
           "quand": "2026-09-22T09:59+0200",
           "machine": "Chimaera",
           "evenement": "compte rendu publié",
+          "detail": ""
+        },
+        {
+          "quand": "2026-09-22T10:36+0200",
+          "machine": "Chimaera",
+          "evenement": "tâche release_prod → fait",
+          "detail": "PROD https://pokeboy.acx-connect.com — release 20260922-103233, commit 07b229c, CI verte (api/web/e2e) ; /api/health 200, bascule sans retour arriere, voisins kailo.life/ACX inchanges"
+        },
+        {
+          "quand": "2026-09-22T10:36+0200",
+          "machine": "Chimaera",
+          "evenement": "statut → livre",
           "detail": ""
         }
       ],
