@@ -108,8 +108,11 @@ python3 docs/roadmap/suivi.py compte-rendu v6-import-export --resume "…" --liv
 python3 docs/roadmap/suivi.py statut v6-import-export <livre_uat|attente_go_prod|livre|bloque>
 python3 docs/roadmap/suivi.py build
 git add docs/roadmap/etat.json docs/roadmap/ROADMAP.html BACKLOG.md prompts/ <tes fichiers>   # jamais git add -A
-git commit -m "v6-import-export: …" && git push -u origin roadmap/v6-import-export && gh pr create --fill
+git commit -m "v6-import-export: …" && git push -u origin roadmap/v6-import-export
+bash scripts/ouvrir-pr.sh roadmap/v6-import-export   # ouvre la PR, ou echoue en disant pourquoi
 ```
+
+**La PR n'est pas optionnelle** : sans elle, la CI ne tourne pas sur ton travail, et c'est la CI qui fait foi. Si `ouvrir-pr.sh` sort en erreur, tu NE conclus PAS que c'est sans importance : tu nommes le manque dans ton compte rendu et dans ton dernier message.
 
 Puis republie la page : lis l'artefact https://claude.ai/artifact/2w2cvcLhUGZdorHNVvTahy (action `read`) et publie `docs/roadmap/ROADMAP.html` avec ce même `url`.
 

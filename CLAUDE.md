@@ -797,6 +797,43 @@ via le modèle existant. Tests : `test_deck_parsing.py` (analyseur pur), `test_d
 frappe, carte hors catalogue, dry-run, CSRF), `test_deck_export.py` (round-trip texte, PDF valide,
 vignette réellement embarquée, 404).
 
+## ⛔ « L'outil est absent » : vérifie le PATH avant de le croire (2026-09-22)
+
+**Ce qui est arrivé.** Un lot lancé par `ssh devai 'nohup claude -p …'` est mort à la seconde :
+`claude: No such file or directory`, **journal de 41 octets**, aucune branche. Le même jour, deux
+lots ont écrit dans leur compte rendu « `gh` CLI absent de cette session » et se sont déclarés
+finis **sans PR, donc sans CI**.
+
+Les trois diagnostics étaient faux, et avaient **une seule cause** : `claude` et `gh` vivent dans
+`/opt/homebrew/bin`, que le PATH d'un **ssh non interactif** ne contenait pas. Les binaires étaient
+là depuis juillet.
+
+Corrigé le 22/09 dans le `~/.zshenv` de devAI, **en fin de PATH** et pas en tête : Homebrew fournit
+aussi `node`/`npm`/`npx`, et c'est `~/.local/node/bin` qui doit continuer de gagner.
+
+**La règle.** Avant de conclure qu'un outil manque : `command -v <outil>`, puis
+`ls /opt/homebrew/bin/<outil>`. Un binaire introuvable dans un shell non interactif n'est pas un
+binaire absent — et « absent » n'a jamais été une raison de livrer sans CI.
+
+### La PR n'est pas optionnelle
+
+`bash scripts/ouvrir-pr.sh <branche>` ouvre la PR du lot. Il ne se rabat jamais en silence :
+
+| Situation | Sortie |
+|---|---|
+| PR déjà ouverte | `0`, et il en donne l'URL |
+| Branche déjà fusionnée dans `main` | `0`, en le **disant** (vérifie alors la CI sur `main`) |
+| Jeton sans « Pull requests: write » | **`4`**, avec la cause nommée |
+| `gh` hors du PATH | **`3`**, avec le PATH fautif affiché |
+
+Un code ≠ 0 n'autorise pas à conclure : le lot passe en `bloque`, ou nomme le manque **dans son
+compte rendu ET dans son dernier message**. Sans PR, le workflow ne tourne pas sur ton travail
+(il se déclenche sur `pull_request` et sur `push: [main]`), et c'est la CI qui fait foi.
+
+**Limite connue au 22/09** : les deux jetons de la flotte sont fine-grained et **n'ont pas**
+`Pull requests: write` — `gh` lit et pousse, il n'ouvre pas de PR. Tant que ce n'est pas corrigé
+côté GitHub, `ouvrir-pr.sh` sort en `4` et le lot doit le dire.
+
 ## Règles de la flotte applicables ici (résumé de `~/.claude/CLAUDE.md`)
 
 - On construit sur chimera (32 Go, 16 threads) et on ne construit jamais sur la machine qui sert.

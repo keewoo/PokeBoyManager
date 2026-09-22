@@ -211,8 +211,12 @@ def prompt(plan: dict, it: dict) -> str:
           f"python3 docs/roadmap/suivi.py statut {i_id} <livre_uat|attente_go_prod|livre|bloque>",
           "python3 docs/roadmap/suivi.py build",
           f"git add docs/roadmap/etat.json docs/roadmap/ROADMAP.html BACKLOG.md prompts/ <tes fichiers>   # jamais git add -A",
-          f"git commit -m \"{i_id}: …\" && git push -u origin roadmap/{i_id} && gh pr create --fill",
+          f"git commit -m \"{i_id}: …\" && git push -u origin roadmap/{i_id}",
+          f"bash scripts/ouvrir-pr.sh roadmap/{i_id}   # ouvre la PR, ou echoue en disant pourquoi",
           "```", "",
+          "**La PR n'est pas optionnelle** : sans elle, la CI ne tourne pas sur ton travail, et c'est la CI qui fait foi. "
+          "Si `ouvrir-pr.sh` sort en erreur, tu NE conclus PAS que c'est sans importance : tu nommes le manque "
+          "dans ton compte rendu et dans ton dernier message.", "",
           f"Puis republie la page : lis l'artefact {ARTEFACT} (action `read`) et publie `docs/roadmap/ROADMAP.html` avec ce même `url`.", "",
           f"Dernier message : statut, grille, preuves, écarts au plan, ce qui attend JF.", ""]
     return "\n".join(L)
