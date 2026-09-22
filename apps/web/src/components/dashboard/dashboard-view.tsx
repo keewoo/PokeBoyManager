@@ -10,6 +10,7 @@ import { ApiError } from "@/lib/api/client";
 import { getDashboard, type DashboardMoverCard, type DashboardResponse } from "@/lib/api/dashboard";
 import { getProfile, type ProfileResponse } from "@/lib/api/profile";
 import { cardImageUrl } from "@/lib/api/validation";
+import { CardImage } from "@/components/card-image";
 
 import { DashboardValueChart } from "./value-chart";
 import { TotalValueDelta } from "./total-value-delta";
@@ -31,11 +32,11 @@ function MoverRow({ mover }: { mover: DashboardMoverCard }) {
       href={`/carte/${mover.card_id}`}
       className="flex items-center gap-3 rounded-md p-2 transition-colors hover:bg-secondary"
     >
-      {/* eslint-disable-next-line @next/next/no-img-element -- image servie par l'API */}
-      <img
+      <CardImage
         src={cardImageUrl(mover.card_id)}
         alt={mover.card_name}
         className="h-14 w-10 shrink-0 rounded object-cover"
+        label="—"
       />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-foreground">{mover.card_name}</p>
@@ -169,11 +170,11 @@ export function DashboardView() {
                 href={`/carte/${addition.card_id}`}
                 className="pbm-surface group rounded-md p-2 transition-shadow hover:shadow-[0_0_26px_rgba(255,215,0,0.32)]"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element -- image servie par l'API */}
-                <img
+                <CardImage
                   src={cardImageUrl(addition.card_id)}
                   alt={addition.card_name}
                   className="aspect-[63/88] w-full rounded object-cover"
+                  label="Pas d'image"
                 />
                 <p className="mt-2 truncate text-sm font-semibold text-foreground">
                   {addition.card_name}

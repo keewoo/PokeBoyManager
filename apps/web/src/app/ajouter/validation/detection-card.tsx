@@ -11,6 +11,7 @@ import {
   type CardSearchResult,
   type Detection,
 } from "@/lib/api/validation";
+import { CardImage } from "@/components/card-image";
 import { getApiBaseUrl } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
@@ -161,16 +162,11 @@ export function DetectionCard({
           className="aspect-[63/88] w-full rounded object-cover"
         />
         {selected && (
-          // eslint-disable-next-line @next/next/no-img-element -- image servie par l'API
-          <img
+          <CardImage
             src={cardImageUrl(selected.card_id)}
             alt="Image officielle du candidat sélectionné"
             className="aspect-[63/88] w-full rounded object-cover"
-            onError={(event) => {
-              // Image officielle indisponible (404 du proxy /img/cards/{id}) : masquer plutôt
-              // que l'icône d'image cassée « ? » constatée en production.
-              event.currentTarget.style.display = "none";
-            }}
+            label="Pas d'image officielle"
           />
         )}
       </div>

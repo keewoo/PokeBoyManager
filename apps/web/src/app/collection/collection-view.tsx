@@ -20,6 +20,7 @@ import {
   type CollectionSort,
 } from "@/lib/api/collection";
 import { cardImageUrl } from "@/lib/api/validation";
+import { CardImage } from "@/components/card-image";
 
 import { CollectionFiltersPanel } from "./collection-filters";
 import { ManualAddForm } from "./manual-add-form";
@@ -343,11 +344,11 @@ export function CollectionView() {
                     href={`/carte/${item.card_id}`}
                     className="group rounded-lg border border-border bg-card p-2 transition-colors hover:border-primary"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element -- image servie par l'API */}
-                    <img
+                    <CardImage
                       src={cardImageUrl(item.card_id)}
                       alt={item.card_name}
                       className="aspect-[63/88] w-full rounded object-cover"
+                      label="Pas d'image"
                     />
                     <p className="mt-2 truncate text-sm font-semibold text-foreground">
                       {item.card_name}

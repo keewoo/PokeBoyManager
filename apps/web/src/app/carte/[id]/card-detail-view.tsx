@@ -15,6 +15,7 @@ import {
   type MyCardItem,
 } from "@/lib/api/cards";
 import { cardImageUrl } from "@/lib/api/validation";
+import { CardImage } from "@/components/card-image";
 
 import { HistoryTab } from "./history-tab";
 import { InGameTab } from "./in-game-tab";
@@ -145,24 +146,24 @@ export function CardDetailView({ cardId }: { cardId: string }) {
               Ma photo
             </button>
           </div>
-          {imageMode === "officielle" && card.has_image ? (
-            // eslint-disable-next-line @next/next/no-img-element -- image servie par l'API
-            <img
-              src={cardImageUrl(card.id, "high")}
+          {/* `has_image` / `has_photo` évitent une requête vouée au 404 quand on sait
+              déjà qu'il n'y a rien ; `CardImage` couvre le cas où l'API l'annonce mais
+              que le proxy échoue quand même. */}
+          {imageMode === "officielle" ? (
+            <CardImage
+              src={card.has_image ? cardImageUrl(card.id, "high") : null}
               alt={card.name}
-              className="w-full rounded-lg border border-border object-cover"
-            />
-          ) : imageMode === "photo" && primaryItem?.has_photo ? (
-            // eslint-disable-next-line @next/next/no-img-element -- image servie par l'API
-            <img
-              src={collectionItemPhotoUrl(primaryItem.id)}
-              alt={`Photo de ${card.name}`}
-              className="w-full rounded-lg border border-border object-cover"
+              className="aspect-[63/88] w-full rounded-lg border border-border object-cover"
+              loading="eager"
             />
           ) : (
-            <div className="flex aspect-[63/88] w-full items-center justify-center rounded-lg border border-dashed border-border bg-card text-sm text-muted-foreground">
-              Aucune image disponible
-            </div>
+            <CardImage
+              src={primaryItem?.has_photo ? collectionItemPhotoUrl(primaryItem.id) : null}
+              alt={`Photo de ${card.name}`}
+              className="aspect-[63/88] w-full rounded-lg border border-border object-cover"
+              label="Aucune photo de toi"
+              loading="eager"
+            />
           )}
           <p className="mt-2 text-xs text-muted-foreground">
             Image officielle chargée depuis le catalogue.
