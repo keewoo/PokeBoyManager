@@ -6,9 +6,9 @@ import { getFeaturedCards } from "@/lib/api/featured-cards";
 
 import { HomeContent } from "./home-content";
 
-const TITLE = "PokeBoyManager — Photographie ta collection, suis sa valeur";
+const TITLE = "PokéBoy — Photographie ta collection, suis sa valeur";
 const DESCRIPTION =
-  "Photographie ton classeur de cartes Pokémon : l'IA de ton choix identifie chaque carte et PokeBoyManager suit sa valeur jour après jour. Espace privé, ta clé IA reste à toi.";
+  "Photographie ton classeur de cartes Pokémon : l'IA de ton choix identifie chaque carte et PokéBoy suit sa valeur jour après jour. Espace privé, ta clé IA reste à toi.";
 
 export const metadata: Metadata = {
   title: TITLE,

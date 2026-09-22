@@ -57,11 +57,19 @@ describe("AppShell", () => {
     expect(screen.queryByRole("link", { name: "Présentation" })).not.toBeInTheDocument();
   });
 
-  it("le sélecteur de thème a une étiquette accessible", () => {
+  // La charte définit une seule apparence : le sélecteur de thème a été retiré plutôt que
+  // laissé en place sans effet. L'en-tête ne porte plus qu'une marque, le logotype.
+  // La charte définit une seule apparence : le sélecteur de thème a été retiré plutôt que
+  // laissé en place sans effet. Dans une barre d'application, la marque est l'ICÔNE plus le
+  // mot-symbole — le logotype complet, qui porte sa signature, n'y serait pas lisible.
+  it("l'en-tête porte l'icône et le mot-symbole, et pas de sélecteur de thème", () => {
     renderShell(false);
+    const marque = screen.getByRole("link", { name: /PokéBoy — accueil/i });
+    expect(marque).toBeInTheDocument();
+    expect(marque.querySelector("img")).toHaveAttribute("src", "/icons/icon-192.png");
     expect(
-      screen.getByRole("button", { name: /passer au thème (clair|sombre)/i })
-    ).toBeInTheDocument();
+      screen.queryByRole("button", { name: /passer au thème (clair|sombre)/i })
+    ).not.toBeInTheDocument();
   });
 
   it("le bouton de menu mobile annonce son état via aria-expanded", async () => {

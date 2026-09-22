@@ -82,7 +82,7 @@ export default function DesignSystemPage() {
         </p>
         <h1 className="font-heading text-3xl font-bold text-foreground">Design system</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
-          Jetons de couleur, typographies et composants de base de PokeBoyManager. Cette page
+          Jetons de couleur, typographies et composants de base de PokéBoy. Cette page
           n&apos;est pas destinée aux utilisateurs finaux.
         </p>
       </header>
@@ -106,12 +106,12 @@ export default function DesignSystemPage() {
 
       <Section title="Typographies">
         <div className="flex flex-col gap-4">
-          <p className="font-heading text-4xl font-bold text-foreground">Bricolage Grotesque — titres</p>
+          <p className="font-heading text-4xl font-extrabold uppercase tracking-[0.06em] text-violet-clair">Exo 2 — titres de section</p>
           <p className="font-sans text-base text-foreground">
-            Instrument Sans — texte courant de l&apos;interface, lisible pour les descriptions et les formulaires.
+            Roboto — texte courant de l&apos;interface, lisible pour les descriptions et les formulaires.
           </p>
           <p className="font-mono text-lg text-foreground">JetBrains Mono — 142,00 € · +8,1 % · 006/198</p>
-          <p className="font-pixel text-sm text-foreground">Press Start 2P — logo uniquement</p>
+          <p className="pbm-titre text-sm">Press Start 2P — titres courts</p>
         </div>
       </Section>
 

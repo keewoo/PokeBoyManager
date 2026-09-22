@@ -78,7 +78,7 @@ export function LandingPage({ featuredCards }: { featuredCards: FeaturedCard[] }
         ))}
       </div>
 
-      <div className="mt-6 grid gap-2 rounded-xl border border-border bg-card p-5">
+      <div className="pbm-surface mt-6 grid gap-2 rounded-xl p-5">
         <h3 className="font-heading text-lg font-bold text-foreground">Apporte ta propre IA</h3>
         <p className="text-sm text-muted-foreground">
           Ta clé reste à toi : chiffrée, jamais affichée en entier, utilisée seulement pour tes photos.
