@@ -32,7 +32,15 @@ jobs:
           if git merge-base --is-ancestor "origin/$BRANCHE" origin/main; then
             echo "Branche deja fusionnee dans main — rien a ouvrir"; exit 0
           fi
-          SORTIE=$(gh pr create --base main --head "$BRANCHE" --fill 2>&1); RC=$?
+          # La PR est signee « github-actions[bot] ». GitHub met alors l'execution de CI
+          # en « action_required » : elle attend une approbation humaine. On l'ecrit DANS
+          # la PR, sinon « PR ouverte » se lit comme « CI passee » — exactement la
+          # confusion que ce depot a deja payee quatre fois.
+          NOTE=$(printf '%s\n\n---\n%s\n%s\n' \
+            "PR ouverte automatiquement par \`pr-auto.yml\`." \
+            "> **La CI de cette PR attend une approbation** (execution en \`action_required\`)," \
+            "> parce que l'auteur est un bot. Tant qu'elle n'est pas approuvee, **rien n'est verifie**.")
+          SORTIE=$(gh pr create --base main --head "$BRANCHE" --title "$(git log -1 --format=%s)" --body "$NOTE" 2>&1); RC=$?
           if [ "$RC" -eq 0 ]; then echo "$SORTIE"; exit 0; fi
           echo "$SORTIE"
           case "$SORTIE" in
