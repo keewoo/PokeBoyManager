@@ -17,12 +17,20 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from pbm_api.ai.errors import AIProviderError
+from pbm_api.ai.factory import create_provider
 from pbm_api.auth.dependencies import get_current_user, require_csrf
 from pbm_api.db import get_session
-from pbm_api.decks import card_search, import_service, replacements, service
+from pbm_api.decks import ai_builder, card_search, import_service, replacements, service
 from pbm_api.decks import export as export_mod
+from pbm_api.decks.ai_builder import ProposalOptions, ProviderFactory
 from pbm_api.decks.card_search import DeckCardSearchFilters, DeckCardSort
-from pbm_api.decks.errors import DeckCardNotFoundError, DeckNotFoundError
+from pbm_api.decks.errors import (
+    DeckCardNotFoundError,
+    DeckNotFoundError,
+    EmptyCollectionError,
+    NoAiKeyForDeckError,
+)
 from pbm_api.decks.export import ExportCard
 from pbm_api.decks.import_service import ImportResult
 from pbm_api.decks.legality import DeckLegality
@@ -39,6 +47,9 @@ from pbm_api.decks.schemas import (
     DeckHistoryResponse,
     DeckLegalityOut,
     DeckListResponse,
+    DeckProposalCorrectionOut,
+    DeckProposalExplanationOut,
+    DeckProposalResponse,
     DeckReplacementItem,
     DeckReplacementsResponse,
     DeckStatBucketOut,
@@ -52,6 +63,7 @@ from pbm_api.decks.schemas import (
     ImportReportOut,
     LegalityIssueOut,
     MarkAlertsReadRequest,
+    ProposeDeckRequest,
     SetDeckCardRequest,
     UpdateDeckRequest,
 )
@@ -71,6 +83,12 @@ _storage = build_storage()
 
 def get_storage() -> StorageBackend:
     return _storage
+
+
+def get_deck_ai_provider_factory() -> ProviderFactory:
+    """Fabrique de fournisseur IA, injectée par dépendance (comme `card_insights`) : la suite
+    automatisée la remplace par un double déterministe — aucune clé IA réelle sur chimera."""
+    return create_provider
 
 
 # Taille de vignette servie au PDF — la basse définition suffit et pèse peu.
@@ -374,6 +392,74 @@ async def duplicate_deck(
         raise HTTPException(status.HTTP_404_NOT_FOUND, DECK_NOT_FOUND_MESSAGE) from None
     deck, loaded, report = await service.deck_detail(session, current_user, copy.id)
     return _detail_response(deck, loaded, report)
+
+
+DECK_NO_AI_KEY_MESSAGE = (
+    "Aucune clé IA par défaut : choisis un fournisseur avec une clé dans ton profil pour "
+    "utiliser l'assistant."
+)
+DECK_EMPTY_COLLECTION_MESSAGE = (
+    "Ta collection ne contient aucune carte jouable dans ce format : ajoute des cartes avant de "
+    "demander un deck à l'IA."
+)
+DECK_AI_PROVIDER_ERROR_MESSAGE = "La proposition de deck a échoué : {}"
+
+
+@router.post("/{deck_id}/propose", response_model=DeckProposalResponse)
+async def propose_deck(
+    deck_id: uuid.UUID,
+    payload: ProposeDeckRequest,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    _csrf: Annotated[None, Depends(require_csrf)],
+    provider_factory: Annotated[ProviderFactory, Depends(get_deck_ai_provider_factory)],
+) -> DeckProposalResponse:
+    """Assistant IA (mission `v7-deck-ia`) : un seul appel IA propose un deck légal PRIS DANS la
+    collection du joueur, l'explique carte par carte, puis réécrit ce deck (existant). La
+    proposition brute est corrigée (possession, 4 exemplaires, Pokémon de base, taille) avant
+    d'être écrite — jamais montrée telle quelle — et sa légalité est recalculée côté serveur.
+    Un deck d'un autre utilisateur renvoie 404 (jamais 403)."""
+    options = ProposalOptions(
+        types=[(t.type, t.share) for t in payload.types],
+        energy_types=list(payload.energy_types),
+        style=payload.style,
+        must_include=list(payload.must_include),
+        size=payload.size,
+    )
+    try:
+        outcome = await ai_builder.propose_deck(
+            session, current_user, deck_id, options, provider_factory
+        )
+    except DeckNotFoundError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, DECK_NOT_FOUND_MESSAGE) from None
+    except NoAiKeyForDeckError:
+        raise HTTPException(status.HTTP_409_CONFLICT, DECK_NO_AI_KEY_MESSAGE) from None
+    except EmptyCollectionError:
+        raise HTTPException(status.HTTP_409_CONFLICT, DECK_EMPTY_COLLECTION_MESSAGE) from None
+    except AIProviderError as exc:
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY, DECK_AI_PROVIDER_ERROR_MESSAGE.format(exc.user_message)
+        ) from exc
+
+    deck, loaded, report = await service.deck_detail(session, current_user, deck_id)
+    return DeckProposalResponse(
+        deck=_detail_response(deck, loaded, report),
+        explanations=[
+            DeckProposalExplanationOut(
+                card_id=c.card_id, card_name=c.name, quantity=c.quantity, reason=c.reason
+            )
+            for c in outcome.result.cards
+        ],
+        corrections=[
+            DeckProposalCorrectionOut(code=c.code, message=c.message)
+            for c in outcome.result.corrections
+        ],
+        summary=outcome.summary,
+        provider=outcome.provider,
+        model=outcome.model,
+        input_tokens=outcome.input_tokens,
+        output_tokens=outcome.output_tokens,
+    )
 
 
 @router.put("/{deck_id}/cards/{card_id}", response_model=DeckDetail)

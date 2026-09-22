@@ -881,3 +881,44 @@ les quantités) :
 Faute de champ `evolveFrom` au catalogue, la « complétude » des lignes d'évolution se réduit à la
 répartition par stade et au signal « évolutions sans Pokémon de base » — jamais une reconstruction
 devinée des chaînes d'évolution (les chiffres viennent du catalogue, pas du modèle).
+
+## Assistant IA de construction de deck (lot `v7-deck-ia`)
+
+`POST /me/decks/{deck_id}/propose` (borné au propriétaire, 404 sinon ; CSRF requis) : « fais-moi un
+deck Feu avec mes cartes » évite la page blanche. Le corps porte les vœux du joueur
+(`ProposeDeckRequest`) — types privilégiés et leur part, Énergies souhaitées, style, inclusions
+imposées (`must_include`), taille visée — tous facultatifs. Le service `pbm_api.decks.ai_builder`
+fait **un seul appel IA** (principe « dès le premier tir »), avec **la clé de l'utilisateur** (D4 :
+sans fournisseur par défaut → 409, jamais une clé plateforme).
+
+Chaîne (`ai_builder.propose_deck`) :
+
+1. **Candidats** : cartes **possédées** (hors contrefaçon) **ET dans le format du deck** — ce
+   filtre garantit d'emblée possession et format ; plus les Énergies de base du catalogue (une par
+   type, fournies, D10). Triées par pertinence (Pokémon des types demandés d'abord), coupées à
+   `MAX_CANDIDATES=150` pour borner le coût en jetons (la coupe est tracée, jamais silencieuse).
+2. **Prompt numéroté** : le modèle choisit par `ref` (l'indice entre crochets), jamais par UUID ni
+   nom libre — un `ref` hors bornes est simplement ignoré, il ne peut pas inventer une carte hors
+   collection. Sortie structurée `DeckProposal` (cartes = `ref`+quantité+explication d'une ligne).
+3. **Réconciliation** (`reconcile`, fonction **pure**, testée sans base) : applique les mêmes règles
+   que `pbm_api.decks.legality` — possession, 4 exemplaires par nom, au moins un Pokémon de base,
+   taille exacte — et **corrige** ce qui peut l'être (compléter en Énergies de base selon les types
+   des Pokémon retenus, retirer les surnuméraires), en gardant une **trace** de chaque correction
+   (codes `owned_cap`, `copy_cap`, `basic_pokemon_added`, `energy_fill`, `trimmed_oversize`…). La
+   proposition brute n'est **jamais** écrite telle quelle (risque du lot).
+4. **Écriture + relecture** : le deck (existant) est réécrit, puis sa légalité est **recalculée par
+   `service.deck_detail`** (source unique) — jamais devinée. La réponse (`DeckProposalResponse`)
+   porte le deck relu, les explications par carte, la trace des corrections, le résumé du modèle, et
+   le **coût en jetons** (`input_tokens`/`output_tokens`, mission : « mesure du coût moyen »).
+
+**Isolation** : un deck d'un autre utilisateur lève `DeckNotFoundError` → 404 (jamais 403) ; les
+candidats et la possession sont toujours calculés pour `user.id`. Une collection sans carte jouable
+en format → 409 (`EmptyCollectionError`), jamais un deck vide inventé.
+
+Tests : `apps/api/tests/test_deck_ai_builder.py` (réconciliation pure : complètement en Énergies,
+plafond 4, plafond possession, `ref` inconnu ignoré, ajout d'un Pokémon de base, `must_include`,
+élagage) et `apps/api/tests/test_deck_ai_routes.py` (route, fournisseur IA simulé par dépendance,
+un seul appel, légalité recalculée, accès croisé B→404, 409 sans clé / collection vide). Front :
+`apps/web/src/app/jeu/decks/[id]/deck-ai-assistant.tsx`, intégré au constructeur (l'écran remonte
+`response.deck` au parent — une seule vérité de légalité, côté serveur). Coût réel (clé requise,
+hors chimera) : `apps/api/scripts/measure_deck_ia_cost.py`.

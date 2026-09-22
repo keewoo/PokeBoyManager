@@ -332,3 +332,66 @@ class DeckStatsOut(BaseModel):
     duplicate_copies: int
     duplicate_ratio: float
     value: DeckValueOut
+
+
+# ---- assistant IA de construction (mission `v7-deck-ia`) ----
+
+
+class DeckTypePreferenceIn(BaseModel):
+    """Un type privilégié et sa part souhaitée (facultative, en %)."""
+
+    type: str = Field(min_length=1, max_length=32)
+    share: int | None = Field(default=None, ge=0, le=100)
+
+
+class ProposeDeckRequest(BaseModel):
+    """Vœux du joueur pour l'assistant IA : types privilégiés (et leur part), Énergies souhaitées,
+    style de jeu, inclusions imposées, taille visée. Tout est facultatif : sans vœu, l'IA compose
+    au mieux à partir de la collection."""
+
+    types: list[DeckTypePreferenceIn] = Field(default_factory=list, max_length=8)
+    energy_types: list[str] = Field(default_factory=list, max_length=8)
+    style: str | None = Field(default=None, max_length=200)
+    must_include: list[uuid.UUID] = Field(default_factory=list, max_length=20)
+    size: int = Field(default=60, ge=40, le=60)
+
+    @field_validator("style")
+    @classmethod
+    def _strip_style(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        return stripped or None
+
+
+class DeckProposalExplanationOut(BaseModel):
+    """L'explication d'UNE ligne pour une carte du deck proposé (mission : « explique chaque
+    carte en une ligne »)."""
+
+    card_id: uuid.UUID
+    card_name: str
+    quantity: int
+    reason: str
+
+
+class DeckProposalCorrectionOut(BaseModel):
+    """Une correction automatique appliquée à la proposition brute du modèle — la trace de ce qui
+    a été ajusté (jamais un repli silencieux)."""
+
+    code: str
+    message: str
+
+
+class DeckProposalResponse(BaseModel):
+    """Le deck (existant) réécrit par l'assistant, avec sa légalité recalculée côté serveur, les
+    explications par carte, la trace des corrections et le coût en jetons de l'appel (mission :
+    « mesure du coût moyen d'une proposition »)."""
+
+    deck: DeckDetail
+    explanations: list[DeckProposalExplanationOut]
+    corrections: list[DeckProposalCorrectionOut]
+    summary: str | None
+    provider: str
+    model: str
+    input_tokens: int
+    output_tokens: int

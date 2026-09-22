@@ -34,6 +34,7 @@ import {
   type DeckReplacement,
 } from "@/lib/api/decks";
 
+import { DeckAiAssistant } from "./deck-ai-assistant";
 import { DeckStatsPanel } from "./deck-stats-panel";
 
 const DECK_SIZE = 60;
@@ -861,6 +862,8 @@ export function DeckBuilderView({ deckId }: { deckId: string }) {
           <FormNotice variant="error">{error}</FormNotice>
         </div>
       )}
+
+      <DeckAiAssistant deckId={deckId} onProposed={setDeck} disabled={mutating} />
 
       <div ref={searchRef} className="mt-4 grid gap-4 lg:grid-cols-2">
         <DeckCardSearch

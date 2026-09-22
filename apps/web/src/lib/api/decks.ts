@@ -329,3 +329,48 @@ export type DeckStats = {
 export function fetchDeckStats(deckId: string): Promise<DeckStats> {
   return apiGet<DeckStats>(`/me/decks/${deckId}/stats`);
 }
+
+// ---- assistant IA de construction (mission `v7-deck-ia`) ----
+// Miroir de `ProposeDeckRequest` / `DeckProposalResponse`
+// (apps/api/src/pbm_api/decks/schemas.py). La proposition est corrigée puis écrite côté serveur,
+// et sa légalité recalculée là-bas : l'écran affiche `response.deck` tel quel, il ne le devine pas.
+
+export type DeckTypePreference = { type: string; share?: number | null };
+
+export type ProposeDeckRequest = {
+  types?: DeckTypePreference[];
+  energy_types?: string[];
+  style?: string | null;
+  must_include?: string[];
+  size?: number;
+};
+
+export type DeckProposalExplanation = {
+  card_id: string;
+  card_name: string;
+  quantity: number;
+  reason: string;
+};
+
+export type DeckProposalCorrection = {
+  code: string;
+  message: string;
+};
+
+export type DeckProposalResponse = {
+  deck: DeckDetail;
+  explanations: DeckProposalExplanation[];
+  corrections: DeckProposalCorrection[];
+  summary: string | null;
+  provider: string;
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+};
+
+export function proposeDeck(
+  deckId: string,
+  payload: ProposeDeckRequest
+): Promise<DeckProposalResponse> {
+  return apiJson<DeckProposalResponse>("POST", `/me/decks/${deckId}/propose`, payload);
+}
