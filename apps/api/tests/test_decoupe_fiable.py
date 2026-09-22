@@ -25,7 +25,10 @@ _BLANC = (245, 245, 245)
 
 
 def _deux_cartes_empilees() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Deux cartes qui se touchent, l'une au-dessus de l'autre. Rend le canevas et les deux quads."""
+    """Deux cartes qui se touchent, l'une au-dessus de l'autre.
+
+    Rend le canevas et les deux quads.
+    """
     rng = np.random.default_rng(20260922)
     canevas = noisy_background(rng, (760, 420), (38, 38, 42))
     haut = card_quad((210.0, 150.0), 0.0)
@@ -115,4 +118,6 @@ class TestSurLeJeuSynthetiqueComplet:
         for fraction in (0.2, 0.35, 0.5, 0.65, 0.8):
             quad = card_quad((210.0, 150.0 + CARD_H * fraction), 0.0)
             verdict = assess_crop(warp_card(canevas, quad))
-            assert verdict.seam is True, f"décalage de {fraction:.0%} non détecté ({verdict.score:.3f})"
+            assert verdict.seam is True, (
+                f"décalage de {fraction:.0%} non détecté ({verdict.score:.3f})"
+            )
