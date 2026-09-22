@@ -57,12 +57,25 @@ export type Detection = {
   // Verdict sur le recadrage (lot `h1-decoupe-fiable`). `seam` vrai = une arête droite
   // traverse le cadre : deux cartes s'y partagent probablement la place, et le nom proposé
   // vient peut-être de la voisine. `null` pour les détections antérieures au lot.
-  crop_quality: { seam: boolean; score: number; axis: string | null } | null;
+  crop_quality: {
+    seam: boolean;
+    score: number;
+    axis: string | null;
+    // Part du cadre qui n'est pas la carte visée : jointure avec la voisine, ou carte qui
+    // déborde de la photo. C'est le seuil de 30 % de la règle de seconde passe (JF, 22/09).
+    truncated?: number;
+    reason?: string | null;
+  } | null;
 };
 
-/** Une découpe à cheval sur deux cartes : rien n'y est présélectionné, l'utilisateur tranche. */
+/** Seuil de la règle de JF : au-delà, ce qu'on identifie n'est plus la carte. */
+export const SEUIL_TRONCATURE = 0.3;
+
+/** Découpe à cheval, ou carte amputée de 30 % : rien n'est présélectionné, l'utilisateur tranche. */
 export function decoupeDouteuse(detection: Detection): boolean {
-  return detection.crop_quality?.seam === true;
+  const qualite = detection.crop_quality;
+  if (!qualite) return false;
+  return qualite.seam === true || (qualite.truncated ?? 0) >= SEUIL_TRONCATURE;
 }
 
 export type JobStatus = "queued" | "running" | "succeeded" | "failed";

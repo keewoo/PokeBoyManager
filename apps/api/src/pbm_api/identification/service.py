@@ -360,8 +360,11 @@ async def _identify_one(
 
 
 async def run_identification_for_upload(
-    db: AsyncSession, storage: StorageBackend, upload: Upload
+    db: AsyncSession, storage: StorageBackend, upload: Upload, *, force_ai: bool = False
 ) -> IdentificationRunSummary:
+    """`force_ai` : seconde passe (lot `h1-seconde-passe-ia`). L'index visuel est mis de côté —
+    JF demande que l'IA fasse ET la découpe ET la reconnaissance, et une correspondance visuelle
+    confiante court-circuiterait l'appel IA."""
     result = await db.execute(
         select(Detection).where(
             Detection.upload_id == upload.id, Detection.status == DetectionStatus.pending
@@ -384,7 +387,7 @@ async def run_identification_for_upload(
     # Un chargement pour tout l'envoi (potentiellement plusieurs cartes), pas par carte : le coût
     # de lecture de `card_visual_index` (~20 000 × 2 lignes) est amorti sur toutes les détections
     # de cette photo (mission point 5 : recherche < 200 ms par carte une fois l'index en mémoire).
-    visual_index = await VisualIndex.load(db)
+    visual_index = VisualIndex.empty() if force_ai else await VisualIndex.load(db)
 
     identified = 0
     cache_hits = 0

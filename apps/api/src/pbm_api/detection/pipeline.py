@@ -99,21 +99,24 @@ async def run_detection(
     ai_provider: AIProvider | None,
     ai_model: str | None,
     ai_media_type: str | None,
+    force_ai: bool = False,
 ) -> DetectionRunResult:
+    """`force_ai` : seconde passe (lot `h1-seconde-passe-ia`). On ne demande même pas son avis à
+    OpenCV — le premier passage a déjà montré que sa découpe ne tenait pas."""
     image = decode_image(image_bytes)
 
-    quads = find_card_quads(image)
+    quads = [] if force_ai else find_card_quads(image)
     method = "opencv"
     ai_usage: ExtractionUsage | None = None
 
-    if not _is_plausible(image, quads) and ai_provider is not None:
+    if (force_ai or not _is_plausible(image, quads)) and ai_provider is not None:
         boxes, ai_usage = await detect_boxes_with_llm(
             ai_provider,
             ImageInput(data=image_bytes, media_type=ai_media_type or "image/jpeg"),
             model=ai_model,
         )
         quads = [refine_box_with_opencv(image, box) for box in boxes]
-        method = "llm_fallback"
+        method = "ia_complete" if force_ai else "llm_fallback"
 
     crops = [warp_card(image, quad) for quad in quads]
     annotated = draw_control_image(image, quads)
@@ -124,5 +127,11 @@ async def run_detection(
         annotated_jpeg=annotated,
         method=method,
         ai_usage=ai_usage,
-        qualities=[assess_crop(crop) for crop in crops],
+        # Le quadrilatère et la taille de la photo servent à mesurer ce qui déborde du
+        # cadre : une carte coupée par le bord de la photo est tronquée sans qu'aucune
+        # jointure n'apparaisse dans le recadrage.
+        qualities=[
+            assess_crop(crop, quad=quad, image_shape=image.shape)
+            for crop, quad in zip(crops, quads, strict=True)
+        ],
     )
