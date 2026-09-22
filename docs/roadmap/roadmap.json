@@ -3323,6 +3323,40 @@
         "maquette": "étude, aucun écran produit",
         "securite": "étude, aucun code produit"
       }
+    },
+    {
+      "id": "h1-decoupe-fiable",
+      "debut": "2026-09-22",
+      "fin": "2026-09-22",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 4,
+      "titre": "Une découpe fausse se voit, et le dit",
+      "gain": "Une carte découpée à cheval sur sa voisine est présentée comme une carte reconnue : l'utilisateur valide un nom qui n'est pas le sien, ou renonce. C'est le premier geste du produit, il doit être propre.",
+      "fonctionnalites": "L'affinage d'une boîte IA retient la carte VISÉE et non la plus grande de la zone ; chaque recadrage porte une note de qualité (jointure traversante détectée) ; une découpe douteuse est annoncée comme telle à l'écran de validation, sans candidat présélectionné.",
+      "risques": "Le contrôle du rapport hauteur/largeur (±12 %) ne voit RIEN d'une découpe décalée : un cadre glissé d'une demi-carte garde un rapport valide. Le garde-fou doit donc porter sur le CONTENU du recadrage, pas sur sa forme. Seuil trop strict = cartes valides rejetées : on signale, on ne supprime jamais.",
+      "tenants": "Détection, identification, écran de validation.",
+      "aboutissants": "Confiance dans le premier geste du produit.",
+      "refs": [
+        "captures JF du 22/09 18h22 : #7 « Bronzor », recadrage à cheval sur un Arcanine V, candidats tous « Archéomire », confiance 34 %"
+      ],
+      "mission": [
+        "`refine_box_with_opencv` retient le quad qui RECOUVRE le mieux la boîte demandée, pas le plus grand contour de la sous-image : quand la boîte est décalée, c'est la carte voisine qui gagnait.",
+        "Note de qualité par recadrage : détecter une arête droite traversante à l'intérieur du cadre (la jointure entre deux cartes), la stocker avec la détection.",
+        "L'API remonte la note ; l'écran de validation annonce « découpe douteuse » et ne présélectionne aucun candidat dans ce cas.",
+        "Tests sur photos synthétiques : recadrage juste, recadrage décalé d'une demi-carte, carte seule sur fond chargé — le jeu déterministe existe déjà (`detection/synthetic.py`)."
+      ],
+      "livrables": [
+        "une découpe à cheval n'est plus présentée comme une carte reconnue",
+        "note de qualité de recadrage, visible à l'écran"
+      ],
+      "taches_na": {},
+      "couloir": "DA2",
+      "decision": null,
+      "dependances": [],
+      "vague": "H1",
+      "piste": "F"
     }
   ]
 }

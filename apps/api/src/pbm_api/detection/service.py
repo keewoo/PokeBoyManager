@@ -63,13 +63,21 @@ async def run_detection_for_upload(
 
     await storage.put(_control_key(upload), result.annotated_jpeg, "image/jpeg")
 
-    for index, (quad, crop) in enumerate(zip(result.quads, result.crops, strict=True)):
+    for index, (quad, crop, quality) in enumerate(
+        zip(result.quads, result.crops, result.qualities, strict=True)
+    ):
         crop_key = _crop_key(upload, index)
         await storage.put(crop_key, encode_jpeg(crop), "image/jpeg")
         db.add(
             Detection(
                 upload_id=upload.id,
-                bbox={"reading_order": index, "points": quad.tolist()},
+                # `crop_quality` voyage dans `bbox`, qui est déjà le sac de métadonnées de
+                # découpe : pas de migration pour un champ que seul l'écran de validation lit.
+                bbox={
+                    "reading_order": index,
+                    "points": quad.tolist(),
+                    "crop_quality": quality.as_dict(),
+                },
                 crop_s3_key=crop_key,
                 status=DetectionStatus.pending,
             )

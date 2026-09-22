@@ -11,7 +11,8 @@ from pbm_api.ai.base import AIProvider, ExtractionUsage, ImageInput
 from pbm_api.detection.annotate import draw_control_image
 from pbm_api.detection.geometry import warp_card
 from pbm_api.detection.llm_fallback import NormalizedBox, denormalize_box, detect_boxes_with_llm
-from pbm_api.detection.opencv_pipeline import find_card_quads, has_unclaimed_regions
+from pbm_api.detection.opencv_pipeline import find_card_quads, has_unclaimed_regions, rect_iou
+from pbm_api.detection.quality import CropQuality, assess_crop
 
 # Marge ajoutée autour d'une boîte LLM avant l'affinage OpenCV local (mission point 2) : la
 # boîte du modèle vision est rarement pixel-parfaite, cette marge laisse le contour réel de la
@@ -30,6 +31,9 @@ class DetectionRunResult:
     annotated_jpeg: bytes
     method: str  # "opencv" | "llm_fallback"
     ai_usage: ExtractionUsage | None
+    # Un verdict par recadrage (lot `h1-decoupe-fiable`) : une découpe à cheval sur deux cartes
+    # a un rapport hauteur/largeur parfaitement valide, seul son contenu la trahit.
+    qualities: list[CropQuality]
 
 
 def decode_image(data: bytes) -> np.ndarray:
@@ -67,9 +71,20 @@ def refine_box_with_opencv(image: np.ndarray, box: NormalizedBox) -> np.ndarray:
     sub_image = image[crop_y0:crop_y1, crop_x0:crop_x1]
     local_quads = find_card_quads(sub_image) if sub_image.size else []
     if local_quads:
-        # Le plus grand contour plausible de la sous-image est la carte visée par la boîte.
-        best = max(local_quads, key=cv2.contourArea)
-        return best + np.array([crop_x0, crop_y0], dtype=np.float32)
+        # On retient le contour qui RECOUVRE le mieux la boîte demandée, pas le plus grand de la
+        # sous-image (lot `h1-decoupe-fiable`). La marge d'affinage fait entrer un morceau des
+        # cartes voisines dans la zone analysée : quand la boîte du modèle est un peu décalée,
+        # la voisine y est souvent plus complète — donc plus grande — et c'était elle qui
+        # gagnait. Une carte reconnue sous le nom de sa voisine, constaté en production le 22/09.
+        cible = (x_min, y_min, box_width, box_height)
+        decale = np.array([crop_x0, crop_y0], dtype=np.float32)
+
+        def recouvrement(quad: np.ndarray) -> float:
+            x, y, w, h = cv2.boundingRect((quad + decale).astype(np.float32))
+            return rect_iou((x, y, w, h), cible)
+
+        best = max(local_quads, key=recouvrement)
+        return best + decale
 
     # Aucun contour net dans la boîte (pochette/reflet) : le rectangle du LLM devient le quad,
     # tel quel — mieux qu'aucune détection.
@@ -104,5 +119,10 @@ async def run_detection(
     annotated = draw_control_image(image, quads)
 
     return DetectionRunResult(
-        quads=quads, crops=crops, annotated_jpeg=annotated, method=method, ai_usage=ai_usage
+        quads=quads,
+        crops=crops,
+        annotated_jpeg=annotated,
+        method=method,
+        ai_usage=ai_usage,
+        qualities=[assess_crop(crop) for crop in crops],
     )

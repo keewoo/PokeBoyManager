@@ -16,6 +16,7 @@ import {
   subscribeToUploadEvents,
   type Detection,
   type UploadDetail,
+  decoupeDouteuse,
 } from "@/lib/api/validation";
 import { getApiBaseUrl } from "@/lib/config";
 
@@ -395,7 +396,13 @@ export function ValidationView({ uploadIds }: { uploadIds: string[] }) {
               key={row.detection.id}
               detection={row.detection}
               isActive={row.detection.id === activeId}
-              selectedCandidateIndex={selectedCandidate[row.detection.id] ?? 0}
+              selectedCandidateIndex={
+                selectedCandidate[row.detection.id] ??
+                // Découpe douteuse : on ne propose RIEN. Un index hors bornes laisse
+                // `selected` à null, donc « Valider » désactivé tant que l'utilisateur n'a
+                // pas choisi — plutôt qu'un nom qui vient peut-être de la carte voisine.
+                (decoupeDouteuse(row.detection) ? -1 : 0)
+              }
               manualCard={manualCards[row.detection.id] ?? null}
               form={forms[row.detection.id] ?? defaultForm(row.detection)}
               onSelectCandidate={(index) =>

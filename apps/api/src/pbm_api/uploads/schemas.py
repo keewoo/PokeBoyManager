@@ -48,6 +48,9 @@ class DetectionResponse(BaseModel):
     # "visuel" (index visuel, aucun appel IA), "ia", "aucun" ou `None` (pas encore traitée) —
     # mission `v3-identification-visuelle` : sert uniquement au badge « reconnue sans IA ».
     identification_method: str | None
+    # `{"seam": bool, "score": float, "axis": str|None}` (lot `h1-decoupe-fiable`) — `None` pour
+    # les détections antérieures au lot et pour les lignes d'import CSV, qui n'ont pas de photo.
+    crop_quality: dict | None = None
 
 
 class ListDetectionsResponse(BaseModel):
