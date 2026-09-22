@@ -19,6 +19,9 @@ Rappels qui coûtent cher quand on les oublie :
   est un lot à part — ne pas repeindre le produit au passage d'un autre lot.
 - Une couleur nouvelle se déclare en jeton dans `apps/web/src/app/globals.css`, jamais en dur.
   Le violet `#9D00FF` ne sert **jamais** de couleur de texte (2,8:1) : `#C77DFF` pour les titres.
+- **L'icône et le logotype ne cohabitent jamais dans un même en-tête** : le logotype porte
+  déjà son symbole. En-tête et connexion → le logotype ; barre d'application, onglet,
+  avatar → l'icône.
 - Identité propre : **aucun logo officiel Pokémon**. Les personnages de `public/personnages/`
   restent réservés aux **maquettes internes** tant que JF n'a pas tranché leur usage public.
 - Le middleware ne lit que la **présence** du cookie de session : `NEXT_PUBLIC_SESSION_COOKIE_NAME`

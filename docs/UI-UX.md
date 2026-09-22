@@ -63,6 +63,16 @@ branches, parcimonieuses.
 | 9 personnages, 512 px | `apps/web/public/personnages/` | une **présence**, jamais un décor : état vide, réussite à fêter, attente longue. **Un seul par écran** |
 | Logotype | `apps/web/public/brand/pokeboy-logotype.png` | fond **transparent**. Ne jamais réintroduire une version sur fond plein : posée sur un dégradé, elle se voit comme un rectangle collé |
 
+### Icône et logotype ne cohabitent pas
+
+Ce sont **deux marques**, pas une marque et son accessoire : le logotype porte déjà son symbole
+(le classeur et la Master Ball), son nom et sa signature. Posés côte à côte dans un même en-tête,
+ils se concurrencent et le bandeau devient une planche de logos.
+
+- En-tête de page, écran de connexion, pied de page de marque → **le logotype seul**.
+- Barre d'application, onglet du navigateur, écran d'accueil du téléphone, avatar → **l'icône
+  seule**, sans le mot « PokéBoy » à côté si le logotype est déjà visible ailleurs sur l'écran.
+
 Le halo n'est **pas** dans les fichiers : il est posé en CSS (`filter: drop-shadow`), ce qui le rend
 teintable écran par écran et cohérent d'un écran à l'autre. Correspondance icône → emploi et règle
 des personnages : `apps/web/public/VISUELS.md`.
