@@ -5798,21 +5798,21 @@
       "compte_rendu": {}
     },
     "h1-decoupe-fiable": {
-      "statut": "a_faire",
+      "statut": "livre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
-      "fin_reelle": null,
+      "fin_reelle": "2026-09-22",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "refine_box_with_opencv retient le contour qui RECOUVRE le mieux la boite demandee (rect_iou) et non le plus grand du voisinage ; nouveau module detection/quality.py (jointure traversante) ; verdict stocke dans bbox.crop_quality, remonte par l API, et une decoupe douteuse ne preselectionne rien - donc ecartee aussi de confirm-all.",
+          "maj": "2026-09-22T20:04+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "6 tests (tests/test_decoupe_fiable.py) : recadrage juste sans jointure, decoupe a cheval signalee, recadrage vide, affinage qui retient la carte visee, ZERO faux positif sur les 147 recadrages justes du jeu synthetique, et toute decoupe decalee de 20 a 80 % prise. CI verte sur api et web.",
+          "maj": "2026-09-22T20:04+0200"
         },
         "securite": {
           "etat": "a_faire",
@@ -5820,14 +5820,14 @@
           "maj": null
         },
         "maquette": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "Badge « decoupe douteuse » et phrase d explication sur la carte de validation, aucun candidat preselectionne dans ce cas.",
+          "maj": "2026-09-22T20:04+0200"
         },
         "doc_tech": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "Seuil justifie dans le code : 0,92 et non 0,85 parce qu a 0,85 un reflet de pochette barrant la carte sur toute sa hauteur passait pour une jointure (1 faux positif sur 147). Mesures consignees dans les docstrings des tests.",
+          "maj": "2026-09-22T20:04+0200"
         },
         "release_uat": {
           "etat": "a_faire",
@@ -5835,23 +5835,108 @@
           "maj": null
         },
         "release_prod": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "PROD release 20260922-200534 (commit 9672f95) : bundle verifie (0 reference a l ancien domaine), bascule au premier controle (api=200 web=200), trois services actifs, pokeboy.lol et /api/health en 200.",
+          "maj": "2026-09-22T20:08+0200"
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "BACKLOG.md regenere par suivi.py build.",
+          "maj": "2026-09-22T20:08+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "Compte rendu enregistre dans docs/roadmap/etat.json (decisions et rendus y vivent, pas dans un fichier separe) et rendu sur la page de suivi, carte du lot h1-decoupe-fiable.",
+          "maj": "2026-09-22T20:09+0200"
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-22T20:04+0200",
+          "machine": "?",
+          "evenement": "tâche dev → fait",
+          "detail": "refine_box_with_opencv retient le contour qui RECOUVRE le mieux la boite demandee (rect_iou) et non le plus grand du voisinage ; nouveau module detection/quality.py (jointure traversante) ; verdict stocke dans bbox.crop_quality, remonte par l API, et une decoupe douteuse ne preselectionne rien - donc ecartee aussi de confirm-all."
+        },
+        {
+          "quand": "2026-09-22T20:04+0200",
+          "machine": "?",
+          "evenement": "tâche tests → fait",
+          "detail": "6 tests (tests/test_decoupe_fiable.py) : recadrage juste sans jointure, decoupe a cheval signalee, recadrage vide, affinage qui retient la carte visee, ZERO faux positif sur les 147 recadrages justes du jeu synthetique, et toute decoupe decalee de 20 a 80 % prise. CI verte sur api et web."
+        },
+        {
+          "quand": "2026-09-22T20:04+0200",
+          "machine": "?",
+          "evenement": "tâche maquette → fait",
+          "detail": "Badge « decoupe douteuse » et phrase d explication sur la carte de validation, aucun candidat preselectionne dans ce cas."
+        },
+        {
+          "quand": "2026-09-22T20:04+0200",
+          "machine": "?",
+          "evenement": "tâche doc_tech → fait",
+          "detail": "Seuil justifie dans le code : 0,92 et non 0,85 parce qu a 0,85 un reflet de pochette barrant la carte sur toute sa hauteur passait pour une jointure (1 faux positif sur 147). Mesures consignees dans les docstrings des tests."
+        },
+        {
+          "quand": "2026-09-22T20:04+0200",
+          "machine": "?",
+          "evenement": "compte rendu publié",
+          "detail": ""
+        },
+        {
+          "quand": "2026-09-22T20:04+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": ""
+        },
+        {
+          "quand": "2026-09-22T20:08+0200",
+          "machine": "?",
+          "evenement": "tâche release_prod → fait",
+          "detail": "PROD release 20260922-200534 (commit 9672f95) : bundle verifie (0 reference a l ancien domaine), bascule au premier controle (api=200 web=200), trois services actifs, pokeboy.lol et /api/health en 200."
+        },
+        {
+          "quand": "2026-09-22T20:08+0200",
+          "machine": "?",
+          "evenement": "tâche backlog → fait",
+          "detail": "BACKLOG.md regenere par suivi.py build."
+        },
+        {
+          "quand": "2026-09-22T20:08+0200",
+          "machine": "?",
+          "evenement": "tâche compte_rendu → fait",
+          "detail": "docs/roadmap/comptes-rendus/h1-decoupe-fiable.md"
+        },
+        {
+          "quand": "2026-09-22T20:08+0200",
+          "machine": "?",
+          "evenement": "statut → livre",
+          "detail": ""
+        },
+        {
+          "quand": "2026-09-22T20:09+0200",
+          "machine": "?",
+          "evenement": "tâche compte_rendu → fait",
+          "detail": "Compte rendu enregistre dans docs/roadmap/etat.json (decisions et rendus y vivent, pas dans un fichier separe) et rendu sur la page de suivi, carte du lot h1-decoupe-fiable."
+        }
+      ],
+      "compte_rendu": {
+        "resume": "Une decoupe a cheval sur deux cartes etait presentee comme une carte reconnue : le controle du rapport hauteur/largeur (+/-12 %) rejette une fusion mais ne voit rien d un cadre decale, qui garde un rapport valide. Deux causes traitees : l affinage d une boite IA retenait le plus grand contour du voisinage (donc souvent la carte voisine) et non celui qui recouvre la boite visee ; et rien ne verifiait qu un recadrage contient une carte et une seule. Le nouveau controle detecte une jointure traversante : 0,000 sur un recadrage juste, 1,000 sur une decoupe decalee, zero faux positif sur 147.",
+        "livrables": [
+          "une decoupe a cheval n est plus presentee comme une carte reconnue",
+          "note de qualite de recadrage, visible a l ecran, qui supprime la preselection"
+        ],
+        "preuves": [
+          "CI 35764329922 : api et web verts",
+          "6 tests dans apps/api/tests/test_decoupe_fiable.py"
+        ],
+        "ecarts": [
+          "L e2e Playwright du parcours auth reste rouge : il echoue aussi sur main et sur une branche de test sans rapport, il est anterieur a ce lot."
+        ],
+        "reste": [
+          "Le signal de confiance n est pas encore exploite : une photo dont toutes les confiances s effondrent devrait declencher une nouvelle detection. Non fait ici.",
+          "Le delai maximal de 300 s de la reconnaissance (photo trop lourde ou fournisseur lent) est un probleme distinct, non traite."
+        ]
+      },
+      "attente": null
     }
   },
   "decisions_prises": {

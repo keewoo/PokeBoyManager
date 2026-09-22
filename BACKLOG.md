@@ -141,7 +141,7 @@ _Le MVP en ligne a révélé ce qu'aucun test n'avait vu : formats de photo refu
 | `h1-jobs-flotte` | P0 | Les traitements lourds quittent la machine qui sert | DA2 (devAI) | 20 sept. → 20 sept. | — | — | Intégré (main) | [prompt](prompts/h1-jobs-flotte.md) |
 | `h1-front-accueil` | P1 | Accueil crédible, site responsive, fin des URL de développement | DA2 (devAI) | 20 sept. → 20 sept. | — | — | Intégré (main) | [prompt](prompts/h1-front-accueil.md) |
 | `h1-parcours-validation` | P0 | Après la reconnaissance, l'utilisateur voit ses cartes et les ajoute | DA2 (devAI) | 21 sept. → 21 sept. | — | — | Intégré (main) | [prompt](prompts/h1-parcours-validation.md) |
-| `h1-decoupe-fiable` | P0 | Une découpe fausse se voit, et le dit | DA2 (devAI) | 22 sept. → 22 sept. | — | — | À faire | [prompt](prompts/h1-decoupe-fiable.md) |
+| `h1-decoupe-fiable` | P0 | Une découpe fausse se voit, et le dit | DA2 (devAI) | 22 sept. → 22 sept. | — | — | Livré | [prompt](prompts/h1-decoupe-fiable.md) |
 
 ## V8 — Échanger ses cartes (4 janv. → 26 févr.)
 
