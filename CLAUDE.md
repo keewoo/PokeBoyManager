@@ -240,6 +240,38 @@ python scripts/measure_centering_rate.py` depuis `apps/api` (jeu synthétique d�
 `pbm_api.state.synthetic` — aucune carte physique sur chimera). Détail :
 `docs/ARCHITECTURE.md` § « Reconnaissance ».
 
+## Détection des contrefaçons probables (lot `v6-contrefacon`)
+
+Étend `pbm_api.state.counterfeit.assess_counterfeit` (v3-etat) de deux contrôles déterministes,
+tous deux inactifs si aucune carte du catalogue n'a été rapprochée (`has_matched_card` — jamais
+un signal par excès de prudence inverse) : **variante absente du catalogue** (holo/reverse
+holo/1ère édition perçus alors que `Card.variants`, JSONB TCGdex, déclare *explicitement* cette
+variante à `false` — une clé manquante, catalogue incomplet, ne compte jamais comme une preuve ;
+`full_art`/`other` n'ont aucune clé de catalogue correspondante) et **numéro impossible** (total
+de série imprimé `CardExtraction.total` incohérent avec `Set.total_cards` de l'extension
+reconnue — jamais le NUMÉRO comparé à ce total, un secret rare le dépasse légitimement sans que
+le total imprimé change, ex. 202/198, ce qui aurait signalé à tort une rareté légitime). Ces deux
+contrôles rejoignent le signal explicite déjà rendu par l'IA dans le même appel que
+l'identification (police, couleurs, format du numéro — « indices visuels par le LLM », inchangé
+par ce lot) et le contrôle « gold non confirmé » existant. `pbm_api.state.service.
+_matched_card_signals` (ex-`_matched_card_rarity`) fait le seul aller-retour DB supplémentaire :
+`db.get(Set, card.set_id)` pour lire `total_cards` en plus de la rareté et des variantes déjà
+chargées avec `Card`.
+
+Toujours « probable », jamais « certain » (mission « risques & pièges » : faux positifs possibles
+sur des promos rares) — aucun changement côté neutralisation de valeur
+(`CollectionItem.counterfeit_suspected` → `pbm_api.pricing.valuation.item_value`), filtre
+« contrefaçons probables » (`v4-collection`) ni badges (`v3-validation`, `v4-fiche`) : ils lisent
+déjà `counterfeit_suspected`/`counterfeit_reasons`, une liste que ce lot peut simplement allonger.
+Jeu de 60 cartes étiquetées (mission point 1, « 30 contrefaçons connues et 30 vraies cartes ») —
+pas une image, une extraction/un catalogue simulés directement (aucune carte physique/clé IA
+réelle sur chimera, même contrainte qu'ailleurs) : `pbm_api.state.counterfeit_synthetic`, 3
+familles de contrefaçons (une par canal de détection) et 3 familles de cartes authentiques dont
+des pièges délibérés (secret rare, variante confirmée par le catalogue, catalogue incomplet,
+variante non modélisée par TCGdex, total non lu) — précision et rappel mesurés à 100 % sur ce
+jeu, `tests/test_state_counterfeit_synthetic_dataset.py` (fait foi, CI). Détail :
+`docs/ARCHITECTURE.md` § « Reconnaissance ».
+
 ## Identité du compte (lot `v1-identite`)
 
 `users` porte prénom (facultatif), nom, date de naissance, version/horodatage des conditions

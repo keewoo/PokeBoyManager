@@ -16,7 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.identification.schemas import CardExtraction
-from pbm_api.models import Card, Detection, Upload
+from pbm_api.models import Card, Detection, Set, Upload
 from pbm_api.state.centering import measure_centering
 from pbm_api.state.counterfeit import assess_counterfeit
 from pbm_api.state.grades import CARDMARKET_LABELS, score_10, worst_grade
@@ -45,21 +45,42 @@ def _axis_payload(axis) -> dict | None:
     }
 
 
-async def _matched_card_rarity(db: AsyncSession, detection: Detection) -> tuple[str | None, bool]:
-    """Rareté de la carte retenue pour le contrôle de contrefaçon (mission point 3) —
-    `selected_card_id` (validation humaine déjà faite) prime sur le premier candidat proposé par
-    le rapprochement catalogue, disponible plus tôt dans le parcours."""
+@dataclass(frozen=True)
+class _MatchedCardSignals:
+    rarity: str | None
+    variants: dict | None
+    set_total_cards: int | None
+    has_matched_card: bool
+
+
+_NO_MATCH = _MatchedCardSignals(
+    rarity=None, variants=None, set_total_cards=None, has_matched_card=False
+)
+
+
+async def _matched_card_signals(db: AsyncSession, detection: Detection) -> _MatchedCardSignals:
+    """Signaux de la carte retenue pour le contrôle de contrefaçon (mission `v3-etat` point 3,
+    étendue par `v6-contrefacon` mission point 1 : variantes déclarées et total de série de
+    l'extension) — `selected_card_id` (validation humaine déjà faite) prime sur le premier
+    candidat proposé par le rapprochement catalogue, disponible plus tôt dans le parcours."""
     card_id = detection.selected_card_id
     if card_id is None and detection.candidates:
         raw_card_id = detection.candidates[0].get("card_id")
         card_id = uuid.UUID(raw_card_id) if raw_card_id else None
     if card_id is None:
-        return None, False
+        return _NO_MATCH
 
     card = await db.get(Card, card_id)
     if card is None:
-        return None, False
-    return card.rarity, True
+        return _NO_MATCH
+
+    set_row = await db.get(Set, card.set_id)
+    return _MatchedCardSignals(
+        rarity=card.rarity,
+        variants=card.variants,
+        set_total_cards=set_row.total_cards if set_row else None,
+        has_matched_card=True,
+    )
 
 
 async def _estimate_one(db: AsyncSession, storage: StorageBackend, detection: Detection) -> bool:
@@ -81,13 +102,16 @@ async def _estimate_one(db: AsyncSession, storage: StorageBackend, detection: De
         [centering.grade if centering else None, corner_grade, edge_grade, surface_grade]
     )
 
-    matched_rarity, has_matched_card = await _matched_card_rarity(db, detection)
+    matched = await _matched_card_signals(db, detection)
     counterfeit = assess_counterfeit(
         ai_suspected=extraction.counterfeit_suspected if extraction else False,
         ai_reason=extraction.counterfeit_reason if extraction else None,
         variant_guess=extraction.variant.value if extraction and extraction.variant else None,
-        matched_card_rarity=matched_rarity,
-        has_matched_card=has_matched_card,
+        matched_card_rarity=matched.rarity,
+        has_matched_card=matched.has_matched_card,
+        matched_card_variants=matched.variants,
+        extraction_total=extraction.total if extraction else None,
+        matched_set_total_cards=matched.set_total_cards,
     )
 
     detection.condition_assessment = {

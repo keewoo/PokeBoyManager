@@ -2576,41 +2576,41 @@
       "attente": null
     },
     "v6-contrefacon": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
+      "statut": "livre_uat",
+      "machine": "Chimaera",
+      "branche": "roadmap/v6-contrefacon",
+      "debut_reel": "2026-09-22",
       "fin_reelle": null,
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "state/counterfeit.py: 2 nouveaux contrôles déterministes (variante absente du catalogue, numéro/total impossible) ; state/service.py: _matched_card_signals lit Card.variants + Set.total_cards",
+          "maj": "2026-09-22T09:57+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "apps/api/tests/test_state_counterfeit.py (+8 cas), test_state_counterfeit_synthetic_dataset.py (60 cartes, 100% precision/rappel), test_state_service.py (+3 tests d'intégration bout en bout) — 23 tests passés",
+          "maj": "2026-09-22T09:57+0200"
         },
         "securite": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "na",
+          "preuve": "aucune route ni secret ajoutés ; logique interne au job detect_cards deja borne au proprietaire de l'envoi (test_state_routes.py::test_list_detections_hides_condition_of_another_users_upload, inchange)",
+          "maj": "2026-09-22T09:57+0200"
         },
         "maquette": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "aucun ecran nouveau : badge + liste de raisons deja conformes a la maquette (state-tab.tsx, detection-card.tsx, lots v3-etat/v3-validation/v4-fiche), affichent deja counterfeit_reasons en liste",
+          "maj": "2026-09-22T09:57+0200"
         },
         "doc_tech": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "docs/ARCHITECTURE.md § Reconnaissance (contrefacon probable) + CLAUDE.md § v6-contrefacon mis a jour",
+          "maj": "2026-09-22T09:57+0200"
         },
         "release_uat": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "uv run pytest apps/api (depuis chimera) : 693 passed, 5 failed pre-existants/sans rapport (drift schema local sur pbm_v2_catalogue_complet_test, tests test_catalogue_seed.py/test_identity.py, hors diff de ce lot)",
+          "maj": "2026-09-22T09:57+0200"
         },
         "release_prod": {
           "etat": "a_faire",
@@ -2618,18 +2618,106 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "docs/roadmap/etat.json + BACKLOG.md + ROADMAP.html regeneres par suivi.py build",
+          "maj": "2026-09-22T09:57+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "compte-rendu enregistre dans etat.json",
+          "maj": "2026-09-22T09:57+0200"
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-22T09:43+0200",
+          "machine": "Chimaera",
+          "evenement": "démarrage",
+          "detail": "roadmap/v6-contrefacon"
+        },
+        {
+          "quand": "2026-09-22T09:57+0200",
+          "machine": "Chimaera",
+          "evenement": "tâche dev → fait",
+          "detail": "state/counterfeit.py: 2 nouveaux contrôles déterministes (variante absente du catalogue, numéro/total impossible) ; state/service.py: _matched_card_signals lit Card.variants + Set.total_cards"
+        },
+        {
+          "quand": "2026-09-22T09:57+0200",
+          "machine": "Chimaera",
+          "evenement": "tâche tests → fait",
+          "detail": "apps/api/tests/test_state_counterfeit.py (+8 cas), test_state_counterfeit_synthetic_dataset.py (60 cartes, 100% precision/rappel), test_state_service.py (+3 tests d'intégration bout en bout) — 23 tests passés"
+        },
+        {
+          "quand": "2026-09-22T09:57+0200",
+          "machine": "Chimaera",
+          "evenement": "tâche securite → na",
+          "detail": "aucune route ni secret ajoutés ; logique interne au job detect_cards deja borne au proprietaire de l'envoi (test_state_routes.py::test_list_detections_hides_condition_of_another_users_upload, inchange)"
+        },
+        {
+          "quand": "2026-09-22T09:57+0200",
+          "machine": "Chimaera",
+          "evenement": "tâche maquette → fait",
+          "detail": "aucun ecran nouveau : badge + liste de raisons deja conformes a la maquette (state-tab.tsx, detection-card.tsx, lots v3-etat/v3-validation/v4-fiche), affichent deja counterfeit_reasons en liste"
+        },
+        {
+          "quand": "2026-09-22T09:57+0200",
+          "machine": "Chimaera",
+          "evenement": "tâche doc_tech → fait",
+          "detail": "docs/ARCHITECTURE.md § Reconnaissance (contrefacon probable) + CLAUDE.md § v6-contrefacon mis a jour"
+        },
+        {
+          "quand": "2026-09-22T09:57+0200",
+          "machine": "Chimaera",
+          "evenement": "tâche release_uat → fait",
+          "detail": "uv run pytest apps/api (depuis chimera) : 693 passed, 5 failed pre-existants/sans rapport (drift schema local sur pbm_v2_catalogue_complet_test, tests test_catalogue_seed.py/test_identity.py, hors diff de ce lot)"
+        },
+        {
+          "quand": "2026-09-22T09:57+0200",
+          "machine": "Chimaera",
+          "evenement": "tâche backlog → fait",
+          "detail": "docs/roadmap/etat.json + BACKLOG.md + ROADMAP.html regeneres par suivi.py build"
+        },
+        {
+          "quand": "2026-09-22T09:57+0200",
+          "machine": "Chimaera",
+          "evenement": "compte rendu publié",
+          "detail": ""
+        },
+        {
+          "quand": "2026-09-22T09:57+0200",
+          "machine": "Chimaera",
+          "evenement": "tâche compte_rendu → fait",
+          "detail": "compte-rendu enregistre dans etat.json"
+        },
+        {
+          "quand": "2026-09-22T09:57+0200",
+          "machine": "Chimaera",
+          "evenement": "statut → livre_uat",
+          "detail": ""
+        },
+        {
+          "quand": "2026-09-22T09:59+0200",
+          "machine": "Chimaera",
+          "evenement": "compte rendu publié",
+          "detail": ""
+        }
+      ],
+      "compte_rendu": {
+        "resume": "Extension de pbm_api.state.counterfeit.assess_counterfeit (v3-etat) avec 2 controles deterministes demandes par la mission : variante absente du catalogue (Card.variants TCGdex) et numero/total de serie impossible (Set.total_cards). Le signal IA (indices visuels) et le controle gold existant sont inchanges.",
+        "livrables": [
+          "state/counterfeit.py + state/service.py (_matched_card_signals) ; jeu de 60 cartes etiquetees (state/counterfeit_synthetic.py, 30 contrefacons / 30 authentiques dont pieges secret rare/catalogue incomplet/variante non modelisee) ; docs/ARCHITECTURE.md + CLAUDE.md a jour ; branche poussee sur GitHub (commit 9927011)"
+        ],
+        "preuves": [
+          "apps/api/tests/test_state_counterfeit_synthetic_dataset.py : 100% precision et rappel sur 60 cartes ; apps/api/tests/test_state_counterfeit.py : 22 tests (14 pre-existants inchanges + 8 nouveaux) ; apps/api/tests/test_state_service.py : 8 tests d'integration (3 nouveaux) ; uv run pytest apps/api complet : 693 passed ; branche roadmap/v6-contrefacon poussee sur github.com/keewoo/PokeBoyManager"
+        ],
+        "ecarts": [
+          "Aucun nouvel ecran (mission = regles + jeu de test uniquement) : badge/liste de raisons deja affiches par v3-etat/v3-validation/v4-fiche, aucun changement front necessaire. release_prod hors de portee de cette session (jamais de deploiement depuis chimera, devAI livre) : reste attente_go_prod."
+        ],
+        "reste": [
+          "PR GitHub NON creee : 'gh' CLI absent de cette session WSL (aucun paquet installe, pas de sudo apt sur cette session) — branche roadmap/v6-contrefacon deja poussee sur origin github (commit 9927011), a ouvrir manuellement ou depuis une session avec gh configure : https://github.com/keewoo/PokeBoyManager/pull/new/roadmap/v6-contrefacon . release_prod (devAI + validation JF). 5 tests pre-existants (test_catalogue_seed.py, test_identity.py) en echec sur la base Postgres locale partagee de chimera (colonne users.last_name en violation NOT NULL sur des lignes anciennes, hors diff de ce lot) — a signaler, pas a corriger destructivement sur une infra partagee."
+        ]
+      },
+      "attente": null
     },
     "v6-alertes": {
       "statut": "a_faire",

@@ -338,15 +338,35 @@ passe par `pbm_api.ai.factory.create_provider(provider, api_key)`.
    `Detection.condition_assessment` (colonne distincte d'`extraction` : existe même sans clé IA),
    exposé par `GET /uploads/{id}/detections`, déjà borné au propriétaire de l'envoi.
 
-   **Contrefaçon probable** (`pbm_api.state.counterfeit.assess_counterfeit`) : le signal explicite
-   de l'IA (`CardExtraction.counterfeit_suspected`/`counterfeit_reason`) complété par un contrôle
-   déterministe — une carte perçue comme « gold »/métal (`CardVariantGuess.gold`) alors que la
-   carte du catalogue rapprochée n'est répertoriée sous aucune rareté « gold »/« secret »/
-   « hyper »/« rainbow » connue est signalée, jamais l'inverse quand aucune carte n'a pu être
-   rapprochée (pas de contrôle possible). `CollectionItem.counterfeit_suspected` (posé par ce
-   lot, à reprendre du `Detection` par le futur lot `v4-collection` lors de la création de
-   l'exemplaire — pas encore de route de création dans ce dépôt) neutralise la valeur à zéro dans
-   `pbm_api.pricing.valuation.item_value`, jamais valorisée comme l'originale.
+   **Contrefaçon probable** (`pbm_api.state.counterfeit.assess_counterfeit`, lot `v3-etat`, étendu
+   par le lot `v6-contrefacon`) : le signal explicite de l'IA (`CardExtraction.counterfeit_
+   suspected`/`counterfeit_reason` — police, couleurs, format du numéro, « indices visuels par le
+   LLM ») complété par trois contrôles déterministes, chacun n'agissant que si une carte du
+   catalogue a été rapprochée (`has_matched_card`) — jamais l'inverse par excès de prudence quand
+   aucune carte n'a pu l'être :
+   - une carte perçue comme « gold »/métal (`CardVariantGuess.gold`) alors que la carte rapprochée
+     n'est répertoriée sous aucune rareté « gold »/« secret »/« hyper »/« rainbow » connue ;
+   - **variante absente du catalogue** (mission `v6-contrefacon` point 1) : holo/reverse holo/1ère
+     édition perçus alors que `Card.variants` (JSONB TCGdex) déclare *explicitement* cette
+     variante à `false` pour la carte — une clé manquante (catalogue incomplet) ne compte jamais
+     comme une preuve, et `full_art`/`other` n'ont aucune clé de catalogue correspondante (pas de
+     contrôle possible) ;
+   - **numéro impossible** (mission `v6-contrefacon` point 1) : le total de série imprimé
+     (`CardExtraction.total`) incohérent avec le total officiel de l'extension reconnue
+     (`Set.total_cards`) — jamais le NUMÉRO comparé à ce total, un secret rare le dépasse
+     légitimement (ex. 202/198) sans que le total imprimé change, ce qui aurait produit un faux
+     positif sur une rareté légitime (mission « risques & pièges »).
+
+   `CollectionItem.counterfeit_suspected` (posé par le lot `v3-etat`, repris du `Detection` par
+   `v4-collection`/`v3-validation` lors de la création de l'exemplaire) neutralise la valeur à
+   zéro dans `pbm_api.pricing.valuation.item_value`, jamais valorisée comme l'originale ; filtre
+   « contrefaçons probables » sur `GET /me/collection` (`v4-collection`) et badge sur l'écran de
+   validation (`v3-validation`) et la fiche carte (`v4-fiche`). Toujours « probable », jamais
+   « certain » — contestable par l'utilisateur (mission « risques & pièges »). Précision mesurée
+   sur un jeu de 60 cartes étiquetées, 30 contrefaçons connues et 30 vraies cartes (dont des
+   pièges délibérés : secret rare, variante confirmée par le catalogue, catalogue incomplet —
+   `pbm_api.state.counterfeit_synthetic`, aucune vraie photo/carte physique sur chimera) : 100 %
+   de précision et de rappel sur ce jeu (`tests/test_state_counterfeit_synthetic_dataset.py`).
 
 ## Anecdotes sourcées (lot `v4-anecdotes`)
 
