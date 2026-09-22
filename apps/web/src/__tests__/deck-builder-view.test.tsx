@@ -23,6 +23,8 @@ vi.mock("@/lib/api/decks", async (importOriginal) => {
     updateDeck: vi.fn(),
     duplicateDeck: vi.fn(),
     deleteDeck: vi.fn(),
+    fetchDeckReplacements: vi.fn(),
+    fetchDeckHistory: vi.fn(),
   };
 });
 
@@ -114,6 +116,49 @@ describe("DeckBuilderView", () => {
       duplicate_card_count: 0,
     });
     api.searchDeckCards.mockResolvedValue({ items: [], next_cursor: null });
+    api.fetchDeckReplacements.mockResolvedValue({ card_id: "roucool", replacements: [] });
+    api.fetchDeckHistory.mockResolvedValue({ deck_id: "d1", events: [] });
+  });
+
+  it("propose des remplacements possédés et applique l'échange sans modifier en silence", async () => {
+    api.getDeck.mockResolvedValue(deck());
+    api.fetchDeckReplacements.mockResolvedValue({
+      card_id: "roucool",
+      replacements: [
+        {
+          card_id: "roucoups",
+          set_id: "s",
+          number: "17",
+          name: "Roucoups",
+          set_name: "SV",
+          set_code: "sv01",
+          supertype: "Pokémon",
+          hp: 90,
+          image_url: null,
+          owned_count: 2,
+          reason: "Même type Normal · coût d'attaque proche (±1)",
+        },
+      ],
+    });
+    const updated = deck();
+    api.setDeckCard.mockResolvedValue(updated);
+    api.removeDeckCard.mockResolvedValue(updated);
+    const user = userEvent.setup();
+    render(<DeckBuilderView deckId="d1" />);
+    await screen.findByText(/Deck · 7 \/ 60/);
+
+    // La carte manquante « Roucool » affiche l'action « Remplacer par une possédée ».
+    await user.click(screen.getByRole("button", { name: "Remplacer par une possédée" }));
+    // Une suggestion possédée apparaît, avec sa raison.
+    expect(await screen.findByText("Roucoups")).toBeInTheDocument();
+    expect(api.fetchDeckReplacements).toHaveBeenCalledWith("d1", "roucool");
+
+    // L'échange est EXPLICITE : ajout de la possédée + retrait de la manquante, jamais en silence.
+    await user.click(screen.getByRole("button", { name: /Remplacer Roucool par Roucoups/ }));
+    await waitFor(() => {
+      expect(api.setDeckCard).toHaveBeenCalledWith("d1", "roucoups", 2);
+      expect(api.removeDeckCard).toHaveBeenCalledWith("d1", "roucool");
+    });
   });
 
   it("affiche le deck, son décompte et l'état de légalité", async () => {

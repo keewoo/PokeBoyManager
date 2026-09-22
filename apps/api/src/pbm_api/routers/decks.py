@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.auth.dependencies import get_current_user, require_csrf
 from pbm_api.db import get_session
-from pbm_api.decks import card_search, import_service, service
+from pbm_api.decks import card_search, import_service, replacements, service
 from pbm_api.decks import export as export_mod
 from pbm_api.decks.card_search import DeckCardSearchFilters, DeckCardSort
 from pbm_api.decks.errors import DeckCardNotFoundError, DeckNotFoundError
@@ -28,14 +28,19 @@ from pbm_api.decks.import_service import ImportResult
 from pbm_api.decks.legality import DeckLegality
 from pbm_api.decks.schemas import (
     CreateDeckRequest,
+    DeckAlertOut,
+    DeckAlertsResponse,
     DeckCardFacetSet,
     DeckCardOut,
     DeckCardSearchFacets,
     DeckCardSearchItem,
     DeckCardSearchResponse,
     DeckDetail,
+    DeckHistoryResponse,
     DeckLegalityOut,
     DeckListResponse,
+    DeckReplacementItem,
+    DeckReplacementsResponse,
     DeckSummary,
     ImportCandidateOut,
     ImportDeckRequest,
@@ -43,11 +48,12 @@ from pbm_api.decks.schemas import (
     ImportLineOut,
     ImportReportOut,
     LegalityIssueOut,
+    MarkAlertsReadRequest,
     SetDeckCardRequest,
     UpdateDeckRequest,
 )
-from pbm_api.decks.service import LoadedDeckCard
-from pbm_api.models import User
+from pbm_api.decks.service import DeckAlert, LoadedDeckCard
+from pbm_api.models import DeckEvent, User
 from pbm_api.storage import StorageBackend, build_storage
 from pbm_api.validation.errors import CardNotFoundError
 
@@ -253,6 +259,60 @@ async def search_deck_cards(
     )
 
 
+# ---- alertes de synchronisation collection→deck (mission `v7-decks-collection-sync`) -------
+# Route littérale `/alerts` déclarée AVANT `/{deck_id}` (même précaution que `/cards`).
+def _alert_out(deck_id: uuid.UUID, deck_name: str, event: DeckEvent) -> DeckAlertOut:
+    detail = event.detail or {}
+    return DeckAlertOut(
+        id=event.id,
+        deck_id=deck_id,
+        deck_name=deck_name,
+        event_type=event.event_type,
+        reason=event.reason,
+        card_id=event.card_id,
+        card_name=event.card_name,
+        required=int(detail.get("required", 0)),
+        owned=int(detail.get("owned", 0)),
+        missing=int(detail.get("missing", 0)),
+        read=event.read_at is not None,
+        created_at=event.created_at,
+    )
+
+
+@router.get("/alerts", response_model=DeckAlertsResponse)
+async def list_deck_alerts(
+    session: Annotated[AsyncSession, Depends(get_session)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    unread_only: bool = True,
+) -> DeckAlertsResponse:
+    """Alertes « à compléter » du joueur (en-tête + liste). Par défaut, les non lues seulement ;
+    `unread_only=false` renvoie tout l'historique. Le compte des non lues est toujours fourni."""
+    alerts: list[DeckAlert]
+    alerts, unread_count = await service.list_alerts(
+        session, current_user, only_unread=unread_only
+    )
+    return DeckAlertsResponse(
+        alerts=[_alert_out(a.event.deck_id, a.deck_name, a.event) for a in alerts],
+        unread_count=unread_count,
+    )
+
+
+@router.post("/alerts/read", response_model=DeckAlertsResponse)
+async def mark_deck_alerts_read(
+    payload: MarkAlertsReadRequest,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    _csrf: Annotated[None, Depends(require_csrf)],
+) -> DeckAlertsResponse:
+    """Marque des alertes comme lues (toutes les non lues si `event_ids` est absent)."""
+    await service.mark_alerts_read(session, current_user, payload.event_ids)
+    alerts, unread_count = await service.list_alerts(session, current_user, only_unread=True)
+    return DeckAlertsResponse(
+        alerts=[_alert_out(a.event.deck_id, a.deck_name, a.event) for a in alerts],
+        unread_count=unread_count,
+    )
+
+
 @router.get("/{deck_id}", response_model=DeckDetail)
 async def get_deck(
     deck_id: uuid.UUID,
@@ -347,6 +407,64 @@ async def remove_deck_card(
         raise HTTPException(status.HTTP_404_NOT_FOUND, DECK_CARD_NOT_FOUND_MESSAGE) from None
     deck, loaded, report = await service.deck_detail(session, current_user, deck_id)
     return _detail_response(deck, loaded, report)
+
+
+@router.get(
+    "/{deck_id}/cards/{card_id}/replacements", response_model=DeckReplacementsResponse
+)
+async def deck_card_replacements(
+    deck_id: uuid.UUID,
+    card_id: uuid.UUID,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    limit: Annotated[int, Query(ge=1, le=50)] = 10,
+) -> DeckReplacementsResponse:
+    """Cartes possédées proposées pour remplacer `card_id` dans ce deck, classées par proximité
+    (type, rôle, coût d'attaque) avec la raison — aucun appel IA. Un deck ou une carte d'un autre
+    utilisateur (ou absente du deck) renvoie 404."""
+    try:
+        suggestions = await replacements.suggest_replacements(
+            session, current_user, deck_id, card_id, limit
+        )
+    except DeckNotFoundError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, DECK_NOT_FOUND_MESSAGE) from None
+    except DeckCardNotFoundError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, DECK_CARD_NOT_FOUND_MESSAGE) from None
+    return DeckReplacementsResponse(
+        card_id=card_id,
+        replacements=[
+            DeckReplacementItem(
+                card_id=s.candidate.traits.card_id,
+                number=s.candidate.number,
+                name=s.candidate.traits.name,
+                set_name=s.candidate.set_name,
+                set_code=s.candidate.set_code,
+                supertype=s.candidate.traits.supertype,
+                hp=s.candidate.hp,
+                image_url=s.candidate.image_url,
+                owned_count=s.candidate.owned_count,
+                reason=s.reason,
+            )
+            for s in suggestions
+        ],
+    )
+
+
+@router.get("/{deck_id}/history", response_model=DeckHistoryResponse)
+async def deck_history(
+    deck_id: uuid.UUID,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> DeckHistoryResponse:
+    """Historique des changements de collection ayant touché ce deck. Borné au propriétaire."""
+    try:
+        deck_name, events = await service.deck_history(session, current_user, deck_id)
+    except DeckNotFoundError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, DECK_NOT_FOUND_MESSAGE) from None
+    return DeckHistoryResponse(
+        deck_id=deck_id,
+        events=[_alert_out(deck_id, deck_name, event) for event in events],
+    )
 
 
 # ------------------------------------------------------------------------- import / export

@@ -85,6 +85,45 @@ test.describe("Constructeur de deck (lot v7-decks-ui)", () => {
     await expect(page.getByText("Illégal")).toBeVisible();
   });
 
+  test("une carte vendue rend le deck à compléter et l'annonce au joueur", async ({ page }) => {
+    // Mission `v7-decks-collection-sync` : une carte qui quitte la collection ne doit pas laisser
+    // un deck faussement jouable — le joueur en est prévenu, sans qu'aucune carte ne soit retirée.
+    test.setTimeout(90_000);
+    const email = uniqueEmail("e2e-sync");
+    seedUser(email);
+    await login(page, email);
+
+    // 1. Un deck de 4 Ronflex (tous possédés) : aucune alerte pour l'instant.
+    await page.goto("/jeu/decks");
+    await page.getByLabel("Nom du deck").fill("Deck à compléter");
+    await page.getByRole("button", { name: /Créer et construire/i }).click();
+    await page.waitForURL(DECK_URL);
+    await page.getByLabel("Chercher une carte au catalogue").fill("Ronflex");
+    await page.getByRole("button", { name: "Ajouter Ronflex E2E au deck" }).click();
+    await page.getByLabel("Quantité de Ronflex E2E").fill("4");
+    await expect(page.getByText(/Deck · 4 \/ 60/)).toBeVisible();
+
+    // 2. Vendre un exemplaire = supprimer un item de collection (via l'API, comme la page
+    // Collection le fait). On passe le jeton CSRF, comme le client web.
+    const cookies = await page.context().cookies();
+    const csrf = cookies.find((c) => c.name.toLowerCase().includes("csrf"))?.value ?? "";
+    const list = await page.request.get(`${API_BASE_URL}/me/collection`);
+    const items = (await list.json()).items as Array<{ id: string; card_name: string }>;
+    const ronflex = items.find((i) => i.card_name.includes("Ronflex"));
+    expect(ronflex).toBeTruthy();
+    const del = await page.request.delete(`${API_BASE_URL}/me/collection/${ronflex!.id}`, {
+      headers: { "X-CSRF-Token": csrf },
+    });
+    expect(del.ok()).toBeTruthy();
+
+    // 3. La liste des decks annonce l'alerte et le deck bascule « À compléter ».
+    await page.goto("/jeu/decks");
+    await expect(page.getByTestId("deck-alerts-notice")).toBeVisible();
+    // `exact` : le badge de statut du deck porte exactement « À compléter » — sans quoi la
+    // correspondance par sous-chaîne insensible à la casse toucherait aussi le texte du bandeau.
+    await expect(page.getByText("À compléter", { exact: true }).first()).toBeVisible();
+  });
+
   test("un deck n'est visible que par son propriétaire (accès croisé)", async ({
     page,
     browser,

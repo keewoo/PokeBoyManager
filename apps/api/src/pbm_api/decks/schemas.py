@@ -215,6 +215,65 @@ class DeckCardFacetSet(BaseModel):
     code: str
 
 
+# ---- alertes, remplacements et historique (mission `v7-decks-collection-sync`) ----
+
+
+class DeckAlertOut(BaseModel):
+    """Une alerte « à compléter » — un deck qui vient de perdre une carte requise."""
+
+    id: uuid.UUID
+    deck_id: uuid.UUID
+    deck_name: str
+    event_type: str  # "card_incomplete"
+    reason: str  # "removed" | "counterfeit"
+    card_id: uuid.UUID | None
+    card_name: str
+    required: int
+    owned: int
+    missing: int
+    read: bool
+    created_at: datetime
+
+
+class DeckAlertsResponse(BaseModel):
+    """Fil d'alertes + compte des non lues (le badge de l'en-tête)."""
+
+    alerts: list[DeckAlertOut]
+    unread_count: int
+
+
+class MarkAlertsReadRequest(BaseModel):
+    """Marque des alertes comme lues. `event_ids` absent → toutes les non lues."""
+
+    event_ids: list[uuid.UUID] | None = None
+
+
+class DeckReplacementItem(BaseModel):
+    """Une carte possédée proposée en remplacement, avec la raison de son classement."""
+
+    card_id: uuid.UUID
+    set_id: uuid.UUID | None = None
+    number: str
+    name: str
+    set_name: str
+    set_code: str
+    supertype: str | None
+    hp: int | None
+    image_url: str | None
+    owned_count: int
+    reason: str
+
+
+class DeckReplacementsResponse(BaseModel):
+    card_id: uuid.UUID
+    replacements: list[DeckReplacementItem]
+
+
+class DeckHistoryResponse(BaseModel):
+    deck_id: uuid.UUID
+    events: list[DeckAlertOut]
+
+
 class DeckCardSearchFacets(BaseModel):
     """Valeurs de filtre du constructeur, à l'échelle du catalogue, plus deux compteurs propres à
     l'utilisateur pour les bascules « mes cartes » / « doublons »."""

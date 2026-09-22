@@ -692,6 +692,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/decks/cards/facets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Deck Card Facets */
+        get: operations["deck_card_facets_me_decks_cards_facets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/decks/cards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search Deck Cards
+         * @description Cherche dans le catalogue, chaque carte annotée du nombre possédé et déjà dans le deck
+         *     (`deck_id`, s'il est fourni et appartient à l'utilisateur — sinon 404). Filtres cumulables,
+         *     tri, pagination par curseur (voir `pbm_api.decks.card_search`).
+         */
+        get: operations["search_deck_cards_me_decks_cards_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/decks/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Deck Alerts
+         * @description Alertes « à compléter » du joueur (en-tête + liste). Par défaut, les non lues seulement ;
+         *     `unread_only=false` renvoie tout l'historique. Le compte des non lues est toujours fourni.
+         */
+        get: operations["list_deck_alerts_me_decks_alerts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/decks/alerts/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark Deck Alerts Read
+         * @description Marque des alertes comme lues (toutes les non lues si `event_ids` est absent).
+         */
+        post: operations["mark_deck_alerts_read_me_decks_alerts_read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/decks/{deck_id}": {
         parameters: {
             query?: never;
@@ -707,8 +787,8 @@ export interface paths {
         delete: operations["delete_deck_me_decks__deck_id__delete"];
         options?: never;
         head?: never;
-        /** Rename Deck */
-        patch: operations["rename_deck_me_decks__deck_id__patch"];
+        /** Update Deck */
+        patch: operations["update_deck_me_decks__deck_id__patch"];
         trace?: never;
     };
     "/me/decks/{deck_id}/duplicate": {
@@ -741,6 +821,91 @@ export interface paths {
         post?: never;
         /** Remove Deck Card */
         delete: operations["remove_deck_card_me_decks__deck_id__cards__card_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/decks/{deck_id}/cards/{card_id}/replacements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Deck Card Replacements
+         * @description Cartes possédées proposées pour remplacer `card_id` dans ce deck, classées par proximité
+         *     (type, rôle, coût d'attaque) avec la raison — aucun appel IA. Un deck ou une carte d'un autre
+         *     utilisateur (ou absente du deck) renvoie 404.
+         */
+        get: operations["deck_card_replacements_me_decks__deck_id__cards__card_id__replacements_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/decks/{deck_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Deck History
+         * @description Historique des changements de collection ayant touché ce deck. Borné au propriétaire.
+         */
+        get: operations["deck_history_me_decks__deck_id__history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/decks/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Deck
+         * @description Importe une liste de deck collée : rapproche chaque ligne au catalogue et crée un deck
+         *     « à compléter ». N'écrit JAMAIS dans la collection (risque du lot). `dry_run` renvoie le seul
+         *     rapport, sans rien créer.
+         */
+        post: operations["import_deck_me_decks_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/decks/{deck_id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Deck
+         * @description Exporte un deck en texte standard (`fmt=text`) ou en PDF avec vignettes (`fmt=pdf`).
+         *     Borné au propriétaire : un deck d'un autre utilisateur renvoie 404.
+         */
+        get: operations["export_deck_me_decks__deck_id__export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1114,6 +1279,8 @@ export interface components {
             rarity: string | null;
             /** Supertype */
             supertype: string | null;
+            /** Element Type */
+            element_type: string | null;
             /** Hp */
             hp: number | null;
             /** Has Image */
@@ -1335,6 +1502,10 @@ export interface components {
             rarity: string | null;
             /** Card Type */
             card_type: string | null;
+            /** Element Type */
+            element_type: string | null;
+            /** Hp */
+            hp: number | null;
             /** Language */
             language: string;
             variant: components["schemas"]["PriceVariant"];
@@ -1480,6 +1651,12 @@ export interface components {
         CreateDeckRequest: {
             /** Name */
             name: string;
+            /**
+             * Format
+             * @default standard
+             * @enum {string}
+             */
+            format: "standard" | "expanded" | "unlimited";
             /** Cards */
             cards?: components["schemas"]["DeckCardInput"][];
         };
@@ -1581,6 +1758,67 @@ export interface components {
             /** Total Value Eur */
             total_value_eur: string;
         };
+        /**
+         * DeckAlertOut
+         * @description Une alerte « à compléter » — un deck qui vient de perdre une carte requise.
+         */
+        DeckAlertOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Deck Id
+             * Format: uuid
+             */
+            deck_id: string;
+            /** Deck Name */
+            deck_name: string;
+            /** Event Type */
+            event_type: string;
+            /** Reason */
+            reason: string;
+            /** Card Id */
+            card_id: string | null;
+            /** Card Name */
+            card_name: string;
+            /** Required */
+            required: number;
+            /** Owned */
+            owned: number;
+            /** Missing */
+            missing: number;
+            /** Read */
+            read: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * DeckAlertsResponse
+         * @description Fil d'alertes + compte des non lues (le badge de l'en-tête).
+         */
+        DeckAlertsResponse: {
+            /** Alerts */
+            alerts: components["schemas"]["DeckAlertOut"][];
+            /** Unread Count */
+            unread_count: number;
+        };
+        /** DeckCardFacetSet */
+        DeckCardFacetSet: {
+            /**
+             * Set Id
+             * Format: uuid
+             */
+            set_id: string;
+            /** Name */
+            name: string;
+            /** Code */
+            code: string;
+        };
         /** DeckCardInput */
         DeckCardInput: {
             /**
@@ -1623,13 +1861,103 @@ export interface components {
             is_basic_energy: boolean;
             /** Is Special Energy */
             is_special_energy: boolean;
+            /** Is Basic Pokemon */
+            is_basic_pokemon: boolean;
             /** Owned */
             owned: number;
             /** Missing */
             missing: number;
             /** In Collection */
             in_collection: boolean;
+            /** In Format */
+            in_format: boolean;
+            /** Counterfeit Excluded */
+            counterfeit_excluded: number;
         };
+        /**
+         * DeckCardSearchFacets
+         * @description Valeurs de filtre du constructeur, à l'échelle du catalogue, plus deux compteurs propres à
+         *     l'utilisateur pour les bascules « mes cartes » / « doublons ».
+         */
+        DeckCardSearchFacets: {
+            /** Sets */
+            sets: components["schemas"]["DeckCardFacetSet"][];
+            /** Rarities */
+            rarities: string[];
+            /** Card Types */
+            card_types: string[];
+            /** Hp Min */
+            hp_min: number | null;
+            /** Hp Max */
+            hp_max: number | null;
+            /** Owned Card Count */
+            owned_card_count: number;
+            /** Duplicate Card Count */
+            duplicate_card_count: number;
+        };
+        /**
+         * DeckCardSearchItem
+         * @description Une carte du CATALOGUE dans le constructeur, annotée pour l'utilisateur courant :
+         *     `owned_count` = exemplaires possédés, `in_deck_count` = exemplaires déjà dans le deck édité
+         *     (0 sans `deck_id`). `value_eur` = prix de référence de `card_value_rank` (`None` si non
+         *     encore relevé). `name` = nom localisé (FR par défaut), repli sur le nom canonique.
+         */
+        DeckCardSearchItem: {
+            /**
+             * Card Id
+             * Format: uuid
+             */
+            card_id: string;
+            /**
+             * Set Id
+             * Format: uuid
+             */
+            set_id: string;
+            /** Number */
+            number: string;
+            /** Name */
+            name: string;
+            /** Set Name */
+            set_name: string;
+            /** Set Code */
+            set_code: string;
+            /** Series */
+            series: string | null;
+            /** Rarity */
+            rarity: string | null;
+            /** Supertype */
+            supertype: string | null;
+            /** Hp */
+            hp: number | null;
+            /** Image Url */
+            image_url: string | null;
+            /** Energy Type */
+            energy_type: string | null;
+            /** Is Basic Energy */
+            is_basic_energy: boolean;
+            /** Is Special Energy */
+            is_special_energy: boolean;
+            /** Value Eur */
+            value_eur: string | null;
+            /** Owned Count */
+            owned_count: number;
+            /** In Deck Count */
+            in_deck_count: number;
+            /** Is Duplicate */
+            is_duplicate: boolean;
+        };
+        /** DeckCardSearchResponse */
+        DeckCardSearchResponse: {
+            /** Items */
+            items: components["schemas"]["DeckCardSearchItem"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /**
+         * DeckCardSort
+         * @enum {string}
+         */
+        DeckCardSort: "value_desc" | "value_asc" | "name_asc" | "number_asc" | "acquired_at_desc" | "acquired_at_asc";
         /** DeckDetail */
         DeckDetail: {
             /**
@@ -1639,6 +1967,11 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "standard" | "expanded" | "unlimited";
             /**
              * Created At
              * Format: date-time
@@ -1653,6 +1986,16 @@ export interface components {
             cards: components["schemas"]["DeckCardOut"][];
             legality: components["schemas"]["DeckLegalityOut"];
         };
+        /** DeckHistoryResponse */
+        DeckHistoryResponse: {
+            /**
+             * Deck Id
+             * Format: uuid
+             */
+            deck_id: string;
+            /** Events */
+            events: components["schemas"]["DeckAlertOut"][];
+        };
         /** DeckLegalityOut */
         DeckLegalityOut: {
             /** Legal */
@@ -1661,6 +2004,13 @@ export interface components {
             card_count: number;
             /** Size Ok */
             size_ok: boolean;
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "standard" | "expanded" | "unlimited";
+            /** Format Label */
+            format_label: string;
             /** Issues */
             issues: components["schemas"]["LegalityIssueOut"][];
         };
@@ -1668,6 +2018,47 @@ export interface components {
         DeckListResponse: {
             /** Decks */
             decks: components["schemas"]["DeckSummary"][];
+        };
+        /**
+         * DeckReplacementItem
+         * @description Une carte possédée proposée en remplacement, avec la raison de son classement.
+         */
+        DeckReplacementItem: {
+            /**
+             * Card Id
+             * Format: uuid
+             */
+            card_id: string;
+            /** Set Id */
+            set_id?: string | null;
+            /** Number */
+            number: string;
+            /** Name */
+            name: string;
+            /** Set Name */
+            set_name: string;
+            /** Set Code */
+            set_code: string;
+            /** Supertype */
+            supertype: string | null;
+            /** Hp */
+            hp: number | null;
+            /** Image Url */
+            image_url: string | null;
+            /** Owned Count */
+            owned_count: number;
+            /** Reason */
+            reason: string;
+        };
+        /** DeckReplacementsResponse */
+        DeckReplacementsResponse: {
+            /**
+             * Card Id
+             * Format: uuid
+             */
+            card_id: string;
+            /** Replacements */
+            replacements: components["schemas"]["DeckReplacementItem"][];
         };
         /** DeckSummary */
         DeckSummary: {
@@ -1678,6 +2069,11 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "standard" | "expanded" | "unlimited";
             /** Card Count */
             card_count: number;
             /** Legal */
@@ -1722,6 +2118,10 @@ export interface components {
             } | null;
             /** Identification Method */
             identification_method: string | null;
+            /** Crop Quality */
+            crop_quality?: {
+                [key: string]: unknown;
+            } | null;
         };
         /**
          * DetectionStatus
@@ -1781,6 +2181,24 @@ export interface components {
             /** Status */
             status: string;
         };
+        /** ImportCandidateOut */
+        ImportCandidateOut: {
+            /**
+             * Card Id
+             * Format: uuid
+             */
+            card_id: string;
+            /** Name */
+            name: string;
+            /** Set Code */
+            set_code: string;
+            /** Set Name */
+            set_name: string;
+            /** Number */
+            number: string;
+            /** Score */
+            score: number;
+        };
         /** ImportCsvResponse */
         ImportCsvResponse: {
             /**
@@ -1794,6 +2212,91 @@ export interface components {
              */
             job_id: string;
             status: components["schemas"]["JobStatus"];
+        };
+        /**
+         * ImportDeckRequest
+         * @description Liste de deck collée à importer (mission `v7-decks-import-export`).
+         *
+         *     `dry_run=True` ne crée aucun deck : il renvoie seulement le rapport (aperçu avant validation).
+         *     Une liste importée ne crée JAMAIS de cartes dans la collection (risque du lot).
+         */
+        ImportDeckRequest: {
+            /** Text */
+            text: string;
+            /** Name */
+            name?: string | null;
+            /**
+             * Format
+             * @default standard
+             * @enum {string}
+             */
+            format: "standard" | "expanded" | "unlimited";
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run: boolean;
+        };
+        /**
+         * ImportDeckResponse
+         * @description Rapport d'import + le deck créé (`None` si `dry_run`).
+         */
+        ImportDeckResponse: {
+            report: components["schemas"]["ImportReportOut"];
+            deck?: components["schemas"]["DeckDetail"] | null;
+        };
+        /** ImportLineOut */
+        ImportLineOut: {
+            /** Line No */
+            line_no: number;
+            /** Raw */
+            raw: string;
+            /** Status */
+            status: string;
+            /** Quantity */
+            quantity: number;
+            /** Parsed Name */
+            parsed_name?: string | null;
+            /** Parsed Set */
+            parsed_set?: string | null;
+            /** Parsed Number */
+            parsed_number?: string | null;
+            /** Notes */
+            notes?: string[];
+            card?: components["schemas"]["ImportCandidateOut"] | null;
+            /** Alternatives */
+            alternatives?: components["schemas"]["ImportCandidateOut"][];
+            /**
+             * Owned
+             * @default 0
+             */
+            owned: number;
+            /**
+             * Missing
+             * @default 0
+             */
+            missing: number;
+        };
+        /** ImportReportOut */
+        ImportReportOut: {
+            /** Matched */
+            matched: number;
+            /** Ambiguous */
+            ambiguous: number;
+            /** Not Found */
+            not_found: number;
+            /** Sections Ignored */
+            sections_ignored: number;
+            /** Cards Added */
+            cards_added: number;
+            /** Distinct Cards */
+            distinct_cards: number;
+            /** Truncated */
+            truncated: boolean;
+            /** Warnings */
+            warnings?: string[];
+            /** Lines */
+            lines?: components["schemas"]["ImportLineOut"][];
         };
         /** InGameStudyResponse */
         InGameStudyResponse: {
@@ -1833,6 +2336,8 @@ export interface components {
             code: string;
             /** Message */
             message: string;
+            /** Severity */
+            severity: string;
             /** Card Id */
             card_id?: string | null;
             /** Card Name */
@@ -1861,6 +2366,14 @@ export interface components {
             email: string;
             /** Password */
             password: string;
+        };
+        /**
+         * MarkAlertsReadRequest
+         * @description Marque des alertes comme lues. `event_ids` absent → toutes les non lues.
+         */
+        MarkAlertsReadRequest: {
+            /** Event Ids */
+            event_ids?: string[] | null;
         };
         /** MessageResponse */
         MessageResponse: {
@@ -2021,11 +2534,6 @@ export interface components {
             detection_id: string;
             status: components["schemas"]["DetectionStatus"];
         };
-        /** RenameDeckRequest */
-        RenameDeckRequest: {
-            /** Name */
-            name: string;
-        };
         /** ReportCardInsightRequest */
         ReportCardInsightRequest: {
             /** Reason */
@@ -2124,6 +2632,16 @@ export interface components {
             purchase_currency?: string | null;
             /** Acquired At */
             acquired_at?: string | null;
+        };
+        /**
+         * UpdateDeckRequest
+         * @description `PATCH` partiel : renommer et/ou changer de format. Tout champ absent reste inchangé.
+         */
+        UpdateDeckRequest: {
+            /** Name */
+            name?: string | null;
+            /** Format */
+            format?: ("standard" | "expanded" | "unlimited") | null;
         };
         /** UpdateProfileRequest */
         UpdateProfileRequest: {
@@ -3672,6 +4190,133 @@ export interface operations {
             };
         };
     };
+    deck_card_facets_me_decks_cards_facets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeckCardSearchFacets"];
+                };
+            };
+        };
+    };
+    search_deck_cards_me_decks_cards_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                set_id?: string[] | null;
+                rarity?: string[] | null;
+                card_type?: string[] | null;
+                hp_min?: number | null;
+                hp_max?: number | null;
+                owned?: boolean;
+                duplicates?: boolean;
+                deck_id?: string | null;
+                lang?: string | null;
+                sort?: components["schemas"]["DeckCardSort"];
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeckCardSearchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_deck_alerts_me_decks_alerts_get: {
+        parameters: {
+            query?: {
+                unread_only?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeckAlertsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_deck_alerts_read_me_decks_alerts_read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarkAlertsReadRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeckAlertsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_deck_me_decks__deck_id__get: {
         parameters: {
             query?: never;
@@ -3732,7 +4377,7 @@ export interface operations {
             };
         };
     };
-    rename_deck_me_decks__deck_id__patch: {
+    update_deck_me_decks__deck_id__patch: {
         parameters: {
             query?: never;
             header?: never;
@@ -3743,7 +4388,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["RenameDeckRequest"];
+                "application/json": components["schemas"]["UpdateDeckRequest"];
             };
         };
         responses: {
@@ -3853,6 +4498,137 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DeckDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    deck_card_replacements_me_decks__deck_id__cards__card_id__replacements_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                deck_id: string;
+                card_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeckReplacementsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    deck_history_me_decks__deck_id__history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                deck_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeckHistoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_deck_me_decks_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportDeckRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportDeckResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_deck_me_decks__deck_id__export_get: {
+        parameters: {
+            query?: {
+                fmt?: string;
+            };
+            header?: never;
+            path: {
+                deck_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

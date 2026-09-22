@@ -27,7 +27,15 @@ from pbm_api.collection.schemas import (
     CreateCollectionItemRequest,
     UpdateCollectionItemRequest,
 )
-from pbm_api.models import Card, CardName, Set, User
+from pbm_api.decks import collection_sync
+from pbm_api.models import (
+    DECK_EVENT_REASON_COUNTERFEIT,
+    DECK_EVENT_REASON_REMOVED,
+    Card,
+    CardName,
+    Set,
+    User,
+)
 from pbm_api.models.catalog import PriceVariant
 from pbm_api.models.collection import CollectionItem
 from pbm_api.pricing.valuation import bulk_item_values_multi
@@ -445,17 +453,35 @@ async def update_item(
     session: AsyncSession, user: User, item_id: uuid.UUID, data: UpdateCollectionItemRequest
 ) -> CollectionItem:
     item = await get_owned_item(session, user, item_id)
+    was_counterfeit = item.counterfeit_suspected
+    card_id = item.card_id
     for field_name, value in data.model_dump(exclude_unset=True).items():
         setattr(item, field_name, value)
     await session.commit()
     await session.refresh(item)
+    # Un exemplaire fraîchement signalé contrefaçon sort du décompte de possession (la légalité
+    # l'exclut) : même effet qu'une suppression pour les decks qui le citent — on prévient le
+    # joueur si un deck vient d'en devenir « à compléter » (mission `v7-decks-collection-sync`).
+    if not was_counterfeit and item.counterfeit_suspected:
+        await collection_sync.record_collection_change(
+            session, user, {card_id: 1}, DECK_EVENT_REASON_COUNTERFEIT
+        )
     return item
 
 
 async def delete_item(session: AsyncSession, user: User, item_id: uuid.UUID) -> None:
     item = await get_owned_item(session, user, item_id)
+    card_id = item.card_id
+    # Un exemplaire déjà signalé contrefaçon ne comptait pas dans la possession : le supprimer ne
+    # change aucun décompte, donc aucune bascule de deck n'est possible (removed=0).
+    removed = 0 if item.counterfeit_suspected else 1
     await session.delete(item)
     await session.commit()
+    # Après suppression : un deck qui citait cette carte peut venir de devenir « à compléter ».
+    # On ne touche jamais au deck (risque du lot) — on inscrit seulement l'alerte.
+    await collection_sync.record_collection_change(
+        session, user, {card_id: removed}, DECK_EVENT_REASON_REMOVED
+    )
 
 
 async def get_item_photo(

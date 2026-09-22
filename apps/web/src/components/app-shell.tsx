@@ -2,10 +2,13 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { logout } from "@/lib/api/auth";
+import { fetchDeckAlerts } from "@/lib/api/decks";
 import { cn } from "@/lib/utils";
+
+const DECKS_HREF = "/jeu/decks";
 
 type NavLink = { href: string; label: string };
 
@@ -51,6 +54,30 @@ export function AppShell({
   const [menuOpen, setMenuOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const navLinks = hasSession ? SESSION_LINKS : VISITOR_LINKS;
+
+  // Badge d'alertes « à compléter » sur l'onglet Decks (mission `v7-decks-collection-sync` :
+  // « notification au joueur, en-tête »). Best-effort : si l'appel échoue, on n'affiche pas de
+  // badge plutôt que d'annoncer un « 0 » mensonger — l'absence de badge est honnête, pas un repli
+  // qui masque une panne de donnée nominale (la liste des decks, elle, reste fiable côté page).
+  const [unreadAlerts, setUnreadAlerts] = useState(0);
+  useEffect(() => {
+    if (!hasSession) {
+      setUnreadAlerts(0);
+      return;
+    }
+    let active = true;
+    fetchDeckAlerts(true)
+      .then((res) => {
+        if (active) setUnreadAlerts(res.unread_count);
+      })
+      .catch(() => {
+        if (active) setUnreadAlerts(0);
+      });
+    return () => {
+      active = false;
+    };
+    // `pathname` en dépendance : après une vente (page Collection) puis retour, le badge se réévalue.
+  }, [hasSession, pathname]);
 
   // L'état vient du serveur (cookie de session lu par `app/layout.tsx`, même source que la
   // garde de route `middleware.ts`) : jamais deviné côté client — le cookie est httpOnly. La
@@ -111,6 +138,7 @@ export function AppShell({
             <nav className="flex flex-col gap-1.5 sm:ml-auto sm:flex-row sm:flex-wrap sm:items-center" aria-label="Navigation principale">
               {navLinks.map((link) => {
                 const isActive = pathname === link.href;
+                const showAlerts = link.href === DECKS_HREF && unreadAlerts > 0;
                 return (
                   <Link
                     key={link.href}
@@ -118,12 +146,21 @@ export function AppShell({
                     aria-current={isActive ? "page" : undefined}
                     className={cn(
                       // Charte : la navigation est en pilules ; l'onglet actif s'allume en or.
-                      "rounded-full border border-transparent px-4 py-2.5 font-heading text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground transition-colors hover:text-foreground",
+                      "inline-flex items-center gap-1.5 rounded-full border border-transparent px-4 py-2.5 font-heading text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground transition-colors hover:text-foreground",
                       isActive &&
                         "border-[rgba(255,215,0,0.75)] bg-[rgba(255,215,0,0.1)] font-bold text-gold"
                     )}
                   >
                     {link.label}
+                    {showAlerts && (
+                      <span
+                        className="grid min-w-[1.25rem] place-items-center rounded-full bg-[#D6006E] px-1.5 py-0.5 text-[10px] font-bold leading-none text-white"
+                        aria-label={`${unreadAlerts} deck(s) à compléter`}
+                        data-testid="decks-alert-badge"
+                      >
+                        {unreadAlerts}
+                      </span>
+                    )}
                   </Link>
                 );
               })}

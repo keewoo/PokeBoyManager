@@ -17,17 +17,21 @@ import {
   deleteDeck,
   duplicateDeck,
   fetchDeckExport,
+  fetchDeckHistory,
+  fetchDeckReplacements,
   getDeck,
   getDeckCardFacets,
   removeDeckCard,
   searchDeckCards,
   setDeckCard,
   updateDeck,
+  type DeckAlert,
   type DeckCard,
   type DeckCardFacets,
   type DeckCardSearchItem,
   type DeckDetail,
   type DeckFormat,
+  type DeckReplacement,
 } from "@/lib/api/decks";
 
 const DECK_SIZE = 60;
@@ -279,15 +283,45 @@ function DeckCardSearch({
 
 function IncompleteAlert({
   card,
-  onReplace,
+  deckId,
+  onApplyReplacement,
+  onBrowseOwned,
   onRemove,
   disabled,
 }: {
   card: DeckCard;
-  onReplace: () => void;
+  deckId: string;
+  onApplyReplacement: (card: DeckCard, replacement: DeckReplacement) => void;
+  onBrowseOwned: () => void;
   onRemove: (cardId: string) => void;
   disabled: boolean;
 }) {
+  // Suggestions de remplacement : chargées à la demande (mission point 2). On ne remplace JAMAIS
+  // en silence — le joueur voit la raison de chaque proposition et clique pour l'appliquer.
+  const [suggestions, setSuggestions] = useState<DeckReplacement[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+
+  async function toggleSuggestions() {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    setOpen(true);
+    if (suggestions !== null) return; // déjà chargées
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetchDeckReplacements(deckId, card.card_id);
+      setSuggestions(res.replacements);
+    } catch (err) {
+      setError(errorText(err, "Impossible de charger des remplacements."));
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div
       role="alert"
@@ -298,8 +332,14 @@ function IncompleteAlert({
         deck reste modifiable mais n’est pas jouable tant qu’il n’est pas complété.
       </p>
       <div className="flex flex-wrap gap-2">
-        <Button size="sm" variant="outline" onClick={onReplace} disabled={disabled}>
-          Remplacer par une possédée
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={toggleSuggestions}
+          disabled={disabled}
+          aria-expanded={open}
+        >
+          {open ? "Masquer les remplacements" : "Remplacer par une possédée"}
         </Button>
         <Button
           size="sm"
@@ -313,6 +353,49 @@ function IncompleteAlert({
           <Link href={`/carte/${card.card_id}`}>Voir la carte</Link>
         </Button>
       </div>
+
+      {open && (
+        <div className="mt-1 grid gap-2" data-testid="replacement-suggestions">
+          {loading && <p className="text-xs text-muted-foreground">Recherche de remplacements…</p>}
+          {error && <p className="text-xs text-danger-foreground">{error}</p>}
+          {suggestions !== null && suggestions.length === 0 && !loading && (
+            <p className="text-xs text-muted-foreground">
+              Aucune carte possédée du même type à proposer.{" "}
+              <button type="button" className="underline" onClick={onBrowseOwned}>
+                Chercher moi-même dans mes cartes
+              </button>
+            </p>
+          )}
+          {suggestions?.map((suggestion) => (
+            <div
+              key={suggestion.card_id}
+              className="flex items-center gap-3 rounded-lg border border-border bg-card p-2 text-foreground"
+            >
+              <CardImage
+                src={suggestion.image_url}
+                alt={suggestion.name}
+                label="Pas d'image"
+                className="h-12 w-9 shrink-0 rounded-sm object-cover"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-heading text-sm font-bold">{suggestion.name}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {suggestion.reason} · {suggestion.owned_count} possédée(s)
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => onApplyReplacement(card, suggestion)}
+                disabled={disabled}
+                aria-label={`Remplacer ${card.card_name} par ${suggestion.name}`}
+              >
+                Remplacer
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -403,14 +486,16 @@ function DeckContents({
   onSetQuantity,
   onRemoveOne,
   onRemoveCard,
-  onReplace,
+  onApplyReplacement,
+  onBrowseOwned,
   disabled,
 }: {
   deck: DeckDetail;
   onSetQuantity: (cardId: string, quantity: number) => void;
   onRemoveOne: (card: DeckCard) => void;
   onRemoveCard: (cardId: string) => void;
-  onReplace: () => void;
+  onApplyReplacement: (card: DeckCard, replacement: DeckReplacement) => void;
+  onBrowseOwned: () => void;
   disabled: boolean;
 }) {
   const incomplete = deck.cards.filter((c) => c.missing > 0);
@@ -461,7 +546,9 @@ function DeckContents({
             <IncompleteAlert
               key={card.card_id}
               card={card}
-              onReplace={onReplace}
+              deckId={deck.id}
+              onApplyReplacement={onApplyReplacement}
+              onBrowseOwned={onBrowseOwned}
               onRemove={onRemoveCard}
               disabled={disabled}
             />
@@ -591,12 +678,26 @@ export function DeckBuilderView({ deckId }: { deckId: string }) {
     [deckId, runMutation]
   );
 
-  const handleReplace = useCallback(() => {
-    // « Remplacer par une possédée » : on n'échange jamais une carte en silence — on bascule la
-    // recherche sur les cartes possédées et on y amène l'utilisateur, qui choisit lui-même.
+  const handleBrowseOwned = useCallback(() => {
+    // Repli « Chercher moi-même » : on bascule la recherche sur les cartes possédées et on y amène
+    // l'utilisateur, qui choisit lui-même — jamais d'échange en silence.
     setOwnedOnly(true);
     searchRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
+
+  const handleApplyReplacement = useCallback(
+    (card: DeckCard, replacement: DeckReplacement) => {
+      // Échange EXPLICITE, demandé par le joueur : on ajoute la carte possédée à la même quantité
+      // que celle qui manquait, puis on retire la carte manquante. Deux écritures, jamais en
+      // silence — le résultat renvoyé par la seconde reflète les deux.
+      const current = deckCardCounts[replacement.card_id] ?? 0;
+      void runMutation(async () => {
+        await setDeckCard(deckId, replacement.card_id, current + card.quantity);
+        return removeDeckCard(deckId, card.card_id);
+      }, "Le remplacement a échoué.");
+    },
+    [deckCardCounts, deckId, runMutation]
+  );
 
   function commitName() {
     const trimmed = name.trim();
@@ -773,10 +874,85 @@ export function DeckBuilderView({ deckId }: { deckId: string }) {
           onSetQuantity={handleSetQuantity}
           onRemoveOne={handleRemoveOne}
           onRemoveCard={handleRemoveCard}
-          onReplace={handleReplace}
+          onApplyReplacement={handleApplyReplacement}
+          onBrowseOwned={handleBrowseOwned}
           disabled={mutating}
         />
       </div>
+
+      <DeckHistory deckId={deckId} refreshKey={deck.updated_at} />
     </div>
+  );
+}
+
+function DeckHistory({ deckId, refreshKey }: { deckId: string; refreshKey: string }) {
+  // Historique des changements de collection ayant touché ce deck (mission « historique des
+  // modifications du deck »). Chargé à l'ouverture ; rechargé quand le deck change (`refreshKey`).
+  const [open, setOpen] = useState(false);
+  const [events, setEvents] = useState<DeckAlert[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    let active = true;
+    setLoading(true);
+    setError(null);
+    fetchDeckHistory(deckId)
+      .then((res) => {
+        if (active) setEvents(res.events);
+      })
+      .catch((err) => {
+        if (active) setError(errorText(err, "Impossible de charger l'historique."));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [open, deckId, refreshKey]);
+
+  return (
+    <section className="mt-4 rounded-lg border border-border bg-card p-4">
+      <button
+        type="button"
+        className="flex w-full items-center justify-between font-heading text-sm font-bold text-foreground"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span>Historique des changements de collection</span>
+        <span aria-hidden>{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div className="mt-3 text-sm" data-testid="deck-history">
+          {loading && <p className="text-muted-foreground">Chargement…</p>}
+          {error && <p className="text-danger-foreground">{error}</p>}
+          {events !== null && events.length === 0 && !loading && (
+            <p className="text-muted-foreground">
+              Aucun changement : aucune carte de ce deck n’a quitté ta collection.
+            </p>
+          )}
+          {events && events.length > 0 && (
+            <ul className="space-y-2">
+              {events.map((event) => (
+                <li key={event.id} className="rounded-md border border-border bg-background p-2">
+                  <p className="text-foreground">
+                    <b>{event.card_name}</b> —{" "}
+                    {event.reason === "counterfeit"
+                      ? "signalée contrefaçon (exclue du décompte)"
+                      : "exemplaire retiré de la collection"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Il en manque {event.missing} ({event.owned}/{event.required} possédée(s)) ·{" "}
+                    {new Date(event.created_at).toLocaleDateString("fr-FR")}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
