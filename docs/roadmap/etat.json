@@ -4233,7 +4233,7 @@
       "compte_rendu": {}
     },
     "v7-decks-recherche": {
-      "statut": "a_faire",
+      "statut": "integre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
@@ -4285,11 +4285,24 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-22T21:38+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": "Fusionne le 22/09 (45b371e) apres correction de la CI (pbm_immutable_unaccent qualifie par son schema, revision rebranchee sur c3a7e1f4d820). CI verte sur main."
+        }
+      ],
+      "compte_rendu": {},
+      "attente": {
+        "quand": "2026-09-22T21:38+0200",
+        "raisons": [
+          "Fusionne le 22/09 (45b371e) apres correction de la CI (pbm_immutable_unaccent qualifie par son schema, revision rebranchee sur c3a7e1f4d820). CI verte sur main."
+        ]
+      }
     },
     "v7-decks-legalite": {
-      "statut": "a_faire",
+      "statut": "integre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
@@ -4341,8 +4354,21 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-22T21:38+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": "Deja dans main depuis le 21/09 (commit 8e09389, apps/api/src/pbm_api/decks/legality.py) : etat.json etait reste a a_faire, l ordonnanceur de chimera qui devait le tenir a jour s est arrete le 20/09."
+        }
+      ],
+      "compte_rendu": {},
+      "attente": {
+        "quand": "2026-09-22T21:38+0200",
+        "raisons": [
+          "Deja dans main depuis le 21/09 (commit 8e09389, apps/api/src/pbm_api/decks/legality.py) : etat.json etait reste a a_faire, l ordonnanceur de chimera qui devait le tenir a jour s est arrete le 20/09."
+        ]
+      }
     },
     "v7-decks-collection-sync": {
       "statut": "a_faire",
@@ -4457,7 +4483,7 @@
       "compte_rendu": {}
     },
     "v7-decks-import-export": {
-      "statut": "a_faire",
+      "statut": "integre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
@@ -4509,8 +4535,21 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-22T21:38+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": "Deja dans main depuis le 21/09 (commit ceceff8, apps/api/src/pbm_api/decks/import_service.py) : meme cause."
+        }
+      ],
+      "compte_rendu": {},
+      "attente": {
+        "quand": "2026-09-22T21:38+0200",
+        "raisons": [
+          "Deja dans main depuis le 21/09 (commit ceceff8, apps/api/src/pbm_api/decks/import_service.py) : meme cause."
+        ]
+      }
     },
     "v7-decks-e2e": {
       "statut": "a_faire",
