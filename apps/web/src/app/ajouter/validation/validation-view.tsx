@@ -343,13 +343,19 @@ export function ValidationView({ uploadIds }: { uploadIds: string[] }) {
       )}
 
       {failedJobError && (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <div className="min-w-0 flex-1">
+        <div className="mb-4 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 sm:flex-1">
             <FormNotice variant="error">
               La reconnaissance a échoué sur une partie des photos : {failedJobError}
             </FormNotice>
           </div>
-          <Button variant="outline" size="sm" onClick={handleRetry} disabled={retrying}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRetry}
+            disabled={retrying}
+            className="shrink-0"
+          >
             {retrying ? "Relance en cours…" : "Relancer la reconnaissance"}
           </Button>
         </div>
