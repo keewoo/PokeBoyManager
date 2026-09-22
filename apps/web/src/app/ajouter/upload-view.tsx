@@ -256,7 +256,10 @@ export function UploadView() {
           Aucune clé IA n&rsquo;est configurée : la reconnaissance automatique est désactivée.
           L&rsquo;ajout manuel d&rsquo;une carte au catalogue reste toujours possible.
         </p>
-        <Button asChild className="mt-2">
+        {/* Libellé long : sur un téléphone à 320px, ce bouton en `whitespace-nowrap` (défaut du
+            composant) débordait l'écran (défilement horizontal mesuré par `responsive.spec.ts`).
+            On l'autorise à passer sur deux lignes en gardant la hauteur de pilule en desktop. */}
+        <Button asChild className="mt-2 h-auto min-h-12 whitespace-normal py-2 text-center leading-tight">
           <Link href="/profil">Configurer une clé dans Profil → Mon IA</Link>
         </Button>
         <div className="mt-6 w-full max-w-md text-left">
