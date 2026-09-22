@@ -227,3 +227,86 @@ def test_build_packets_custom_id_is_api_valid_even_with_dotted_set_id() -> None:
     assert packets, "au moins un paquet attendu"
     for p in packets:
         assert re.fullmatch(r"[a-zA-Z0-9_-]{1,64}", p.custom_id), p.custom_id
+
+
+# --------------------------------------------------------------------------- RÈGLES SEULES
+#
+# Lot `pbm-fiches-reste` : mêmes preuves ciblées que ci-dessus, transposées à la variante sans
+# anecdotes — le schéma ne porte QUE `game_rules` (aucune anecdote possible), le prompt ne réclame
+# aucune source wiki (il n'y en a pas), et l'anti-mélange par `card_ref` reste exact.
+
+from pbm_api.insights_batch.large_generation import (  # noqa: E402
+    RULES_ONLY_JSON_SCHEMA,
+    RulesOnlyCardInsight,
+    RulesOnlyExtraction,
+    build_rules_only_prompt,
+    parse_rules_only_result,
+)
+
+
+def _rules_payload(refs: list[str]) -> str:
+    return RulesOnlyExtraction(
+        cards=[
+            RulesOnlyCardInsight(card_ref=r, game_rules="Attaque à 2 énergies.")
+            for r in refs
+        ]
+    ).model_dump_json()
+
+
+def _packet_card_bare(ref: str, name: str) -> PacketCard:
+    return PacketCard(
+        card_ref=ref, card_name=name, card_pages=[], supertype="Pokémon",
+        legal_standard=True, legal_expanded=True, prize_label="1 Prix", rule_marker=None,
+        hp=70, retreat_cost=1, attacks=[{"name": "Éclair", "cost": ["Lightning"], "damage": "20"}],
+        abilities=None, weaknesses=None, resistances=None,
+    )
+
+
+def test_rules_only_schema_has_no_anecdotes_field() -> None:
+    # Le contenu attendu par carte est UNIQUEMENT les règles de jeu (décision de JF).
+    item = RULES_ONLY_JSON_SCHEMA["properties"]["cards"]["items"]
+    assert set(item["properties"]) == {"card_ref", "game_rules"}
+    assert item["additionalProperties"] is False
+
+
+def test_rules_only_prompt_carries_game_data_and_no_wiki() -> None:
+    prompt = build_rules_only_prompt(
+        set_name="Écarlate et Violet",
+        cards=[_packet_card_bare("c1", "Pikachu"), _packet_card_bare("c2", "Salamèche")],
+    )
+    assert "CARTE c1" in prompt and "CARTE c2" in prompt
+    assert "Éclair" in prompt  # données de jeu du catalogue mises à disposition
+    assert "n'invente" in prompt.lower() or "invente" in prompt.lower()
+    # Aucune section anecdote / source wiki dans le prompt règles-seules.
+    assert "anecdote" not in prompt.lower()
+    assert "Source [" not in prompt
+
+
+def test_parse_rules_only_happy_path_indexes_by_ref() -> None:
+    parsed = parse_rules_only_result(_rules_payload(["c1", "c2"]), ["c1", "c2"])
+    assert set(parsed) == {"c1", "c2"}
+    assert parsed["c1"].game_rules
+
+
+def test_parse_rules_only_rejects_missing_card() -> None:
+    with pytest.raises(PacketMixingError):
+        parse_rules_only_result(_rules_payload(["c1"]), ["c1", "c2"])
+
+
+def test_parse_rules_only_rejects_unknown_card() -> None:
+    with pytest.raises(PacketMixingError):
+        parse_rules_only_result(_rules_payload(["c1", "c2", "c3"]), ["c1", "c2"])
+
+
+def test_parse_rules_only_remaps_name_to_ref_when_unique() -> None:
+    # Le modèle rend parfois le NOM au lieu du code court : remappé si le nom est unique au paquet.
+    payload = _rules_payload(["Dracaufeu GX", "c2"])
+    parsed = parse_rules_only_result(
+        payload, ["c1", "c2"], card_names_by_ref={"c1": "Dracaufeu GX", "c2": "Bulbizarre"}
+    )
+    assert set(parsed) == {"c1", "c2"}
+
+
+def test_parse_rules_only_rejects_truncated_json() -> None:
+    with pytest.raises(ValidationError):
+        parse_rules_only_result('{"cards": [{"card_ref": "c1", "game_rules', ["c1"])

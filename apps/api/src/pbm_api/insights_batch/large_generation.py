@@ -241,17 +241,132 @@ def parse_large_result(
     return {ref: card for ref, card in normalized}
 
 
+# --------------------------------------------------------------------------- variante RÈGLES SEULES
+#
+# Lot `pbm-fiches-reste` (22/09) : les 4 434 cartes sans fiche que le ciblage 80 % avait laissées
+# de côté (surtout Communes/Peu communes/Rares) sont couvertes SANS anecdotes, avec UNIQUEMENT les
+# règles de jeu. Décision de JF : « le modèle met en forme, il n'invente pas » — exactement la
+# partie 2 du prompt groupé, mais isolée. Conséquence directe et voulue : AUCUNE source wiki n'est
+# récupérée (c'est ce qui coûtait ≈1 750 jetons d'entrée/carte au lot précédent). Le champ
+# `anecdotes` de la fiche reste donc vide (`[]`, cache négatif frais) — l'onglet « En jeu » se lit
+# sur `in_game_study`, sans appel IA. Le contrôle anti-mélange par `card_ref` est repris à
+# l'identique (`parse_rules_only_result`), seul le contenu par carte change (plus d'anecdotes).
+
+# Version distincte de `LARGE_PROMPT_VERSION` ("large-v1") : une carte déjà couverte par ce lot
+# n'est plus candidate, une évolution du prompt règles-seules la rendrait candidate à nouveau.
+RULES_ONLY_PROMPT_VERSION = "rules-v1"
+
+
+class RulesOnlyCardInsight(BaseModel):
+    """Un objet par carte : `card_ref` de rappel et les seules règles de jeu (pas d'anecdotes)."""
+
+    card_ref: str
+    game_rules: str
+
+
+class RulesOnlyExtraction(BaseModel):
+    cards: list[RulesOnlyCardInsight]
+
+
+RULES_ONLY_JSON_SCHEMA = to_strict_schema(RulesOnlyExtraction)
+
+
+def build_rules_only_prompt(*, set_name: str, cards: list[PacketCard]) -> str:
+    """Prompt règles-seules : uniquement les données de jeu déterministes du catalogue, mises en
+    forme en français clair. Pas de contexte wiki, pas d'anecdotes — le modèle reformule, il
+    n'invente rien (ni attaque, ni coût, ni légalité, ni tournoi)."""
+    lines = [
+        f'Tu rédiges les RÈGLES DE JEU de PLUSIEURS cartes Pokémon de l\'extension "{set_name}", '
+        "en une seule réponse structurée. Pour CHAQUE carte, tu produis un seul texte français : "
+        "comment la carte se joue.",
+        "",
+        "Règles générales strictes :",
+        "- Traite chaque carte séparément. N'utilise JAMAIS les données d'une carte pour une "
+        "autre.",
+        "- Rends exactement un objet par carte, avec le champ `card_ref` recopié À L'IDENTIQUE "
+        "depuis l'en-tête « CARTE <card_ref> ». Le `card_ref` est le CODE COURT (par exemple "
+        "`c1`, `c2`), JAMAIS le nom de la carte. N'ajoute aucune carte hors de cette liste, "
+        "n'en oublie aucune, ne répète aucun `card_ref`.",
+        "",
+        "=== `game_rules` (texte français, par carte) ===",
+        "- Décris en quelques phrases comment la carte se joue, en t'appuyant UNIQUEMENT sur les "
+        "données de jeu déterministes fournies pour chaque carte ci-dessous : coût en énergies et "
+        "effet de ses attaques, talent éventuel, faiblesse, résistance, coût de retraite, règle "
+        "des Prix (ex/V/VMAX/GX…), rôle typique dans un deck (une phrase), et formats où elle est "
+        "légale (Standard / Étendu).",
+        "- Pour un Dresseur ou une Énergie : dis ce que la carte fait, quand la jouer et ses "
+        "limites (un Supporter par tour, un Outil par Pokémon…), à partir des seules données "
+        "fournies.",
+        "- N'invente aucune attaque, aucun coût, aucun effet, aucune légalité, aucun tournoi : "
+        "reformule seulement les données fournies. Si une donnée manque, ne la mentionne pas "
+        "plutôt que de la deviner.",
+    ]
+    for card in cards:
+        lines += ["", f'=== CARTE {card.card_ref} : "{card.card_name}" ===']
+        lines += _render_game_data(card)
+    return "\n".join(lines)
+
+
+def parse_rules_only_result(
+    text: str,
+    requested_refs: list[str],
+    card_names_by_ref: dict[str, str] | None = None,
+) -> dict[str, RulesOnlyCardInsight]:
+    """Comme `parse_large_result` (même garde-fou anti-mélange : bijection exacte entre cartes
+    demandées et objets rendus, avec la même tolérance nom→ref sur les noms uniques du paquet),
+    mais pour le schéma règles-seules. Lève `ValidationError` (JSON hors schéma / réponse tronquée)
+    ou `PacketMixingError` (discordance de `card_ref`) : l'appelant rejette alors le
+    paquet entier."""
+    extraction = RulesOnlyExtraction.model_validate_json(text)
+    requested_set = set(requested_refs)
+
+    name_to_ref: dict[str, str] = {}
+    if card_names_by_ref:
+        counts: dict[str, int] = {}
+        for name in card_names_by_ref.values():
+            counts[name] = counts.get(name, 0) + 1
+        name_to_ref = {
+            name: ref for ref, name in card_names_by_ref.items() if counts[name] == 1
+        }
+
+    normalized: list[tuple[str, RulesOnlyCardInsight]] = []
+    for card in extraction.cards:
+        ref = card.card_ref
+        if ref not in requested_set and ref in name_to_ref:
+            ref = name_to_ref[ref]
+        normalized.append((ref, card))
+
+    returned = [ref for ref, _ in normalized]
+    returned_set = set(returned)
+    if len(returned) != len(returned_set):
+        duplicates = sorted({ref for ref in returned if returned.count(ref) > 1})
+        raise PacketMixingError(f"card_ref en double dans la réponse : {duplicates}")
+    if returned_set != requested_set:
+        missing = sorted(requested_set - returned_set)
+        unknown = sorted(returned_set - requested_set)
+        raise PacketMixingError(
+            f"card_ref demandés/rendus discordants — manquants={missing} inconnus={unknown}"
+        )
+    return {ref: card for ref, card in normalized}
+
+
 __all__ = [
     "LARGE_JSON_SCHEMA",
     "LARGE_PROMPT_VERSION",
     "MAX_ANECDOTES",
+    "RULES_ONLY_JSON_SCHEMA",
+    "RULES_ONLY_PROMPT_VERSION",
     "LargeAnecdote",
     "LargeCardInsight",
     "LargeInsightExtraction",
+    "RulesOnlyCardInsight",
+    "RulesOnlyExtraction",
     "PacketCard",
     "PacketMixingError",
     "ValidationError",
     "allowed_urls_for",
     "build_large_prompt",
+    "build_rules_only_prompt",
     "parse_large_result",
+    "parse_rules_only_result",
 ]
