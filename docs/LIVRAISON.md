@@ -84,6 +84,66 @@ chimera**, et seul le résultat est importé en PROD (`infra/fleet/*.sql`). Le w
 que le court — reconnaissance, exports RGPD, e-mails — sous la garde `HEAVY_JOBS_ENABLED`
 (**faux par défaut en production**). Runbook complet : `docs/infra/JOBS-LOURDS.md`.
 
+## ⛔ « L'outil est absent » : vérifie le PATH avant de le croire (2026-09-22)
+
+Trois pannes du 22/09, une seule cause. Un lot lancé par `ssh devai 'nohup claude -p …'` est mort à
+la seconde : `claude: No such file or directory`, **journal de 41 octets**, aucune branche. Le même
+jour, deux lots ont écrit « `gh` CLI absent de cette session » puis se sont déclarés **finis, sans
+PR donc sans CI**.
+
+Les trois diagnostics étaient faux : `claude` et `gh` vivent dans `/opt/homebrew/bin`, que le PATH
+d'un **ssh non interactif** ne contenait pas. Les binaires étaient là depuis juillet.
+
+Corrigé dans le `~/.zshenv` de devAI, **en fin de PATH** et pas en tête : Homebrew fournit aussi
+`node`/`npm`/`npx`, et c'est `~/.local/node/bin` qui doit continuer de gagner.
+
+**La règle** : avant de conclure qu'un outil manque, `command -v <outil>` puis
+`ls /opt/homebrew/bin/<outil>`. Introuvable dans un shell non interactif ≠ absent — et « absent »
+n'a jamais été une raison de livrer sans CI.
+
+## La PR n'est pas optionnelle
+
+`bash scripts/ouvrir-pr.sh <branche>` ouvre la PR du lot. Il ne se rabat jamais en silence :
+
+| Situation | Code |
+|---|---|
+| PR déjà ouverte | `0`, et il en donne l'URL |
+| Branche déjà fusionnée dans `main` | `0`, en le **disant** (vérifie alors la CI sur `main`) |
+| Branche pas poussée, ou pas de remote GitHub | `3` |
+| Jeton sans `pull_requests=write` | `4`, avec la cause nommée |
+| Machine sans jeton (chimera) | `5`, avec la commande à lancer depuis devAI |
+
+Il **ne dépend pas de `gh`** (absent de la WSL de chimera) : API REST via `curl` et `python3`. Il
+trouve seul le bon remote — `origin` sur devAI, `github` sur chimera, dont l'`origin` est un dépôt
+relais local **qui retarde**.
+
+Un code ≠ 0 n'autorise pas à conclure : le lot passe en `bloque`, ou nomme le manque **dans son
+compte rendu ET dans son dernier message**. Sans PR, le workflow ne tourne pas sur la branche
+(il se déclenche sur `pull_request` et sur `push: [main]`), et c'est la CI qui fait foi.
+
+### Pourquoi ça ne marche pas encore tout seul
+
+Quatre identifiants testés le 22/09 — `GITHUB_TOKEN` et `~/.github-token-claude-desktop` sur devAI,
+le jeton stocké de `gh`, `~/.config/git/github-token` sur le Mac. **Aucun ne peut ouvrir une PR.**
+Ce n'est pas une déduction, GitHub le dit dans l'en-tête de son refus :
+
+```
+HTTP/2 403
+x-accepted-github-permissions: pull_requests=write
+```
+
+`.github/workflows/pr-auto.yml` contourne le problème par le jeton du runner, que GitHub fabrique
+lui-même. Il est en place, il **tourne**, et il bute sur un réglage du dépôt :
+*« GitHub Actions is not permitted to create or approve pull requests »*.
+
+**Deux corrections, toutes deux chez JF — une seule suffit :**
+1. cocher *Settings → Actions → General → Workflow permissions → « Allow GitHub Actions to create
+   and approve pull requests »* → **toutes** les PR s'ouvrent seules, pour toujours ;
+2. ou ajouter *Pull requests: write* au jeton fine-grained → `ouvrir-pr.sh` fonctionne.
+
+Tant qu'aucune n'est faite, `pr-auto` **reste rouge exprès** — un lot sans PR n'a pas de CI, ça doit
+se voir — mais son message dit que le code n'est pas en cause et donne le lien d'ouverture manuelle.
+
 ## Retour arrière
 
 Les versions précédentes restent dans `/srv/pokeboy/prod/releases/` : revenir en arrière, c'est
