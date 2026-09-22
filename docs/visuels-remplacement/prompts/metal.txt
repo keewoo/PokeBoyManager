@@ -1,0 +1,43 @@
+Planche de textures pour un jeu de cartes à collectionner, à découper automatiquement.
+
+FORMAT EXACT
+- Image carrée 1536 × 1536 px.
+- Grille régulière de 3 colonnes × 3 lignes = 9 vignettes carrées de 480 × 480 px.
+- Entre les vignettes et sur tout le pourtour : des gouttières de 24 px d'un magenta pur et uni
+  (#FF00FF), sans ombre, sans dégradé, sans flou. Ces bandes servent de repères de découpe :
+  parfaitement droites, de largeur constante, jamais recouvertes par le dessin.
+- Chaque vignette est remplie bord à bord par son illustration : pas de cadre, pas de bordure,
+  pas de coin arrondi, pas de vignettage.
+
+CONTENU DES 9 VIGNETTES — type Métal (code `metal`)
+1. plaques d'acier rivetées
+2. engrenages abstraits en gros plan
+3. surface chromée aux reflets nets
+4. métal en fusion qui refroidit
+5. structure métallique en contre-plongée
+6. limaille et éclats sous une lumière crue
+7. acier brossé, rayures régulières
+8. tuyauterie industrielle dans la vapeur
+9. fragments métalliques en suspension
+
+CONTRAINTES DE LISIBILITÉ
+- Chaque vignette sera affichée à 120 px de large dans une collection : formes larges,
+  contrastes marqués, aucun micro-détail.
+- Le centre de chaque vignette reste calme et peu contrasté : le nom de la carte, ses PV et son
+  numéro seront écrits par-dessus. L'énergie visuelle va vers les bords.
+- Palette dérivée du type : gris acier, argent, bleu froid, reflets chromés.
+
+STYLE
+- Illustration numérique, couleurs saturées, lumière douce, rendu proche d'un artwork de jeu
+  vidéo moderne. Cohérence d'une vignette à l'autre : même traitement, même palette, même
+  niveau de détail.
+
+INTERDITS
+- Aucun texte, aucun chiffre, aucun logo, aucun filigrane.
+- Aucun personnage, aucune créature, aucun animal, aucun être vivant reconnaissable : ces fonds
+  remplacent une illustration manquante, ils ne doivent jamais ressembler à une carte existante.
+- Aucune carte à jouer dessinée dans l'image, aucun cadre décoratif, aucun effet holographique.
+
+SORTIE ATTENDUE
+- Un fichier `metal.png`, déposé dans `docs/visuels-remplacement/planches/`.
+- Le découpage produira `metal-01.webp` … `metal-09.webp` (512 px de côté).

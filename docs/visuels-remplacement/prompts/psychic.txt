@@ -1,0 +1,43 @@
+Planche de textures pour un jeu de cartes à collectionner, à découper automatiquement.
+
+FORMAT EXACT
+- Image carrée 1536 × 1536 px.
+- Grille régulière de 3 colonnes × 3 lignes = 9 vignettes carrées de 480 × 480 px.
+- Entre les vignettes et sur tout le pourtour : des gouttières de 24 px d'un magenta pur et uni
+  (#FF00FF), sans ombre, sans dégradé, sans flou. Ces bandes servent de repères de découpe :
+  parfaitement droites, de largeur constante, jamais recouvertes par le dessin.
+- Chaque vignette est remplie bord à bord par son illustration : pas de cadre, pas de bordure,
+  pas de coin arrondi, pas de vignettage.
+
+CONTENU DES 9 VIGNETTES — type Psy (code `psychic`)
+1. nébuleuse violette et poussière d'étoiles
+2. ondes concentriques dans un espace sombre
+3. miroirs brisés aux reflets irisés
+4. brume mauve traversée de lueurs
+5. spirale douce, presque hypnotique
+6. aurore violette au-dessus d'un horizon plat
+7. cristaux flottants en lévitation
+8. voile de soie mauve en mouvement
+9. halo de lumière abstrait, sans œil ni visage
+
+CONTRAINTES DE LISIBILITÉ
+- Chaque vignette sera affichée à 120 px de large dans une collection : formes larges,
+  contrastes marqués, aucun micro-détail.
+- Le centre de chaque vignette reste calme et peu contrasté : le nom de la carte, ses PV et son
+  numéro seront écrits par-dessus. L'énergie visuelle va vers les bords.
+- Palette dérivée du type : violets, magenta, rose profond, indigo.
+
+STYLE
+- Illustration numérique, couleurs saturées, lumière douce, rendu proche d'un artwork de jeu
+  vidéo moderne. Cohérence d'une vignette à l'autre : même traitement, même palette, même
+  niveau de détail.
+
+INTERDITS
+- Aucun texte, aucun chiffre, aucun logo, aucun filigrane.
+- Aucun personnage, aucune créature, aucun animal, aucun être vivant reconnaissable : ces fonds
+  remplacent une illustration manquante, ils ne doivent jamais ressembler à une carte existante.
+- Aucune carte à jouer dessinée dans l'image, aucun cadre décoratif, aucun effet holographique.
+
+SORTIE ATTENDUE
+- Un fichier `psychic.png`, déposé dans `docs/visuels-remplacement/planches/`.
+- Le découpage produira `psychic-01.webp` … `psychic-09.webp` (512 px de côté).

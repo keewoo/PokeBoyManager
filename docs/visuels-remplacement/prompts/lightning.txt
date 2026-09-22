@@ -1,0 +1,43 @@
+Planche de textures pour un jeu de cartes à collectionner, à découper automatiquement.
+
+FORMAT EXACT
+- Image carrée 1536 × 1536 px.
+- Grille régulière de 3 colonnes × 3 lignes = 9 vignettes carrées de 480 × 480 px.
+- Entre les vignettes et sur tout le pourtour : des gouttières de 24 px d'un magenta pur et uni
+  (#FF00FF), sans ombre, sans dégradé, sans flou. Ces bandes servent de repères de découpe :
+  parfaitement droites, de largeur constante, jamais recouvertes par le dessin.
+- Chaque vignette est remplie bord à bord par son illustration : pas de cadre, pas de bordure,
+  pas de coin arrondi, pas de vignettage.
+
+CONTENU DES 9 VIGNETTES — type Électrique (code `lightning`)
+1. éclair ramifié dans un ciel d'orage
+2. arcs électriques entre deux pointes
+3. nuages chargés éclairés de l'intérieur
+4. circuits lumineux sur fond sombre
+5. pluie d'étincelles bleues
+6. halo électrique autour d'une sphère
+7. ciel jaune juste avant l'orage
+8. lignes à haute tension dans la brume
+9. plasma en filaments lents
+
+CONTRAINTES DE LISIBILITÉ
+- Chaque vignette sera affichée à 120 px de large dans une collection : formes larges,
+  contrastes marqués, aucun micro-détail.
+- Le centre de chaque vignette reste calme et peu contrasté : le nom de la carte, ses PV et son
+  numéro seront écrits par-dessus. L'énergie visuelle va vers les bords.
+- Palette dérivée du type : jaunes vifs, ambre, bleu électrique, gris orage.
+
+STYLE
+- Illustration numérique, couleurs saturées, lumière douce, rendu proche d'un artwork de jeu
+  vidéo moderne. Cohérence d'une vignette à l'autre : même traitement, même palette, même
+  niveau de détail.
+
+INTERDITS
+- Aucun texte, aucun chiffre, aucun logo, aucun filigrane.
+- Aucun personnage, aucune créature, aucun animal, aucun être vivant reconnaissable : ces fonds
+  remplacent une illustration manquante, ils ne doivent jamais ressembler à une carte existante.
+- Aucune carte à jouer dessinée dans l'image, aucun cadre décoratif, aucun effet holographique.
+
+SORTIE ATTENDUE
+- Un fichier `lightning.png`, déposé dans `docs/visuels-remplacement/planches/`.
+- Le découpage produira `lightning-01.webp` … `lightning-09.webp` (512 px de côté).

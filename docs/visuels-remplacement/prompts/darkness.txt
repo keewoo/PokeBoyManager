@@ -1,0 +1,43 @@
+Planche de textures pour un jeu de cartes à collectionner, à découper automatiquement.
+
+FORMAT EXACT
+- Image carrée 1536 × 1536 px.
+- Grille régulière de 3 colonnes × 3 lignes = 9 vignettes carrées de 480 × 480 px.
+- Entre les vignettes et sur tout le pourtour : des gouttières de 24 px d'un magenta pur et uni
+  (#FF00FF), sans ombre, sans dégradé, sans flou. Ces bandes servent de repères de découpe :
+  parfaitement droites, de largeur constante, jamais recouvertes par le dessin.
+- Chaque vignette est remplie bord à bord par son illustration : pas de cadre, pas de bordure,
+  pas de coin arrondi, pas de vignettage.
+
+CONTENU DES 9 VIGNETTES — type Obscurité (code `darkness`)
+1. brume nocturne sous une lune voilée
+2. encre qui se diffuse dans l'eau
+3. forêt noire, silhouettes d'arbres
+4. fumée sombre et braises froides
+5. ruelle obscure éclairée d'une seule lueur
+6. ciel sans étoiles, dégradé profond
+7. reflets huileux sur une surface noire
+8. éclipse abstraite, couronne de lumière
+9. ombres portées qui s'allongent
+
+CONTRAINTES DE LISIBILITÉ
+- Chaque vignette sera affichée à 120 px de large dans une collection : formes larges,
+  contrastes marqués, aucun micro-détail.
+- Le centre de chaque vignette reste calme et peu contrasté : le nom de la carte, ses PV et son
+  numéro seront écrits par-dessus. L'énergie visuelle va vers les bords.
+- Palette dérivée du type : noirs, violets sourds, vert sombre, éclats froids.
+
+STYLE
+- Illustration numérique, couleurs saturées, lumière douce, rendu proche d'un artwork de jeu
+  vidéo moderne. Cohérence d'une vignette à l'autre : même traitement, même palette, même
+  niveau de détail.
+
+INTERDITS
+- Aucun texte, aucun chiffre, aucun logo, aucun filigrane.
+- Aucun personnage, aucune créature, aucun animal, aucun être vivant reconnaissable : ces fonds
+  remplacent une illustration manquante, ils ne doivent jamais ressembler à une carte existante.
+- Aucune carte à jouer dessinée dans l'image, aucun cadre décoratif, aucun effet holographique.
+
+SORTIE ATTENDUE
+- Un fichier `darkness.png`, déposé dans `docs/visuels-remplacement/planches/`.
+- Le découpage produira `darkness-01.webp` … `darkness-09.webp` (512 px de côté).
