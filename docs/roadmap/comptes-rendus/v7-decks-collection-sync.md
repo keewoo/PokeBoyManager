@@ -100,3 +100,8 @@ Recette locale devAI : `ruff` propre, **786 tests API passés** (2 échecs `test
 - **« Partie en cours non affectée »** : il n'existe encore aucune table de partie dans le dépôt ; le
   test garantit l'invariant qui la protégera (le contenu du deck n'est jamais modifié par la synchro).
 - Suivi (`etat.json`, `ROADMAP.html`, `BACKLOG.md`, `prompts/`) laissé à l'ordonnanceur, comme convenu.
+- **PR non ouverte** : `scripts/ouvrir-pr.sh` renvoie **HTTP 403 — « Resource not accessible by
+  personal access token »** (le jeton GitHub de devAI lit et pousse, mais n'a pas la permission
+  *Pull requests: write*). À corriger côté GitHub par JF. **Sans conséquence sur le verdict** : la
+  CI se déclenche sur `push` vers `roadmap/**` (choix de conception du workflow, précisément pour
+  qu'un lot ait sa CI sans dépendre d'une PR). La branche est poussée et la CI tourne dessus.
