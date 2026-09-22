@@ -1,9 +1,10 @@
 name: PR automatique des lots
 
-# Aucun jeton de la flotte ne peut ouvrir une PR (ils n'ont pas `pull_requests=write`,
-# GitHub le dit lui-meme dans l'en-tete x-accepted-github-permissions). Le jeton d'un
-# runner, lui, est fourni par GitHub : il suffit de le demander ci-dessous.
-# Sans PR, le workflow de CI ne tourne pas sur la branche du lot — et c'est la CI qui fait foi.
+# Pourquoi ce workflow existe : aucun jeton de la flotte ne peut ouvrir une PR.
+# GitHub le dit lui-meme dans l'en-tete de son refus (x-accepted-github-permissions:
+# pull_requests=write) et les quatre jetons du poste ont ete testes. Le jeton d'un
+# runner, lui, est fabrique par GitHub et recoit cette permission sur declaration.
+# Sans PR, la CI ne tourne pas sur la branche du lot — et c'est la CI qui fait foi.
 on:
   push:
     branches: ['roadmap/**']
@@ -24,11 +25,22 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           BRANCHE: ${{ github.ref_name }}
         run: |
-          set -euo pipefail
+          set -uo pipefail
           if [ "$(gh pr list --head "$BRANCHE" --json number --jq 'length')" != "0" ]; then
             echo "PR deja ouverte pour $BRANCHE"; exit 0
           fi
           if git merge-base --is-ancestor "origin/$BRANCHE" origin/main; then
             echo "Branche deja fusionnee dans main — rien a ouvrir"; exit 0
           fi
-          gh pr create --base main --head "$BRANCHE" --fill
+          SORTIE=$(gh pr create --base main --head "$BRANCHE" --fill 2>&1); RC=$?
+          if [ "$RC" -eq 0 ]; then echo "$SORTIE"; exit 0; fi
+          echo "$SORTIE"
+          case "$SORTIE" in
+            *"not permitted to create or approve pull requests"*)
+              echo "::error::Ce rouge ne concerne PAS ton code. Il manque UN REGLAGE DU DEPOT :"
+              echo "::error::Settings > Actions > General > Workflow permissions >"
+              echo "::error::cocher « Allow GitHub Actions to create and approve pull requests »."
+              echo "::error::Tant qu'il est decoche, chaque lot doit ouvrir sa PR a la main :"
+              echo "::error::https://github.com/${GITHUB_REPOSITORY}/pull/new/${BRANCHE}" ;;
+          esac
+          exit 1
