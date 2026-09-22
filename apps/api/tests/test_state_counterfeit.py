@@ -192,3 +192,5 @@ def test_combines_multiple_deterministic_reasons():
     )
     assert result.suspected is True
     assert len(result.reasons) == 3
+
+# verification du declenchement CI sur branche roadmap (a retirer)
