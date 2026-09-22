@@ -16,6 +16,8 @@ vi.mock("@/lib/api/decks", () => ({
   createDeck: vi.fn(),
   duplicateDeck: vi.fn(),
   deleteDeck: vi.fn(),
+  fetchDeckAlerts: vi.fn(),
+  markDeckAlertsRead: vi.fn(),
 }));
 
 const api = vi.mocked(decksApi);
@@ -60,6 +62,11 @@ describe("DecksListView", () => {
     api.createDeck.mockReset();
     api.duplicateDeck.mockReset();
     api.deleteDeck.mockReset();
+    api.fetchDeckAlerts.mockReset();
+    api.markDeckAlertsRead.mockReset();
+    // Par défaut : aucune alerte, pour ne pas changer les cas existants (le bandeau reste caché).
+    api.fetchDeckAlerts.mockResolvedValue({ alerts: [], unread_count: 0 });
+    api.markDeckAlertsRead.mockResolvedValue({ alerts: [], unread_count: 0 });
   });
 
   it("affiche les decks existants et leur légalité", async () => {
@@ -123,5 +130,36 @@ describe("DecksListView", () => {
     await user.click(within(row).getByRole("button", { name: "Dupliquer" }));
     await waitFor(() => expect(api.duplicateDeck).toHaveBeenCalledWith("d1"));
     expect(await screen.findByText("Deck feu (copie)")).toBeInTheDocument();
+  });
+
+  it("affiche un bandeau d'alertes de collection et le referme quand on marque lu", async () => {
+    const user = userEvent.setup();
+    api.listDecks.mockResolvedValue({ decks: [summary({ id: "d1", name: "Deck feu", legal: false })] });
+    api.fetchDeckAlerts.mockResolvedValue({
+      alerts: [
+        {
+          id: "e1",
+          deck_id: "d1",
+          deck_name: "Deck feu",
+          event_type: "card_incomplete",
+          reason: "removed",
+          card_id: "c1",
+          card_name: "Dracaufeu",
+          required: 1,
+          owned: 0,
+          missing: 1,
+          read: false,
+          created_at: "2026-09-22T10:00:00Z",
+        },
+      ],
+      unread_count: 1,
+    });
+    render(<DecksListView />);
+    const notice = await screen.findByTestId("deck-alerts-notice");
+    expect(notice).toHaveTextContent("Deck feu");
+
+    await user.click(within(notice).getByRole("button", { name: "Marquer comme lu" }));
+    await waitFor(() => expect(api.markDeckAlertsRead).toHaveBeenCalled());
+    expect(screen.queryByTestId("deck-alerts-notice")).not.toBeInTheDocument();
   });
 });

@@ -1,6 +1,8 @@
 import uuid
+from datetime import datetime
 
-from sqlalchemy import ForeignKey, Integer, String, UniqueConstraint, text
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, UniqueConstraint, text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -65,3 +67,54 @@ class DeckCard(Base, TimestampMixin):
         index=True,
     )
     quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
+
+# Types d'événement d'un deck (stables, réutilisés par l'écran et l'en-tête).
+DECK_EVENT_CARD_INCOMPLETE = "card_incomplete"
+
+# Raison du changement de collection qui a rendu le deck « à compléter ».
+DECK_EVENT_REASON_REMOVED = "removed"  # exemplaire supprimé / vendu / échangé
+DECK_EVENT_REASON_COUNTERFEIT = "counterfeit"  # exemplaire signalé contrefaçon (exclu du décompte)
+
+
+class DeckEvent(Base, TimestampMixin):
+    """Trace persistante d'un changement de collection ayant rendu un deck « à compléter »
+    (mission `v7-decks-collection-sync`).
+
+    Ce lot ne modifie JAMAIS le contenu d'un deck (une carte vendue ne se retire pas toute seule,
+    risque du lot) : la légalité reste recalculée à la lecture (`pbm_api.decks.legality`). Ce que
+    ce lot ajoute, c'est la **mémoire** de la transition — sans elle, un deck passé « à compléter »
+    la nuit dernière serait injouable sans que le joueur sache jamais quelle carte l'a rendu tel.
+    Une ligne = un deck qui vient de perdre une carte requise. Elle sert deux écrans :
+
+      - **notification au joueur** (badge d'en-tête + liste) tant que `read_at IS NULL` ;
+      - **historique des modifications du deck** (toutes les lignes du deck, lues ou non).
+
+    `card_id` en `SET NULL` + `card_name` figé : l'historique survit même si la carte disparaissait
+    du catalogue. Aucune ligne n'est écrite quand un deck déjà incomplet le reste, ni quand un
+    exemplaire retiré laisse le deck jouable (un doublon vendu dont il reste un exemplaire) — seule
+    la **bascule** vers « à compléter » est un événement (voir `pbm_api.decks.collection_sync`)."""
+
+    __tablename__ = "deck_events"
+    __table_args__ = (
+        # Requête de l'en-tête : « mes alertes non lues », triées du plus récent au plus ancien.
+        Index("ix_deck_events_user_unread", "user_id", "read_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    deck_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("decks.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    event_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    reason: Mapped[str] = mapped_column(String(16), nullable=False)
+    card_id: Mapped[uuid.UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("cards.id", ondelete="SET NULL"), nullable=True
+    )
+    card_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    detail: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

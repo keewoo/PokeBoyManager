@@ -12,14 +12,14 @@ import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.decks import legality
 from pbm_api.decks.errors import DeckCardNotFoundError, DeckNotFoundError
 from pbm_api.decks.legality import DeckCardFact, DeckLegality
 from pbm_api.decks.schemas import CreateDeckRequest, DeckCardInput
-from pbm_api.models import Card, CollectionItem, Deck, DeckCard, Set, User
+from pbm_api.models import Card, CollectionItem, Deck, DeckCard, DeckEvent, Set, User
 from pbm_api.validation.errors import CardNotFoundError
 
 _COPY_SUFFIX = " (copie)"
@@ -255,6 +255,75 @@ async def set_deck_card(
     await session.commit()
     await session.refresh(deck)
     return deck
+
+
+@dataclass
+class DeckAlert:
+    """Une alerte « à compléter » jointe au nom du deck — de quoi la rendre à l'écran."""
+
+    event: DeckEvent
+    deck_name: str
+
+
+async def list_alerts(
+    session: AsyncSession, user: User, *, only_unread: bool
+) -> tuple[list[DeckAlert], int]:
+    """Alertes du joueur (mission point 3 : en-tête + liste), avec le compte des non lues.
+
+    `only_unread=True` : le fil de l'en-tête. `False` : tout l'historique de collection→deck.
+    Le compte des non lues est toujours renvoyé (le badge d'en-tête l'affiche même en liste)."""
+    stmt = (
+        select(DeckEvent, Deck.name)
+        .join(Deck, Deck.id == DeckEvent.deck_id)
+        .where(DeckEvent.user_id == user.id)
+        .order_by(DeckEvent.created_at.desc())
+    )
+    if only_unread:
+        stmt = stmt.where(DeckEvent.read_at.is_(None))
+    rows = (await session.execute(stmt)).all()
+    alerts = [DeckAlert(event=event, deck_name=deck_name) for event, deck_name in rows]
+
+    unread_count = (
+        await session.execute(
+            select(func.count())
+            .select_from(DeckEvent)
+            .where(DeckEvent.user_id == user.id, DeckEvent.read_at.is_(None))
+        )
+    ).scalar_one()
+    return alerts, unread_count
+
+
+async def mark_alerts_read(
+    session: AsyncSession, user: User, event_ids: list[uuid.UUID] | None
+) -> int:
+    """Marque des alertes comme lues (toutes les non lues si `event_ids` est absent).
+
+    Toujours borné à `user_id` : impossible de marquer lue l'alerte d'un autre joueur."""
+    stmt = (
+        update(DeckEvent)
+        .where(DeckEvent.user_id == user.id, DeckEvent.read_at.is_(None))
+        .values(read_at=datetime.now(UTC))
+    )
+    if event_ids is not None:
+        stmt = stmt.where(DeckEvent.id.in_(event_ids))
+    result = await session.execute(stmt)
+    await session.commit()
+    return result.rowcount or 0
+
+
+async def deck_history(
+    session: AsyncSession, user: User, deck_id: uuid.UUID
+) -> tuple[str, list[DeckEvent]]:
+    """Nom du deck + historique des changements de collection qui l'ont touché (mission
+    « historique »). Borné au propriétaire : un deck d'un autre utilisateur lève `DeckNotFoundError`
+    (→ 404)."""
+    deck = await _get_owned_deck(session, user, deck_id)
+    rows = await session.execute(
+        select(DeckEvent)
+        .where(DeckEvent.deck_id == deck_id)
+        .order_by(DeckEvent.created_at.desc())
+    )
+    return deck.name, list(rows.scalars().all())
 
 
 async def remove_deck_card(

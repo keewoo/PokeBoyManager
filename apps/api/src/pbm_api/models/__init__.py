@@ -19,7 +19,14 @@ from pbm_api.models.collection import (
     Upload,
     UploadStatus,
 )
-from pbm_api.models.decks import Deck, DeckCard
+from pbm_api.models.decks import (
+    DECK_EVENT_CARD_INCOMPLETE,
+    DECK_EVENT_REASON_COUNTERFEIT,
+    DECK_EVENT_REASON_REMOVED,
+    Deck,
+    DeckCard,
+    DeckEvent,
+)
 from pbm_api.models.identification import (
     CardVisualIndex,
     IdentificationCache,
@@ -55,6 +62,10 @@ __all__ = [
     "DetectionStatus",
     "Deck",
     "DeckCard",
+    "DeckEvent",
+    "DECK_EVENT_CARD_INCOMPLETE",
+    "DECK_EVENT_REASON_REMOVED",
+    "DECK_EVENT_REASON_COUNTERFEIT",
     "CollectionItem",
     "IdentificationCache",
     "IdentificationCorrection",

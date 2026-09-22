@@ -172,6 +172,79 @@ export function getDeckCardFacets(): Promise<DeckCardFacets> {
   return apiGet<DeckCardFacets>("/me/decks/cards/facets");
 }
 
+// ---- alertes, remplacements et historique (mission `v7-decks-collection-sync`) ----
+// Miroir de `apps/api/src/pbm_api/decks/schemas.py`. Une carte quittée la collection ne modifie
+// jamais un deck en silence : l'API inscrit une alerte, l'écran la montre et propose — c'est le
+// joueur qui tranche.
+
+export type DeckAlert = {
+  id: string;
+  deck_id: string;
+  deck_name: string;
+  event_type: string; // "card_incomplete"
+  reason: string; // "removed" | "counterfeit"
+  card_id: string | null;
+  card_name: string;
+  required: number;
+  owned: number;
+  missing: number;
+  read: boolean;
+  created_at: string;
+};
+
+export type DeckAlertsResponse = {
+  alerts: DeckAlert[];
+  unread_count: number;
+};
+
+export type DeckReplacement = {
+  card_id: string;
+  set_id: string | null;
+  number: string;
+  name: string;
+  set_name: string;
+  set_code: string;
+  supertype: string | null;
+  hp: number | null;
+  image_url: string | null;
+  owned_count: number;
+  reason: string;
+};
+
+export type DeckReplacementsResponse = {
+  card_id: string;
+  replacements: DeckReplacement[];
+};
+
+export type DeckHistoryResponse = {
+  deck_id: string;
+  events: DeckAlert[];
+};
+
+export function fetchDeckAlerts(unreadOnly = true): Promise<DeckAlertsResponse> {
+  return apiGet<DeckAlertsResponse>(`/me/decks/alerts?unread_only=${unreadOnly ? "true" : "false"}`);
+}
+
+export function markDeckAlertsRead(eventIds?: string[]): Promise<DeckAlertsResponse> {
+  return apiJson<DeckAlertsResponse>("POST", "/me/decks/alerts/read", {
+    event_ids: eventIds ?? null,
+  });
+}
+
+export function fetchDeckReplacements(
+  deckId: string,
+  cardId: string,
+  limit = 10
+): Promise<DeckReplacementsResponse> {
+  return apiGet<DeckReplacementsResponse>(
+    `/me/decks/${deckId}/cards/${cardId}/replacements?limit=${limit}`
+  );
+}
+
+export function fetchDeckHistory(deckId: string): Promise<DeckHistoryResponse> {
+  return apiGet<DeckHistoryResponse>(`/me/decks/${deckId}/history`);
+}
+
 export function searchDeckCards(
   params: DeckCardSearchParams
 ): Promise<DeckCardSearchResponse> {

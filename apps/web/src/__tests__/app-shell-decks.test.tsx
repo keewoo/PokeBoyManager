@@ -1,13 +1,22 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "@/components/app-shell";
+import * as decksApi from "@/lib/api/decks";
 import { ThemeProvider } from "@/lib/theme-provider";
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/jeu/decks",
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));
+
+vi.mock("@/lib/api/decks", () => ({ fetchDeckAlerts: vi.fn() }));
+const api = vi.mocked(decksApi);
+
+beforeEach(() => {
+  api.fetchDeckAlerts.mockReset();
+  api.fetchDeckAlerts.mockResolvedValue({ alerts: [], unread_count: 0 });
+});
 
 function renderShell(hasSession: boolean) {
   return render(
@@ -30,5 +39,18 @@ describe("AppShell — lien Decks", () => {
   it("visiteur : aucun lien Decks", () => {
     renderShell(false);
     expect(screen.queryByRole("link", { name: "Decks" })).not.toBeInTheDocument();
+  });
+
+  it("connecté : un badge compte les decks devenus à compléter (mission collection-sync)", async () => {
+    api.fetchDeckAlerts.mockResolvedValue({ alerts: [], unread_count: 3 });
+    renderShell(true);
+    const badge = await screen.findByTestId("decks-alert-badge");
+    expect(badge).toHaveTextContent("3");
+  });
+
+  it("connecté sans alerte : aucun badge", async () => {
+    renderShell(true);
+    await screen.findByRole("link", { name: "Decks" });
+    expect(screen.queryByTestId("decks-alert-badge")).not.toBeInTheDocument();
   });
 });

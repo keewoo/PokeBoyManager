@@ -15,7 +15,10 @@ import {
   createDeck,
   deleteDeck,
   duplicateDeck,
+  fetchDeckAlerts,
   listDecks,
+  markDeckAlertsRead,
+  type DeckAlert,
   type DeckSummary,
 } from "@/lib/api/decks";
 
@@ -181,10 +184,34 @@ function DeckRow({
   );
 }
 
+function AlertsNotice({ alerts, onRead }: { alerts: DeckAlert[]; onRead: () => void }) {
+  // Notification au joueur (mission point 3) : ce qu'un changement de collection vient de rendre
+  // « à compléter », listé sans qu'aucune carte n'ait été retirée d'un deck.
+  const decks = Array.from(new Set(alerts.map((a) => a.deck_name)));
+  return (
+    <div
+      role="status"
+      data-testid="deck-alerts-notice"
+      className="mt-4 rounded-xl border border-[rgba(255,20,147,0.5)] bg-[rgba(255,20,147,0.08)] p-3 text-sm"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-danger-foreground">
+          {alerts.length} carte(s) ont quitté ta collection : {decks.length} deck(s) sont désormais
+          à compléter ({decks.join(", ")}).
+        </p>
+        <Button size="sm" variant="outline" onClick={onRead}>
+          Marquer comme lu
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function DecksListView() {
   const [decks, setDecks] = useState<DeckSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [alerts, setAlerts] = useState<DeckAlert[]>([]);
 
   useEffect(() => {
     listDecks()
@@ -192,6 +219,21 @@ export function DecksListView() {
       .catch((err) => setError(err instanceof ApiError ? err.message : "Chargement impossible."))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    fetchDeckAlerts(true)
+      .then((res) => setAlerts(res.alerts))
+      .catch(() => setAlerts([])); // best-effort : la liste des decks reste fiable sans le bandeau
+  }, []);
+
+  async function handleMarkRead() {
+    try {
+      await markDeckAlertsRead();
+      setAlerts([]);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Impossible de marquer les alertes lues.");
+    }
+  }
 
   if (loading) {
     return <p className="text-sm text-muted-foreground">Chargement…</p>;
@@ -203,6 +245,8 @@ export function DecksListView() {
       <p className="mt-1 text-sm text-muted-foreground">
         Construis un deck avec tes propres cartes, vérifie sa légalité, duplique-le ou exporte-le.
       </p>
+
+      {alerts.length > 0 && <AlertsNotice alerts={alerts} onRead={handleMarkRead} />}
 
       {error && (
         <div className="mt-3">
