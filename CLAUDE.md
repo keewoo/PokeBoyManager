@@ -824,11 +824,16 @@ binaire absent — et « absent » n'a jamais été une raison de livrer sans CI
 | PR déjà ouverte | `0`, et il en donne l'URL |
 | Branche déjà fusionnée dans `main` | `0`, en le **disant** (vérifie alors la CI sur `main`) |
 | Jeton sans « Pull requests: write » | **`4`**, avec la cause nommée |
-| `gh` hors du PATH | **`3`**, avec le PATH fautif affiché |
+| Branche pas encore poussée | **`3`** |
+| Machine sans jeton GitHub (chimera) | **`5`**, avec la commande à lancer depuis devAI |
 
 Un code ≠ 0 n'autorise pas à conclure : le lot passe en `bloque`, ou nomme le manque **dans son
 compte rendu ET dans son dernier message**. Sans PR, le workflow ne tourne pas sur ton travail
 (il se déclenche sur `pull_request` et sur `push: [main]`), et c'est la CI qui fait foi.
+
+Il **ne dépend pas de `gh`** (absent de la WSL de chimera) : il passe par l'API REST avec `curl`
+et `python3`, présents partout. Il trouve seul le bon remote — `origin` sur devAI, `github` sur
+chimera, dont l'`origin` est un dépôt relais local qui retarde.
 
 **Limite connue au 22/09** : les deux jetons de la flotte sont fine-grained et **n'ont pas**
 `Pull requests: write` — `gh` lit et pousse, il n'ouvre pas de PR. Tant que ce n'est pas corrigé

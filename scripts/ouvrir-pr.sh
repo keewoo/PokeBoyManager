@@ -1,67 +1,91 @@
 #!/usr/bin/env bash
 # ouvrir-pr.sh — ouvre la PR d'un lot, ou ECHOUE en disant pourquoi.
 #
-# Il n'y a volontairement aucun repli silencieux : une branche sans PR n'a pas de CI,
-# et c'est la CI qui fait foi. Deux lots du 22/09 ont ecrit « gh absent » dans leur
-# compte rendu puis se sont declares finis — alors que `gh` etait installe et que
-# seul le PATH manquait. Un manque doit couter quelque chose, pas passer inapercu.
+# Aucun repli silencieux : sans PR, le workflow ne tourne pas sur ton travail
+# (il se declenche sur `pull_request` et sur `push: [main]`), et c'est la CI qui
+# fait foi. Le 22/09, trois lots ont conclu « outil absent » et se sont declares
+# finis sans CI — alors que `gh` etait installe et que seul le PATH manquait.
+#
+# Ne depend PAS de `gh` : il est absent de la WSL de chimera. Avec un jeton, il
+# passe par l'API REST (curl + python3, presents partout).
 #
 # usage : bash scripts/ouvrir-pr.sh <branche>
+# codes : 0 ouverte / deja ouverte / deja fusionnee
+#         3 branche introuvable   4 refus de GitHub   5 pas de jeton ici
 set -uo pipefail
 
 BR="${1:?usage: ouvrir-pr.sh <branche>}"
 REPO="${PBM_REPO:-keewoo/PokeBoyManager}"
 
 [ -r "$HOME/.kailo-tokens" ] && . "$HOME/.kailo-tokens"
-export GH_TOKEN="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
+JETON="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
 
-if ! command -v gh > /dev/null 2>&1; then
-  echo "/!\\ gh introuvable. PATH=$PATH"
-  echo "    Sur devAI il vit dans /opt/homebrew/bin — si ce repertoire manque du PATH,"
-  echo "    c'est le ~/.zshenv qu'il faut corriger, pas ce script."
-  exit 3
-fi
+# Le remote GitHub ne s'appelle pas pareil partout : `origin` sur devAI, `github`
+# sur chimera (dont `origin` est un depot relais local, qui retarde).
+DIST=""
+for R in $(git remote 2> /dev/null); do
+  case "$(git remote get-url "$R" 2> /dev/null)" in *github.com*|*github-pokeboy*) DIST="$R"; break;; esac
+done
+[ -n "$DIST" ] || { echo "/!\\ aucun remote GitHub dans ce depot"; exit 3; }
+git fetch -q "$DIST" 2> /dev/null
 
-N=$(gh pr list --repo "$REPO" --head "$BR" --json number --jq ".[0].number" 2> /dev/null)
-if [ -n "${N:-}" ] && [ "$N" != "null" ]; then
-  echo "PR deja ouverte : #$N"
-  gh pr view "$N" --repo "$REPO" --json url --jq .url
-  exit 0
-fi
+git rev-parse --verify -q "$DIST/$BR" > /dev/null \
+  || { echo "/!\\ branche absente de $DIST : $BR — pousse-la d'abord"; exit 3; }
 
-git fetch -q origin 2> /dev/null
-if git merge-base --is-ancestor "origin/$BR" origin/main 2> /dev/null; then
+if git merge-base --is-ancestor "$DIST/$BR" "$DIST/main" 2> /dev/null; then
   echo "Branche deja fusionnee dans main : pas de PR a ouvrir."
   echo "Verifie que la CI est verte sur le commit de main — c'est elle qui fait foi."
   exit 0
 fi
 
-# `--fill` lit la branche LOCALE : appele depuis un autre worktree, il echoue avant
-# meme d'avoir joint GitHub, et son message masque alors la vraie cause. On ne lui
-# confie le titre que si la branche est bien la ; sinon on le tire du dernier commit.
-if git show-ref --verify --quiet "refs/heads/$BR"; then
-  set -- --fill
-else
-  TITRE=$(git log -1 --format=%s "origin/$BR" 2> /dev/null)
-  [ -n "$TITRE" ] || { echo "/!\\ branche introuvable, ni locale ni sur origin : $BR"; exit 3; }
-  CORPS=$(git log -1 --format=%b "origin/$BR" 2> /dev/null)
-  set -- --title "$TITRE" --body "${CORPS:-Ouverte par scripts/ouvrir-pr.sh}"
+if [ -z "$JETON" ]; then
+  echo "/!\\ aucun jeton GitHub sur cette machine ($(hostname -s))."
+  echo "    C'est normal sur une machine de CONSTRUCTION : elle pousse par cle de depot,"
+  echo "    et une cle de depot n'ouvre pas de PR. La PR s'ouvre depuis devAI :"
+  echo "        ssh devai 'cd ~/dev/pokeboy && bash scripts/ouvrir-pr.sh $BR'"
+  echo "    NE CONCLUS PAS SANS LE DIRE : nomme ce reste dans ton compte rendu."
+  exit 5
 fi
 
-SORTIE=$(gh pr create --repo "$REPO" --base main --head "$BR" "$@" 2>&1)
-RC=$?
-if [ "$RC" -eq 0 ]; then
-  echo "$SORTIE"
+api() { curl -s -w '\n%{http_code}' -H "Authorization: Bearer $JETON" \
+        -H "Accept: application/vnd.github+json" "$@"; }
+
+REP=$(api "https://api.github.com/repos/$REPO/pulls?state=open&head=${REPO%%/*}:$BR")
+if [ "$(printf '%s' "$REP" | tail -1)" = "200" ]; then
+  URL=$(printf '%s' "$REP" | sed '$d' | python3 -c \
+    'import sys,json;d=json.load(sys.stdin);print(d[0]["html_url"] if d else "")' 2> /dev/null)
+  [ -n "$URL" ] && { echo "PR deja ouverte : $URL"; exit 0; }
+fi
+
+TITRE=$(git log -1 --format=%s "$DIST/$BR")
+CORPS=$(git log -1 --format=%b "$DIST/$BR")
+# Les variables passent a python3 par l'environnement : un titre ou un corps de
+# commit peut contenir guillemets, apostrophes ou sauts de ligne, et json.dumps est
+# le seul echappement en qui on ait confiance.
+CHARGE=$(BR="$BR" TITRE="$TITRE" CORPS="$CORPS" python3 -c '
+import os, json
+print(json.dumps({"title": os.environ["TITRE"].strip() or "PR du lot",
+                  "head": os.environ["BR"], "base": "main",
+                  "body": os.environ.get("CORPS", "").strip() or "Ouverte par scripts/ouvrir-pr.sh"}))')
+REP=$(printf '%s' "$CHARGE" | api -X POST -d @- "https://api.github.com/repos/$REPO/pulls")
+
+CODE=$(printf '%s' "$REP" | tail -1)
+CORPS_REP=$(printf '%s' "$REP" | sed '$d')
+if [ "$CODE" = "201" ]; then
+  printf '%s' "$CORPS_REP" | python3 -c 'import sys,json;print("PR ouverte :",json.load(sys.stdin)["html_url"])'
   exit 0
 fi
 
-echo "/!\\ ouverture de PR refusee : $SORTIE"
-case "$SORTIE" in
-  *"not accessible by personal access token"*|*"Resource not accessible"*)
+MSG=$(printf '%s' "$CORPS_REP" | python3 -c \
+  'import sys,json
+d=json.load(sys.stdin)
+print(d.get("message",""), *[e.get("message","") for e in d.get("errors",[])])' 2> /dev/null)
+echo "/!\\ ouverture de PR refusee (HTTP $CODE) : $MSG"
+case "$CODE:$MSG" in
+  403:*"not accessible by personal access token"*|403:*)
     echo "    CAUSE : le jeton GitHub n'a pas la permission « Pull requests: write »."
     echo "    Il lit et il pousse, il n'ouvre pas de PR. Correction cote GitHub (JF)." ;;
-  *"Bad credentials"*|*"HTTP 401"*|*"authentication"*)
-    echo "    CAUSE : jeton GitHub invalide ou expire (gh auth status, ~/.kailo-tokens)." ;;
+  401:*) echo "    CAUSE : jeton GitHub invalide ou expire." ;;
 esac
 echo "    NE CONCLUS PAS SANS LE DIRE : passe le lot en « bloque », ou nomme ce manque"
 echo "    dans ton compte rendu ET dans ton dernier message. Sans PR, pas de CI."
