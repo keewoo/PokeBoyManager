@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { cookies, headers } from "next/headers";
 import {
   Bricolage_Grotesque,
@@ -32,9 +32,37 @@ const pressStart2P = Press_Start_2P({
   variable: "--font-press-start",
 });
 
+// `metadataBase` est l'origine qui absolutise `opengraph-image` : sans elle, Next avertit à la
+// construction et sert une URL relative, que les aperçus (réseaux sociaux, messageries) ne savent
+// pas résoudre. Surchargeable par `NEXT_PUBLIC_SITE_URL` pour l'UAT ou une préproduction.
 export const metadata: Metadata = {
-  title: "PokeBoyManager",
-  description: "Gestion de collection de cartes Pokémon",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://pokeboy.lol"),
+  title: {
+    default: "PokéBoy — collectionneurs de légendes",
+    template: "%s · PokéBoy",
+  },
+  description:
+    "Gérez votre collection de cartes Pokémon : reconnaissance par photo, cote du marché, decks et échanges.",
+  applicationName: "PokéBoy",
+  appleWebApp: {
+    capable: true,
+    title: "PokéBoy",
+    statusBarStyle: "black-translucent",
+  },
+  openGraph: {
+    type: "website",
+    siteName: "PokéBoy",
+    locale: "fr_FR",
+    title: "PokéBoy — collectionneurs de légendes",
+    description:
+      "Gérez votre collection de cartes Pokémon : reconnaissance par photo, cote du marché, decks et échanges.",
+  },
+};
+
+// Couleur de la barre d'adresse sur mobile et de l'écran de lancement en PWA : le bleu nuit
+// de la charte (#050A30), dans les deux thèmes — le fond du produit est sombre par nature.
+export const viewport: Viewport = {
+  themeColor: "#050A30",
 };
 
 const NO_FLASH_THEME_SCRIPT = `
