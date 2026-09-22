@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { FormNotice } from "@/components/auth/form-notice";
@@ -168,6 +169,14 @@ export function AiTab() {
       <p className="text-sm text-muted-foreground">
         Ta clé sert uniquement à analyser tes photos et à générer les fiches. Elle est chiffrée
         et ne s&apos;affiche plus jamais en entier.
+      </p>
+      <p className="text-sm">
+        <Link
+          href="/profil/aide-cle"
+          className="font-medium text-foreground underline underline-offset-2"
+        >
+          Où trouver une clé, combien ça coûte, que faire si ça ne marche pas ?
+        </Link>
       </p>
 
       {loadError && <FormNotice variant="error">{loadError}</FormNotice>}

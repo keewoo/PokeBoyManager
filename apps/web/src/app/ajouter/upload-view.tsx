@@ -260,8 +260,14 @@ export function UploadView() {
             composant) débordait l'écran (défilement horizontal mesuré par `responsive.spec.ts`).
             On l'autorise à passer sur deux lignes en gardant la hauteur de pilule en desktop. */}
         <Button asChild className="mt-2 h-auto min-h-12 whitespace-normal py-2 text-center leading-tight">
-          <Link href="/profil">Configurer une clé dans Profil → Mon IA</Link>
+          <Link href="/profil?onglet=ia">Configurer une clé dans Profil → Mon IA</Link>
         </Button>
+        <Link
+          href="/profil/aide-cle"
+          className="text-sm font-medium text-foreground underline underline-offset-2"
+        >
+          Où trouver une clé et combien ça coûte ?
+        </Link>
         <div className="mt-6 w-full max-w-md text-left">
           <ImportCsvPanel />
         </div>

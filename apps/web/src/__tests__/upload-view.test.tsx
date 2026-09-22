@@ -57,7 +57,12 @@ describe("Page /ajouter", () => {
 
     expect(await screen.findByText(/aucune clé ia n.est configurée/i)).toBeInTheDocument();
     const link = screen.getByRole("link", { name: /configurer une clé/i });
-    expect(link).toHaveAttribute("href", "/profil");
+    expect(link).toHaveAttribute("href", "/profil?onglet=ia");
+    // La page d'aide est proposée en second recours (lot `pbm-aide-cle-ia`).
+    expect(screen.getByRole("link", { name: /où trouver une clé/i })).toHaveAttribute(
+      "href",
+      "/profil/aide-cle"
+    );
     expect(screen.queryByText(/glisse tes photos ici/i)).not.toBeInTheDocument();
   });
 

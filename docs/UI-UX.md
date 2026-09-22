@@ -125,6 +125,7 @@ seulement, jamais un texte). Trois usages : vignette de collection, fiche carte,
 | `/` | accueil visiteur | `v1-accueil` |
 | `/inscription`, `/connexion`, `/mot-de-passe-oublie`, `/verifier`, `/reinitialiser`, `/confirmer-email` | comptes | `v1-pages-auth` |
 | `/profil` | profil, clés IA, identité | `v1-profil`, `v1-identite` |
+| `/profil/aide-cle` | aide « ajouter sa clé IA » : usage, parcours par fournisseur, coûts réels, sécurité, messages d'erreur exacts, « et sans clé ? » | `pbm-aide-cle-ia` |
 | `/ajouter`, `/ajouter/validation` | envoi de photos puis validation des cartes reconnues | `v3-upload`, `v3-validation` |
 | `/collection` | grille, filtres, tris, valeur totale | `v4-collection` |
 | `/carte/[id]` | fiche carte | `v4-fiche` |

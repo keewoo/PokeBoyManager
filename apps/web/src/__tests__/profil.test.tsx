@@ -4,8 +4,10 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 
 import ProfilPage from "@/app/profil/page";
 
+let searchParamsString = "";
+
 vi.mock("next/navigation", () => ({
-  useSearchParams: () => new URLSearchParams(""),
+  useSearchParams: () => new URLSearchParams(searchParamsString),
 }));
 
 vi.mock("@/lib/api/profile", async () => {
@@ -67,6 +69,7 @@ const SESSION = {
 
 describe("ProfilPage", () => {
   beforeEach(async () => {
+    searchParamsString = "";
     const profileApi = await import("@/lib/api/profile");
     const aiApi = await import("@/lib/api/ai-keys");
 
@@ -132,6 +135,14 @@ describe("ProfilPage", () => {
 
     expect(await screen.findByText("Claude · Anthropic")).toBeInTheDocument();
     expect(screen.getByText("Gemini · Google")).toBeInTheDocument();
+    expect(screen.getByText("ChatGPT · OpenAI")).toBeInTheDocument();
+  });
+
+  it("ouvre directement l'onglet Mon IA avec ?onglet=ia (retour depuis la page d'aide)", async () => {
+    searchParamsString = "onglet=ia";
+    render(<ProfilPage />);
+
+    expect(await screen.findByText("Claude · Anthropic")).toBeInTheDocument();
     expect(screen.getByText("ChatGPT · OpenAI")).toBeInTheDocument();
   });
 

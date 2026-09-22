@@ -26,7 +26,10 @@ export function ProfileTabs() {
   // Redirection post-connexion (`must_change_password`, voir `ConnexionForm`) : ouvre
   // directement l'onglet Sécurité avec un rappel visible.
   const forcePasswordChange = searchParams.get("mot-de-passe-a-changer") === "1";
-  const initialTab: TabId = searchParams.get("onglet") === "securite" ? "sec" : "id";
+  // `?onglet=` ouvre directement une section : `securite` (redirection post-connexion), `ia`
+  // (retour depuis la page d'aide `/profil/aide-cle`) ou `donnees`. Toute autre valeur → Identité.
+  const ONGLET_TO_TAB: Record<string, TabId> = { securite: "sec", ia: "ia", donnees: "data" };
+  const initialTab: TabId = ONGLET_TO_TAB[searchParams.get("onglet") ?? ""] ?? "id";
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const [error, setError] = useState<string | null>(null);

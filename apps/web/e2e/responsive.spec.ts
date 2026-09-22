@@ -83,7 +83,13 @@ test.describe("Aucun défilement horizontal, à 320/390/768/1280px", () => {
     await registerAndLogin(page, email);
     const cardId = seedCardFiche(email);
 
-    await checkPagesAtAllWidths(page, ["/ajouter", "/collection", `/carte/${cardId}`, "/profil"]);
+    await checkPagesAtAllWidths(page, [
+      "/ajouter",
+      "/collection",
+      `/carte/${cardId}`,
+      "/profil",
+      "/profil/aide-cle",
+    ]);
   });
 });
 
