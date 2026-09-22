@@ -62,13 +62,21 @@ async function csrfToken(page: Page): Promise<string> {
 }
 
 async function assertNoHorizontalScroll(page: Page, label: string): Promise<void> {
-  const { scrollWidth, innerWidth } = await page.evaluate(() => ({
-    scrollWidth: document.documentElement.scrollWidth,
-    innerWidth: window.innerWidth,
-  }));
+  const { scrollWidth, innerWidth, offenders } = await page.evaluate(() => {
+    const iw = window.innerWidth;
+    const out: string[] = [];
+    for (const el of Array.from(document.querySelectorAll<HTMLElement>("*"))) {
+      const r = el.getBoundingClientRect();
+      if (r.right > iw + 1 || r.left < -1) {
+        const cls = typeof el.className === "string" ? el.className.split(/\s+/).slice(0, 4).join(".") : "";
+        out.push(`${el.tagName.toLowerCase()}.${cls} left=${Math.round(r.left)} right=${Math.round(r.right)} w=${Math.round(r.width)}`);
+      }
+    }
+    return { scrollWidth: document.documentElement.scrollWidth, innerWidth: iw, offenders: out.slice(0, 15) };
+  });
   expect(
     scrollWidth,
-    `${label} : défilement horizontal (scrollWidth=${scrollWidth} > innerWidth=${innerWidth})`
+    `${label} : défilement horizontal (scrollWidth=${scrollWidth} > innerWidth=${innerWidth})\nÉléments qui débordent :\n${offenders.join("\n")}`
   ).toBeLessThanOrEqual(innerWidth);
 }
 
