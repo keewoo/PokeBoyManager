@@ -565,3 +565,199 @@ photos de collection, envois originaux, recadrages de détection et archives d'e
 | Local | chaque machine de la flotte | `docker compose up` (Postgres, Redis, MinIO, Mailpit) |
 | CI | GitHub Actions | lint, tests, e2e Playwright |
 | UAT / PROD | selon D2 | images construites sur chimera, déployées par devAI (`pull` + `up -d`) |
+
+---
+
+# Repères d'implémentation par lot
+
+> Ces sections viennent de `CLAUDE.md`, où elles s'empilaient lot après lot (structuration du
+> 22/09/2026). Elles donnent les **chemins de code et les pièges mesurés** ; la vue d'ensemble
+> reste dans les sections thématiques ci-dessus.
+>
+> **Recoupement connu, à résorber** : « Détection de cartes » et « Identification des cartes »
+> redisent, en plus court, ce que décrit déjà § *Reconnaissance*. Rien n'a été supprimé pour ne
+> rien perdre ; la fusion des deux versions mérite sa propre relecture.
+
+## Détection de cartes (lot `v3-detection`)
+
+Pipeline `pbm_api.detection.pipeline.run_detection` : contours OpenCV (`opencv_pipeline.py`,
+ratio 63×88 mm) + redressement perspective (`geometry.py`, recadrage fixe 630×880) ; repli par
+boîtes englobantes demandées au LLM (`llm_fallback.py`, un seul appel par photo) quand
+`has_unclaimed_regions` signale une zone de la taille d'une carte non rattachée à un
+quadrilatère retenu, affinées ensuite par le même OpenCV dans chaque boîte. Orchestration
+DB/stockage (`detection/service.py`) déclenchée par `pbm_api.worker.detect_cards_task`, mis en
+file depuis `POST /uploads/{id}/complete` via `pbm_api.queue.get_arq_pool` — **premier job du
+dépôt enfilé depuis une route HTTP** (les autres jobs `arq` du dépôt sont en cron ou CLI direct).
+Résultat consultable par `GET /uploads/{id}/detections` et `.../detections/{id}/crop`
+(`routers/uploads.py`), bornés au propriétaire de l'envoi. Jeu de test : 30 photos
+**synthétiques** (`pbm_api.detection.synthetic` — aucun appareil photo/carte physique sur
+chimera) ; mise au point : `uv run python scripts/measure_detection_rate.py [--provider <p>
+--api-key <clé>]` depuis `apps/api`, écrit une image annotée de contrôle par photo. Détail :
+`docs/ARCHITECTURE.md` § « Reconnaissance ».
+
+## Identification des cartes (lot `v3-identification`)
+
+Chaîné dans le même job `detect_cards` que la détection (`pbm_api.identification.service.
+run_identification_for_upload`, appelé par `pbm_api.worker.detect_cards_task` juste après
+`run_detection_for_upload`) — jamais un second aller-retour par la file. Pour chaque `Detection`
+en attente : empreinte perceptuelle du recadrage (aHash 64 bits, `pbm_api.identification.
+fingerprint.compute_phash`) ; touchée dans `identification_cache` (distance de Hamming ≤ 6,
+`pbm_api.identification.cache`, cache partagé entre utilisateurs comme `card_insights`), le
+résultat est réutilisé sans appel IA ; sinon un appel `AIProvider.extract`
+(`pbm_api.identification.extraction.extract_card`, schéma `CardExtraction` — nom, numéro, total,
+code d'extension, langue, PV, type, variante, confiance par champ) puis rapprochement catalogue
+(`pbm_api.identification.reconciliation.reconcile` : numéro + extension exacts, sinon numéro +
+nom, sinon recherche floue sur le nom seul, en réutilisant `pbm_api.catalog.search.
+match_candidates` tel quel) — top 3 avec score combiné (score catalogue × confiance moyenne),
+présélection au-delà de 0,9. Résultat écrit sur `Detection.extraction`/`Detection.candidates`,
+exposé par `GET /uploads/{id}/detections`. Jeu de 100 cartes étiquetées et mesure de précision :
+`uv run pytest tests/test_identification_synthetic_dataset.py` (fait foi, CI) ou `uv run python
+scripts/measure_identification_rate.py` (mise au point, `report.json`) ; essai manuel avec une
+vraie clé : `uv run python scripts/test_identification_manual.py <provider> <clé>` depuis
+`apps/api`. Détail : `docs/ARCHITECTURE.md` § « Reconnaissance ».
+
+## Comparaison visuelle (lot `v3-identification-visuelle`)
+
+Insérée entre le cache d'empreinte ci-dessus et l'appel IA, dans `pbm_api.identification.
+service._identify_one` : chaque recadrage est comparé à l'index des images officielles de toutes
+les cartes (table `card_visual_index` — `full_phash`/`illustration_phash`, aHash 64 bits sur
+l'image entière et sur sa seule zone d'illustration, `pbm_api.identification.visual_geometry`) ;
+`pbm_api.identification.visual_index.VisualIndex` charge l'index en mémoire (numpy) une fois par
+envoi, jamais par carte — recherche par XOR + comptage de bits vectorisé, pas en SQL (volume visé
+~20 000 cartes × 2 langues, largement au-delà de ce que `identification_cache` documente comme
+acceptable en scan SQL). Une correspondance confiante (`resolve`, `CONFIDENT_SCORE_THRESHOLD` =
+0,85, sans concurrent d'une autre carte à moins d'`AMBIGUITY_MARGIN` = 0,06) identifie la carte
+**sans aucun appel IA**, y compris sans clé configurée (D4) : les champs viennent directement du
+catalogue (`pbm_api.identification.visual_resolve.build_confident_extraction`, confiance 1,0,
+jamais repassés par le rapprochement flou), `Detection.identification_method = "visuel"` (colonne
+posée par ce lot, comme `IdentificationCache.method`) — sert au badge « reconnue sans IA » de
+l'écran de validation (`apps/web/src/app/ajouter/validation/detection-card.tsx`). Un groupe
+« même illustration » (réimpression/reverse/promo) n'est jamais tranché par la seule comparaison
+visuelle (pas d'OCR local disponible sur chimera — ni `tesseract` ni `sudo apt` sur cette
+session, voir le compte rendu) : ses candidats sont injectés dans le prompt du **même** appel
+`AIProvider.extract` (`pbm_api.identification.extraction.extract_card(..., visual_hints=...)`),
+ou laissés à la validation humaine sans clé IA (`identification_method = "aucun"`, candidats tout
+de même exposés). Construction de l'index (hors serveur de PROD) : `uv run python
+scripts/build_visual_index.py [--limit N] [--languages fr,en]` — télécharge l'image officielle
+basse définition par carte × langue (déduction d'URL par langue, `pbm_api.identification.
+visual_build.image_url_for_language`), la met aussi en cache dans le stockage objet
+(`cards/{id}/{langue}/low.webp`, réutilisée par le proxy `/img/cards/{id}`), idempotent et
+reprenable (une carte déjà indexée est sautée). Mesure sur jeu synthétique (images procédurales,
+`pbm_api.identification.visual_synthetic` — même contrainte qu'ailleurs, aucune vraie
+photo/carte) : `uv run pytest tests/test_visual_identification_synthetic_dataset.py` (fait foi,
+CI, objectif ≥ 60 % reconnu sans IA) ou `uv run python
+scripts/measure_visual_identification_rate.py` (mise au point, `report.json`) ; performance/
+mémoire à l'échelle de production (empreintes aléatoires, pas besoin d'images réelles) : `uv run
+python scripts/measure_visual_index_performance.py`. Détail : `docs/ARCHITECTURE.md` §
+« Reconnaissance ».
+
+## État estimé de l'exemplaire (lot `v3-etat`)
+
+Chaîné après l'identification dans le même job `detect_cards`
+(`pbm_api.state.service.run_state_estimation_for_upload`, appelé par
+`pbm_api.worker.detect_cards_task` juste après `run_identification_for_upload`) — jamais un job
+ni un appel IA de plus. Deux sources combinées en un palier global (le plus sévère l'emporte,
+`pbm_api.state.grades.worst_grade`) : centrage mesuré par OpenCV sur le recadrage déjà en
+stockage (`pbm_api.state.centering`, sans clé IA requise, `None` plutôt qu'une mesure inventée
+sans bordure distincte) ; coins/bords/surface demandés à l'IA dans le même appel que
+l'identification (`CardExtraction.corner_wear`/`edge_wear`/`surface_wear`, `pbm_api.
+identification.extraction`) — `None` (jamais inventés) quand la carte a été reconnue par le seul
+index visuel (lot `v3-identification-visuelle`, `identification_method = "visuel"`, aucun appel
+IA fait) : l'état global retombe alors sur le centrage seul, `worst_grade` ignore les paliers
+absents. Palier mappé sur l'abréviation Cardmarket et une note /10 dérivée de
+`pbm_api.pricing.valuation.CONDITION_MULTIPLIERS` (même barème que la décote de valeur). Résultat
+sur `Detection.condition_assessment`, exposé par `GET /uploads/{id}/detections`. Contrefaçon
+probable (`pbm_api.state.counterfeit`) : signal IA + contrôle déterministe (carte « gold » perçue
+mais rareté catalogue non confirmée) ; `CollectionItem.counterfeit_suspected` neutralise la
+valeur à zéro dans `pbm_api.pricing.valuation.item_value`. Mise au point centrage : `uv run
+python scripts/measure_centering_rate.py` depuis `apps/api` (jeu synthétique dédié,
+`pbm_api.state.synthetic` — aucune carte physique sur chimera). Détail :
+`docs/ARCHITECTURE.md` § « Reconnaissance ».
+
+## Identité du compte (lot `v1-identite`)
+
+`users` porte prénom (facultatif), nom, date de naissance, version/horodatage des conditions
+acceptées et `must_change_password`. Validations dans `pbm_api.auth.service` (inscription) et
+`pbm_api.profile.service` (`PATCH /me`) : date de naissance passée, conditions obligatoires, âge
+minimum 15 ans réservé à l'inscription libre (RGPD art. 8) — contournable seulement par la
+commande d'administration (consentement du parent porté par JF) :
+```
+uv run python -m pbm_api.admin create-user --email … --pseudo … --last-name … \
+  --birth-date AAAA-MM-JJ --accept-terms [--password-stdin] [--must-change-password]
+```
+Mot de passe lu sur l'entrée standard ou généré et affiché une seule fois — jamais en argument ni
+journalisé. Détail : `docs/ARCHITECTURE.md` § « Identité du compte ».
+
+## Coffre de clés IA (lot `v1-byok`)
+
+Routes (`apps/api/src/pbm_api/routers/ai_keys.py`) : `GET/PUT/DELETE /me/ai-keys[/{provider}]`,
+`POST /me/ai-keys/{provider}/test`, `GET/PATCH /me/ai-settings`, `GET /me/ai-usage`. Chiffrement
+AES-256-GCM (`pbm_api.security.crypto`, `user_id` en données associées) ; filtre anti-fuite de
+clé dans les journaux (`pbm_api.security.log_filter`, installé au démarrage) et dans les
+réponses 422 de validation (`pbm_api.security.validation_errors` — le comportement par défaut
+de FastAPI renverrait sinon la valeur soumise en clair sur une clé trop courte/longue). Le test
+d'une clé
+appelle réellement le fournisseur (liste de modèles, coût nul) via `pbm_api.ai.providers.
+ProviderKeyTester`, injecté par dépendance FastAPI — remplacé par un double dans les tests
+(aucune clé IA réelle disponible sur chimera) ; essai manuel avec une vraie clé :
+`uv run python scripts/test_ai_key_manual.py <provider> <clé>` depuis `apps/api`.
+
+## Export et suppression RGPD (lot `v5-rgpd`)
+
+Routes (`apps/api/src/pbm_api/routers/export.py`) : `POST /me/export` (session + CSRF) crée le
+`DataExport` et l'enfile vers le worker (`pbm_api.queue.get_arq_pool`, même schéma que
+`detect_cards_task` ci-dessus — `export_user_data_task` fait le travail réel), `GET
+/me/export/{id}` (statut), `GET /export/download?token=…` (sans session, jeton opaque valable
+24 h envoyé par e-mail — comme un jeton d'e-mail de `v1-auth`, jamais un cookie). Le ZIP
+(`pbm_api.export.archive`) contient `profil.json`, `collection.json`, `collection.csv` et
+`photos/` (exemplaires avec `photo_s3_key`) ; aucune clé IA n'y figure jamais (elles ne sont de
+toute façon jamais déchiffrables hors de leur usage fournisseur). La suppression de compte
+(`pbm_api.profile.service.delete_account`, posée par `v1-profil`) purge désormais aussi les
+objets de stockage (photos de collection, envois, recadrages de détection, archives d'export)
+avant le `DELETE` en cascade — pas seulement l'avatar.
+
+## Decks : légalité et sauvegarde (lot `v7-decks-api`)
+
+Routes (`apps/api/src/pbm_api/routers/decks.py`, préfixe `/me/decks`, toutes bornées au
+propriétaire via la session — jamais un id reçu du client, un deck d'autrui renvoie 404, pas
+403) : `POST /me/decks` (création, cartes initiales facultatives), `GET /me/decks` (liste +
+légalité par deck), `GET /me/decks/{id}` (détail + rapport de légalité), `PATCH /me/decks/{id}`
+(renommer), `DELETE /me/decks/{id}`, `POST /me/decks/{id}/duplicate`,
+`PUT /me/decks/{id}/cards/{card_id}` (poser/mettre à jour une quantité, idempotent),
+`DELETE /me/decks/{id}/cards/{card_id}`. Écritures protégées par `require_csrf`.
+
+Modèle (`pbm_api.models.decks`) : `decks` (nom, propriétaire) et `deck_cards` (`card_id` du
+CATALOGUE + `quantity`, unicité `(deck_id, card_id)`). `deck_cards` référence le catalogue, PAS
+un `collection_items.id` : imposé par D10 (une Énergie de base fait partie d'un deck sans être
+possédée) et robustesse — vendre un exemplaire rend le deck injouable mais le laisse lisible et
+modifiable (risque du lot), ce qu'une FK vers la collection casserait. « Uniquement avec ses
+cartes » est donc un CONTRÔLE DE LÉGALITÉ (possession comptée sur `collection_items`), pas une
+clé étrangère.
+
+Légalité (`pbm_api.decks.legality`, logique pure, testable sans base) — recalculée à CHAQUE
+lecture, jamais mémorisée : une carte vendue rend le deck injouable sans aucune écriture
+(« revalidation quand la collection change », mission point 3). Règles (D10) : exactement 60
+cartes ; 4 exemplaires maximum par NOM (deux impressions d'un même nom cumulées), sauf Énergies
+de base ; possession requise sauf Énergies de base ; rapport lisible (`issues`, codes
+`deck_size`/`copy_limit`/`not_owned`/`unsupported_effect`).
+
+Classement des Énergies (`pbm_api.decks.energy`, décision D10) : Énergie de BASE = illimitée,
+fournie, jamais décomptée de la collection, hors règle des 4 (mais comptée dans les 60) ; Énergie
+SPÉCIALE = carte comme les autres (possession + règle des 4). Source de vérité : `Card.energy_type`
+(TCGdex `energyType`, colonne ajoutée par ce lot, peuplée à l'import) ; à défaut (cartes importées
+avant la colonne, `energy_type IS NULL`), repli sur le nom — l'ensemble des Énergies de base est
+fermé, calibré sur les 514 cartes `supertype = "Énergie"` du catalogue (l'Éclair s'écrit
+« Énergie Électrique » ET « Énergie Electrik », la casse varie). Jamais sur la rareté (une Énergie
+de base existe en « Commune » comme en « Magnifique rare »).
+
+Effet non pris en charge : la vérification « une carte dont l'effet n'est pas géré par le moteur
+(`v7-regles-cartes`) est refusée » est câblée (`legality.unsupported_card_ids`, code
+`unsupported_effect`) mais NEUTRE tant que ce moteur n'existe pas dans le dépôt — sans moteur,
+tout effet serait « non pris en charge » et aucun deck ne serait jamais légal. S'activera en
+remplaçant le corps de cette fonction par un appel au moteur, sans autre changement — report
+explicite dans le compte rendu, pas un repli silencieux.
+
+Migration `d1c7a3f0b2e4` (tables `decks`/`deck_cards` + colonne `cards.energy_type`, nullable).
+Tests : `apps/api/tests/test_deck_legality.py` (moteur pur : D10, 60/4/possession),
+`apps/api/tests/test_deck_routes.py` (CRUD, accès croisé B→404, revalidation après vente, CSRF).
+Aucun écran dans ce lot (back-end) : le constructeur est `v7-decks-ui` (couloir CH5).

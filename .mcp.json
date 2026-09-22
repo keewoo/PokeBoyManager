@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "graphify": {
+      "command": "uv",
+      "args": [
+        "tool", "run", "--from", "graphifyy[mcp,sql]",
+        "graphify-mcp", "graphify-out/graph.json"
+      ],
+      "env": {}
+    }
+  }
+}
