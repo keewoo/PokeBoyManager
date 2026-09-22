@@ -2744,11 +2744,11 @@
       "compte_rendu": {}
     },
     "v6-import-export": {
-      "statut": "livre_uat",
+      "statut": "livre",
       "machine": "devAI",
       "branche": "roadmap/v6-import-export",
       "debut_reel": "2026-09-21",
-      "fin_reelle": null,
+      "fin_reelle": "2026-09-22",
       "taches": {
         "dev": {
           "etat": "fait",
@@ -2781,9 +2781,9 @@
           "maj": "2026-09-21T15:13+0200"
         },
         "release_prod": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "PROD https://pokeboy.acx-connect.com — release 20260922-100605, commit ee07c3b, migration Alembic 23a3f88da88d appliquee ; /api/me/wishlist 401, /api/me/export/collection.csv 401, /api/me/imports 405, /souhaits 307 (routes en service) ; worker PROD charge import_csv_task ; kailo.life et ACX inchanges",
+          "maj": "2026-09-22T10:10+0200"
         },
         "backlog": {
           "etat": "fait",
@@ -2862,6 +2862,18 @@
           "machine": "devAI",
           "evenement": "tâche compte_rendu → fait",
           "detail": "compte rendu écrit dans etat.json (résumé/livrable/preuve/écart/reste)"
+        },
+        {
+          "quand": "2026-09-22T10:10+0200",
+          "machine": "devAI",
+          "evenement": "tâche release_prod → fait",
+          "detail": "PROD https://pokeboy.acx-connect.com — release 20260922-100605, commit ee07c3b, migration Alembic 23a3f88da88d appliquee ; /api/me/wishlist 401, /api/me/export/collection.csv 401, /api/me/imports 405, /souhaits 307 (routes en service) ; worker PROD charge import_csv_task ; kailo.life et ACX inchanges"
+        },
+        {
+          "quand": "2026-09-22T10:10+0200",
+          "machine": "devAI",
+          "evenement": "statut → livre",
+          "detail": ""
         }
       ],
       "compte_rendu": {
