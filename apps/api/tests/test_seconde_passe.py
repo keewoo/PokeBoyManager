@@ -106,7 +106,11 @@ class TestRegleDeSecondePasse:
     def test_confiance_moyenne_sous_cinquante_cinq_declenche(self):
         """Les découpes constatées le 22/09 sortaient à 34 % et 43 %."""
         verdict = evaluer(
-            [_Detection(confiances=[0.34]), _Detection(confiances=[0.43]), _Detection(confiances=[0.8])]
+            [
+                _Detection(confiances=[0.34]),
+                _Detection(confiances=[0.43]),
+                _Detection(confiances=[0.8]),
+            ]
         )
 
         assert verdict.needed is True
