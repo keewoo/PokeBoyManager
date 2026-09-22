@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Conditions générales d'utilisation — PokeBoyManager",
-  description: "Ce que couvre le service PokeBoyManager et les règles d'usage de l'espace privé.",
+  title: "Conditions générales d'utilisation — PokéBoy",
+  description: "Ce que couvre le service PokéBoy et les règles d'usage de l'espace privé.",
 };
 
 export default function ConditionsPage() {
@@ -17,7 +17,7 @@ export default function ConditionsPage() {
 
       <h2 className="font-heading text-xl font-bold text-foreground">Objet</h2>
       <p className="text-muted-foreground">
-        PokeBoyManager est un service privé de gestion de collection de cartes Pokémon : photo,
+        PokéBoy est un service privé de gestion de collection de cartes Pokémon : photo,
         reconnaissance assistée par IA, suivi de valeur.
       </p>
 
@@ -31,7 +31,7 @@ export default function ConditionsPage() {
       <h2 className="font-heading text-xl font-bold text-foreground">Estimations de valeur</h2>
       <p className="text-muted-foreground">
         Les prix affichés sont des estimations construites à partir de relevés publics (Cardmarket,
-        TCGplayer) ; ils n&apos;engagent pas PokeBoyManager et ne constituent pas un conseil d&apos;achat
+        TCGplayer) ; ils n&apos;engagent pas PokéBoy et ne constituent pas un conseil d&apos;achat
         ou de vente.
       </p>
 
@@ -43,7 +43,7 @@ export default function ConditionsPage() {
 
       <h2 className="font-heading text-xl font-bold text-foreground">Non-affiliation</h2>
       <p className="text-muted-foreground">
-        PokeBoyManager n&apos;est pas affilié à Nintendo, Creatures, GAME FREAK ni à The Pokémon Company.
+        PokéBoy n&apos;est pas affilié à Nintendo, Creatures, GAME FREAK ni à The Pokémon Company.
       </p>
     </article>
   );

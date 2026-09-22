@@ -17,7 +17,7 @@ export function LegalFooter() {
         ))}
       </nav>
       <p className="mt-3 font-mono text-xs text-muted-foreground">
-        PokeBoyManager n&apos;est pas affilié à Nintendo, Creatures, GAME FREAK ni à The Pokémon Company.
+        PokéBoy n&apos;est pas affilié à Nintendo, Creatures, GAME FREAK ni à The Pokémon Company.
       </p>
     </footer>
   );

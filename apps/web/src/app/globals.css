@@ -1,73 +1,66 @@
 @import "tailwindcss";
 
+/* Charte PokéBoy (22/09/2026) — référence : https://claude.ai/artifact/M2GyeGw6T6FeW5anfq1op8
+   Le produit est sombre par nature : il n'y a plus qu'un seul thème. `[data-theme="light"]`
+   et `[data-theme="dark"]` héritent des mêmes jetons — le sélecteur de thème a donc été
+   retiré de l'en-tête plutôt que laissé en place sans effet. */
 :root {
-  --background: #e9ecf1;
-  --foreground: #12151b;
-  --card: #ffffff;
-  --card-foreground: #12151b;
-  --popover: #ffffff;
-  --popover-foreground: #12151b;
-  --primary: #d93a1e;
-  --primary-foreground: #ffffff;
-  --secondary: #f5f6f9;
-  --secondary-foreground: #12151b;
-  --muted: #f5f6f9;
-  --muted-foreground: #7d8494;
-  --accent: #f5f6f9;
-  --accent-foreground: #12151b;
-  --destructive: #b3261e;
-  --destructive-foreground: #ffffff;
-  --border: #d9dde5;
-  --input: #d9dde5;
-  --ring: #2f6fe0;
-  --gold: #a87a0c;
-  --gold-foreground: #a87a0c;
-  --gold-background: #fbf1d5;
-  --success: #177a4b;
-  --success-foreground: #177a4b;
-  --success-background: #dff3e8;
-  --danger: #b3261e;
-  --danger-foreground: #b3261e;
-  --danger-background: #fbe3e0;
-  --screen: #1b2029;
-  --radius: 0.75rem;
+  --background: #050A30;
+  --foreground: #E0E0E0;
+  --card: #0A1048;
+  --card-foreground: #E0E0E0;
+  --popover: #0A1048;
+  --popover-foreground: #E0E0E0;
 
-  --font-sans: var(--font-instrument-sans), -apple-system, "Segoe UI", sans-serif;
-  --font-heading: var(--font-bricolage), var(--font-sans);
+  /* Or collectionneur : c'est la couleur de l'action principale, 14,6:1 sur le fond. */
+  --primary: #FFD700;
+  --primary-foreground: #1A1200;
+
+  --secondary: #121B63;
+  --secondary-foreground: #E0E0E0;
+  --muted: #121B63;
+  --muted-foreground: #9BA3C7;
+  --accent: #1A2170;
+  --accent-foreground: #E0E0E0;
+
+  --destructive: #FF7FC4;
+  --destructive-foreground: #3A0A22;
+
+  --border: #2E2A86;
+  --input: #2E2A86;
+  --ring: #C77DFF;
+
+  --gold: #FFD700;
+  --gold-foreground: #FFD700;
+  --gold-background: rgba(255, 215, 0, 0.12);
+  --success: #5DD39A;
+  --success-foreground: #5DD39A;
+  --success-background: rgba(93, 211, 154, 0.14);
+  --danger: #FF7FC4;
+  --danger-foreground: #FF7FC4;
+  --danger-background: rgba(255, 20, 147, 0.14);
+
+  --screen: #03061C;
+
+  /* Violet Master Ball : halos, liserés, état actif — JAMAIS du texte (2,8:1 sur le fond).
+     Le texte violet prend `--violet-clair`, à 6,2:1. */
+  --violet: #9D00FF;
+  --violet-clair: #C77DFF;
+  --rose: #FF1493;
+
+  /* Surfaces à 24 px ; ce qui se clique prend la pilule (`rounded-full`). */
+  --radius: 1.5rem;
+
+  --font-sans: var(--font-roboto), -apple-system, "Segoe UI", sans-serif;
+  --font-heading: var(--font-exo2), var(--font-sans);
   --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
   --font-pixel: var(--font-press-start), monospace;
 }
 
-[data-theme="dark"] {
-  --background: #0c0f14;
-  --foreground: #eef0f4;
-  --card: #161a22;
-  --card-foreground: #eef0f4;
-  --popover: #161a22;
-  --popover-foreground: #eef0f4;
-  --primary: #f0583b;
-  --primary-foreground: #160906;
-  --secondary: #1c212b;
-  --secondary-foreground: #eef0f4;
-  --muted: #1c212b;
-  --muted-foreground: #8a91a0;
-  --accent: #1c212b;
-  --accent-foreground: #eef0f4;
-  --destructive: #ff8a7e;
-  --destructive-foreground: #3a1714;
-  --border: #2a303c;
-  --input: #2a303c;
-  --ring: #7aa6ff;
-  --gold: #e7b84a;
-  --gold-foreground: #e7b84a;
-  --gold-background: #2e2511;
-  --success: #5dd39a;
-  --success-foreground: #5dd39a;
-  --success-background: #10301f;
-  --danger: #ff8a7e;
-  --danger-foreground: #ff8a7e;
-  --danger-background: #3a1714;
-  --screen: #0a0c10;
+/* Un seul thème : les deux valeurs pointent sur la même palette. */
+[data-theme="dark"],
+[data-theme="light"] {
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -100,20 +93,113 @@
   --color-danger-foreground: var(--danger-foreground);
   --color-danger-background: var(--danger-background);
   --color-screen: var(--screen);
+  --color-violet: var(--violet);
+  --color-violet-clair: var(--violet-clair);
+  --color-rose: var(--rose);
 
   --font-sans: var(--font-sans);
   --font-heading: var(--font-heading);
   --font-mono: var(--font-mono);
   --font-pixel: var(--font-pixel);
 
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 10px);
+  --radius-md: calc(var(--radius) - 6px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* Le fond : bleu nuit en dégradé, plus la grille de points qui donne la texture cosmique.
+   `fixed` pour que la grille ne défile pas avec le contenu et ne fatigue pas l'œil. */
 body {
-  background: var(--background);
+  background-color: var(--background);
+  background-image:
+    radial-gradient(rgba(157, 0, 255, 0.5) 1px, transparent 1px),
+    radial-gradient(70% 38% at 50% 0%, #241C74 0%, #0D1252 36%, #060B32 68%, #03061C 100%);
+  background-size: 32px 32px, 100% 100%;
+  background-attachment: fixed, fixed;
   color: var(--foreground);
   font-family: var(--font-sans);
+  line-height: 1.7;
+}
+
+/* --- Les motifs de la charte, en utilitaires ---------------------------------------
+   Ils existent pour que personne n'ait à réécrire un dégradé à la main dans un
+   composant : une valeur en dur dans un composant, c'est une valeur qui ne suivra pas
+   le jour où la charte bouge. */
+
+/* Surface : dégradé violet → nuit, liseré violet, filet clair en haut.
+   La lumière vient d'en haut, toujours. */
+.pbm-surface {
+  background: linear-gradient(160deg, rgba(58, 32, 136, 0.5) 0%, rgba(8, 14, 58, 0.94) 62%, rgba(5, 10, 48, 0.97) 100%);
+  border: 1px solid rgba(157, 0, 255, 0.42);
+  box-shadow: 0 14px 32px rgba(3, 6, 28, 0.5), inset 0 1px 0 rgba(199, 125, 255, 0.26);
+}
+
+/* Variante or : réservée à ce qui porte une valeur (cote, total, action principale). */
+.pbm-surface-or {
+  background: linear-gradient(160deg, rgba(90, 66, 10, 0.4) 0%, rgba(10, 16, 64, 0.92) 60%, rgba(5, 10, 48, 0.96) 100%);
+  border: 1px solid rgba(255, 215, 0, 0.5);
+  box-shadow: 0 14px 32px rgba(3, 6, 28, 0.5), 0 0 32px rgba(255, 215, 0, 0.12), inset 0 1px 0 rgba(255, 240, 160, 0.35);
+}
+
+/* Le cadre d'une carte : liseré or de 3 px. C'est lui qui fait « carte » et pas « vignette ». */
+.pbm-carte {
+  border: 3px solid var(--gold);
+  box-shadow: inset 0 0 26px rgba(0, 0, 0, 0.35);
+}
+
+/* Reflet holographique en diagonale, posé par-dessus sans gêner les clics. */
+.pbm-holo {
+  position: relative;
+}
+.pbm-holo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(118deg, rgba(255, 255, 255, 0) 34%, rgba(255, 255, 255, 0.4) 50%, rgba(255, 255, 255, 0) 66%);
+}
+
+/* Halos. Un seul par surface, et il ne s'allume au survol que sur ce qui est cliquable. */
+.pbm-halo-or {
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+.pbm-halo-violet {
+  box-shadow: inset 0 0 22px rgba(157, 0, 255, 0.3);
+}
+
+/* Titre de niveau 1 : police pixel, or, ombre portée. Trois mots au plus — au-delà,
+   Press Start 2P devient un mur de pixels (vu et corrigé sur la maquette le 22/09). */
+.pbm-titre {
+  font-family: var(--font-pixel);
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0;
+  line-height: 1.6;
+  text-shadow: 0 3px 0 #8A6500, 0 0 24px rgba(255, 215, 0, 0.4);
+}
+
+/* Titre de section : Exo 2, violet éclairci, lettrage espacé. */
+.pbm-section {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--violet-clair);
+}
+
+/* Étincelle dorée à quatre branches, parcimonieuse. */
+.pbm-etincelle {
+  color: var(--gold);
+  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

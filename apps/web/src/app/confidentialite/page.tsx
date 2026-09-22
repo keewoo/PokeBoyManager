@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Politique de confidentialité — PokeBoyManager",
-  description: "Quelles données PokeBoyManager conserve, pourquoi, et comment les supprimer.",
+  title: "Politique de confidentialité — PokéBoy",
+  description: "Quelles données PokéBoy conserve, pourquoi, et comment les supprimer.",
 };
 
 export default function ConfidentialitePage() {
@@ -31,7 +31,7 @@ export default function ConfidentialitePage() {
         Reconnaître une carte et estimer son état demande un appel à l&apos;IA que tu as toi-même
         choisie et dont tu fournis la clé, dans l&apos;onglet « Mon IA » de ton profil : Anthropic
         (Claude), Google (Gemini) ou OpenAI (ChatGPT). Seule la photo envoyée à cet appel-là quitte
-        PokeBoyManager, vers le seul fournisseur que tu as sélectionné ; aucune photo ni clé n&apos;est
+        PokéBoy, vers le seul fournisseur que tu as sélectionné ; aucune photo ni clé n&apos;est
         transmise à un autre sous-traitant. Sans clé enregistrée, aucun appel IA n&apos;est fait — la
         reconnaissance reste désactivée, l&apos;ajout manuel à ta collection reste possible.
       </p>

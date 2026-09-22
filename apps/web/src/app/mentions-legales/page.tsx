@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Mentions légales — PokeBoyManager",
-  description: "Éditeur, hébergement et contact de PokeBoyManager.",
+  title: "Mentions légales — PokéBoy",
+  description: "Éditeur, hébergement et contact de PokéBoy.",
 };
 
 export default function MentionsLegalesPage() {
@@ -15,7 +15,7 @@ export default function MentionsLegalesPage() {
 
       <h2 className="font-heading text-xl font-bold text-foreground">Éditeur du site</h2>
       <p className="text-muted-foreground">
-        PokeBoyManager est édité à titre non professionnel par [nom/raison sociale à compléter],
+        PokéBoy est édité à titre non professionnel par [nom/raison sociale à compléter],
         [adresse à compléter]. Contact : [adresse e-mail à compléter].
       </p>
 
@@ -27,7 +27,7 @@ export default function MentionsLegalesPage() {
       <h2 className="font-heading text-xl font-bold text-foreground">Propriété intellectuelle</h2>
       <p className="text-muted-foreground">
         Les noms, images et logos Pokémon appartiennent à Nintendo, Creatures et GAME FREAK.
-        PokeBoyManager n&apos;est ni édité, ni approuvé, ni affilié à ces sociétés ni à The Pokémon
+        PokéBoy n&apos;est ni édité, ni approuvé, ni affilié à ces sociétés ni à The Pokémon
         Company. Les images officielles de cartes affichées dans l&apos;application proviennent de
         catalogues tiers cités dans leurs conditions d&apos;utilisation respectives et ne sont
         utilisées qu&apos;à titre informatif, jamais comme argument commercial.

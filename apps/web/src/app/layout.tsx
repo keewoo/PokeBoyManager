@@ -1,24 +1,24 @@
 import type { Metadata, Viewport } from "next";
 import { cookies, headers } from "next/headers";
-import {
-  Bricolage_Grotesque,
-  Instrument_Sans,
-  JetBrains_Mono,
-  Press_Start_2P,
-} from "next/font/google";
+import { Exo_2, JetBrains_Mono, Press_Start_2P, Roboto } from "next/font/google";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { AppShell } from "@/components/app-shell";
 import { getSessionCookieName } from "@/lib/config";
 import "./globals.css";
 
-const instrumentSans = Instrument_Sans({
+// Charte PokéBoy : Roboto pour tout ce qui se lit longtemps, Exo 2 pour les titres de
+// section, les onglets, les étiquettes et les chiffres. Press Start 2P reste réservée aux
+// titres de niveau 1, courts — au-delà de trois mots elle devient illisible.
+const roboto = Roboto({
   subsets: ["latin"],
-  variable: "--font-instrument-sans",
+  weight: ["400", "500", "700"],
+  variable: "--font-roboto",
 });
 
-const bricolageGrotesque = Bricolage_Grotesque({
+const exo2 = Exo_2({
   subsets: ["latin"],
-  variable: "--font-bricolage",
+  weight: ["500", "600", "700", "800"],
+  variable: "--font-exo2",
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -99,7 +99,7 @@ export default async function RootLayout({
         <script nonce={nonce} dangerouslySetInnerHTML={{ __html: NO_FLASH_THEME_SCRIPT }} />
       </head>
       <body
-        className={`${instrumentSans.variable} ${bricolageGrotesque.variable} ${jetbrainsMono.variable} ${pressStart2P.variable} font-sans antialiased`}
+        className={`${roboto.variable} ${exo2.variable} ${jetbrainsMono.variable} ${pressStart2P.variable} font-sans antialiased`}
       >
         <ThemeProvider>
           <AppShell hasSession={hasSession}>{children}</AppShell>

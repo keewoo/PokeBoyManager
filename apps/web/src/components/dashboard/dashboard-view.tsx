@@ -104,7 +104,7 @@ export function DashboardView() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <div className="rounded-lg border border-border bg-card p-4">
+        <div className="pbm-surface rounded-lg p-4">
           <span className="font-mono text-xs font-semibold uppercase text-muted-foreground">
             Valeur de la collection · {dashboard.items_priced} carte
             {dashboard.items_priced > 1 ? "s" : ""} cotée{dashboard.items_priced > 1 ? "s" : ""}
@@ -130,7 +130,7 @@ export function DashboardView() {
           </p>
         </div>
 
-        <div className="rounded-lg border border-border bg-card p-4">
+        <div className="pbm-surface rounded-lg p-4">
           <h2 className="mb-2 font-heading text-sm font-bold text-foreground">
             Plus fortes variations · 30 j
           </h2>
@@ -148,7 +148,7 @@ export function DashboardView() {
         </div>
       </div>
 
-      <div className="mt-4 rounded-lg border border-border bg-card p-4">
+      <div className="pbm-surface mt-4 rounded-lg p-4">
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="font-heading text-sm font-bold text-foreground">Derniers ajouts</h2>
           <Link href="/collection" className="text-sm font-medium text-primary hover:underline">
@@ -167,7 +167,7 @@ export function DashboardView() {
               <Link
                 key={addition.item_id}
                 href={`/carte/${addition.card_id}`}
-                className="group rounded-lg border border-border bg-card p-2 transition-colors hover:border-primary"
+                className="pbm-surface group rounded-md p-2 transition-shadow hover:shadow-[0_0_26px_rgba(255,215,0,0.32)]"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element -- image servie par l'API */}
                 <img

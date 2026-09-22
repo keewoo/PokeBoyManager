@@ -4,22 +4,21 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { ThemeToggle } from "@/components/theme-toggle";
 import { logout } from "@/lib/api/auth";
 import { cn } from "@/lib/utils";
 
 type NavLink = { href: string; label: string };
 
-// Visiteur : présentation + Connexion/Inscription (jamais Collection/Ajouter/Profil, des pages
-// qui lui sont interdites — `src/middleware.ts` les protège déjà, mais les montrer dans la nav
-// promettait un accès qui n'existe pas). Connecté : l'inverse, jamais de proposition de créer un
-// compte ou de se connecter à nouveau (mission `pbm-front-accueil`, point 3).
+// Visiteur : présentation + Connexion/Inscription (jamais Collection/Ajouter/Profil, des
+// pages qui lui sont interdites — `src/middleware.ts` les protège déjà, mais les montrer
+// dans la nav promettait un accès qui n'existe pas). Connecté : l'inverse, jamais de
+// proposition de créer un compte ou de se connecter à nouveau (mission `pbm-front-accueil`,
+// point 3).
 const VISITOR_LINKS: NavLink[] = [{ href: "/", label: "Présentation" }];
 const SESSION_LINKS: NavLink[] = [
   { href: "/", label: "Tableau de bord" },
   { href: "/collection", label: "Collection" },
   { href: "/ajouter", label: "Ajouter" },
-  { href: "/souhaits", label: "Souhaits" },
   { href: "/profil", label: "Profil" },
 ];
 
@@ -69,19 +68,27 @@ export function AppShell({
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <header className="border-b border-border bg-card px-5 py-3">
+    <div className="flex min-h-screen flex-col">
+      {/* Charte : l'en-tête ne porte QUE le logotype. L'icône d'application est une pièce
+          distincte — le logotype contient déjà son symbole, et les poser côte à côte ferait
+          deux marques concurrentes dans le même bandeau. */}
+      <header className="border-b border-[rgba(157,0,255,0.3)] bg-[rgba(10,16,72,0.72)] px-5 py-3 backdrop-blur-sm">
         <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-2.5 font-pixel text-[11px] text-foreground">
-            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-screen">
-              <span className="h-3 w-3 rounded-full bg-primary" aria-hidden />
+          <Link href="/" className="flex shrink-0 items-center gap-3" aria-label="PokéBoy — accueil">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/icons/icon-192.png"
+              alt=""
+              className="h-10 w-10 rounded-xl shadow-[0_0_0_1px_rgba(255,20,147,0.4),0_0_20px_rgba(157,0,255,0.55)]"
+            />
+            <span className="font-pixel text-[13px] text-gold [text-shadow:0_2px_0_#7A5B00] sm:text-sm">
+              POKÉBOY
             </span>
-            PokeBoyManager
           </Link>
 
           <button
             type="button"
-            className="ml-auto grid h-9 w-9 shrink-0 place-items-center rounded-md border border-border text-foreground sm:hidden"
+            className="ml-auto grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[rgba(157,0,255,0.65)] text-violet-clair sm:hidden"
             aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
             aria-expanded={menuOpen}
             aria-controls="primary-nav"
@@ -100,7 +107,7 @@ export function AppShell({
               menuOpen ? "flex" : "hidden"
             )}
           >
-            <nav className="flex flex-col gap-1 sm:flex-row sm:flex-wrap" aria-label="Navigation principale">
+            <nav className="flex flex-col gap-1.5 sm:ml-auto sm:flex-row sm:flex-wrap sm:items-center" aria-label="Navigation principale">
               {navLinks.map((link) => {
                 const isActive = pathname === link.href;
                 return (
@@ -109,8 +116,10 @@ export function AppShell({
                     href={link.href}
                     aria-current={isActive ? "page" : undefined}
                     className={cn(
-                      "rounded-md px-2.5 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground",
-                      isActive && "bg-secondary font-semibold text-foreground"
+                      // Charte : la navigation est en pilules ; l'onglet actif s'allume en or.
+                      "rounded-full border border-transparent px-4 py-2.5 font-heading text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground transition-colors hover:text-foreground",
+                      isActive &&
+                        "border-[rgba(255,215,0,0.75)] bg-[rgba(255,215,0,0.1)] font-bold text-gold"
                     )}
                   >
                     {link.label}
@@ -119,27 +128,32 @@ export function AppShell({
               })}
             </nav>
 
-            <div className="flex flex-wrap items-center gap-3 sm:ml-auto">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               {hasSession ? (
                 <button
                   type="button"
                   onClick={handleLogout}
                   disabled={isLoggingOut}
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-60"
+                  className="rounded-full border border-transparent px-4 py-2.5 font-heading text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground hover:text-foreground disabled:opacity-60"
                 >
                   {isLoggingOut ? "Déconnexion…" : "Déconnexion"}
                 </button>
               ) : (
                 <>
-                  <Link href="/connexion" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+                  <Link
+                    href="/connexion"
+                    className="rounded-full border border-[rgba(157,0,255,0.8)] px-5 py-2.5 font-heading text-xs font-semibold uppercase tracking-[0.08em] text-foreground shadow-[inset_0_0_18px_rgba(157,0,255,0.28)]"
+                  >
                     Connexion
                   </Link>
-                  <Link href="/inscription" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+                  <Link
+                    href="/inscription"
+                    className="rounded-full bg-[linear-gradient(180deg,#FFF0A0_0%,#FFD700_52%,#E0A800_100%)] px-5 py-2.5 font-heading text-xs font-extrabold uppercase tracking-[0.08em] text-primary-foreground shadow-[0_0_24px_rgba(255,215,0,0.45),inset_0_1px_0_rgba(255,255,255,0.7)]"
+                  >
                     Inscription
                   </Link>
                 </>
               )}
-              <ThemeToggle />
             </div>
           </div>
         </div>

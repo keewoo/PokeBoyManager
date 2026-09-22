@@ -11,6 +11,10 @@ Chargé automatiquement quand on travaille ici. Les règles du dépôt restent c
 | toucher à l'authentification, aux sessions, aux envois de fichiers | `docs/SECURITE.md` |
 | ajouter une variable d'environnement | `docs/LIVRAISON.md` |
 
+**Avant de fouiller** (qui appelle cette fonction, où vit cette table) : demande au graphe `graphify`
+(`query_graph`, `get_neighbors`) plutôt que d'enchaîner les `grep` — c'est du contexte économisé.
+`graphify update .` après un gros changement.
+
 Rappels qui coûtent cher quand on les oublie :
 
 - **Toute route utilisateur filtre par `user_id`** issu de la session, et son test d'accès croisé
