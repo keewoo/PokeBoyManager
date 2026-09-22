@@ -8,9 +8,12 @@ perde pas le travail déjà fait.
 
 **Repli de langue (2026-09-22).** Le catalogue français de TCGdex est lui-même incomplet : mesuré
 ce jour-là, `fr` expose 202 extensions / 22 170 cartes contre 220 / 23 736 en `en`. Piloter
-l'import sur la seule langue primaire laissait donc **18 extensions entières et 1 659 cartes**
+l'import sur la seule langue primaire laissait donc **21 extensions entières et 1 659 cartes**
 hors de la base — Gym Heroes, Gym Challenge, Base Set 2, Legendary Collection, Skyridge, Arceus,
 Legendary Treasures, Team Rocket Returns, et les extensions Pocket B2 et B1a, pourtant récentes.
+(L'écart *net* n'est que de 18 parce que 3 extensions n'existent qu'en français — `2013bw`,
+`2018sm-fr`, `2019sm-fr` : compter 220 - 202 sous-estime le manque, il faut comparer les
+listes, pas leurs tailles.)
 
 Le manque était invisible dans les comptages, parce que `sets.total_cards` est le total
 *imprimé* : la base affichait 22 169 cartes pour 19 793 « attendues » et paraissait donc
