@@ -538,6 +538,31 @@ silencieux. « Coût d'attaque » comme critère (cité au contexte, pas au poin
 de « fini ») est écarté ici : sur `attacks` (JSONB) il exigerait un index dédié pour tenir les
 150 ms — à traiter avec `v7-decks-ui` si le besoin se confirme.
 
+## Synchronisation collection → decks (lot `v7-decks-collection-sync`)
+
+La légalité est déjà juste sans écriture (recalcul à la lecture) ; ce lot ajoute la **mémoire** de
+la bascule, pour prévenir le joueur qu'une carte vendue a rendu un deck injouable.
+
+- **Table `deck_events`** (`pbm_api.models.decks.DeckEvent`, migration `b2d4f6a8c0e1`) : une ligne
+  par deck devenu « à compléter ». `event_type="card_incomplete"`, `reason` ∈ {`removed`,
+  `counterfeit`}, `card_id` en `SET NULL` + `card_name` figé (l'historique survit), `detail` JSONB
+  (`required`/`owned`/`missing`/`deck_name`), `read_at` (non lue = notification). Index
+  `(user_id, read_at)` pour le fil de l'en-tête.
+- **Déclencheur** (`pbm_api.decks.collection_sync.record_collection_change`), branché sur
+  `collection.service.delete_item` (vente/suppression) et `update_item` (signalement contrefaçon).
+  Deux invariants portés par le code : **jamais d'écriture sur `deck_cards`** (le deck n'est pas
+  modifié en silence — une partie figée au démarrage n'est donc pas affectée) ; **seule la bascule
+  complet→incomplet écrit une alerte** (un doublon vendu laissant un exemplaire suffisant, ou un
+  deck déjà incomplet, n'en produit aucune). Les Énergies de base sont ignorées (fournies, D10).
+- **Suggestions de remplacement** (`pbm_api.decks.replacements`, `GET /me/decks/{deck}/cards/{card}/
+  replacements`) : cartes **possédées** (hors contrefaçon), classées type→rôle/stade→coût d'attaque
+  le plus proche→nombre d'exemplaires, chacune avec sa raison. **Une seule requête**, **aucun appel
+  IA** (cœur pur `rank_replacements`, coût d'attaque = attaque la moins chère de `Card.attacks`).
+- **Routes** (toutes bornées au `user_id` de la session, `/alerts` déclarée avant `/{deck_id}`) :
+  `GET /me/decks/alerts` (fil + `unread_count`), `POST /me/decks/alerts/read`, `GET /me/decks/{deck}/
+  history`. Tests : `apps/api/tests/test_deck_collection_sync.py` (scénarios mission + accès croisé)
+  et `test_deck_replacements.py` (classement pur).
+
 ## Prix (lot `v2-prix`)
 
 - Job `daily_prices_task` (arq, cron quotidien 06:00, `apps/api/src/pbm_api/worker.py`) : une

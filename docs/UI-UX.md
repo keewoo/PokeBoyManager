@@ -333,3 +333,23 @@ avec `page`) plutôt qu'en remplissant le formulaire d'inscription à l'écran �
 formulaire s'est révélée instable à cliquer dans l'environnement Playwright de ce poste
 (`auth.spec.ts` échoue au même endroit, non lié à ce lot) ; seule la fiche elle-même reste
 exercée par le navigateur.
+
+## Alertes « à compléter » du deck (lot `v7-decks-collection-sync`)
+
+Une carte qui quitte la collection ne modifie jamais le deck à l'écran (aucune carte retirée en
+silence) : on **prévient**, on propose, le joueur tranche. Le langage visuel reprend l'existant
+(encadré « danger » rose, listes en cartes bordées), aucun nouvel écran à maquetter.
+
+- **En-tête** (`apps/web/src/components/app-shell.tsx`) : badge de compte sur l'onglet **Decks**
+  (`GET /me/decks/alerts`, non lues). Magenta `#D6006E` sur blanc (les jetons `--danger`/
+  `--danger-foreground` sont identiques → un badge plein `bg-danger` serait invisible) ; `aria-label`
+  « N deck(s) à compléter ». Best-effort : si l'appel échoue, pas de badge (jamais un « 0 » mensonger).
+- **Liste des decks** (`decks-list-view.tsx`) : bandeau `data-testid="deck-alerts-notice"` listant les
+  decks touchés + « Marquer comme lu » ; l'état **« À compléter »** par deck reste porté par la légalité.
+- **Constructeur** (`deck-builder-view.tsx`) : l'alerte d'une carte manquante offre les **trois issues** —
+  *Remplacer par une possédée* (déplie les suggestions classées de `GET …/replacements`, chacune avec sa
+  raison ; l'échange est **explicite** : ajout de la possédée puis retrait de la manquante), *Retirer du
+  deck*, *Voir la carte* — et un panneau **Historique des changements de collection** (`GET …/history`).
+- Tests web : `app-shell-decks.test.tsx` (badge), `decks-list-view.test.tsx` (bandeau + marquage lu),
+  `deck-builder-view.test.tsx` (suggestions + échange) ; e2e `deck-builder.spec.ts` (vente → alerte + « À
+  compléter » sur la liste).
