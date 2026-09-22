@@ -31,6 +31,13 @@ route d'export (nouvelle en e2e). Aucun code applicatif modifié : c'est un lot 
      pas une approximation visuelle), même patron que `responsive.spec.ts`.
   3. **Accès croisé sur l'export** — A exporte son deck (200) ; B, dans un autre contexte,
      reçoit **404** (jamais 403 : pas de fuite d'existence) sur `GET /me/decks/{id}/export`.
+- **Correctif d'un défaut trouvé par la recette** (règle « un bug trouvé se corrige dans la
+  foulée ») : `apps/web/src/app/jeu/decks/[id]/deck-stats-panel.tsx` — les deux graphes recharts
+  (`ResponsiveContainer`) débordaient horizontalement à 320 px sur le constructeur
+  (`scrollWidth=524 > 320`). Cause classique : une cellule de grille CSS a `min-width: auto` par
+  défaut, donc la piste ne peut pas rétrécir sous la largeur intrinsèque du graphe. Correctif :
+  `min-w-0` sur les deux cellules porteuses de graphe. Le module n'avait jamais été testé en
+  largeur avant ce lot — c'est précisément ce que la mission demandait de vérifier.
 - `docs/roadmap/comptes-rendus/v7-decks-e2e.md` — ce fichier.
 
 Réutilise l'infrastructure e2e existante sans la dupliquer : semis direct en base
@@ -64,6 +71,16 @@ dédiée pour la discovery, à l'identique de la CI.
 **Le verdict e2e navigateur est donc celui de la CI GitHub sur la branche `roadmap/v7-decks-e2e`**
 (elle tourne sur push, sans PR requise) — cité dans le dernier message, et exigé vert avant toute
 fusion `flock` dans `main`.
+
+Premier passage CI (SHA `769a8c0`) : jobs `web` et `api` **verts** ; job `e2e` **rouge** sur deux
+points, tous deux corrigés dans ce lot :
+- le débordement 320 px du constructeur (défaut réel du module → correctif `min-w-0` ci-dessus) ;
+- l'assertion du **nom** de fichier d'export, trop stricte pour l'e2e : API et web y sont
+  d'origines distinctes, `Content-Disposition` n'est pas exposé au navigateur, le client retombe
+  sur « deck.txt » (comportement correct ; en PROD, même origine → vrai nom). L'assertion vérifie
+  désormais l'extension, et le **contenu** exporté prouve qu'il s'agit bien de ce deck.
+
+Le test d'accès croisé sur l'export (§6) était **vert** dès le premier passage.
 
 ## Écarts au plan
 

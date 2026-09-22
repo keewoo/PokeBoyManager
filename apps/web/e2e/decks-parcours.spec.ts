@@ -104,7 +104,12 @@ test.describe("Parcours complet du gestionnaire de decks (lot v7-decks-e2e)", ()
       page.waitForEvent("download"),
       page.getByRole("button", { name: "Exporter (texte)" }).click(),
     ]);
-    expect(download.suggestedFilename()).toBe("Parcours E2E.txt");
+    // Le NOM du fichier dépend de l'exposition CORS de `Content-Disposition` : en e2e, l'API
+    // (:8100) et le web (:3100) sont d'origines distinctes et cet en-tête n'est pas exposé au
+    // navigateur, donc le client retombe sur son nom par défaut « deck.txt » (en PROD, même
+    // origine → le vrai nom « <deck>.txt »). On vérifie donc l'extension, puis le CONTENU — qui,
+    // lui, ne dépend pas de l'origine — pour prouver que c'est bien CE deck qui a été exporté.
+    expect(download.suggestedFilename()).toMatch(/\.txt$/);
     const downloadPath = await download.path();
     const exported = fs.readFileSync(downloadPath, "utf-8");
     expect(exported).toContain("# Parcours E2E");

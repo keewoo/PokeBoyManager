@@ -256,7 +256,7 @@ export function DeckStatsPanel({ deckId, refreshKey }: { deckId: string; refresh
           </div>
 
           <div className="grid gap-5 lg:grid-cols-2">
-            <div>
+            <div className="min-w-0">
               <h4 className="font-heading text-xs font-bold uppercase tracking-[0.13em] text-muted-foreground">
                 Coûts d&apos;attaque
               </h4>
@@ -267,7 +267,7 @@ export function DeckStatsPanel({ deckId, refreshKey }: { deckId: string; refresh
                 <AttackCostChart buckets={stats.attack_cost_curve} />
               </div>
             </div>
-            <div>
+            <div className="min-w-0">
               <h4 className="font-heading text-xs font-bold uppercase tracking-[0.13em] text-muted-foreground">
                 Répartition par type
               </h4>
