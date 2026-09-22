@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DeckBuilderView } from "@/app/jeu/decks/[id]/deck-builder-view";
 import * as decksApi from "@/lib/api/decks";
 import { ApiError } from "@/lib/api/client";
-import type { DeckCard, DeckDetail } from "@/lib/api/decks";
+import type { DeckCard, DeckDetail, DeckStats } from "@/lib/api/decks";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
@@ -25,6 +25,7 @@ vi.mock("@/lib/api/decks", async (importOriginal) => {
     deleteDeck: vi.fn(),
     fetchDeckReplacements: vi.fn(),
     fetchDeckHistory: vi.fn(),
+    fetchDeckStats: vi.fn(),
   };
 });
 
@@ -101,6 +102,35 @@ function deck(): DeckDetail {
   };
 }
 
+function statsFixture(): DeckStats {
+  return {
+    deck_id: "d1",
+    card_count: 7,
+    distinct_cards: 3,
+    by_supertype: [],
+    by_role: [],
+    type_distribution: [],
+    untyped_pokemon: 0,
+    attack_cost_curve: [],
+    attacks_counted: 0,
+    average_hp: null,
+    pokemon_with_hp: 0,
+    stage_distribution: [],
+    has_basic_pokemon: true,
+    evolution_copies_without_base: 0,
+    special_cards: 0,
+    duplicate_copies: 0,
+    duplicate_ratio: 0,
+    value: {
+      total_eur: null,
+      priced_cards: 0,
+      missing_price_cards: 0,
+      priced_copies: 0,
+      counted_copies: 0,
+    },
+  };
+}
+
 describe("DeckBuilderView", () => {
   beforeEach(() => {
     Object.values(api).forEach((fn) => {
@@ -118,6 +148,7 @@ describe("DeckBuilderView", () => {
     api.searchDeckCards.mockResolvedValue({ items: [], next_cursor: null });
     api.fetchDeckReplacements.mockResolvedValue({ card_id: "roucool", replacements: [] });
     api.fetchDeckHistory.mockResolvedValue({ deck_id: "d1", events: [] });
+    api.fetchDeckStats.mockResolvedValue(statsFixture());
   });
 
   it("propose des remplacements possédés et applique l'échange sans modifier en silence", async () => {

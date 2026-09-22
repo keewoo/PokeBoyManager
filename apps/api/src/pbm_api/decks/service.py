@@ -15,11 +15,12 @@ from datetime import UTC, datetime
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pbm_api.decks import legality
+from pbm_api.decks import energy, legality, stats
 from pbm_api.decks.errors import DeckCardNotFoundError, DeckNotFoundError
 from pbm_api.decks.legality import DeckCardFact, DeckLegality
 from pbm_api.decks.schemas import CreateDeckRequest, DeckCardInput
-from pbm_api.models import Card, CollectionItem, Deck, DeckCard, DeckEvent, Set, User
+from pbm_api.models import Card, CollectionItem, Deck, DeckCard, DeckEvent, PriceVariant, Set, User
+from pbm_api.pricing import valuation
 from pbm_api.validation.errors import CardNotFoundError
 
 _COPY_SUFFIX = " (copie)"
@@ -44,6 +45,10 @@ class LoadedDeckCard:
     set_id: uuid.UUID
     set_name: str
     set_code: str
+    hp: int | None
+    element_type: str | None
+    attacks: list | None
+    rule_marker: str | None
 
 
 def _merge_inputs(cards: list[DeckCardInput]) -> dict[uuid.UUID, int]:
@@ -95,6 +100,10 @@ async def _load_cards(
             Set.id.label("set_id"),
             Set.name.label("set_name"),
             Set.code.label("set_code"),
+            Card.hp.label("hp"),
+            Card.element_type.label("element_type"),
+            Card.attacks.label("attacks"),
+            Card.rule_marker.label("rule_marker"),
         )
         .join(Card, DeckCard.card_id == Card.id)
         .join(Set, Card.set_id == Set.id)
@@ -341,3 +350,40 @@ async def remove_deck_card(
     await session.commit()
     await session.refresh(deck)
     return deck
+
+
+async def deck_stats(
+    session: AsyncSession, user: User, deck_id: uuid.UUID
+) -> tuple[Deck, stats.DeckStats]:
+    """Agrégats chiffrés d'un deck (mission `v7-decks-stats`). Borné au propriétaire : un deck
+    d'un autre utilisateur lève `DeckNotFoundError` (→ 404). La valeur marchande vient du service
+    de valorisation existant (prix de référence de la variante `normal`), les autres chiffres du
+    catalogue — jamais une estimation du modèle (risque du lot). Les Énergies de base sont hors
+    valorisation (fournies, jamais achetées, décision D10)."""
+    deck = await _get_owned_deck(session, user, deck_id)
+    loaded = (await _load_cards(session, [deck.id]))[deck.id]
+    pairs = {
+        (c.card_id, PriceVariant.normal)
+        for c in loaded
+        if not energy.is_basic_energy(c.supertype, c.card_name, c.energy_type)
+    }
+    references = await valuation.bulk_reference_prices_eur(
+        session, pairs, datetime.now(UTC).date()
+    )
+    inputs = [
+        stats.StatsCardInput(
+            card_id=c.card_id,
+            name=c.card_name,
+            supertype=c.supertype,
+            energy_type=c.energy_type,
+            stage=c.stage,
+            hp=c.hp,
+            element_type=c.element_type,
+            attacks=c.attacks,
+            rule_marker=c.rule_marker,
+            quantity=c.quantity,
+            reference_price_eur=references.get((c.card_id, PriceVariant.normal)),
+        )
+        for c in loaded
+    ]
+    return deck, stats.compute(inputs)

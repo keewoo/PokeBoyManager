@@ -4,6 +4,7 @@ import {
   createDeck,
   deleteDeck,
   duplicateDeck,
+  fetchDeckStats,
   getDeck,
   getDeckCardFacets,
   listDecks,
@@ -90,5 +91,14 @@ describe("api/decks", () => {
   it("les facettes ont leur propre route", () => {
     getDeckCardFacets();
     expect(mockGet).toHaveBeenCalledWith("/me/decks/cards/facets");
+  });
+});
+
+describe("api/decks — statistiques", () => {
+  beforeEach(() => mockGet.mockClear());
+
+  it("les stats passent par la bonne route", () => {
+    fetchDeckStats("d1");
+    expect(mockGet).toHaveBeenCalledWith("/me/decks/d1/stats");
   });
 });

@@ -353,3 +353,12 @@ silence) : on **prévient**, on propose, le joueur tranche. Le langage visuel re
 - Tests web : `app-shell-decks.test.tsx` (badge), `decks-list-view.test.tsx` (bandeau + marquage lu),
   `deck-builder-view.test.tsx` (suggestions + échange) ; e2e `deck-builder.spec.ts` (vente → alerte + « À
   compléter » sur la liste).
+
+## Fiche de statistiques de deck (lot `v7-decks-stats`)
+
+`apps/web/src/app/jeu/decks/[id]/deck-stats-panel.tsx` (`DeckStatsPanel`), rendu sous le
+constructeur : tuiles chiffrées (cartes, PV moyens, cartes spéciales, valeur, doublons), barres de
+répartition par rôle et par type de carte, et deux graphiques `recharts` sobres — courbe des coûts
+d'attaque et répartition par type élémentaire (couleurs alignées sur les fonds de carte). Tous les
+chiffres viennent de l'API (`GET /me/decks/{id}/stats`), jamais recalculés côté écran ; recharge
+quand le deck change (`refreshKey = deck.updated_at`), comme l'historique.

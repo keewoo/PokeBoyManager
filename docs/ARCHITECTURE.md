@@ -856,3 +856,28 @@ Migration `d1c7a3f0b2e4` (tables `decks`/`deck_cards` + colonne `cards.energy_ty
 Tests : `apps/api/tests/test_deck_legality.py` (moteur pur : D10, 60/4/possession),
 `apps/api/tests/test_deck_routes.py` (CRUD, accès croisé B→404, revalidation après vente, CSRF).
 Aucun écran dans ce lot (back-end) : le constructeur est `v7-decks-ui` (couloir CH5).
+
+## Statistiques de deck (lot `v7-decks-stats`)
+
+`GET /me/decks/{deck_id}/stats` (borné au propriétaire, 404 sinon) renvoie les agrégats chiffrés
+d'un deck (`pbm_api.decks.stats.compute`, logique pure testée sur des decks connus, pondérée par
+les quantités) :
+
+- **répartition par rôle** (`by_role`) — partition en `attaquant` / `mur` / `soutien` / `energie`,
+  heuristique de catalogue documentée (`mur` = Pokémon à PV ≥ 200 ; un Pokémon qui attaque est un
+  attaquant, sinon un soutien ; Dresseur = soutien). La somme égale `card_count` ;
+- **par type de carte** (`by_supertype`) et **par type élémentaire** (`type_distribution`, Pokémon
+  seulement ; `untyped_pokemon` compte ceux sans type renseigné) ;
+- **courbe des coûts d'attaque** (`attack_cost_curve`) — nombre d'énergies par attaque
+  (`Card.attacks`, `cost` TCGdex) ;
+- **PV moyens** (`average_hp`, pondérés) et **structure d'évolution** (`stage_distribution` +
+  `has_basic_pokemon` / `evolution_copies_without_base`) ;
+- **cartes spéciales** (`special_cards` = `rule_marker` présent ou Énergie spéciale) ;
+- **valeur marchande** (`value.total_eur`) via `pbm_api.pricing.valuation.bulk_reference_prices_eur`
+  (variante `normal`), Énergies de base exclues (fournies) ; un prix manquant n'est jamais compté 0
+  (`value.missing_price_cards`) ;
+- **part de doublons** (`duplicate_ratio`) — exemplaires au-delà du premier, hors Énergies de base.
+
+Faute de champ `evolveFrom` au catalogue, la « complétude » des lignes d'évolution se réduit à la
+répartition par stade et au signal « évolutions sans Pokémon de base » — jamais une reconstruction
+devinée des chaînes d'évolution (les chiffres viennent du catalogue, pas du modèle).

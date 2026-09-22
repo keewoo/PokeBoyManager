@@ -285,3 +285,50 @@ class DeckCardSearchFacets(BaseModel):
     hp_max: int | None
     owned_card_count: int
     duplicate_card_count: int
+
+
+# ---- statistiques de deck (mission `v7-decks-stats`) ----
+
+
+class DeckStatBucketOut(BaseModel):
+    """Un seau d'une répartition : clé stable, libellé affichable, décompte pondéré."""
+
+    key: str
+    label: str
+    count: int
+
+
+class DeckValueOut(BaseModel):
+    """Valeur marchande d'un deck via la valorisation existante (variante `normal`), Énergies de
+    base exclues (fournies). `total_eur` est `None` si aucune carte comptée n'a de prix relevé —
+    jamais 0, qui laisserait croire à un deck sans valeur (risque documenté du lot prix)."""
+
+    total_eur: Decimal | None
+    priced_cards: int
+    missing_price_cards: int
+    priced_copies: int
+    counted_copies: int
+
+
+class DeckStatsOut(BaseModel):
+    """Agrégats chiffrés d'un deck (mission `v7-decks-stats`). Tout vient du catalogue et de la
+    valorisation, jamais d'une estimation du modèle."""
+
+    deck_id: uuid.UUID
+    card_count: int
+    distinct_cards: int
+    by_supertype: list[DeckStatBucketOut]
+    by_role: list[DeckStatBucketOut]
+    type_distribution: list[DeckStatBucketOut]
+    untyped_pokemon: int
+    attack_cost_curve: list[DeckStatBucketOut]
+    attacks_counted: int
+    average_hp: float | None
+    pokemon_with_hp: int
+    stage_distribution: list[DeckStatBucketOut]
+    has_basic_pokemon: bool
+    evolution_copies_without_base: int
+    special_cards: int
+    duplicate_copies: int
+    duplicate_ratio: float
+    value: DeckValueOut

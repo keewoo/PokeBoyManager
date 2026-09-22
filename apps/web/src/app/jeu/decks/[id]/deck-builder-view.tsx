@@ -34,6 +34,8 @@ import {
   type DeckReplacement,
 } from "@/lib/api/decks";
 
+import { DeckStatsPanel } from "./deck-stats-panel";
+
 const DECK_SIZE = 60;
 
 function errorText(err: unknown, fallback: string): string {
@@ -880,6 +882,7 @@ export function DeckBuilderView({ deckId }: { deckId: string }) {
         />
       </div>
 
+      <DeckStatsPanel deckId={deckId} refreshKey={deck.updated_at} />
       <DeckHistory deckId={deckId} refreshKey={deck.updated_at} />
     </div>
   );

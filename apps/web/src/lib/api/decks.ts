@@ -290,3 +290,42 @@ export async function fetchDeckExport(
   const filename = match?.[1] ?? `deck.${fmt === "pdf" ? "pdf" : "txt"}`;
   return { blob: await response.blob(), filename };
 }
+
+// ---- statistiques de deck (mission `v7-decks-stats`) ----
+// Miroir de `DeckStatsOut` (apps/api/src/pbm_api/decks/schemas.py). Tous les chiffres viennent du
+// serveur (catalogue + valorisation), jamais recalculés côté écran.
+
+export type DeckStatBucket = { key: string; label: string; count: number };
+
+export type DeckValue = {
+  total_eur: string | null;
+  priced_cards: number;
+  missing_price_cards: number;
+  priced_copies: number;
+  counted_copies: number;
+};
+
+export type DeckStats = {
+  deck_id: string;
+  card_count: number;
+  distinct_cards: number;
+  by_supertype: DeckStatBucket[];
+  by_role: DeckStatBucket[];
+  type_distribution: DeckStatBucket[];
+  untyped_pokemon: number;
+  attack_cost_curve: DeckStatBucket[];
+  attacks_counted: number;
+  average_hp: number | null;
+  pokemon_with_hp: number;
+  stage_distribution: DeckStatBucket[];
+  has_basic_pokemon: boolean;
+  evolution_copies_without_base: number;
+  special_cards: number;
+  duplicate_copies: number;
+  duplicate_ratio: number;
+  value: DeckValue;
+};
+
+export function fetchDeckStats(deckId: string): Promise<DeckStats> {
+  return apiGet<DeckStats>(`/me/decks/${deckId}/stats`);
+}

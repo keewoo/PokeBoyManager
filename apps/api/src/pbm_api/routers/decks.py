@@ -41,7 +41,10 @@ from pbm_api.decks.schemas import (
     DeckListResponse,
     DeckReplacementItem,
     DeckReplacementsResponse,
+    DeckStatBucketOut,
+    DeckStatsOut,
     DeckSummary,
+    DeckValueOut,
     ImportCandidateOut,
     ImportDeckRequest,
     ImportDeckResponse,
@@ -53,6 +56,7 @@ from pbm_api.decks.schemas import (
     UpdateDeckRequest,
 )
 from pbm_api.decks.service import DeckAlert, LoadedDeckCard
+from pbm_api.decks.stats import DeckStats
 from pbm_api.models import DeckEvent, User
 from pbm_api.storage import StorageBackend, build_storage
 from pbm_api.validation.errors import CardNotFoundError
@@ -598,3 +602,53 @@ async def export_deck(
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{safe_name}.pdf"'},
     )
+
+
+def _stats_response(deck_id: uuid.UUID, s: DeckStats) -> DeckStatsOut:
+    def buckets(items: list) -> list[DeckStatBucketOut]:
+        return [DeckStatBucketOut(key=b.key, label=b.label, count=b.count) for b in items]
+
+    return DeckStatsOut(
+        deck_id=deck_id,
+        card_count=s.card_count,
+        distinct_cards=s.distinct_cards,
+        by_supertype=buckets(s.by_supertype),
+        by_role=buckets(s.by_role),
+        type_distribution=buckets(s.type_distribution),
+        untyped_pokemon=s.untyped_pokemon,
+        attack_cost_curve=buckets(s.attack_cost_curve),
+        attacks_counted=s.attacks_counted,
+        average_hp=s.average_hp,
+        pokemon_with_hp=s.pokemon_with_hp,
+        stage_distribution=buckets(s.stage_distribution),
+        has_basic_pokemon=s.has_basic_pokemon,
+        evolution_copies_without_base=s.evolution_copies_without_base,
+        special_cards=s.special_cards,
+        duplicate_copies=s.duplicate_copies,
+        duplicate_ratio=s.duplicate_ratio,
+        value=DeckValueOut(
+            total_eur=s.value.total_eur,
+            priced_cards=s.value.priced_cards,
+            missing_price_cards=s.value.missing_price_cards,
+            priced_copies=s.value.priced_copies,
+            counted_copies=s.value.counted_copies,
+        ),
+    )
+
+
+@router.get("/{deck_id}/stats", response_model=DeckStatsOut)
+async def get_deck_stats(
+    deck_id: uuid.UUID,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> DeckStatsOut:
+    """Agrégats chiffrés d'un deck (mission `v7-decks-stats`) : composition (type de carte, type
+    élémentaire, rôle), courbe des coûts d'attaque, PV moyens, structure d'évolution, cartes
+    spéciales, valeur marchande et part de doublons. Borné au propriétaire : un deck d'un autre
+    utilisateur renvoie 404 (jamais 403). Tous les chiffres viennent du catalogue et de la
+    valorisation existante, jamais d'une estimation du modèle (risque du lot)."""
+    try:
+        _deck, computed = await service.deck_stats(session, current_user, deck_id)
+    except DeckNotFoundError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, DECK_NOT_FOUND_MESSAGE) from None
+    return _stats_response(deck_id, computed)

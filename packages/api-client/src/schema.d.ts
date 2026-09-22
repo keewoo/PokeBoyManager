@@ -911,6 +911,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/decks/{deck_id}/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Deck Stats
+         * @description Agrégats chiffrés d'un deck (mission `v7-decks-stats`) : composition (type de carte, type
+         *     élémentaire, rôle), courbe des coûts d'attaque, PV moyens, structure d'évolution, cartes
+         *     spéciales, valeur marchande et part de doublons. Borné au propriétaire : un deck d'un autre
+         *     utilisateur renvoie 404 (jamais 403). Tous les chiffres viennent du catalogue et de la
+         *     valorisation existante, jamais d'une estimation du modèle (risque du lot).
+         */
+        get: operations["get_deck_stats_me_decks__deck_id__stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/dashboard": {
         parameters: {
             query?: never;
@@ -2060,6 +2084,63 @@ export interface components {
             /** Replacements */
             replacements: components["schemas"]["DeckReplacementItem"][];
         };
+        /**
+         * DeckStatBucketOut
+         * @description Un seau d'une répartition : clé stable, libellé affichable, décompte pondéré.
+         */
+        DeckStatBucketOut: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Count */
+            count: number;
+        };
+        /**
+         * DeckStatsOut
+         * @description Agrégats chiffrés d'un deck (mission `v7-decks-stats`). Tout vient du catalogue et de la
+         *     valorisation, jamais d'une estimation du modèle.
+         */
+        DeckStatsOut: {
+            /**
+             * Deck Id
+             * Format: uuid
+             */
+            deck_id: string;
+            /** Card Count */
+            card_count: number;
+            /** Distinct Cards */
+            distinct_cards: number;
+            /** By Supertype */
+            by_supertype: components["schemas"]["DeckStatBucketOut"][];
+            /** By Role */
+            by_role: components["schemas"]["DeckStatBucketOut"][];
+            /** Type Distribution */
+            type_distribution: components["schemas"]["DeckStatBucketOut"][];
+            /** Untyped Pokemon */
+            untyped_pokemon: number;
+            /** Attack Cost Curve */
+            attack_cost_curve: components["schemas"]["DeckStatBucketOut"][];
+            /** Attacks Counted */
+            attacks_counted: number;
+            /** Average Hp */
+            average_hp: number | null;
+            /** Pokemon With Hp */
+            pokemon_with_hp: number;
+            /** Stage Distribution */
+            stage_distribution: components["schemas"]["DeckStatBucketOut"][];
+            /** Has Basic Pokemon */
+            has_basic_pokemon: boolean;
+            /** Evolution Copies Without Base */
+            evolution_copies_without_base: number;
+            /** Special Cards */
+            special_cards: number;
+            /** Duplicate Copies */
+            duplicate_copies: number;
+            /** Duplicate Ratio */
+            duplicate_ratio: number;
+            value: components["schemas"]["DeckValueOut"];
+        };
         /** DeckSummary */
         DeckSummary: {
             /**
@@ -2088,6 +2169,24 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /**
+         * DeckValueOut
+         * @description Valeur marchande d'un deck via la valorisation existante (variante `normal`), Énergies de
+         *     base exclues (fournies). `total_eur` est `None` si aucune carte comptée n'a de prix relevé —
+         *     jamais 0, qui laisserait croire à un deck sans valeur (risque documenté du lot prix).
+         */
+        DeckValueOut: {
+            /** Total Eur */
+            total_eur: string | null;
+            /** Priced Cards */
+            priced_cards: number;
+            /** Missing Price Cards */
+            missing_price_cards: number;
+            /** Priced Copies */
+            priced_copies: number;
+            /** Counted Copies */
+            counted_copies: number;
         };
         /** DeleteAccountRequest */
         DeleteAccountRequest: {
@@ -4629,6 +4728,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_deck_stats_me_decks__deck_id__stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                deck_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeckStatsOut"];
                 };
             };
             /** @description Validation Error */
