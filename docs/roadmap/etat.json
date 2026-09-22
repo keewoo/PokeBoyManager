@@ -2694,21 +2694,27 @@
           "machine": "Chimaera",
           "evenement": "statut → livre_uat",
           "detail": ""
+        },
+        {
+          "quand": "2026-09-22T09:59+0200",
+          "machine": "Chimaera",
+          "evenement": "compte rendu publié",
+          "detail": ""
         }
       ],
       "compte_rendu": {
         "resume": "Extension de pbm_api.state.counterfeit.assess_counterfeit (v3-etat) avec 2 controles deterministes demandes par la mission : variante absente du catalogue (Card.variants TCGdex) et numero/total de serie impossible (Set.total_cards). Le signal IA (indices visuels) et le controle gold existant sont inchanges.",
         "livrables": [
-          "state/counterfeit.py + state/service.py (_matched_card_signals) ; jeu de 60 cartes etiquetees (state/counterfeit_synthetic.py, 30 contrefacons / 30 authentiques dont pieges secret rare/catalogue incomplet/variante non modelisee) ; docs/ARCHITECTURE.md + CLAUDE.md a jour"
+          "state/counterfeit.py + state/service.py (_matched_card_signals) ; jeu de 60 cartes etiquetees (state/counterfeit_synthetic.py, 30 contrefacons / 30 authentiques dont pieges secret rare/catalogue incomplet/variante non modelisee) ; docs/ARCHITECTURE.md + CLAUDE.md a jour ; branche poussee sur GitHub (commit 9927011)"
         ],
         "preuves": [
-          "apps/api/tests/test_state_counterfeit_synthetic_dataset.py : 100% precision et rappel sur 60 cartes ; apps/api/tests/test_state_counterfeit.py : 22 tests (14 pre-existants inchanges + 8 nouveaux) ; apps/api/tests/test_state_service.py : 8 tests d'integration (3 nouveaux) ; uv run pytest apps/api complet : 693 passed"
+          "apps/api/tests/test_state_counterfeit_synthetic_dataset.py : 100% precision et rappel sur 60 cartes ; apps/api/tests/test_state_counterfeit.py : 22 tests (14 pre-existants inchanges + 8 nouveaux) ; apps/api/tests/test_state_service.py : 8 tests d'integration (3 nouveaux) ; uv run pytest apps/api complet : 693 passed ; branche roadmap/v6-contrefacon poussee sur github.com/keewoo/PokeBoyManager"
         ],
         "ecarts": [
           "Aucun nouvel ecran (mission = regles + jeu de test uniquement) : badge/liste de raisons deja affiches par v3-etat/v3-validation/v4-fiche, aucun changement front necessaire. release_prod hors de portee de cette session (jamais de deploiement depuis chimera, devAI livre) : reste attente_go_prod."
         ],
         "reste": [
-          "release_prod (devAI + validation JF) ; 5 tests pre-existants (test_catalogue_seed.py, test_identity.py) en echec sur la base Postgres locale partagee de chimera (colonne users.last_name en violation NOT NULL sur des lignes anciennes, hors diff de ce lot) — a signaler, pas a corriger destructivement sur une infra partagee."
+          "PR GitHub NON creee : 'gh' CLI absent de cette session WSL (aucun paquet installe, pas de sudo apt sur cette session) — branche roadmap/v6-contrefacon deja poussee sur origin github (commit 9927011), a ouvrir manuellement ou depuis une session avec gh configure : https://github.com/keewoo/PokeBoyManager/pull/new/roadmap/v6-contrefacon . release_prod (devAI + validation JF). 5 tests pre-existants (test_catalogue_seed.py, test_identity.py) en echec sur la base Postgres locale partagee de chimera (colonne users.last_name en violation NOT NULL sur des lignes anciennes, hors diff de ce lot) — a signaler, pas a corriger destructivement sur une infra partagee."
         ]
       },
       "attente": null
