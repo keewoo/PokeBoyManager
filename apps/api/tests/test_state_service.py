@@ -75,11 +75,17 @@ async def _make_detection(
     return detection
 
 
-async def _make_card(db_session, *, rarity: str) -> Card:
-    set_row = Set(code=f"etat-{uuid.uuid4().hex[:8]}", name="Set état")
+async def _make_card(
+    db_session,
+    *,
+    rarity: str,
+    variants: dict | None = None,
+    set_total_cards: int | None = None,
+) -> Card:
+    set_row = Set(code=f"etat-{uuid.uuid4().hex[:8]}", name="Set état", total_cards=set_total_cards)
     db_session.add(set_row)
     await db_session.flush()
-    card = Card(set_id=set_row.id, number="1", name="Carte état", rarity=rarity)
+    card = Card(set_id=set_row.id, number="1", name="Carte état", rarity=rarity, variants=variants)
     db_session.add(card)
     await db_session.flush()
     return card
@@ -216,6 +222,98 @@ async def test_run_state_estimation_does_not_flag_gold_variant_confirmed_by_cata
     upload = await _make_upload(db_session)
     card = await _make_card(db_session, rarity="Rare Secret")
     extraction = {**_EXTRACTION_BASE, "variant": "gold", "variant_confidence": 0.9}
+    await _make_detection(
+        db_session,
+        storage,
+        upload,
+        _crop("centre_parfait"),
+        extraction=extraction,
+        candidates=[{"card_id": str(card.id), "combined_score": 0.95}],
+    )
+
+    summary = await run_state_estimation_for_upload(db_session, storage, upload)
+
+    assert summary.counterfeit_flagged_count == 0
+
+
+async def test_run_state_estimation_flags_variant_absent_from_catalog(db_session, storage):
+    """Mission `v6-contrefacon` point 1, « variante absente du catalogue » : reverse holo perçu
+    alors que TCGdex (`Card.variants`) ne déclare aucun tirage reverse pour cette carte."""
+    upload = await _make_upload(db_session)
+    card = await _make_card(
+        db_session,
+        rarity="Common",
+        variants={"normal": True, "holo": False, "reverse": False},
+    )
+    extraction = {**_EXTRACTION_BASE, "variant": "reverse_holo", "variant_confidence": 0.9}
+    await _make_detection(
+        db_session,
+        storage,
+        upload,
+        _crop("centre_parfait"),
+        extraction=extraction,
+        candidates=[{"card_id": str(card.id), "combined_score": 0.95}],
+    )
+
+    summary = await run_state_estimation_for_upload(db_session, storage, upload)
+
+    assert summary.counterfeit_flagged_count == 1
+    detection = (
+        await db_session.execute(select(Detection).where(Detection.upload_id == upload.id))
+    ).scalar_one()
+    assert detection.condition_assessment["counterfeit_suspected"] is True
+    assert any(
+        "reverse_holo" in reason for reason in detection.condition_assessment["counterfeit_reasons"]
+    )
+
+
+async def test_run_state_estimation_flags_total_inconsistent_with_matched_set(db_session, storage):
+    """Mission `v6-contrefacon` point 1, « numéro impossible » : total de série imprimé (lu par
+    l'IA dans `CardExtraction.total`) incohérent avec le total officiel de l'extension reconnue
+    (`Set.total_cards`)."""
+    upload = await _make_upload(db_session)
+    card = await _make_card(
+        db_session,
+        rarity="Common",
+        variants={"normal": True, "holo": False, "reverse": False},
+        set_total_cards=102,
+    )
+    extraction = {**_EXTRACTION_BASE, "total": 999, "total_confidence": 0.9}
+    await _make_detection(
+        db_session,
+        storage,
+        upload,
+        _crop("centre_parfait"),
+        extraction=extraction,
+        candidates=[{"card_id": str(card.id), "combined_score": 0.95}],
+    )
+
+    summary = await run_state_estimation_for_upload(db_session, storage, upload)
+
+    assert summary.counterfeit_flagged_count == 1
+    detection = (
+        await db_session.execute(select(Detection).where(Detection.upload_id == upload.id))
+    ).scalar_one()
+    assert detection.condition_assessment["counterfeit_suspected"] is True
+    assert any(
+        "999" in reason and "102" in reason
+        for reason in detection.condition_assessment["counterfeit_reasons"]
+    )
+
+
+async def test_run_state_estimation_does_not_flag_secret_rare_number_beyond_set_total(
+    db_session, storage
+):
+    """Le total imprimé est cohérent (198) même si le numéro de la carte (mission `v3-etat`,
+    hors périmètre ici) dépasse ce total — jamais un faux positif sur une rareté légitime."""
+    upload = await _make_upload(db_session)
+    card = await _make_card(
+        db_session,
+        rarity="Rare Secret",
+        variants={"normal": True},
+        set_total_cards=198,
+    )
+    extraction = {**_EXTRACTION_BASE, "number": "202", "total": 198, "total_confidence": 0.9}
     await _make_detection(
         db_session,
         storage,
