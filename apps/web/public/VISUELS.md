@@ -48,3 +48,15 @@ bords échouait sur les icônes, dont le halo bleu se confond avec le fond bleu.
 > Ces visuels représentent des créatures et des objets de l'univers Pokémon, propriété de
 > Nintendo / The Pokémon Company. Le produit affiche déjà la mention « non affilié » (D8) ;
 > leur usage en marque propre reste à valider avant toute diffusion publique.
+
+## `brand/pokeboy-logotype.png` — le logotype
+
+**Fond transparent**, 954 × 495. Obtenu par *démattage* du fichier d'origine, qui était posé sur
+un aplat bleu nuit : `a = max_canal (source − fond) / (255 − fond)`, puis
+`premier_plan = (source − (1−a)·fond) / a`. La lueur bleue garde ainsi une transparence
+**partielle** au lieu d'être découpée au couteau — c'est ce qui la fait se fondre dans n'importe
+quel fond sombre.
+
+> Ne jamais réintroduire une version sur fond plein. Posée sur un dégradé, elle se voit comme un
+> rectangle collé — c'est exactement le défaut qui a fait reprendre l'en-tête de la charte le
+> 22/09/2026.
