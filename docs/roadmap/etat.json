@@ -4453,7 +4453,7 @@
       }
     },
     "v7-decks-stats": {
-      "statut": "a_faire",
+      "statut": "integre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
@@ -4505,8 +4505,21 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-23T00:21+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": "branche roadmap/v7-decks-stats fusionnee dans main (9925948), CI verte — le lot a conclu sans ecrire la ligne FAIT"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": {
+        "quand": "2026-09-23T00:21+0200",
+        "raisons": [
+          "branche roadmap/v7-decks-stats fusionnee dans main (9925948), CI verte — le lot a conclu sans ecrire la ligne FAIT"
+        ]
+      }
     },
     "v7-decks-import-export": {
       "statut": "integre",
