@@ -1,8 +1,13 @@
 name: CI
 
 on:
+  # `roadmap/**` : la CI tourne sur la branche du lot des qu'il pousse, sans PR et
+  # sans approbation. C'etait le maillon manquant — une PR ouverte par le bot met son
+  # execution en « action_required », donc en attente d'un clic, donc rien n'est verifie.
+  # Une poussee par un humain, elle, declenche la CI normalement. Un lot a desormais son
+  # verdict quoi qu'il arrive a sa PR.
   push:
-    branches: [main]
+    branches: [main, 'roadmap/**']
   pull_request:
 
 concurrency:
