@@ -2521,9 +2521,9 @@
           "maj": null
         },
         "doc_tech": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "docs/infra/DOMAINE-POKEBOY-LOL.md : DNS GoDaddy (toute modification passe par JF, aucune cle d API sur la flotte), bascule Caddy en deux temps et pourquoi l ordre importe, Resend en SMTP, et les TROIS scripts de construction qui portent NEXT_PUBLIC_API_URL en dur - un seul oublie et le deploiement suivant reinstalle l ancien domaine sans qu aucune commande n echoue.",
+          "maj": "2026-09-22T17:38+0200"
         },
         "release_uat": {
           "etat": "a_faire",
@@ -2531,9 +2531,9 @@
           "maj": null
         },
         "release_prod": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "Domaine canonique https://pokeboy.lol en service depuis le 22/09/2026 (release 20260922-103543, commit 07b229c, bundle verifie : 0 reference a l ancien domaine). www.pokeboy.lol et pokeboy.acx-connect.com renvoient en 308 ; certificats Let's Encrypt emis pour l apex et www ; /api/health 200. E-mails transactionnels branches sur Resend en SMTP, expediteur no-reply@pokeboy.lol, envoi reel accepte. Voisins kailo.life et ACX inchanges (codes HTTP identiques avant/apres).",
+          "maj": "2026-09-22T17:38+0200"
         },
         "backlog": {
           "etat": "a_faire",
@@ -2558,6 +2558,18 @@
           "machine": "?",
           "evenement": "compte rendu publié",
           "detail": ""
+        },
+        {
+          "quand": "2026-09-22T17:38+0200",
+          "machine": "?",
+          "evenement": "tâche release_prod → fait",
+          "detail": "Domaine canonique https://pokeboy.lol en service depuis le 22/09/2026 (release 20260922-103543, commit 07b229c, bundle verifie : 0 reference a l ancien domaine). www.pokeboy.lol et pokeboy.acx-connect.com renvoient en 308 ; certificats Let's Encrypt emis pour l apex et www ; /api/health 200. E-mails transactionnels branches sur Resend en SMTP, expediteur no-reply@pokeboy.lol, envoi reel accepte. Voisins kailo.life et ACX inchanges (codes HTTP identiques avant/apres)."
+        },
+        {
+          "quand": "2026-09-22T17:38+0200",
+          "machine": "?",
+          "evenement": "tâche doc_tech → fait",
+          "detail": "docs/infra/DOMAINE-POKEBOY-LOL.md : DNS GoDaddy (toute modification passe par JF, aucune cle d API sur la flotte), bascule Caddy en deux temps et pourquoi l ordre importe, Resend en SMTP, et les TROIS scripts de construction qui portent NEXT_PUBLIC_API_URL en dur - un seul oublie et le deploiement suivant reinstalle l ancien domaine sans qu aucune commande n echoue."
         }
       ],
       "compte_rendu": {
