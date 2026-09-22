@@ -145,7 +145,7 @@ export function DetectionCard({
   return (
     <div
       className={cn(
-        "det grid grid-cols-[64px_1fr_auto] gap-3 rounded-lg border border-border bg-card p-3",
+        "det grid grid-cols-[56px_minmax(0,1fr)] gap-3 rounded-lg border border-border bg-card p-3 sm:grid-cols-[64px_minmax(0,1fr)_auto]",
         isActive && isPending && "border-ring ring-2 ring-ring",
         detection.status === "validated" && "opacity-60",
         detection.status === "rejected" && "opacity-40"
@@ -335,7 +335,7 @@ export function DetectionCard({
         )}
       </div>
 
-      <div className="flex flex-col items-end justify-between gap-2">
+      <div className="col-span-2 flex flex-row items-center justify-end gap-2 sm:col-span-1 sm:flex-col sm:items-end sm:justify-between">
         {isPending && (
           <>
             <Button size="sm" onClick={onConfirm} disabled={!selected}>
