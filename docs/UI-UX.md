@@ -6,22 +6,77 @@
 > (`docs/ARCHITECTURE.md`), le plateau de jeu (`docs/roadmap/jeu/BACKLOG-JEU.md`).
 > Tous les chemins sont donnés **depuis la racine du dépôt**.
 
-## La maquette fait foi
+## Deux références, et laquelle l'emporte
 
-Le front **reproduit la maquette** : onglet « Maquette du site » de `docs/roadmap/ROADMAP.html`
-(page publiée : https://claude.ai/artifact/2w2cvcLhUGZdorHNVvTahy). Un écart assumé se dit dans le
-compte rendu du lot ; un écart non dit est un défaut.
+| Référence | Ce qu'elle fixe | Statut |
+|---|---|---|
+| **Charte PokéBoy** — https://claude.ai/artifact/M2GyeGw6T6FeW5anfq1op8 | l'identité visuelle cible (couleurs, polices, effets, icônes, personnages) et 13 écrans dessinés | **fait foi pour tout écran nouveau ou repris**, depuis le 22/09/2026 |
+| Maquette d'origine — onglet « Maquette du site » de `docs/roadmap/ROADMAP.html` (https://claude.ai/artifact/2w2cvcLhUGZdorHNVvTahy) | la structure et le contenu des écrans livrés en V1–V4 | reste la référence **de structure** tant qu'un écran n'a pas été repris à la charte |
 
-L'identité est **propre au produit** : aucun logo Pokémon officiel, aucune charte Nintendo /
-The Pokémon Company. Les cartes affichées viennent du catalogue (image officielle de la carte) ou
-de la photo de l'utilisateur — jamais d'un habillage de marque reconstitué.
+Un écart assumé se dit dans le compte rendu du lot ; un écart non dit est un défaut.
+
+> ⚠️ **La charte n'est pas encore dans le code.** `globals.css` porte toujours les jetons d'origine
+> (fond clair/sombre neutre, primaire `#d93a1e`) et `layout.tsx` les polices d'origine. Seules la
+> marque (favicon, icône web, icône Apple, image Open Graph, `themeColor` `#050A30`) et les
+> bibliothèques de visuels sont en ligne. **Reprendre les jetons est un lot à part entière** : ne
+> pas le faire au passage d'un autre lot, sous peine de repeindre la moitié du produit sans que
+> personne l'ait demandé.
+
+### Ce que l'identité emprunte, et ce qu'elle n'emprunte pas
+
+Aucun logo officiel Pokémon, aucune charte Nintendo / The Pokémon Company reconstituée : le
+logotype, l'icône d'application et la Master Ball du produit sont des créations propres. Les cartes
+affichées viennent du catalogue (image officielle de la carte) ou de la photo de l'utilisateur —
+jamais d'un habillage de marque reconstitué.
+
+**Une exception, à arbitrer par JF** : les neuf personnages de `apps/web/public/personnages/`,
+fournis le 22/09/2026, représentent des créatures Pokémon. La mention « non affilié » (D8) couvre
+le produit, pas l'usage de personnages en marque propre. Tant que ce n'est pas tranché, ils
+restent **réservés aux maquettes internes** — ne pas les servir sur une page publique.
+
+## Charte PokéBoy — couleurs, polices, relief
+
+| Jeton | Valeur | Emploi | Ce qui se paie si on l'oublie |
+|---|---|---|---|
+| Fond | `#050A30` | toutes les surfaces, en dégradé vers `#03061C` | aucune surface ne s'en éloigne de plus de deux tons |
+| Violet Master Ball | `#9D00FF` | halos, liserés, état actif | **jamais du texte** : 2,8:1 sur le fond. Un titre de section prend `#C77DFF` (6,2:1) |
+| Or collectionneur | `#FFD700` | titres H1, appels à l'action, étincelles | 14,6:1 — sûr partout |
+| Rose fuchsia | `#FF1493` | cadres de carte, surbrillance | par touches, et à 24 px minimum (4,0:1 seulement) |
+| Texte | `#E0E0E0` | corps de texte | le secondaire descend à `#9BA3C7`, pas plus bas |
+
+Polices : **Press Start 2P** (H1 uniquement, capitales, 20–32 px, ombre portée dorée — illisible
+au-delà de trois mots), **Exo 2** (titres de section, onglets, étiquettes, chiffres), **Roboto**
+(corps de texte, 15–17 px, interligne 1,7).
+
+Le relief, c'est ce qui distingue la charte d'un aplat — on ne le retire pas sans raison :
+liseré or de 3 px et reflet holographique en diagonale sur **toute** vignette de carte ; légère
+rotation des cartes ; **pilule (rayon 999 px) pour tout ce qui se clique**, 22–26 px pour les
+surfaces, avec un filet clair en haut (la lumière vient d'en haut, toujours) ; un seul halo par
+surface, allumé au survol uniquement sur ce qui est cliquable ; étincelles dorées à quatre
+branches, parcimonieuses.
+
+## Icônes et personnages
+
+| | Où | Règle d'emploi |
+|---|---|---|
+| 12 icônes, 256 px | `apps/web/public/icons/ui/` | 28 px en navigation, 40 px sur une carte, 64 px sur un titre, 96 px sur un état vide. **En dessous de 28 px, un tracé SVG** : le détail se perd |
+| 9 personnages, 512 px | `apps/web/public/personnages/` | une **présence**, jamais un décor : état vide, réussite à fêter, attente longue. **Un seul par écran** |
+| Logotype | `apps/web/public/brand/pokeboy-logotype.png` | fond **transparent**. Ne jamais réintroduire une version sur fond plein : posée sur un dégradé, elle se voit comme un rectangle collé |
+
+Le halo n'est **pas** dans les fichiers : il est posé en CSS (`filter: drop-shadow`), ce qui le rend
+teintable écran par écran et cohérent d'un écran à l'autre. Correspondance icône → emploi et règle
+des personnages : `apps/web/public/VISUELS.md`.
+
+Les icônes de l'application elle-même (`apps/web/src/app/favicon.ico`, `icon.png`, `apple-icon.png`,
+`opengraph-image.jpg`) sont des **conventions de fichiers Next.js** : détectées à la construction,
+aucune balise à écrire. Les redéclarer dans `metadata.icons` produirait des balises concurrentes.
 
 ## Design system
 
 | | Où |
 |---|---|
 | Jetons de couleur, rayons, ombres | `apps/web/src/app/globals.css` (variables CSS `--background`, `--primary`, `--gold`, `--success`…, déclinées en clair et en sombre) |
-| Polices | `apps/web/src/app/layout.tsx` — Instrument Sans (texte), Bricolage Grotesque (titres), JetBrains Mono (chiffres et identifiants), Press Start 2P (logo seulement) |
+| Polices **en place** | `apps/web/src/app/layout.tsx` — Instrument Sans (texte), Bricolage Grotesque (titres), JetBrains Mono (chiffres et identifiants), Press Start 2P (logo seulement). **Cible de la charte** : Press Start 2P / Exo 2 / Roboto — pas encore appliquée |
 | Composants de base | `apps/web/src/components/ui/` — `button`, `input`, `label`, `badge`, `checkbox` |
 | Composants produit | `apps/web/src/components/` — `app-shell`, `card-tile`, `condition-badge`, `empty-state`, `legal-footer`, et les dossiers `auth/`, `dashboard/`, `landing/`, `profile/` |
 | Galerie de référence | `/design` (`apps/web/src/app/design/page.tsx`) — la page qui montre les composants tels qu'ils sont vraiment |

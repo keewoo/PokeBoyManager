@@ -11,10 +11,16 @@ Chargé automatiquement quand on travaille ici. Les règles du dépôt restent c
 
 Rappels qui coûtent cher quand on les oublie :
 
-- **La maquette fait foi** (onglet « Maquette du site » de `docs/roadmap/ROADMAP.html`) ; un écart
+- **La charte PokéBoy fait foi** pour tout écran nouveau ou repris
+  (https://claude.ai/artifact/M2GyeGw6T6FeW5anfq1op8) ; la maquette d'origine (onglet « Maquette du
+  site » de `docs/roadmap/ROADMAP.html`) reste la référence de structure des écrans V1–V4. Un écart
   assumé se dit dans le compte rendu du lot.
+- **La charte n'est pas dans `globals.css`** : les jetons y sont encore ceux d'origine. La reprise
+  est un lot à part — ne pas repeindre le produit au passage d'un autre lot.
 - Une couleur nouvelle se déclare en jeton dans `apps/web/src/app/globals.css`, jamais en dur.
-- Identité propre : **aucun logo officiel Pokémon**.
+  Le violet `#9D00FF` ne sert **jamais** de couleur de texte (2,8:1) : `#C77DFF` pour les titres.
+- Identité propre : **aucun logo officiel Pokémon**. Les personnages de `public/personnages/`
+  restent réservés aux **maquettes internes** tant que JF n'a pas tranché leur usage public.
 - Le middleware ne lit que la **présence** du cookie de session : `NEXT_PUBLIC_SESSION_COOKIE_NAME`
   doit rester aligné avec `SESSION_COOKIE_NAME` côté API.
 - La CSP `connect-src` doit inclure l'origine du stockage objet, sinon **tout envoi de photo
