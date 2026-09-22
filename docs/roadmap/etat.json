@@ -4384,7 +4384,7 @@
       }
     },
     "v7-decks-collection-sync": {
-      "statut": "a_faire",
+      "statut": "integre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
@@ -4436,8 +4436,21 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-22T23:27+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": "branche roadmap/v7-decks-collection-sync fusionnee dans main (CI verte, PR #16)"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": {
+        "quand": "2026-09-22T23:27+0200",
+        "raisons": [
+          "branche roadmap/v7-decks-collection-sync fusionnee dans main (CI verte, PR #16)"
+        ]
+      }
     },
     "v7-decks-stats": {
       "statut": "a_faire",
