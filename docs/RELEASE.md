@@ -62,7 +62,8 @@ sa collection filtrable, et voir la valeur de chacune dans le temps.
 5. L'entrée `CHANGELOG.md` est écrite — pour Aymeric, pas pour le dépôt.
 6. Le plan est mis à jour : `python3 docs/roadmap/suivi.py statut <lot> livre`, puis
    `suivi.py build`, puis la page publiée est republiée.
-7. JF est prévenu, en une phrase, avec ce qui a changé pour lui.
+7. Le graphe est reconstruit sur le commit livré : `graphify update .`.
+8. JF est prévenu, en une phrase, avec ce qui a changé pour lui.
 
 ## Ce qu'on ne fait pas
 

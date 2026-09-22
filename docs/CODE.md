@@ -42,11 +42,33 @@ avant d'être corrigé.
 
 ## Chercher dans le dépôt : le graphe avant le grep
 
-Le dépôt est indexé par **Graphify** (`.mcp.json`, serveur `graphify`) : 5 381 nœuds, 13 614
-arêtes. Avant de relire dix fichiers pour comprendre qui appelle quoi, pose la question au graphe
+Le dépôt est indexé par **Graphify** (`.mcp.json`, serveur `graphify`) — la taille du jour se lit
+avec `graph_stats`, pas dans cette phrase : elle changerait à chaque commit. Avant de relire dix fichiers pour comprendre qui appelle quoi, pose la question au graphe
 (`query_graph`, `get_neighbors`, `shortest_path`, `god_nodes`). Il se reconstruit par
-`graphify update .` en ~25 s — **fais-le après un gros changement**, un graphe périmé répond faux
-avec aplomb. Détail et limites : `docs/PLUGINS.md`.
+`graphify update .` en ~25 s (~5 s sur devAI). Détail et limites : `docs/PLUGINS.md`.
+
+### Le graphe suit `main` — procédure
+
+Le graphe décrit un état du code. Dès que `main` bouge, il ment. **Trois moments l'imposent, et
+aucun ne se reporte au lendemain :**
+
+| Quand | Quoi |
+|---|---|
+| après un `git commit` **sur `main`** | `graphify update .` |
+| après un `git pull` / `git merge` qui apporte du code sur `main` | `graphify update .` |
+| après la fusion de la PR d'un lot | `graphify update .` sur le clone où l'on travaille |
+
+```bash
+# le geste complet, à faire d'un bloc
+git add <fichiers nommés> && git commit -m "…" && graphify update .
+```
+
+Sur une branche de lot, rafraîchir n'est utile que si l'on va interroger le graphe : c'est `main`
+qui fait foi. **Le graphe ne se versionne pas** (`graphify-out/` est dans `.gitignore`) : chaque
+clone tient le sien, et chaque machine paie ses 5 à 25 secondes.
+
+Une règle écrite ne force rien toute seule : si le graphe d'un clone retarde, le premier agent qui
+s'en aperçoit le reconstruit **avant** de répondre, il ne travaille pas sur des réponses fausses.
 
 ## Définition du « fini » pour un lot
 
@@ -56,6 +78,8 @@ avec aplomb. Détail et limites : `docs/PLUGINS.md`.
 3. Le compte rendu est écrit dans `docs/roadmap/comptes-rendus/<id>.md`.
 4. Ce que le lot a changé de durable est reporté dans la fiche concernée de `docs/` — pas empilé
    dans `CLAUDE.md` (voir `CLAUDE.md` § « Où écrire quoi »).
+5. **Le graphe est à jour avec `main`** : `graphify update .` après la fusion. Un lot livré qui
+   laisse le graphe en arrière fait mentir toutes les sessions suivantes.
 
 ## Monorepo — structure et commandes
 

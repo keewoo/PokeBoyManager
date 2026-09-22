@@ -45,14 +45,25 @@ En service : **https://pokeboy.acx-connect.com** (depuis le 20/09/2026).
 
 ## Chercher ici : le graphe avant le grep
 
-Ce dépôt est **indexé** (`.mcp.json` → serveur `graphify`) : 5 381 nœuds, 13 614 arêtes, 267
-communautés. **Avant d'ouvrir dix fichiers** pour savoir qui appelle quoi, demande au graphe —
+Ce dépôt est **indexé** (`.mcp.json` → serveur `graphify`) : plus de six mille nœuds, quinze
+mille liens — `graph_stats` donne le compte du jour. **Avant d'ouvrir dix fichiers** pour savoir qui appelle quoi, demande au graphe —
 `query_graph`, `get_neighbors`, `shortest_path`, `god_nodes`. Une réponse en un appel au lieu de
 vingt lectures, et autant de contexte gagné pour le travail réel.
 
-Rafraîchir après un gros changement : `graphify update .` (~25 s, AST local, aucun coût). **Un
-graphe périmé répond faux avec aplomb.** Il oriente, il ne prouve pas : on ouvre le fichier réel
-avant d'affirmer qu'une ligne existe. Détail : `docs/PLUGINS.md`.
+**Le graphe suit `main`, sans exception.** Tout ce qui arrive sur `main` le rend faux, donc
+`graphify update .` est la **dernière étape du commit**, jamais un entretien qu'on fera plus tard :
+
+```bash
+git commit … && graphify update .     # ~25 s ici, ~5 s sur devAI
+git pull   … && graphify update .     # une fusion apporte du code : même règle
+```
+
+Un lot n'est pas fini si le graphe retarde sur `main` (voir `docs/CODE.md` § « Définition du
+"fini" »). Un graphe vieux d'un jour envoie les agents sur des fonctions qui n'existent plus —
+et ils le croient, parce qu'il répond faux **avec aplomb**.
+
+Le graphe oriente, il ne prouve pas : on ouvre le fichier réel avant d'affirmer qu'une ligne
+existe. Détail : `docs/PLUGINS.md`.
 
 ## Les fiches — où lire quoi
 
