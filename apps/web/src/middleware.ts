@@ -9,7 +9,7 @@ export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
 
-const PROTECTED_PATH_PREFIXES = ["/collection", "/ajouter", "/carte", "/profil", "/souhaits"];
+const PROTECTED_PATH_PREFIXES = ["/collection", "/ajouter", "/carte", "/profil", "/souhaits", "/jeu"];
 
 // `getApiBaseUrl()` renvoie soit une origine absolue (`NEXT_PUBLIC_API_URL` défini), soit le
 // repli relatif `/api` (mission `pbm-front-accueil`, point 4). `new URL("/api")` lèverait
