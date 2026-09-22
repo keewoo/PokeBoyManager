@@ -5937,6 +5937,62 @@
         ]
       },
       "attente": null
+    },
+    "v8-recherche-offres": {
+      "statut": "a_faire",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : API sans écran ; la vitrine est dans v8-vitrine",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [],
+      "compte_rendu": {}
     }
   },
   "decisions_prises": {

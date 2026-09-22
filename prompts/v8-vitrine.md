@@ -3,7 +3,7 @@
 > Prompt GÉNÉRÉ depuis `docs/roadmap/roadmap.json` par `docs/roadmap/suivi.py build` — ne pas éditer à la main.
 > Suivi : `docs/roadmap/ROADMAP.html` (onglets Roadmap et Maquette) · processus : `docs/roadmap/PROCESSUS.md`.
 
-**P0** · piste Échanges entre collectionneurs · couloir **CH6** — Échanges — écrans, appariement & messagerie (**chimera**) · prévu du 11 janv. au 15 janv. · jalon **En ligne** · taille M · complexité 2/5 · difficulté 2/5
+**P0** · piste Échanges entre collectionneurs · couloir **CH6** — Échanges — écrans, appariement & messagerie (**chimera**) · prévu du 18 janv. au 22 janv. · jalon **En ligne** · taille M · complexité 2/5 · difficulté 2/5
 
 ## A. Où tourne cette session ? — à trancher AVANT tout le reste
 
@@ -59,14 +59,15 @@ Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_va
 
 **Gain.** Voir ce que les autres proposent, et repérer d'un coup d'œil ce qui manque à sa propre collection.
 
-**Fonctionnalités.** Grille des exemplaires proposés par les autres membres ; filtres par extension, état, valeur et rareté ; bandeau « dans ma liste de souhaits » en tête ; fiche d'un exemplaire proposé — la vraie photo de son propriétaire, l'état estimé, la valeur du jour, la réputation du propriétaire ; bouton « proposer un échange ».
+**Fonctionnalités.** Grille des exemplaires proposés par les autres membres, servie par l'API de recherche des offres (`v8-recherche-offres`) : champ de recherche unique — nom, numéro ou extension —, facettes cliquables avec leurs compteurs, tris, défilement paginé ; bandeau « dans ma liste de souhaits » en tête ; fiche d'un exemplaire proposé — la vraie photo de son propriétaire, l'état estimé, la valeur du jour, la réputation du propriétaire ; bouton « proposer un échange ».
 
-**Tenants — ce qu'il faut avant.** Exemplaires échangeables, appariement, réputation.
+**Tenants — ce qu'il faut avant.** API de recherche des offres, appariement, réputation.
 
 **Aboutissants — ce que ça ouvre.** Point d'entrée de tous les échanges.
 
 **Dépend de :**
 - `v8-disponibilite` — Mes doublons, et ce que j'accepte d'échanger
+- `v8-recherche-offres` — Chercher chez les autres : l'API de recherche des cartes proposées
 
 ## 3. Mission
 

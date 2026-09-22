@@ -3,7 +3,7 @@
 > Prompt GÉNÉRÉ depuis `docs/roadmap/roadmap.json` par `docs/roadmap/suivi.py build` — ne pas éditer à la main.
 > Suivi : `docs/roadmap/ROADMAP.html` (onglets Roadmap et Maquette) · processus : `docs/roadmap/PROCESSUS.md`.
 
-**P1** · piste Échanges entre collectionneurs · couloir **CH6** — Échanges — écrans, appariement & messagerie (**chimera**) · prévu du 15 févr. au 19 févr. · jalon **En ligne** · taille M · complexité 3/5 · difficulté 3/5
+**P1** · piste Échanges entre collectionneurs · couloir **CH6** — Échanges — écrans, appariement & messagerie (**chimera**) · prévu du 22 févr. au 26 févr. · jalon **En ligne** · taille M · complexité 3/5 · difficulté 3/5
 
 ## A. Où tourne cette session ? — à trancher AVANT tout le reste
 

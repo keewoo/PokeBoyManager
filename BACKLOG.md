@@ -143,7 +143,7 @@ _Le MVP en ligne a révélé ce qu'aucun test n'avait vu : formats de photo refu
 | `h1-parcours-validation` | P0 | Après la reconnaissance, l'utilisateur voit ses cartes et les ajoute | DA2 (devAI) | 21 sept. → 21 sept. | — | — | Intégré (main) | [prompt](prompts/h1-parcours-validation.md) |
 | `h1-decoupe-fiable` | P0 | Une découpe fausse se voit, et le dit | DA2 (devAI) | 22 sept. → 22 sept. | — | — | Livré | [prompt](prompts/h1-decoupe-fiable.md) |
 
-## V8 — Échanger ses cartes (4 janv. → 26 févr.)
+## V8 — Échanger ses cartes (4 janv. → 5 mars)
 
 _Une collection ne grandit pas qu'en achetant : elle grandit en échangeant ses doublons. PokeBoy sait déjà qui possède quoi, ce qui manque à chacun, ce que ça vaut et dans quel état c'est — il est le seul à pouvoir proposer un échange juste et à en garder la preuve._
 
@@ -151,19 +151,20 @@ _Une collection ne grandit pas qu'en achetant : elle grandit en échangeant ses 
 |---|---|---|---|---|---|---|---|---|
 | `v8-disponibilite` | P0 | Mes doublons, et ce que j'accepte d'échanger | DA4 (devAI) | 4 janv. → 8 janv. | — | — | À faire | [prompt](prompts/v8-disponibilite.md) |
 | `v8-mineurs` | P0 | Échanger quand on a quinze ans | CH6 (chimera) | 4 janv. → 8 janv. | — | D13 | À faire | [prompt](prompts/v8-mineurs.md) |
-| `v8-appariement` | P0 | Le moteur d'appariement : mes doublons contre tes souhaits | DA4 (devAI) | 11 janv. → 15 janv. | v8-disponibilite, v6-import-export | — | À faire | [prompt](prompts/v8-appariement.md) |
-| `v8-vitrine` | P0 | La vitrine des cartes à échanger | CH6 (chimera) | 11 janv. → 15 janv. | v8-disponibilite | — | À faire | [prompt](prompts/v8-vitrine.md) |
-| `v8-offre` | P0 | Proposer, contre-proposer, accepter | DA4 (devAI) | 18 janv. → 22 janv. | v8-appariement | D12 | À faire | [prompt](prompts/v8-offre.md) |
-| `v8-suggestions` | P1 | L'échange équilibré, proposé par l'appli | CH6 (chimera) | 18 janv. → 22 janv. | v8-appariement | — | À faire | [prompt](prompts/v8-suggestions.md) |
-| `v8-transfert` | P0 | La carte change de mains, et l'appli le sait | DA4 (devAI) | 25 janv. → 29 janv. | v8-offre | — | À faire | [prompt](prompts/v8-transfert.md) |
-| `v8-fil-echange` | P1 | Le fil de l'échange | CH6 (chimera) | 25 janv. → 29 janv. | v8-offre | — | À faire | [prompt](prompts/v8-fil-echange.md) |
-| `v8-expedition` | P0 | Envoyer, suivre, recevoir | DA4 (devAI) | 1 févr. → 5 févr. | v8-transfert | D14 | À faire | [prompt](prompts/v8-expedition.md) |
-| `v8-reputation` | P1 | À qui ai-je affaire | CH6 (chimera) | 1 févr. → 5 févr. | v8-offre | — | À faire | [prompt](prompts/v8-reputation.md) |
-| `v8-litiges` | P0 | Quand ça se passe mal | DA4 (devAI) | 8 févr. → 12 févr. | v8-expedition | — | À faire | [prompt](prompts/v8-litiges.md) |
-| `v8-suivi-ecran` | P1 | Où en est mon échange | CH6 (chimera) | 8 févr. → 12 févr. | v8-expedition | — | À faire | [prompt](prompts/v8-suivi-ecran.md) |
-| `v8-mode-garant` | P2 | Mode garant : caution restituée et commission (conditionnel) | DA4 (devAI) | 15 févr. → 26 févr. | v8-litiges | D15 | À faire | [prompt](prompts/v8-mode-garant.md) |
-| `v8-e2e-echange` | P1 | Un échange complet, joué tout seul | CH6 (chimera) | 15 févr. → 19 févr. | v8-litiges, v8-suivi-ecran | — | À faire | [prompt](prompts/v8-e2e-echange.md) |
-| `v8-hub-etude` | P3 | Centre de tri PokeBoy : l'étude avant la moindre ligne de code (conditionnel) | CH6 (chimera) | 22 févr. → 26 févr. | v8-litiges | D12 | À faire | [prompt](prompts/v8-hub-etude.md) |
+| `v8-recherche-offres` | P0 | Chercher chez les autres : l'API de recherche des cartes proposées | DA4 (devAI) | 11 janv. → 15 janv. | v8-disponibilite | — | À faire | [prompt](prompts/v8-recherche-offres.md) |
+| `v8-appariement` | P0 | Le moteur d'appariement : mes doublons contre tes souhaits | DA4 (devAI) | 18 janv. → 22 janv. | v8-disponibilite, v6-import-export | — | À faire | [prompt](prompts/v8-appariement.md) |
+| `v8-vitrine` | P0 | La vitrine des cartes à échanger | CH6 (chimera) | 18 janv. → 22 janv. | v8-disponibilite, v8-recherche-offres | — | À faire | [prompt](prompts/v8-vitrine.md) |
+| `v8-offre` | P0 | Proposer, contre-proposer, accepter | DA4 (devAI) | 25 janv. → 29 janv. | v8-appariement | D12 | À faire | [prompt](prompts/v8-offre.md) |
+| `v8-suggestions` | P1 | L'échange équilibré, proposé par l'appli | CH6 (chimera) | 25 janv. → 29 janv. | v8-appariement | — | À faire | [prompt](prompts/v8-suggestions.md) |
+| `v8-transfert` | P0 | La carte change de mains, et l'appli le sait | DA4 (devAI) | 1 févr. → 5 févr. | v8-offre | — | À faire | [prompt](prompts/v8-transfert.md) |
+| `v8-fil-echange` | P1 | Le fil de l'échange | CH6 (chimera) | 1 févr. → 5 févr. | v8-offre | — | À faire | [prompt](prompts/v8-fil-echange.md) |
+| `v8-expedition` | P0 | Envoyer, suivre, recevoir | DA4 (devAI) | 8 févr. → 12 févr. | v8-transfert | D14 | À faire | [prompt](prompts/v8-expedition.md) |
+| `v8-reputation` | P1 | À qui ai-je affaire | CH6 (chimera) | 8 févr. → 12 févr. | v8-offre | — | À faire | [prompt](prompts/v8-reputation.md) |
+| `v8-litiges` | P0 | Quand ça se passe mal | DA4 (devAI) | 15 févr. → 19 févr. | v8-expedition | — | À faire | [prompt](prompts/v8-litiges.md) |
+| `v8-suivi-ecran` | P1 | Où en est mon échange | CH6 (chimera) | 15 févr. → 19 févr. | v8-expedition | — | À faire | [prompt](prompts/v8-suivi-ecran.md) |
+| `v8-mode-garant` | P2 | Mode garant : caution restituée et commission (conditionnel) | DA4 (devAI) | 22 févr. → 5 mars | v8-litiges | D15 | À faire | [prompt](prompts/v8-mode-garant.md) |
+| `v8-e2e-echange` | P1 | Un échange complet, joué tout seul | CH6 (chimera) | 22 févr. → 26 févr. | v8-litiges, v8-suivi-ecran | — | À faire | [prompt](prompts/v8-e2e-echange.md) |
+| `v8-hub-etude` | P3 | Centre de tri PokeBoy : l'étude avant la moindre ligne de code (conditionnel) | CH6 (chimera) | 1 mars → 5 mars | v8-litiges | D12 | À faire | [prompt](prompts/v8-hub-etude.md) |
 
 ## Décisions de JF
 

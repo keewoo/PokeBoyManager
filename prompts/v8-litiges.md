@@ -3,7 +3,7 @@
 > Prompt GÉNÉRÉ depuis `docs/roadmap/roadmap.json` par `docs/roadmap/suivi.py build` — ne pas éditer à la main.
 > Suivi : `docs/roadmap/ROADMAP.html` (onglets Roadmap et Maquette) · processus : `docs/roadmap/PROCESSUS.md`.
 
-**P0** · piste Échanges entre collectionneurs · couloir **DA4** — Échanges — règles, transfert & argent (**devAI**) · prévu du 8 févr. au 12 févr. · jalon **En ligne** · taille L · complexité 3/5 · difficulté 4/5
+**P0** · piste Échanges entre collectionneurs · couloir **DA4** — Échanges — règles, transfert & argent (**devAI**) · prévu du 15 févr. au 19 févr. · jalon **En ligne** · taille L · complexité 3/5 · difficulté 4/5
 
 ## A. Où tourne cette session ? — à trancher AVANT tout le reste
 
