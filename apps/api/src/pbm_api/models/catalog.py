@@ -75,6 +75,14 @@ class Card(Base, TimestampMixin):
     # `v7-decks-api`, décision D10 : Énergies de base illimitées, Énergies spéciales soumises à
     # possession et à la règle des 4).
     energy_type: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    # Type élémentaire du Pokémon, normalisé au code du jeu ("grass", "fire", "water",
+    # "lightning", "psychic", "fighting", "darkness", "metal", "dragon", "fairy", "colorless").
+    # Vient de TCGdex (`types`, un tableau en langue d'import : "Plante", "Feu"...) — le premier
+    # type est retenu, normalisé par `pbm_api.catalog.element_type.element_code`. `None` hors
+    # Pokémon (Dresseurs, Énergies) et pour les Pokémon importés avant l'ajout de cette colonne.
+    # Sert au visuel de remplacement (lot `pbm-carte-remplacement`) : cadre coloré et fond
+    # générique déterministe quand la carte n'a pas d'image officielle.
+    element_type: Mapped[str | None] = mapped_column(String(16), nullable=True)
     hp: Mapped[int | None] = mapped_column(Integer, nullable=True)
     # Stade d'évolution TCGdex (`stage`, en français : "Base", "Niveau 1", "Niveau 2",
     # ou une règle spéciale VMAX/VSTAR...). Sert au contrôle de légalité des decks (lot

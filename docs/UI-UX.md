@@ -95,6 +95,29 @@ aucune balise à écrire. Les redéclarer dans `metadata.icons` produirait des b
 dans un composant ; un composant qui sert deux fois monte dans `components/` ; aucune information
 ne repose sur la seule couleur (daltonisme) ; le mode sombre se vérifie à chaque écran.
 
+## Carte sans image officielle (lot `pbm-carte-remplacement`)
+
+3 827 cartes du catalogue n'ont aucune image officielle. Deux composants s'enchaînent :
+
+- **`CardImage`** (`apps/web/src/components/card-image.tsx`) — le SEUL point qui décide quoi afficher.
+  Image officielle si elle existe ET se charge ; sinon repli. Quand le proxy avait une URL et
+  échoue (`onError`), il **journalise l'incident** (`console.warn`) avant de basculer : un repli là
+  où une image officielle existe est une panne, jamais un cas normal (règle « pas de repli
+  silencieux »). Un simple cadre à `label` reste pour les cas sans données de carte (photo
+  personnelle absente, accueil visiteur).
+- **`ReplacementCard`** (`apps/web/src/components/replacement-card.tsx`) — la carte **composée** à
+  partir des vraies données : cadre doré, bandeau nom + PV en haut (teinté par le type, sous un
+  voile sombre pour que le texte clair reste lisible), fond générique en plein cadre, mention
+  **« visuel non disponible »** en bas de l'illustration, extension · numéro et rareté en pied. Pour
+  un Dresseur/une Énergie (pas de PV, pas de type) : la **catégorie** remplace les PV, fond
+  `colorless`. Le texte se mesure en `cqw` (`@container`) : lisible en vignette comme en grand.
+
+**Fonds** : 99 fichiers `apps/web/public/fonds/<type>-01.webp`…`-09.webp` (11 types × 9), servis avec
+un cache immuable d'un an (`next.config.ts`, `headers()`). Le fond d'une carte est **déterministe** :
+`empreinte(card_id) % 9` sur son type (`apps/web/src/lib/replacement-card.ts`) — la même carte garde
+toujours le même visuel. Couleurs des types : jetons `--type-<code>` dans `globals.css` (teinte
+seulement, jamais un texte). Trois usages : vignette de collection, fiche carte, et repli du proxy.
+
 ## Les écrans
 
 | Route | Écran | Lot |

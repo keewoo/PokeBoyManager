@@ -62,6 +62,8 @@ const BASE_ITEM: CollectionListItem = {
   series: null,
   rarity: "rare",
   card_type: "Pokémon",
+  element_type: "fire",
+  hp: 180,
   language: "fr",
   variant: "normal",
   condition_grade: "mint",

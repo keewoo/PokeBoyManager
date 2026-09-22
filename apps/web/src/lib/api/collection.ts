@@ -21,6 +21,8 @@ export type CollectionListItem = {
   series: string | null;
   rarity: string | null;
   card_type: string | null;
+  element_type: string | null;
+  hp: number | null;
   language: string;
   variant: string;
   condition_grade: string | null;

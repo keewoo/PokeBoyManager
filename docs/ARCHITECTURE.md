@@ -144,6 +144,36 @@ une seule fois — jamais en argument de commande ni journalisé.
 - Proxy `GET /img/cards/{id}?size=high|low` (`apps/api/src/pbm_api/routers/images.py`) : sert
   l'image officielle, mise en cache dans le stockage objet (`ObjectStorage`,
   `apps/api/src/pbm_api/s3.py`) au premier accès.
+- `Card.element_type` (lot `pbm-carte-remplacement`) : type élémentaire du Pokémon **normalisé au
+  code du jeu** (`grass`, `fire`, `water`, `lightning`, `psychic`, `fighting`, `darkness`, `metal`,
+  `dragon`, `fairy`, `colorless`), depuis TCGdex `types` via
+  `apps/api/src/pbm_api/catalog/element_type.py`. `None` hors Pokémon. **À ne pas confondre** avec
+  `Card.energy_type`, qui vaut "Normal"/"Special" pour les seules Énergies (légalité des decks).
+  Exposé par `GET /cards/{id}` (`element_type`) et `GET /me/collection` (`element_type`, `hp`) pour
+  le visuel de remplacement — voir « Visuel de remplacement » ci-dessous.
+
+## Visuel de remplacement des cartes sans image (lot `pbm-carte-remplacement`)
+
+3 827 des 22 169 cartes du catalogue n'ont **aucune image officielle** (Méga-Ascension 331,
+Promo SM 248, Sagesse Entre Ciel et Mer 241, vieilles extensions et promos) et aucun import ne les
+rapportera : les sources publiques ne les ont pas. Le front compose alors la carte à partir de ses
+vraies données (`apps/web/src/components/replacement-card.tsx`) ; le serveur n'a qu'à fournir les
+champs (`element_type`, `hp`, `supertype`, nom, extension, numéro, rareté). Le choix du fond est
+déterministe côté client (`empreinte(card_id) % 9`). Détail visuel : `docs/UI-UX.md`.
+
+⚠️ **Dette côté flotte (préexistante, hors de ce lot).** La base de référence catalogue de chimera
+(`pbm_catalogue_ref`) est restée à un alembic ancien (`216ae1bf9f95`, vérifié) : elle n'a **ni
+`energy_type` ni `stage` ni `element_type`**, et `infra/fleet/export_cards.sql` ne transporte donc
+pas `element_type`. La colonne est peuplée en PROD par un **backfill direct** — script
+`apps/api/scripts/backfill_element_type.py` : il lit les Pokémon **sans image** dont
+`element_type IS NULL`, récupère leur type chez TCGdex (qui expose `types` même sans image) et
+n'écrit que cette colonne (additif, idempotent). L'import hebdo étant **insert-only** (garde-fou
+explicite de `infra/fleet/import_weekly.sql` : « jamais d'UPDATE »), ce backfill **n'est pas
+écrasé** ; en revanche une carte **nouvelle** sans image, ajoutée par l'import hebdo, naît
+`element_type = NULL` (fond `colorless`) tant que le backfill n'est pas rejoué. Remettre
+`pbm_catalogue_ref` à `head` — ce qui ferait circuler `energy_type`/`stage`/`element_type` dans le
+pipeline — reste à faire, séparément. La date et le volume du backfill réellement exécuté sont dans
+le compte rendu du lot (`docs/roadmap/comptes-rendus/pbm-carte-remplacement.md`).
 
 ## Base de référence complète (lot `v2-catalogue-complet`)
 

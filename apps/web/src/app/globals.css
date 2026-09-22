@@ -48,6 +48,21 @@
   --violet-clair: #C77DFF;
   --rose: #FF1493;
 
+  /* Couleurs des onze types du jeu — visuel de remplacement d'une carte sans image officielle
+     (lot `pbm-carte-remplacement`). Servent de teinte au bandeau et au liseré du cadre, TOUJOURS
+     sous un voile sombre avec du texte clair par-dessus : ces valeurs ne sont jamais un texte. */
+  --type-grass: #4CA858;
+  --type-fire: #E8503A;
+  --type-water: #3C9BE0;
+  --type-lightning: #E8C13A;
+  --type-psychic: #A15FC4;
+  --type-fighting: #C1622F;
+  --type-darkness: #4A4A6A;
+  --type-metal: #8A98A6;
+  --type-dragon: #C9A227;
+  --type-fairy: #E86FA8;
+  --type-colorless: #A9AEC2;
+
   /* Surfaces à 24 px ; ce qui se clique prend la pilule (`rounded-full`). */
   --radius: 1.5rem;
 

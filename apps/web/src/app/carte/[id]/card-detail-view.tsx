@@ -155,6 +155,16 @@ export function CardDetailView({ cardId }: { cardId: string }) {
               alt={card.name}
               className="aspect-[63/88] w-full rounded-lg border border-border object-cover"
               loading="eager"
+              replacement={{
+                cardId: card.id,
+                name: card.name,
+                elementType: card.element_type,
+                hp: card.hp,
+                supertype: card.supertype,
+                setName: card.set.name,
+                cardNumber: card.number,
+                rarity: card.rarity,
+              }}
             />
           ) : (
             <CardImage
@@ -166,7 +176,9 @@ export function CardDetailView({ cardId }: { cardId: string }) {
             />
           )}
           <p className="mt-2 text-xs text-muted-foreground">
-            Image officielle chargée depuis le catalogue.
+            {imageMode === "officielle" && !card.has_image
+              ? "Aucune image officielle pour cette carte : visuel composé à partir de ses données."
+              : "Image officielle chargée depuis le catalogue."}
           </p>
         </div>
 

@@ -349,6 +349,16 @@ export function CollectionView() {
                       alt={item.card_name}
                       className="aspect-[63/88] w-full rounded object-cover"
                       label="Pas d'image"
+                      replacement={{
+                        cardId: item.card_id,
+                        name: item.card_name,
+                        elementType: item.element_type,
+                        hp: item.hp,
+                        supertype: item.card_type,
+                        setName: item.set_name,
+                        cardNumber: item.card_number,
+                        rarity: item.rarity,
+                      }}
                     />
                     <p className="mt-2 truncate text-sm font-semibold text-foreground">
                       {item.card_name}

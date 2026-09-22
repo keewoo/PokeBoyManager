@@ -140,6 +140,24 @@ async def test_list_collection_returns_items_with_value_and_aggregates(api_clien
     assert body["next_cursor"] is None
 
 
+async def test_list_collection_exposes_element_type_and_hp_for_replacement(api_client, db_session):
+    # Le visuel de remplacement (lot `pbm-carte-remplacement`) compose la vignette d'une carte
+    # sans image à partir de son type et de ses PV — la liste doit donc les porter.
+    user_id, _csrf = await _register_verify_login(api_client, _unique_email("coll-element"))
+    card = await _make_card(db_session, name="Scarabrute")
+    card.element_type = "grass"
+    card.hp = 90
+    await db_session.flush()
+    await _add_item(db_session, uuid.UUID(user_id), card, condition_grade="mint")
+
+    response = await api_client.get("/me/collection")
+
+    assert response.status_code == 200, response.text
+    row = response.json()["items"][0]
+    assert row["element_type"] == "grass"
+    assert row["hp"] == 90
+
+
 async def test_list_collection_item_reports_30d_value_change(api_client, db_session):
     user_id, _csrf = await _register_verify_login(api_client, _unique_email("coll-30d"))
     card = await _make_card(db_session, name="Mewtwo")

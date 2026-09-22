@@ -30,6 +30,7 @@ export type CardDetail = {
   number: string;
   rarity: string | null;
   supertype: string | null;
+  element_type: string | null;
   hp: number | null;
   has_image: boolean;
   illustrator: string | null;

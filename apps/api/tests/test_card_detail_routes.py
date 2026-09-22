@@ -170,6 +170,24 @@ async def test_get_card_returns_catalog_price_and_ranking(api_client, db_session
     assert body["collection_rank"] is None
 
 
+async def test_get_card_exposes_element_type_for_the_replacement_visual(api_client, db_session):
+    # Le visuel de remplacement (lot `pbm-carte-remplacement`) a besoin du type et des PV pour
+    # composer la carte quand elle n'a pas d'image officielle.
+    await _register_verify_login(api_client, _unique_email("fiche-element"))
+    card, _set_row = await _make_card(db_session, name="Scarabrute")
+    card.element_type = "grass"
+    card.hp = 90
+    await db_session.flush()
+
+    response = await api_client.get(f"/cards/{card.id}")
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["element_type"] == "grass"
+    assert body["hp"] == 90
+    assert body["has_image"] is False
+
+
 async def test_get_card_exposes_collection_rank_for_the_best_owned_item(api_client, db_session):
     user_id, _csrf = await _register_verify_login(api_client, _unique_email("fiche-rank"))
     card, _set_row = await _make_card(db_session, name="Pikachu")

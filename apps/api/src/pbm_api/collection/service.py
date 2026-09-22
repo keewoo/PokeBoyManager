@@ -69,6 +69,8 @@ class CollectionRow:
     series: str | None
     rarity: str | None
     card_type: str | None
+    element_type: str | None
+    hp: int | None
     is_duplicate: bool
 
 
@@ -242,6 +244,8 @@ async def list_collection(
             Card.name,
             Card.rarity,
             Card.supertype,
+            Card.element_type,
+            Card.hp,
             Set.name,
             Set.code,
             Set.series,
@@ -272,6 +276,8 @@ async def list_collection(
             series=series,
             rarity=rarity,
             card_type=supertype,
+            element_type=element_type,
+            hp=hp,
             is_duplicate=card_id in duplicate_card_ids,
         )
         for (
@@ -282,6 +288,8 @@ async def list_collection(
             card_name,
             rarity,
             supertype,
+            element_type,
+            hp,
             set_name,
             set_code,
             series,

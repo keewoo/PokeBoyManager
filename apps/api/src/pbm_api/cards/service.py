@@ -115,6 +115,7 @@ async def get_card_detail(
         number=card.number,
         rarity=card.rarity,
         supertype=card.supertype,
+        element_type=card.element_type,
         hp=card.hp,
         has_image=card.image_url is not None,
         illustrator=card.illustrator,

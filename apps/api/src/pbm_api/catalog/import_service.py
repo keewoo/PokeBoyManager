@@ -38,6 +38,7 @@ from urllib.parse import unquote, urlsplit
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from pbm_api.catalog.element_type import element_code
 from pbm_api.catalog.ptcg_client import PtcgClient, PtcgUnavailableError
 from pbm_api.catalog.reconciliation import (
     match_card_number,
@@ -195,6 +196,9 @@ async def _upsert_card(
     # "Normal" (Énergie de base) / "Special" (Énergie spéciale) chez TCGdex, `None` hors Énergie
     # — distingue les deux régimes de légalité des decks (lot `v7-decks-api`, D10).
     card.energy_type = detail.get("energyType")
+    # Type élémentaire (TCGdex `types`, ex. ["Plante"]) normalisé au code du jeu — sert au visuel
+    # de remplacement des cartes sans image (lot `pbm-carte-remplacement`). `None` hors Pokémon.
+    card.element_type = element_code(detail.get("types"))
     card.hp = detail.get("hp")
     image_url = detail.get("image")
     if image_url is not None and not _is_safe_image_url(image_url):

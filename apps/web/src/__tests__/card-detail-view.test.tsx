@@ -39,6 +39,7 @@ const CARD: CardDetail = {
   number: "XY121",
   rarity: "rare secrète",
   supertype: "Pokémon",
+  element_type: "fire",
   hp: 180,
   has_image: true,
   illustrator: "Mitsuhiro Arita",

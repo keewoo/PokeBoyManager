@@ -30,6 +30,10 @@ class CollectionListItem(BaseModel):
     series: str | None
     rarity: str | None
     card_type: str | None
+    # Type élémentaire normalisé (code du jeu) et PV — servent au visuel de remplacement de la
+    # vignette quand la carte n'a pas d'image (lot `pbm-carte-remplacement`). `None` hors Pokémon.
+    element_type: str | None
+    hp: int | None
     language: str
     variant: PriceVariant
     condition_grade: str | None

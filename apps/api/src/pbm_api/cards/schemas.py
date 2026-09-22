@@ -34,6 +34,9 @@ class CardDetailResponse(BaseModel):
     number: str
     rarity: str | None
     supertype: str | None
+    # Type élémentaire normalisé (code du jeu : "grass", "fire"...) ou `None` — sert au visuel
+    # de remplacement quand `has_image` est faux (lot `pbm-carte-remplacement`).
+    element_type: str | None
     hp: int | None
     has_image: bool
     illustrator: str | None
