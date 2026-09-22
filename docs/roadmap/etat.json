@@ -5805,9 +5805,9 @@
       "quand": "2026-09-19T19:59+0200"
     },
     "D5": {
-      "prise": "Domaine choisi par JF le 19/09 : PROD https://pokeboy.acx-connect.com, UAT https://uat.pokeboy.acx-connect.com (enregistrements A vers 5.22.213.226, serveur de kailo.life / ACX ; acx-connect.com y pointe déjà). Fournisseur d'e-mails : DÉFAUT PROVISOIRE du pilote — SMTP configurable (Mailpit en dev) ; expéditeur prévu no-reply@acx-connect.com (MX Google Workspace) à confirmer par JF.",
+      "prise": "Le domaine est bien pokeboy.lol depuis ce matin, pokeboy.acx-connect.com disparait. (JF, 22/09/2026 — remplace le choix du 19/09. En service depuis le 22/09 : l ancien nom et www.pokeboy.lol renvoient en 308 vers l apex. E-mails transactionnels : Resend, expediteur no-reply@pokeboy.lol.)",
       "par": "JF",
-      "quand": "2026-09-19T20:16+0200"
+      "quand": "2026-09-22T17:44+0200"
     },
     "D3": {
       "prise": "DÉFAUT PROVISOIRE du pilote (à confirmer par JF) : sources gratuites (Cardmarket via TCGdex, TCGplayer via Pokémon TCG API) ; historique construit par nos relevés quotidiens ; source payante branchable plus tard.",
