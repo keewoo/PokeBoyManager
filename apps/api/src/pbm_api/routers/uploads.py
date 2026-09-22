@@ -60,7 +60,7 @@ _SSE_POLL_INTERVAL_SECONDS = 0.7
 _SSE_MAX_DURATION_SECONDS = 300
 
 
-def _served_candidates(candidates: list | None) -> list | None:
+def _served_candidates(candidates: list | None, *, preselect: bool = True) -> list | None:
     """Ré-applique la politique de présélection courante (seuil + marge) aux `combined_score` déjà
     stockés, au moment de servir — jamais le drapeau figé à l'écriture (lot
     `pbm-parcours-validation`). Ainsi une détection identifiée avant ce lot (les 143 en attente
@@ -68,20 +68,27 @@ def _served_candidates(candidates: list | None) -> list | None:
     if not candidates:
         return candidates
     ordered = sorted(candidates, key=lambda c: float(c.get("combined_score") or 0.0), reverse=True)
-    preselect_top = top_candidate_preselected(ordered)
+    preselect_top = preselect and top_candidate_preselected(ordered)
     return [{**c, "preselected": (index == 0 and preselect_top)} for index, c in enumerate(ordered)]
 
 
 def _detection_response(upload_id: uuid.UUID, detection: Detection) -> DetectionResponse:
+    quality = detection.bbox.get("crop_quality")
+    # Une découpe douteuse ne présélectionne RIEN (lot `h1-decoupe-fiable`) : le nom proposé
+    # vient peut-être de la carte voisine. Comme « Tout ajouter » (`confirm-all`) ne retient que
+    # les candidats présélectionnés, la même ligne écarte ces cartes de l'ajout en masse — sans
+    # les faire disparaître de l'écran, où l'utilisateur peut trancher.
+    suspecte = bool(quality and quality.get("seam"))
     return DetectionResponse(
         id=detection.id,
         reading_order=detection.bbox.get("reading_order", 0),
         status=detection.status,
         crop_url=f"/uploads/{upload_id}/detections/{detection.id}/crop",
         extraction=detection.extraction,
-        candidates=_served_candidates(detection.candidates),
+        candidates=_served_candidates(detection.candidates, preselect=not suspecte),
         condition=detection.condition_assessment,
         identification_method=detection.identification_method,
+        crop_quality=quality,
     )
 
 _storage = build_storage()

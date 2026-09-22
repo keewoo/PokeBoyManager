@@ -10,6 +10,7 @@ import {
   searchCatalog,
   type CardSearchResult,
   type Detection,
+  decoupeDouteuse,
 } from "@/lib/api/validation";
 import { CardImage } from "@/components/card-image";
 import { getApiBaseUrl } from "@/lib/config";
@@ -185,7 +186,15 @@ export function DetectionCard({
           {detection.condition?.counterfeit_suspected && (
             <Badge variant="danger">contrefaçon probable</Badge>
           )}
+          {decoupeDouteuse(detection) && <Badge variant="danger">découpe douteuse</Badge>}
         </div>
+
+        {decoupeDouteuse(detection) && (
+          <p className="mt-1 text-xs text-danger-foreground">
+            Le recadrage semble à cheval sur deux cartes : aucun candidat n&apos;est
+            présélectionné. Vérifie la vignette avant de choisir, ou reprends la photo.
+          </p>
+        )}
 
         {isProcessing && (
           <p className="mt-1 text-sm text-muted-foreground">Identification en cours…</p>

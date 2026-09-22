@@ -81,6 +81,8 @@ function uploadDetail(overrides: Partial<Awaited<ReturnType<typeof getUpload>>> 
         ],
         condition: null,
         identification_method: "ia" as const,
+        // Lot h1-decoupe-fiable : une detection sans verdict de decoupe (anterieure au lot).
+        crop_quality: null,
       },
     ],
     ...overrides,

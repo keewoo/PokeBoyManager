@@ -54,7 +54,16 @@ export type Detection = {
   // "visuel" (index visuel, aucun appel IA), "ia", "aucun" ou `null` (pas encore traitée) —
   // lot `v3-identification-visuelle`, sert au badge « reconnue sans IA ».
   identification_method: "visuel" | "ia" | "aucun" | null;
+  // Verdict sur le recadrage (lot `h1-decoupe-fiable`). `seam` vrai = une arête droite
+  // traverse le cadre : deux cartes s'y partagent probablement la place, et le nom proposé
+  // vient peut-être de la voisine. `null` pour les détections antérieures au lot.
+  crop_quality: { seam: boolean; score: number; axis: string | null } | null;
 };
+
+/** Une découpe à cheval sur deux cartes : rien n'y est présélectionné, l'utilisateur tranche. */
+export function decoupeDouteuse(detection: Detection): boolean {
+  return detection.crop_quality?.seam === true;
+}
 
 export type JobStatus = "queued" | "running" | "succeeded" | "failed";
 

@@ -42,7 +42,9 @@ def _rect_intersection_area(a: tuple[int, int, int, int], b: tuple[int, int, int
     return (ix2 - ix1) * (iy2 - iy1)
 
 
-def _rect_iou(a: tuple[int, int, int, int], b: tuple[int, int, int, int]) -> float:
+def rect_iou(a: tuple[int, int, int, int], b: tuple[int, int, int, int]) -> float:
+    """Recouvrement de deux rectangles. Public depuis `h1-decoupe-fiable` : l'affinage d'une
+    boîte IA s'en sert pour retenir la carte VISÉE plutôt que la plus grande de la zone."""
     aw, ah = a[2], a[3]
     bw, bh = b[2], b[3]
     intersection = _rect_intersection_area(a, b)
@@ -64,7 +66,7 @@ def _deduplicate(quads: list[np.ndarray]) -> list[np.ndarray]:
     kept: list[np.ndarray] = []
     for quad in sorted(quads, key=cv2.contourArea, reverse=True):
         quad_rect = cv2.boundingRect(quad.astype(np.int32))
-        if all(_rect_iou(quad_rect, cv2.boundingRect(k.astype(np.int32))) < 0.5 for k in kept):
+        if all(rect_iou(quad_rect, cv2.boundingRect(k.astype(np.int32))) < 0.5 for k in kept):
             kept.append(quad)
     return kept
 
