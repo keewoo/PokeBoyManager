@@ -684,6 +684,86 @@ réutilisation de l'écran de validation bout en bout + accès croisé),
 `apps/api/tests/test_wishlist_routes.py` (CRUD, `target_reached`, CSRF, accès croisé),
 `apps/api/tests/test_export.py` (ajout : export CSV synchrone, scopé à l'utilisateur).
 `apps/web/src/__tests__/wishlist-view.test.tsx`, ajouts à `upload-view.test.tsx` (panneau CSV).
+## Decks : légalité, formats et sévérités (lot `v7-decks-legalite`)
+
+Étend le contrôle de légalité de `v7-decks-api` — une **seule** implémentation
+(`pbm_api.decks.legality.evaluate`), exposée telle quelle par l'API et destinée à l'écran, jamais
+deux logiques qui divergent (risque du lot). Quatre ajouts :
+
+- **Sévérité** par constat (`LegalityIssue.severity` : `bloquant` / `avertissement`). Seul un
+  constat bloquant retire la légalité (`DeckLegality.legal = aucun bloquant`) ; un avertissement
+  informe sans interdire.
+- **Au moins un Pokémon de base** (`legality.is_basic_pokemon`, `Card.stage` = TCGdex "Base") :
+  un deck sans Pokémon de base est injouable (bloquant, code `no_basic_pokemon`) — ajouté
+  seulement si le deck contient au moins une carte (un deck vide échoue déjà sur la taille, on ne
+  double pas le bruit).
+- **Légalité par format** (`pbm_api.decks.formats` : Standard / Étendu / Illimité) déduite du
+  catalogue (`Card.legal_standard`/`legal_expanded`). Format **choisi par le joueur**
+  (`Deck.format`, défaut `standard`, posé au `POST` et modifiable au `PATCH /me/decks/{id}`). Une
+  carte explicitement hors format (légalité `False`) est signalée (bloquant, code
+  `out_of_format`, avec l'explication) ; une légalité inconnue (`None`, vieilles cartes non
+  réévaluées) ne bloque pas — bénéfice du doute, jamais un repli qui bloquerait par défaut ; les
+  Énergies de base sont toujours autorisées.
+- **Contrefaçons exclues** : `service._owned_counts` sépare, en une requête, la possession (hors
+  contrefaçon) et les exemplaires signalés contrefaçon (`CollectionItem.counterfeit_suspected`,
+  `v6-contrefacon`). Les contrefaçons ne comptent pas dans la possession ; leur exclusion est un
+  avertissement (code `counterfeit_excluded`) qui explique un décompte plus bas — et peut donc
+  entraîner un `not_owned` bloquant.
+
+Point d'extension `v7-regles-cartes` inchangé et toujours neutre (`legality.unsupported_card_ids`
+retourne l'ensemble vide tant que le moteur n'existe pas — report explicite, pas un repli
+silencieux). Migration `a4e9c1d7b3f5` (`cards.stage`, `decks.format` défaut `standard`, alimentés
+à l'import par `catalog/import_service.py`). Schémas : `PATCH /me/decks/{id}` accepte `name`
+et/ou `format` (`UpdateDeckRequest`, partiel) ; `DeckCardOut` porte
+`is_basic_pokemon`/`in_format`/`counterfeit_excluded`, `DeckLegalityOut` porte
+`format`/`format_label` et chaque `issue` sa `severity`. Tests : `tests/test_deck_legality.py`
+(33 cas purs, dont les pièges de la mission : 5ᵉ exemplaire d'un même nom sous deux illustrations,
+Énergie spéciale non possédée, deck sans Pokémon de base, carte contrefaite),
+`tests/test_deck_routes.py` (format choisi + carte hors format, contrefaçon exclue, sévérités,
+accès croisé B→404, CSRF). Back-end seul ; le constructeur qui les affiche est `v7-decks-ui`
+(couloir CH5).
+
+## Decks : import et export d'une liste (lot `v7-decks-import-export`)
+
+Récupérer un deck vu ailleurs ou partager le sien, sans tout ressaisir. Back-end seul (comme
+`v7-decks-api`/`v7-decks-legalite`) — l'écran qui consomme ces routes est `v7-decks-ui` (couloir
+CH5, pas encore livré).
+
+**Import** (`POST /me/decks/import`, session + CSRF, `pbm_api.decks.import_service.import_deck`) :
+une liste collée (`text`) → un deck « à compléter » + un rapport ligne par ligne. ⛔ Risque du lot :
+**une liste importée ne crée JAMAIS de cartes dans la collection** — elle ne touche que `decks`/
+`deck_cards` (catalogue), aucun `CollectionItem` (test `test_import_never_creates_collection_items`).
+- Analyseur tolérant (`pbm_api.decks.parsing`, logique pure) : quantité en tête (`3`, `3x`, `x3`,
+  implicite → 1 signalé), puces, en-têtes de section (`Pokémon: 12`, `Trainer`, `Total Cards: 60`)
+  ignorés, commentaires (`#`, `//`), extension + numéro de fin facultatifs (`PAF 234`, `234/197`,
+  `(PAF 234)`). Rien n'est rejeté en silence : toute ligne non triviale devient une entrée `card`.
+- Rapprochement : réutilise **tel quel** `catalog.search.match_candidates` (`v2-recherche`) — nom
+  (trigram FR/EN, tolérant aux fautes de frappe) + numéro (filtre strict), avec un **repli
+  progressif** noté sur la ligne (on lâche l'extension collée d'un autre site si elle ne
+  correspond pas à nos codes, puis le numéro). Statut par ligne : `matched` / `ambiguous`
+  (meilleure retenue + alternatives) / `not_found` (introuvable au catalogue, **non ajoutée**) /
+  `section`. Possession (`owned`/`missing`) comptée par le **même** chemin que la légalité
+  (`service._owned_counts` + `energy.is_basic_energy` : une Énergie de base n'est jamais manquante).
+- `dry_run=true` : rapport seul, aucun deck créé (aperçu avant validation). Garde-fou :
+  `MAX_IMPORT_LINES` = 400 (au-delà, tronqué **et signalé**), quantité écrêtée à 60 par carte.
+
+**Export** (`GET /me/decks/{id}/export?fmt=text|pdf`, borné au propriétaire → 404 sinon,
+`pbm_api.decks.export`) :
+- **texte** : `quantité nom EXTENSION numéro`, groupé par type, en-tête en commentaire (`#`).
+  Volontairement **re-lisible par l'analyseur d'import** — un export ré-importé redonne le même
+  deck (`test_export_text_round_trips`).
+- **PDF** (`fpdf2`, ajouté aux dépendances) : vignettes + liste. Les images (basse définition,
+  `cards/{id}/low.webp` du stockage objet, même clé que le proxy `/img/cards/{id}`) sont
+  **préchargées en async dans la route** puis passées à un rendu synchrone ; une carte sans
+  vignette montre un **cadre nommé**, jamais un trou ni un 500. Police cœur Helvetica (pas de TTF
+  à télécharger sur le réseau lent de chimera) ; textes réduits au latin-1 pour ne jamais faire
+  échouer le rendu sur un caractère hors jeu.
+
+Aucune migration (ni table ni colonne) : le lot ne fait que lire le catalogue et écrire des decks
+via le modèle existant. Tests : `test_deck_parsing.py` (analyseur pur), `test_deck_import.py`
+(import, accès croisé B→404, jamais la collection, liste de tournoi avec sections, fautes de
+frappe, carte hors catalogue, dry-run, CSRF), `test_deck_export.py` (round-trip texte, PDF valide,
+vignette réellement embarquée, 404).
 
 ## Règles de la flotte applicables ici (résumé de `~/.claude/CLAUDE.md`)
 

@@ -144,6 +144,9 @@ async def _upsert_card(
     card.resistances = detail.get("resistances")
     card.retreat_cost = detail.get("retreat")
     card.rule_marker = _rule_marker(detail)
+    # Stade d'évolution (`stage`) — sert au « au moins un Pokémon de base » de la légalité
+    # des decks (lot `v7-decks-legalite`). `None` hors Pokémon.
+    card.stage = detail.get("stage")
     card.variants = detail.get("variants")
     await session.flush()
     return card, created
