@@ -43,6 +43,17 @@ En service : **https://pokeboy.acx-connect.com** (depuis le 20/09/2026).
 - **Un repli silencieux est interdit** (`|| true`, `except: pass`, `2>/dev/null` sur un chemin
   nominal) : un relevé de prix vide ou un lot sans compte rendu est une panne, pas un cas normal.
 
+## Chercher ici : le graphe avant le grep
+
+Ce dépôt est **indexé** (`.mcp.json` → serveur `graphify`) : 5 381 nœuds, 13 614 arêtes, 267
+communautés. **Avant d'ouvrir dix fichiers** pour savoir qui appelle quoi, demande au graphe —
+`query_graph`, `get_neighbors`, `shortest_path`, `god_nodes`. Une réponse en un appel au lieu de
+vingt lectures, et autant de contexte gagné pour le travail réel.
+
+Rafraîchir après un gros changement : `graphify update .` (~25 s, AST local, aucun coût). **Un
+graphe périmé répond faux avec aplomb.** Il oriente, il ne prouve pas : on ouvre le fichier réel
+avant d'affirmer qu'une ligne existe. Détail : `docs/PLUGINS.md`.
+
 ## Les fiches — où lire quoi
 
 | Fiche | On l'ouvre quand… |

@@ -9,6 +9,10 @@ Chargé automatiquement quand on travaille ici. Les règles du dépôt restent c
 | écrire du code, lancer les tests | `docs/CODE.md` |
 | savoir ce que rend l'API | `docs/ARCHITECTURE.md` |
 
+**Avant de fouiller** (quel composant utilise quoi, d'où vient cette donnée) : demande au graphe `graphify`
+(`query_graph`, `get_neighbors`) plutôt que d'enchaîner les `grep` — c'est du contexte économisé.
+`graphify update .` après un gros changement.
+
 Rappels qui coûtent cher quand on les oublie :
 
 - **La charte PokéBoy fait foi** pour tout écran nouveau ou repris
