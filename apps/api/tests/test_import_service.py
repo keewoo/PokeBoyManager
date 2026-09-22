@@ -10,9 +10,15 @@ tcgdex_id/ptcg_id/illustrator/attacks/abilities/legal_* n'existe avant la migrat
 migration `b671eb503fa3`) et passe avec.
 """
 
+import pytest
 from sqlalchemy import select
 
-from pbm_api.catalog.import_service import _is_safe_image_url, _rule_marker, import_catalogue
+from pbm_api.catalog.import_service import (
+    _card_number,
+    _is_safe_image_url,
+    _rule_marker,
+    import_catalogue,
+)
 from pbm_api.catalog.ptcg_client import PtcgUnavailableError
 from pbm_api.models import Card, CardName, Set
 
@@ -356,3 +362,174 @@ async def test_import_catalogue_incremental_skips_known_sets(db_session):
     )
     assert report["sets_seen"] == 0
     assert report["cards_created"] == 0
+
+
+# --- Repli de langue (2026-09-22) -------------------------------------------------------------
+# TCGdex-fr est incomplet : 202 extensions / 22 170 cartes contre 220 / 23 736 en anglais. Les
+# doublures ci-dessous reproduisent les deux formes du manque, mesurées ce jour-là sur la PROD :
+#   - une extension entière absente du catalogue fr (18 cas réels : Gym Heroes, Base Set 2...) ;
+#   - une carte absente de l'édition fr d'une extension pourtant listée en fr (1 659 cas réels).
+
+EN_ONLY_SET_SUMMARY = {
+    "id": "gym1",
+    "name": "Gym Heroes",
+    "cardCount": {"total": 132, "official": 132},
+}
+
+EN_ONLY_SET_DETAIL = {
+    "id": "gym1",
+    "name": "Gym Heroes",
+    "serie": {"id": "gym", "name": "Gym"},
+    "releaseDate": "2000-08-14",
+    "cardCount": {"official": 132, "total": 132},
+    "symbol": "https://assets.tcgdex.net/univ/gym/gym1/symbol",
+    "logo": "https://assets.tcgdex.net/en/gym/gym1/logo",
+    "cards": [{"id": "gym1-1", "localId": "1", "name": "Blaine's Moltres", "image": "https://x/1"}],
+}
+
+EN_SET_DETAIL_WITH_EXTRA_CARD = {
+    **FR_SET_DETAIL,
+    "cards": [
+        *EN_SET_DETAIL["cards"],
+        {"id": "sv03.5-199", "localId": "199", "name": "Terapagos ex", "image": "https://x/199"},
+    ],
+}
+
+EN_CARD_DETAILS = {
+    "gym1-1": {
+        "id": "gym1-1",
+        "localId": "1",
+        "name": "Blaine's Moltres",
+        "image": "https://assets.tcgdex.net/en/gym/gym1/001",
+        "rarity": "Rare Holo",
+        "category": "Pokemon",
+        "hp": 70,
+        # Libellé anglais : sans les stades anglais dans ORDINARY_STAGES, "Basic" serait recopié
+        # dans `rule_marker` et cette carte passerait pour une carte à règle spéciale.
+        "stage": "Basic",
+        "suffix": None,
+        "legal": {"standard": False, "expanded": False},
+    },
+    "sv03.5-199": {
+        "id": "sv03.5-199",
+        "localId": "199",
+        "name": "Terapagos ex",
+        "image": "https://assets.tcgdex.net/en/sv/sv03.5/199",
+        "rarity": "Special Illustration Rare",
+        "category": "Pokemon",
+        "hp": 230,
+        "stage": "Basic",
+        "suffix": "ex",
+        "legal": {"standard": True, "expanded": True},
+    },
+}
+
+
+class PartialFrenchTcgdexClient(FakeTcgdexClient):
+    """TCGdex tel qu'il répond vraiment : le catalogue `fr` ne liste ni toutes les extensions,
+    ni toutes les cartes des extensions qu'il liste."""
+
+    def __init__(self):
+        super().__init__()
+        self.card_calls_by_lang: list[tuple[str, str]] = []
+
+    async def list_sets(self, lang: str) -> list[dict]:
+        fr_sets = await super().list_sets(lang)
+        return fr_sets if lang == "fr" else [*fr_sets, EN_ONLY_SET_SUMMARY]
+
+    async def get_set(self, lang: str, set_id: str) -> dict:
+        if set_id == "gym1":
+            if lang == "fr":
+                raise RuntimeError("404 Not Found")
+            return EN_ONLY_SET_DETAIL
+        return FR_SET_DETAIL if lang == "fr" else EN_SET_DETAIL_WITH_EXTRA_CARD
+
+    async def get_card(self, lang: str, card_id: str) -> dict:
+        self.card_calls_by_lang.append((lang, card_id))
+        if lang == "en":
+            return EN_CARD_DETAILS[card_id]
+        return FR_CARD_DETAILS[card_id]
+
+
+class MuteTcgdexClient(FakeTcgdexClient):
+    async def list_sets(self, lang: str) -> list[dict]:
+        raise RuntimeError("TCGdex injoignable")
+
+
+def test_rule_marker_accepts_ordinary_stages_in_both_languages():
+    """Une carte tirée en anglais annonce "Basic"/"Stage 1" : ce sont des stades ordinaires, pas
+    des règles spéciales. Sans ça le repli `fr` → `en` remplirait `rule_marker` à tort."""
+    assert _rule_marker({"suffix": None, "stage": "Basic"}) is None
+    assert _rule_marker({"suffix": None, "stage": "Stage 1"}) is None
+    assert _rule_marker({"suffix": None, "stage": "Stage 2"}) is None
+    assert _rule_marker({"suffix": None, "stage": "VMAX"}) == "VMAX"
+
+
+def test_card_number_decodes_a_percent_encoded_local_id():
+    """Le Zarbi « ? » de `exu` a `localId="%3F"` chez TCGdex : on stocke le numéro imprimé."""
+    assert _card_number({"localId": "%3F"}) == "?"
+    assert _card_number({"localId": "006"}) == "006"
+    assert _card_number({"localId": "TG05"}) == "TG05"
+
+
+async def test_import_catalogue_imports_a_set_absent_from_the_primary_language(db_session):
+    tcgdex = PartialFrenchTcgdexClient()
+    report = await import_catalogue(db_session, tcgdex, None, languages=("fr", "en"))
+
+    gym = (
+        await db_session.execute(select(Set).where(Set.tcgdex_id == "gym1"))
+    ).scalar_one_or_none()
+    assert gym is not None, "une extension listée en anglais seulement doit entrer en base"
+    assert gym.name == "Gym Heroes"
+    assert gym.series == "Gym"
+    assert report["sets_seen"] == 2
+    assert report["sets_by_source_language"] == {"fr": 1, "en": 1}
+
+
+async def test_import_catalogue_imports_a_card_absent_from_the_primary_language(db_session):
+    tcgdex = PartialFrenchTcgdexClient()
+    report = await import_catalogue(db_session, tcgdex, None, languages=("fr", "en"))
+
+    card = (
+        await db_session.execute(select(Card).where(Card.tcgdex_id == "sv03.5-199"))
+    ).scalar_one_or_none()
+    assert card is not None, "une carte listée en anglais seulement doit entrer en base"
+    assert card.name == "Terapagos ex"
+    assert card.number == "199"
+    # Le détail a bien été demandé en anglais, pas en français où la carte n'existe pas.
+    assert ("en", "sv03.5-199") in tcgdex.card_calls_by_lang
+    assert ("fr", "sv03.5-199") not in tcgdex.card_calls_by_lang
+
+    # 2 cartes fr (sv03.5-006, sv03.5-025) + 2 cartes en (sv03.5-199, gym1-1)
+    assert report["cards_created"] == 4
+    assert report["cards_by_source_language"] == {"fr": 2, "en": 2}
+
+
+async def test_import_catalogue_records_no_rule_marker_for_an_english_basic_card(db_session):
+    """Garde-fou du repli : « Basic » est un stade ordinaire, pas une règle spéciale."""
+    await import_catalogue(db_session, PartialFrenchTcgdexClient(), None, languages=("fr", "en"))
+
+    card = (
+        await db_session.execute(select(Card).where(Card.tcgdex_id == "gym1-1"))
+    ).scalar_one()
+    assert card.stage == "Basic"
+    assert card.rule_marker is None
+
+
+async def test_import_catalogue_names_an_english_sourced_card_in_english_only(db_session):
+    await import_catalogue(db_session, PartialFrenchTcgdexClient(), None, languages=("fr", "en"))
+
+    card = (
+        await db_session.execute(select(Card).where(Card.tcgdex_id == "sv03.5-199"))
+    ).scalar_one()
+    names = (
+        await db_session.execute(select(CardName).where(CardName.card_id == card.id))
+    ).scalars().all()
+    assert {n.language: n.name for n in names} == {"en": "Terapagos ex"}
+
+
+async def test_import_catalogue_refuses_to_report_success_when_no_language_answers(db_session):
+    """Un catalogue muet doit lever, pas rendre un rapport « 0 extension vue » indiscernable
+    d'un catalogue déjà à jour (règle : un repli silencieux masque une panne)."""
+    with pytest.raises(RuntimeError, match="aucune extension listée"):
+        await import_catalogue(db_session, MuteTcgdexClient(), None, languages=("fr", "en"))

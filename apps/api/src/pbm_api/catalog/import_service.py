@@ -5,6 +5,24 @@ relancer l'import ne duplique rien, il met à jour. Reprise sur erreur : une car
 en échec est consignée dans le rapport (`errors`) et n'interrompt pas le reste de l'import ; chaque
 extension est validée (`commit`) dès qu'elle est complète, pour qu'un arrêt en cours de route ne
 perde pas le travail déjà fait.
+
+**Repli de langue (2026-09-22).** Le catalogue français de TCGdex est lui-même incomplet : mesuré
+ce jour-là, `fr` expose 202 extensions / 22 170 cartes contre 220 / 23 736 en `en`. Piloter
+l'import sur la seule langue primaire laissait donc **18 extensions entières et 1 659 cartes**
+hors de la base — Gym Heroes, Gym Challenge, Base Set 2, Legendary Collection, Skyridge, Arceus,
+Legendary Treasures, Team Rocket Returns, et les extensions Pocket B2 et B1a, pourtant récentes.
+
+Le manque était invisible dans les comptages, parce que `sets.total_cards` est le total
+*imprimé* : la base affichait 22 169 cartes pour 19 793 « attendues » et paraissait donc
+excédentaire. On ne juge pas la complétude là-dessus — on compare extension par extension.
+
+Désormais les extensions ET les cartes sont l'**union de toutes les langues** de `languages`, la
+première langue qui expose le contenu faisant foi pour ce contenu (donc `fr` quand elle existe,
+`en` sinon). Le repli est compté : `sets_by_source_language` et `cards_by_source_language` dans
+le rapport. Un repli qui grossit se voit, au lieu de passer pour un import normal.
+
+Quatre extensions (`jumbo`, `rc`, `wp`, `tk-sm-l`) restent vides après ce repli : la source n'a
+la donnée dans aucune des deux langues. Ce n'est pas un défaut d'import.
 """
 
 import asyncio
@@ -12,7 +30,7 @@ import ipaddress
 import logging
 from datetime import date
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -50,11 +68,14 @@ def _is_safe_image_url(url: str) -> bool:
         return True  # nom de domaine, pas une IP littérale — résolution laissée à httpx
     return not (ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved)
 
-# Étapes d'évolution ordinaires (TCGdex `stage`, en français — seule langue dont on récupère le
-# détail complet de carte, voir `import_catalogue`) : tout `stage` en dehors de cette liste porte
+
+# Étapes d'évolution ordinaires (TCGdex `stage`) : tout `stage` en dehors de cette liste porte
 # lui-même une règle spéciale (VMAX, VSTAR, BREAK...), faute de `suffix` pour ces cas (constaté en
 # direct le 2026-09-19 : Astronelle VMAX a `stage="VMAX"`, `suffix=None`).
-ORDINARY_STAGES = {"Base", "Niveau 1", "Niveau 2"}
+# Les libellés anglais y figurent depuis le repli `fr` → `en` : une carte tirée en anglais annonce
+# `stage="Basic"` / `"Stage 1"`, qui seraient sinon pris pour des règles spéciales et recopiés
+# dans `rule_marker`. Comparaison en minuscules pour ne pas dépendre de la casse de la source.
+ORDINARY_STAGES = {"base", "niveau 1", "niveau 2", "basic", "stage 1", "stage 2"}
 
 
 def _rule_marker(detail: dict) -> str | None:
@@ -62,14 +83,26 @@ def _rule_marker(detail: dict) -> str | None:
     if suffix:
         return suffix
     stage = detail.get("stage")
-    if stage and stage not in ORDINARY_STAGES:
+    if stage and stage.casefold() not in ORDINARY_STAGES:
         return stage
     return None
+
+
+def _card_number(detail: dict) -> str:
+    """Numéro imprimé de la carte.
+
+    TCGdex publie certains numéros **déjà** percent-encodés dans ses propres données : le Zarbi
+    « ? » de l'extension `exu` a `localId="%3F"` (relevé le 2026-09-22 — seule carte du catalogue
+    dans ce cas). On stocke le numéro imprimé (`?`), pas sa forme encodée : c'est lui qui s'aligne
+    avec les autres Zarbi (`A`...`Z`) et avec le rapprochement Pokémon TCG API. `unquote` est sans
+    effet sur un numéro ordinaire (`006`, `TG05`, `SV107`)."""
+    return unquote(str(detail["localId"]))
+
 
 # Bride les appels `get_card` en parallèle par extension : purement réseau (aucun accès à
 # `session`, qui n'est pas sûr en usage concurrent), les upserts en base restent séquentiels.
 # Même ordre de grandeur que `pricing.service.TCGDEX_CONCURRENCY` — décisif pour tenir un import
-# complet (~20 000 cartes) sur le lien à ~250 ko/s de chimera (mission risque réseau).
+# complet (~24 000 cartes) sur le lien à ~250 ko/s de chimera (mission risque réseau).
 TCGDEX_CARD_FETCH_CONCURRENCY = 8
 
 
@@ -89,9 +122,38 @@ async def _fetch_card_details(
     return dict(results)
 
 
-async def _upsert_set(
-    session: AsyncSession, tcgdex_set_id: str, fr_detail: dict
-) -> tuple[Set, bool]:
+async def _list_set_summaries(
+    tcgdex: TcgdexClient, languages: tuple[str, ...], report: dict[str, Any]
+) -> list[dict]:
+    """Union ordonnée des extensions de toutes les langues, la langue primaire d'abord.
+
+    Le catalogue `fr` ne liste pas tout (voir l'en-tête du module) : une extension absente de
+    `fr` mais présente en `en` doit entrer en base, pas disparaître."""
+    summaries: list[dict] = []
+    seen: set[str] = set()
+    for lang in languages:
+        try:
+            lang_summaries = await tcgdex.list_sets(lang)
+        except Exception as exc:  # noqa: BLE001 — une langue muette ne doit pas tout arrêter
+            report["errors"].append(f"liste des extensions en '{lang}' indisponible : {exc}")
+            continue
+        for summary in lang_summaries:
+            if summary["id"] not in seen:
+                seen.add(summary["id"])
+                summaries.append(summary)
+    if not summaries:
+        # Aucune langue n'a répondu. Sans cette levée, l'import « réussirait » en ne faisant
+        # rien et rendrait un rapport à 0 extension vue, indiscernable d'un catalogue à jour.
+        raise RuntimeError(
+            f"aucune extension listée dans aucune des langues {list(languages)} — "
+            "import interrompu (TCGdex injoignable ?)"
+        )
+    return summaries
+
+
+async def _upsert_set(session: AsyncSession, tcgdex_set_id: str, detail: dict) -> tuple[Set, bool]:
+    """`detail` vient de la première langue où l'extension existe — français en principe,
+    anglais pour les 18 extensions que le catalogue `fr` ne publie pas."""
     result = await session.execute(select(Set).where(Set.tcgdex_id == tcgdex_set_id))
     set_row = result.scalar_one_or_none()
     created = set_row is None
@@ -99,13 +161,13 @@ async def _upsert_set(
         set_row = Set(tcgdex_id=tcgdex_set_id, code=tcgdex_set_id)
         session.add(set_row)
 
-    release_date_str = fr_detail.get("releaseDate")
-    set_row.name = fr_detail["name"]
-    set_row.series = (fr_detail.get("serie") or {}).get("name")
+    release_date_str = detail.get("releaseDate")
+    set_row.name = detail["name"]
+    set_row.series = (detail.get("serie") or {}).get("name")
     set_row.release_date = date.fromisoformat(release_date_str) if release_date_str else None
-    set_row.total_cards = (fr_detail.get("cardCount") or {}).get("official")
-    set_row.symbol_url = fr_detail.get("symbol")
-    set_row.logo_url = fr_detail.get("logo")
+    set_row.total_cards = (detail.get("cardCount") or {}).get("official")
+    set_row.symbol_url = detail.get("symbol")
+    set_row.logo_url = detail.get("logo")
     await session.flush()
     return set_row, created
 
@@ -116,13 +178,14 @@ async def _upsert_card(
     result = await session.execute(select(Card).where(Card.tcgdex_id == tcgdex_card_id))
     card = result.scalar_one_or_none()
     created = card is None
+    number = _card_number(detail)
     if card is None:
-        card = Card(tcgdex_id=tcgdex_card_id, set_id=set_row.id, number=detail["localId"])
+        card = Card(tcgdex_id=tcgdex_card_id, set_id=set_row.id, number=number)
         session.add(card)
 
     legal = detail.get("legal") or {}
     card.set_id = set_row.id
-    card.number = detail["localId"]
+    card.number = number
     card.name = detail["name"]
     card.rarity = detail.get("rarity")
     card.supertype = detail.get("category")
@@ -145,7 +208,8 @@ async def _upsert_card(
     card.retreat_cost = detail.get("retreat")
     card.rule_marker = _rule_marker(detail)
     # Stade d'évolution (`stage`) — sert au « au moins un Pokémon de base » de la légalité
-    # des decks (lot `v7-decks-legalite`). `None` hors Pokémon.
+    # des decks (lot `v7-decks-legalite`). `None` hors Pokémon. `is_basic_pokemon` accepte déjà
+    # les libellés des deux langues ("Base" / "Basic"), le repli `en` ne le met pas en défaut.
     card.stage = detail.get("stage")
     card.variants = detail.get("variants")
     await session.flush()
@@ -189,9 +253,8 @@ async def import_catalogue(
     progress_callback: Any = None,
 ) -> dict[str, Any]:
     """`progress_callback(tcgdex_set_id, report)` optionnel, appelé après chaque extension
-    (succès ou échec) : observabilité d'un import complet (~200 extensions), sans changer le
+    (succès ou échec) : observabilité d'un import complet (~220 extensions), sans changer le
     comportement si omis."""
-    primary_lang, *secondary_langs = languages
     report: dict[str, Any] = {
         "mode": mode,
         "languages": list(languages),
@@ -201,6 +264,10 @@ async def import_catalogue(
         "cards_created": 0,
         "cards_updated": 0,
         "cards_by_language": dict.fromkeys(languages, 0),
+        # Langue d'où vient le CONTENU (par opposition à `cards_by_language`, qui compte les
+        # noms enregistrés) : rend le repli visible et mesurable d'un import à l'autre.
+        "sets_by_source_language": dict.fromkeys(languages, 0),
+        "cards_by_source_language": dict.fromkeys(languages, 0),
         "ptcg_reconciliation": "non tentée (pas de client)",
         "cards_matched_ptcg": 0,
         "cards_unmatched_ptcg_count": 0,
@@ -218,7 +285,7 @@ async def import_catalogue(
             report["ptcg_reconciliation"] = f"indisponible : {exc}"
             ptcg = None
 
-    set_summaries = await tcgdex.list_sets(primary_lang)
+    set_summaries = await _list_set_summaries(tcgdex, languages, report)
     if set_ids is not None:
         set_summaries = [s for s in set_summaries if s["id"] in set_ids]
     if mode == "incremental":
@@ -230,24 +297,59 @@ async def import_catalogue(
         tcgdex_set_id = set_summary["id"]
         report["sets_seen"] += 1
         try:
-            fr_detail = await tcgdex.get_set(primary_lang, tcgdex_set_id)
-            set_row, set_created = await _upsert_set(session, tcgdex_set_id, fr_detail)
-            report["sets_created" if set_created else "sets_updated"] += 1
-
-            secondary_names: dict[str, dict[str, str]] = {}
-            for lang in secondary_langs:
+            details_by_lang: dict[str, dict] = {}
+            missing_langs: list[tuple[str, Exception]] = []
+            for lang in languages:
                 try:
-                    lang_detail = await tcgdex.get_set(lang, tcgdex_set_id)
+                    details_by_lang[lang] = await tcgdex.get_set(lang, tcgdex_set_id)
                 except Exception as exc:  # noqa: BLE001 — extension sans édition dans cette langue
-                    report["errors"].append(
-                        f"extension {tcgdex_set_id} : pas d'édition '{lang}' ({exc}) — "
-                        f"import poursuivi en {primary_lang} seul"
+                    missing_langs.append((lang, exc))
+            if not details_by_lang:
+                raise RuntimeError(
+                    f"pas d'édition dans les langues {list(languages)} : "
+                    + " ; ".join(f"{lang} ({exc})" for lang, exc in missing_langs)
+                )
+            content_lang = next(lang for lang in languages if lang in details_by_lang)
+            for lang, exc in missing_langs:
+                report["errors"].append(
+                    f"extension {tcgdex_set_id} : pas d'édition '{lang}' ({exc}) — "
+                    f"contenu pris en '{content_lang}'"
+                )
+
+            set_row, set_created = await _upsert_set(
+                session, tcgdex_set_id, details_by_lang[content_lang]
+            )
+            report["sets_created" if set_created else "sets_updated"] += 1
+            report["sets_by_source_language"][content_lang] += 1
+
+            names_by_lang: dict[str, dict[str, str]] = {
+                lang: {
+                    c["id"]: c["name"] for c in detail.get("cards", []) if c.get("name") is not None
+                }
+                for lang, detail in details_by_lang.items()
+            }
+
+            # Union ordonnée des cartes de toutes les langues : une carte que le catalogue
+            # français ignore (B2, B1a, Gym Heroes...) entre en base par l'anglais au lieu
+            # d'être silencieusement absente.
+            card_source_lang: dict[str, str] = {}
+            card_ids: list[str] = []
+            for lang in languages:
+                for card_summary in details_by_lang.get(lang, {}).get("cards", []):
+                    card_id = card_summary["id"]
+                    if card_id not in card_source_lang:
+                        card_source_lang[card_id] = lang
+                        card_ids.append(card_id)
+
+            card_details: dict[str, dict | Exception] = {}
+            for lang in languages:
+                ids_for_lang = [c for c in card_ids if card_source_lang[c] == lang]
+                if ids_for_lang:
+                    card_details.update(
+                        await _fetch_card_details(
+                            tcgdex, lang, ids_for_lang, TCGDEX_CARD_FETCH_CONCURRENCY
+                        )
                     )
-                    secondary_names[lang] = {}
-                else:
-                    secondary_names[lang] = {
-                        c["id"]: c["name"] for c in lang_detail.get("cards", [])
-                    }
 
             number_to_ptcg_id: dict[str, str] | None = None
             if ptcg is not None:
@@ -259,31 +361,30 @@ async def import_catalogue(
                     report["errors"].append(f"rapprochement {tcgdex_set_id} : {exc}")
                     number_to_ptcg_id = None
 
-            card_ids = [card_summary["id"] for card_summary in fr_detail.get("cards", [])]
-            card_details = await _fetch_card_details(
-                tcgdex, primary_lang, card_ids, TCGDEX_CARD_FETCH_CONCURRENCY
-            )
-
             for tcgdex_card_id in card_ids:
                 try:
                     card_detail = card_details[tcgdex_card_id]
                     if isinstance(card_detail, Exception):
                         raise card_detail
+                    source_lang = card_source_lang[tcgdex_card_id]
                     card, card_created = await _upsert_card(
                         session, set_row, tcgdex_card_id, card_detail
                     )
                     report["cards_created" if card_created else "cards_updated"] += 1
+                    report["cards_by_source_language"][source_lang] += 1
 
-                    await _upsert_card_name(session, card, primary_lang, card_detail["name"])
-                    report["cards_by_language"][primary_lang] += 1
-                    for lang in secondary_langs:
-                        lang_name = secondary_names.get(lang, {}).get(tcgdex_card_id)
+                    for lang in languages:
+                        lang_name = (
+                            card_detail["name"]
+                            if lang == source_lang
+                            else names_by_lang.get(lang, {}).get(tcgdex_card_id)
+                        )
                         if lang_name is not None:
                             await _upsert_card_name(session, card, lang, lang_name)
                             report["cards_by_language"][lang] += 1
 
                     if number_to_ptcg_id is not None:
-                        matched = match_card_number(card_detail["localId"], number_to_ptcg_id)
+                        matched = match_card_number(_card_number(card_detail), number_to_ptcg_id)
                         if matched is not None:
                             card.ptcg_id = matched
                             await session.flush()
@@ -292,7 +393,7 @@ async def import_catalogue(
                             report["cards_unmatched_ptcg_count"] += 1
                             if len(report["cards_unmatched_ptcg_sample"]) < MAX_UNMATCHED_SAMPLE:
                                 report["cards_unmatched_ptcg_sample"].append(
-                                    {"set": tcgdex_set_id, "number": card_detail["localId"]}
+                                    {"set": tcgdex_set_id, "number": _card_number(card_detail)}
                                 )
                 except Exception as exc:  # noqa: BLE001 — une carte en échec ne doit pas arrêter l'import
                     logger.exception("Échec import carte %s", tcgdex_card_id)
