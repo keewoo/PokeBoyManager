@@ -119,7 +119,9 @@ test.describe("Constructeur de deck (lot v7-decks-ui)", () => {
     // 3. La liste des decks annonce l'alerte et le deck bascule « À compléter ».
     await page.goto("/jeu/decks");
     await expect(page.getByTestId("deck-alerts-notice")).toBeVisible();
-    await expect(page.getByText("À compléter")).toBeVisible();
+    // `exact` : le badge de statut du deck porte exactement « À compléter » — sans quoi la
+    // correspondance par sous-chaîne insensible à la casse toucherait aussi le texte du bandeau.
+    await expect(page.getByText("À compléter", { exact: true }).first()).toBeVisible();
   });
 
   test("un deck n'est visible que par son propriétaire (accès croisé)", async ({
