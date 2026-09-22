@@ -3630,7 +3630,7 @@
       }
     },
     "v7-deck-ia": {
-      "statut": "a_faire",
+      "statut": "integre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
@@ -3682,8 +3682,21 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-09-23T01:16+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": "branche roadmap/v7-deck-ia fusionnee dans main (verifie par git merge-base)"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": {
+        "quand": "2026-09-23T01:16+0200",
+        "raisons": [
+          "branche roadmap/v7-deck-ia fusionnee dans main (verifie par git merge-base)"
+        ]
+      }
     },
     "v7-images-jeu": {
       "statut": "a_faire",
