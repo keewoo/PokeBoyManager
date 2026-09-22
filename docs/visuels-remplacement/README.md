@@ -40,3 +40,12 @@ détecte les bandes au lieu de couper à l'aveugle sur une grille supposée.
    (512 px, WebP qualité 80). Le script vérifie les gouttières et **refuse** une planche mal
    alignée plutôt que de produire des vignettes décalées.
 3. Les fonds sont servis par le site ; le choix pour une carte est `hash(card_id) % 9`.
+
+## État au 22/09/2026
+
+Les **11 planches** sont dans `planches/` (28 Mo, hors service : elles ne sont pas servies).
+La découpe a produit **99 fonds** dans `apps/web/public/fonds/` (3,9 Mo au total, WebP 512 px),
+nommés `<type>-01.webp` … `<type>-09.webp`. Les gouttières ont été détectées sur les onze
+planches : aucune vignette décalée.
+
+Commande : `python3 docs/visuels-remplacement/decouper.py <planche.png> <dossier> <type>`.
