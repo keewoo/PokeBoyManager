@@ -3398,6 +3398,42 @@
       "dependances": [],
       "vague": "H1",
       "piste": "F"
+    },
+    {
+      "id": "h1-seconde-passe-ia",
+      "debut": "2026-09-22",
+      "fin": "2026-09-22",
+      "priorite": "P0",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "Quand la découpe rate, l'IA refait tout",
+      "gain": "Signaler une mauvaise découpe ne la répare pas. Au-delà d'un seuil, il faut la refaire — et la refaire avec l'outil qui voit la photo entière, pas avec celui qui vient d'échouer dessus.",
+      "fonctionnalites": "Règle de JF du 22/09 : 30 % du cadre tronqué OU moins de 55 % de confiance moyenne, et l'IA reprend ET la découpe ET la reconnaissance. La troncature réunit deux mesures : la position de la jointure quand deux cartes se partagent le cadre, et la part du quadrilatère qui tombe hors de la photo.",
+      "risques": "Une seconde passe qui efface la première avant d'avoir un résultat laisse l'écran vide : l'effacement n'a lieu qu'une fois la nouvelle découpe obtenue. Sans clé IA, le garde-fou ne peut pas jouer — on le DIT dans le rapport du job plutôt que de laisser croire qu'il a joué. Jamais sur une reprise : les détections viennent d'un passage précédent que l'utilisateur est peut-être en train de valider.",
+      "tenants": "Découpe, identification, worker.",
+      "aboutissants": "Moins de cartes à corriger à la main.",
+      "refs": [
+        "règle dictée par JF le 22/09/2026"
+      ],
+      "mission": [
+        "Mesurer la troncature d'un recadrage : position de la jointure, et part hors photo.",
+        "Déclencher la seconde passe sur 30 % de troncature OU 55 % de confiance moyenne.",
+        "Seconde passe : détection forcée par l'IA, puis identification sans index visuel.",
+        "Le verdict part dans le rapport du job, qu'il déclenche ou non."
+      ],
+      "livrables": [
+        "une découpe ratée est refaite par l'IA au lieu d'être seulement signalée",
+        "verdict de seconde passe visible dans le rapport du job"
+      ],
+      "taches_na": {},
+      "couloir": "DA2",
+      "decision": null,
+      "dependances": [
+        "h1-decoupe-fiable"
+      ],
+      "vague": "H1",
+      "piste": "F"
     }
   ]
 }

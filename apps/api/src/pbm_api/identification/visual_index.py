@@ -90,6 +90,14 @@ class VisualIndex:
         return int(self._full.nbytes + self._illustration.nbytes)
 
     @classmethod
+    def empty(cls) -> "VisualIndex":
+        """Index sans aucune empreinte : `search` rend une liste vide, donc l'identification
+        passe forcément par l'IA. Sert à la seconde passe (`h1-seconde-passe-ia`), où JF
+        demande que l'IA fasse ET la découpe ET la reconnaissance."""
+        vide = np.array([], dtype=np.uint64)
+        return cls([], [], vide, vide)
+
+    @classmethod
     async def load(cls, session: AsyncSession) -> "VisualIndex":
         result = await session.execute(
             select(

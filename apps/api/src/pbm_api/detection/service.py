@@ -5,6 +5,7 @@ directement.
 
 from dataclasses import dataclass
 
+from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.ai.factory import create_provider
@@ -31,8 +32,18 @@ def _crop_key(upload: Upload, index: int) -> str:
 
 
 async def run_detection_for_upload(
-    db: AsyncSession, storage: StorageBackend, upload: Upload
+    db: AsyncSession, storage: StorageBackend, upload: Upload, *, force_ai: bool = False
 ) -> DetectionRunSummary:
+    """`force_ai` : seconde passe (lot `h1-seconde-passe-ia`).
+
+    Les détections EN ATTENTE du premier passage sont remplacées — sinon l'écran de validation
+    afficherait les deux découpes côte à côte. Celles déjà validées ou rejetées par
+    l'utilisateur ne sont jamais touchées : son geste prime sur notre remords.
+
+    L'effacement n'a lieu qu'UNE FOIS la nouvelle découpe obtenue. Dans l'autre ordre, une IA
+    en échec (clé épuisée, aucune boîte trouvée) laissait l'écran de validation vide après
+    avoir détruit une découpe imparfaite mais utilisable.
+    """
     raw = await storage.get(upload.s3_key)
     if raw is None:
         raise DetectionSourceMissingError(upload.s3_key)
@@ -50,6 +61,7 @@ async def run_detection_for_upload(
     try:
         result = await run_detection(
             raw,
+            force_ai=force_ai,
             ai_provider=ai_provider,
             ai_model=ai_model,
             ai_media_type=upload.content_type,
@@ -60,6 +72,19 @@ async def run_detection_for_upload(
 
     if result.ai_usage is not None:
         await record_usage(db, user, result.ai_usage)
+
+    if force_ai and not result.quads:
+        # Rien de neuf : on garde la découpe précédente plutôt que de laisser l'écran vide.
+        await db.commit()
+        return DetectionRunSummary(detections_count=0, method="seconde_passe_sans_resultat")
+
+    if force_ai:
+        await db.execute(
+            delete(Detection).where(
+                Detection.upload_id == upload.id, Detection.status == DetectionStatus.pending
+            )
+        )
+        await db.commit()
 
     await storage.put(_control_key(upload), result.annotated_jpeg, "image/jpeg")
 

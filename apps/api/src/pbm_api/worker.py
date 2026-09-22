@@ -20,11 +20,13 @@ from arq.cron import cron
 from sqlalchemy import func, select
 
 from pbm_api.ai.errors import AIProviderError
+from pbm_api.ai.service import get_default_credential
 from pbm_api.catalog.import_service import import_catalogue
 from pbm_api.catalog.ptcg_client import PtcgClient
 from pbm_api.catalog.tcgdex_client import TcgdexClient
 from pbm_api.config import settings
 from pbm_api.db import async_session_factory
+from pbm_api.detection.seconde_passe import evaluer as evaluer_seconde_passe
 from pbm_api.detection.service import run_detection_for_upload
 from pbm_api.email import get_email_sender
 from pbm_api.export.service import run_export
@@ -37,7 +39,7 @@ from pbm_api.imports.errors import (
 from pbm_api.imports.service import run_import_for_upload
 from pbm_api.ingame.tournaments import LimitlessTcgClient
 from pbm_api.ingame.tournaments_job import refresh_tournament_presence
-from pbm_api.models import DataExport, Detection, Job, JobStatus, Upload, User
+from pbm_api.models import DataExport, Detection, DetectionStatus, Job, JobStatus, Upload, User
 from pbm_api.pricing.exchange_rates import EcbClient, store_daily_rates
 from pbm_api.pricing.service import collect_daily_prices
 from pbm_api.ranking.service import refresh_card_value_rank
@@ -240,6 +242,57 @@ async def daily_exchange_rates_task(ctx: dict) -> dict:
     return await _run_daily_exchange_rates()
 
 
+async def _seconde_passe_si_besoin(
+    session, storage, upload: Upload, id_summary, detections_count: int, method: str
+):
+    """Évalue la règle de seconde passe, et l'exécute si elle est remplie.
+
+    Rend le verdict et, le cas échéant, le nouveau résumé d'identification. Le verdict part dans
+    le rapport du job quoi qu'il arrive : une seconde passe qui ne se déclenche pas doit se voir
+    autant qu'une qui se déclenche, sinon personne ne saura jamais si le garde-fou fonctionne.
+    """
+    detections = list(
+        (
+            await session.execute(
+                select(Detection).where(
+                    Detection.upload_id == upload.id,
+                    Detection.status == DetectionStatus.pending,
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    verdict = evaluer_seconde_passe(detections)
+    if not verdict.needed:
+        return verdict, id_summary, detections_count, method
+
+    user = await session.get(User, upload.user_id)
+    if user is None or await get_default_credential(session, user) is None:
+        # Sans clé IA, on ne peut pas refaire la découpe : on le DIT dans le rapport plutôt que
+        # de laisser croire que le garde-fou a joué.
+        logger.warning(
+            "upload %s : seconde passe demandée (%s) mais aucune clé IA — découpe conservée",
+            upload.id,
+            verdict.reason,
+        )
+        return verdict, id_summary, detections_count, "seconde_passe_sans_cle"
+
+    logger.warning(
+        "upload %s : seconde passe IA (%s, troncature max %.0f%%, confiance moyenne %s)",
+        upload.id,
+        verdict.reason,
+        verdict.truncated_max * 100,
+        "—" if verdict.mean_confidence is None else f"{verdict.mean_confidence * 100:.0f}%",
+    )
+    summary = await run_detection_for_upload(session, storage, upload, force_ai=True)
+    if not summary.detections_count:
+        return verdict, id_summary, detections_count, summary.method
+
+    nouveau = await run_identification_for_upload(session, storage, upload, force_ai=True)
+    return verdict, nouveau, summary.detections_count, summary.method
+
+
 async def _detect_identify_state(session, storage, upload: Upload) -> dict:
     """Les trois étapes chaînées d'un job `detect_cards`, dans le même aller-retour par la file :
     détection (mission `v3-detection`), identification (`v3-identification`, un appel IA par carte)
@@ -260,10 +313,22 @@ async def _detect_identify_state(session, storage, upload: Upload) -> dict:
         summary = await run_detection_for_upload(session, storage, upload)
         detections_count, method = summary.detections_count, summary.method
     id_summary = await run_identification_for_upload(session, storage, upload)
+
+    # Seconde passe (lot `h1-seconde-passe-ia`, règle de JF du 22/09) : 30 % du cadre tronqué OU
+    # moins de 55 % de confiance moyenne, et l'IA refait TOUT — la découpe comme la
+    # reconnaissance. Jamais sur une reprise : les détections viennent d'un passage précédent,
+    # les redécouper effacerait un travail que l'utilisateur est peut-être en train de valider.
+    verdict = None
+    if method != "reprise":
+        verdict, id_summary, detections_count, method = await _seconde_passe_si_besoin(
+            session, storage, upload, id_summary, detections_count, method
+        )
+
     state_summary = await run_state_estimation_for_upload(session, storage, upload)
     return {
         "detections_count": detections_count,
         "method": method,
+        "seconde_passe": None if verdict is None else verdict.as_dict(),
         "identified_count": id_summary.identified_count,
         "identification_cache_hits": id_summary.cache_hits,
         "identification_ai_calls": id_summary.ai_calls,

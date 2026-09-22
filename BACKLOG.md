@@ -103,13 +103,13 @@ _Avant le jeu lui-même : construire, nommer, corriger et partager des decks à 
 | Lot | Prio | Titre | Couloir | Prévu | Dépend de | Décision | Statut | Prompt |
 |---|---|---|---|---|---|---|---|---|
 | `v7-decks-api` | P0 | Decks : création, légalité et sauvegarde, uniquement avec ses cartes | DA3 (devAI) | 22 sept. → 25 sept. | v4-collection | D10 | Intégré (main) | [prompt](prompts/v7-decks-api.md) |
-| `v7-decks-recherche` | P0 | Recherche de cartes du constructeur : trouver une carte en trois secondes | CH5 (chimera) | 22 sept. → 25 sept. | v4-collection | — | À faire | [prompt](prompts/v7-decks-recherche.md) |
-| `v7-decks-ui` | P0 | Constructeur de deck | CH5 (chimera) | 29 sept. → 2 oct. | v7-decks-api, v7-decks-recherche | — | À faire | [prompt](prompts/v7-decks-ui.md) |
-| `v7-decks-legalite` | P0 | Contrôle de légalité d'un deck, expliqué ligne par ligne | DA3 (devAI) | 29 sept. → 2 oct. | v7-decks-api | D10 | À faire | [prompt](prompts/v7-decks-legalite.md) |
-| `v7-decks-collection-sync` | P0 | Une carte quitte la collection : les decks le disent tout de suite | DA3 (devAI) | 5 oct. → 8 oct. | v7-decks-legalite | — | À faire | [prompt](prompts/v7-decks-collection-sync.md) |
+| `v7-decks-recherche` | P0 | Recherche de cartes du constructeur : trouver une carte en trois secondes | CH5 (chimera) | 22 sept. → 25 sept. | v4-collection | — | Intégré (main) | [prompt](prompts/v7-decks-recherche.md) |
+| `v7-decks-ui` | P0 | Constructeur de deck | CH5 (chimera) | 29 sept. → 2 oct. | v7-decks-api, v7-decks-recherche | — | Intégré (main) | [prompt](prompts/v7-decks-ui.md) |
+| `v7-decks-legalite` | P0 | Contrôle de légalité d'un deck, expliqué ligne par ligne | DA3 (devAI) | 29 sept. → 2 oct. | v7-decks-api | D10 | Intégré (main) | [prompt](prompts/v7-decks-legalite.md) |
+| `v7-decks-collection-sync` | P0 | Une carte quitte la collection : les decks le disent tout de suite | DA3 (devAI) | 5 oct. → 8 oct. | v7-decks-legalite | — | Intégré (main) | [prompt](prompts/v7-decks-collection-sync.md) |
 | `v7-decks-stats` | P1 | Fiche d'un deck : composition, courbe d'énergie et valeur | CH5 (chimera) | 5 oct. → 8 oct. | v7-decks-ui | — | À faire | [prompt](prompts/v7-decks-stats.md) |
 | `v7-deck-ia` | P1 | Deck proposé par l'IA du joueur, selon les types voulus | CH5 (chimera) | 9 oct. → 13 oct. | v7-decks-legalite, v7-decks-ui | — | À faire | [prompt](prompts/v7-deck-ia.md) |
-| `v7-decks-import-export` | P2 | Importer et exporter une liste de deck | CH5 (chimera) | 14 oct. → 17 oct. | v7-decks-legalite | — | À faire | [prompt](prompts/v7-decks-import-export.md) |
+| `v7-decks-import-export` | P2 | Importer et exporter une liste de deck | CH5 (chimera) | 14 oct. → 17 oct. | v7-decks-legalite | — | Intégré (main) | [prompt](prompts/v7-decks-import-export.md) |
 | `v7-decks-e2e` | P1 | Parcours complet du gestionnaire de decks, joué automatiquement | CH5 (chimera) | 20 oct. → 23 oct. | v7-decks-stats, v7-deck-ia, v7-decks-collection-sync | — | À faire | [prompt](prompts/v7-decks-e2e.md) |
 
 ## V7 — Jouer avec ses cartes (30 nov. → 26 mars)
@@ -142,6 +142,7 @@ _Le MVP en ligne a révélé ce qu'aucun test n'avait vu : formats de photo refu
 | `h1-front-accueil` | P1 | Accueil crédible, site responsive, fin des URL de développement | DA2 (devAI) | 20 sept. → 20 sept. | — | — | Intégré (main) | [prompt](prompts/h1-front-accueil.md) |
 | `h1-parcours-validation` | P0 | Après la reconnaissance, l'utilisateur voit ses cartes et les ajoute | DA2 (devAI) | 21 sept. → 21 sept. | — | — | Intégré (main) | [prompt](prompts/h1-parcours-validation.md) |
 | `h1-decoupe-fiable` | P0 | Une découpe fausse se voit, et le dit | DA2 (devAI) | 22 sept. → 22 sept. | — | — | Livré | [prompt](prompts/h1-decoupe-fiable.md) |
+| `h1-seconde-passe-ia` | P0 | Quand la découpe rate, l'IA refait tout | DA2 (devAI) | 22 sept. → 22 sept. | h1-decoupe-fiable | — | Intégré (main) | [prompt](prompts/h1-seconde-passe-ia.md) |
 
 ## V8 — Échanger ses cartes (4 janv. → 5 mars)
 

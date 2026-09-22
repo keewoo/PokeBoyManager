@@ -6058,6 +6058,115 @@
       },
       "journal": [],
       "compte_rendu": {}
+    },
+    "h1-seconde-passe-ia": {
+      "statut": "integre",
+      "machine": null,
+      "branche": null,
+      "debut_reel": null,
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "fait",
+          "preuve": "detection/quality.py mesure la troncature (position de la jointure + part hors photo) ; detection/seconde_passe.py porte la regle (30 % / 55 %) ; le worker la declenche apres identification, hors reprise ; run_detection(force_ai) et run_identification_for_upload(force_ai) ; VisualIndex.empty() pour que la reconnaissance passe forcement par l IA.",
+          "maj": "2026-09-22T23:39+0200"
+        },
+        "tests": {
+          "etat": "fait",
+          "preuve": "19 tests : mesure de la troncature par la position de la jointure (20/30/50 %), carte qui deborde de la photo, et la regle elle-meme (30 % declenche, 29 % non ; 55 % ne declenche pas, en dessous oui ; les deux raisons se cumulent ; une detection sans candidat ne compte pas comme zero).",
+          "maj": "2026-09-22T23:39+0200"
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "fait",
+          "preuve": "Le badge decoupe douteuse couvre aussi la troncature a 30 %, pas seulement la jointure.",
+          "maj": "2026-09-22T23:39+0200"
+        },
+        "doc_tech": {
+          "etat": "fait",
+          "preuve": "Seuils et leur raison dans detection/seconde_passe.py ; ordre effacement/resultat justifie dans detection/service.py.",
+          "maj": "2026-09-22T23:39+0200"
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [
+        {
+          "quand": "2026-09-22T23:39+0200",
+          "machine": "?",
+          "evenement": "tâche dev → fait",
+          "detail": "detection/quality.py mesure la troncature (position de la jointure + part hors photo) ; detection/seconde_passe.py porte la regle (30 % / 55 %) ; le worker la declenche apres identification, hors reprise ; run_detection(force_ai) et run_identification_for_upload(force_ai) ; VisualIndex.empty() pour que la reconnaissance passe forcement par l IA."
+        },
+        {
+          "quand": "2026-09-22T23:39+0200",
+          "machine": "?",
+          "evenement": "tâche tests → fait",
+          "detail": "19 tests : mesure de la troncature par la position de la jointure (20/30/50 %), carte qui deborde de la photo, et la regle elle-meme (30 % declenche, 29 % non ; 55 % ne declenche pas, en dessous oui ; les deux raisons se cumulent ; une detection sans candidat ne compte pas comme zero)."
+        },
+        {
+          "quand": "2026-09-22T23:39+0200",
+          "machine": "?",
+          "evenement": "tâche maquette → fait",
+          "detail": "Le badge decoupe douteuse couvre aussi la troncature a 30 %, pas seulement la jointure."
+        },
+        {
+          "quand": "2026-09-22T23:39+0200",
+          "machine": "?",
+          "evenement": "tâche doc_tech → fait",
+          "detail": "Seuils et leur raison dans detection/seconde_passe.py ; ordre effacement/resultat justifie dans detection/service.py."
+        },
+        {
+          "quand": "2026-09-22T23:39+0200",
+          "machine": "?",
+          "evenement": "compte rendu publié",
+          "detail": ""
+        },
+        {
+          "quand": "2026-09-22T23:39+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": ""
+        }
+      ],
+      "compte_rendu": {
+        "resume": "Signaler une mauvaise decoupe ne la repare pas. Au-dela de 30 % de cadre tronque OU sous 55 % de confiance moyenne, l IA reprend la decoupe ET la reconnaissance. La troncature reunit deux mesures : la position de la jointure quand deux cartes se partagent le cadre, et la part du quadrilatere hors photo. L effacement de la premiere passe n a lieu qu une fois la nouvelle decoupe obtenue - dans l autre ordre, une IA en echec laissait l ecran vide.",
+        "livrables": [
+          "une decoupe ratee est refaite par l IA au lieu d etre seulement signalee",
+          "verdict de seconde passe dans le rapport du job, qu il declenche ou non"
+        ],
+        "preuves": [
+          "19 tests dans apps/api/tests/test_seconde_passe.py et test_decoupe_fiable.py"
+        ],
+        "ecarts": [
+          "Non eprouve sur une vraie photo : devAI n a pas la base de ce projet et aucune cle IA n est cablee en test. La regle et ses seuils sont testes, le declenchement bout en bout ne l est pas."
+        ],
+        "reste": [
+          "Le delai maximal de 300 s de la reconnaissance reste un probleme distinct : une seconde passe ajoute un appel IA, donc du temps."
+        ]
+      },
+      "attente": null
     }
   },
   "decisions_prises": {
