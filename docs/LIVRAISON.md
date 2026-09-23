@@ -64,6 +64,48 @@ pas d'UAT.
 > et **chaque livraison doit reporter ici ce qu'elle a réellement exécuté**. Le jour où le script
 > existe, son chemin remplace ce paragraphe.
 
+## Livraison du 23/09/2026 — vague V7D « Gestionnaire de decks »
+
+Ce qui a réellement été exécuté (la chaîne n'est toujours pas scriptée dans le dépôt).
+Release **`20260923-024121`**, commit **`3063f41`**, précédente `20260922-234920` (`b32daec`).
+
+```bash
+# 0. Portes : CI verte sur 3063f41 ; codes HTTP des voisins relevés AVANT (200 200 308 200 307)
+# 1. chimera construit — le worktree de build appartient au dépôt RELAIS, pas au clone :
+ssh chimera 'wsl … -- bash -lc "cd ~/dev/wt-pbm-deploy && git fetch github && git checkout --detach github/main"'
+ssh chimera 'wsl … -- bash -lc "bash ~/dev/pbm-build-lol.sh"'   # → ~/dev/pbm-artefacts/{web,api}-TS.tgz
+# 2. transfert chimera → devAI → serveur, empreintes SHA-256 comparées aux TROIS étapes
+ssh chimera 'wsl … -- cp ~/dev/pbm-artefacts/*-TS.tgz /mnt/c/tmp/pbm/'
+ssh devai   'scp chimera:C:/tmp/pbm/{web,api}-TS.tgz /tmp/pbm/ && scp /tmp/pbm/*-TS.tgz kailo-srv:/tmp/pbm/'
+# 3. point de restauration frais AVANT toute écriture
+ssh kailo-srv 'sudo -n -u pokeboy bash /srv/pokeboy/prod/backups/backup.sh'
+# 4. préparation (n'engage rien : le service tourne encore sur l'ancienne release)
+ssh kailo-srv 'TS=20260923-024121 COMMIT=3063f41 LOT=v7d-gestionnaire-de-decks bash /tmp/prep-lol.sh'
+# 5. bascule, avec retour arrière automatique sur échec de santé
+ssh kailo-srv 'TS=20260923-024121 bash /tmp/deploy-switch.sh'
+```
+
+**Preuve relevée après bascule** : `app/ -> releases/20260923-024121`, `RELEASE_INFO` porte
+`commit=3063f41` ; les 3 unités `active` ; `https://pokeboy.lol/api/health` → 200 ;
+`/jeu/decks` → 307 (route présente et gardée, pas 404) ; l'OpenAPI servi expose **14 routes
+`decks`**, dont `/me/decks/cards` (recherche), `/me/decks/{id}/stats`, `/me/decks/{id}/propose`
+(assistant IA), `/me/decks/alerts` et `/me/decks/{id}/replacements` (synchro collection) ;
+voisins **inchangés** (200 200 308 200 307).
+
+**Aucune migration** : la base était déjà à `b2d4f6a8c0e1`, `alembic upgrade head` n'a rien eu
+à faire — la release précédente avait déjà embarqué `v7-decks-collection-sync`.
+
+### Deux pièges rencontrés, à ne pas rejouer
+
+- **Le worktree de build de chimera (`~/dev/wt-pbm-deploy`) est rattaché au dépôt relais
+  `~/dev/pokeboy.git`, pas au clone `~/dev/pokeboy`.** Un `git fetch` fait dans le clone ne
+  l'avance pas : son `github/main` retardait de **12 commits**. Rien n'échoue dans ce cas —
+  on construit l'ancienne version en croyant livrer la nouvelle. **Vérifier le HEAD du
+  worktree après le checkout**, jamais supposer qu'il a bougé.
+- **Le SSH vers chimera se fait couper** (`kex_exchange_identification: Connection reset`)
+  pendant les builds : ce n'est pas une panne, on réessaie. Une boucle de 5 tentatives
+  espacées de 15 s a suffi à chaque fois.
+
 ## Conclure « déployé » — jamais sur une ligne de journal
 
 Un build qui échoue laisse la plateforme **debout sur l'ancienne version** : tout a l'air normal et
