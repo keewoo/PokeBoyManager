@@ -66,13 +66,14 @@ async function assertNoHorizontalScroll(page: Page, label: string): Promise<void
     const iw = window.innerWidth;
     const out: string[] = [];
     for (const el of Array.from(document.querySelectorAll<HTMLElement>("*"))) {
-      const r = el.getBoundingClientRect();
-      if (r.right > iw + 1 || r.left < -1) {
+      // Élément dont le CONTENU déborde sa propre boîte = source réelle du défilement (par
+      // opposition à un descendant simplement poussé hors cadre par un ancêtre trop large).
+      if (el.scrollWidth > el.clientWidth + 1 && el.clientWidth > 0) {
         const cls = typeof el.className === "string" ? el.className.split(/\s+/).slice(0, 4).join(".") : "";
-        out.push(`${el.tagName.toLowerCase()}.${cls} left=${Math.round(r.left)} right=${Math.round(r.right)} w=${Math.round(r.width)}`);
+        out.push(`${el.tagName.toLowerCase()}.${cls} client=${el.clientWidth} scroll=${el.scrollWidth}`);
       }
     }
-    return { scrollWidth: document.documentElement.scrollWidth, innerWidth: iw, offenders: out.slice(0, 15) };
+    return { scrollWidth: document.documentElement.scrollWidth, innerWidth: iw, offenders: out.slice(0, 20) };
   });
   expect(
     scrollWidth,
