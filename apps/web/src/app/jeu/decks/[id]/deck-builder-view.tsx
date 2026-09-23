@@ -57,7 +57,7 @@ function SearchResultRow({
   disabled: boolean;
 }) {
   return (
-    <li className="flex items-center gap-3 rounded-lg border border-border bg-card p-2">
+    <li className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-2">
       <CardImage
         src={item.image_url}
         alt={item.name}
@@ -417,7 +417,7 @@ function DeckCardRow({
   disabled: boolean;
 }) {
   return (
-    <li className="flex items-center gap-3 rounded-lg border border-border bg-card p-2">
+    <li className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-2">
       <CardImage
         src={card.image_url}
         alt={card.card_name}
