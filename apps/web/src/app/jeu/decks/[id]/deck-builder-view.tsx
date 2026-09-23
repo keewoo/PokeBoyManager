@@ -172,7 +172,7 @@ function DeckCardSearch({
   }
 
   return (
-    <section aria-label="Recherche de cartes" className="rounded-lg border border-border bg-card p-4">
+    <section aria-label="Recherche de cartes" className="min-w-0 rounded-lg border border-border bg-card p-4">
       <h3 className="font-heading text-sm font-bold text-foreground">Ajouter des cartes</h3>
       <p className="mt-1 text-xs text-muted-foreground">
         Cherche dans le catalogue par nom, numéro, extension, type ou rareté.
@@ -188,7 +188,7 @@ function DeckCardSearch({
         <div className="flex flex-wrap gap-2">
           <select
             aria-label="Extension"
-            className="h-10 rounded-md border border-input bg-card px-3 text-sm text-foreground"
+            className="h-10 min-w-0 rounded-md border border-input bg-card px-3 text-sm text-foreground"
             value={setId}
             onChange={(event) => setSetId(event.target.value)}
           >
@@ -201,7 +201,7 @@ function DeckCardSearch({
           </select>
           <select
             aria-label="Type de carte"
-            className="h-10 rounded-md border border-input bg-card px-3 text-sm text-foreground"
+            className="h-10 min-w-0 rounded-md border border-input bg-card px-3 text-sm text-foreground"
             value={cardType}
             onChange={(event) => setCardType(event.target.value)}
           >
@@ -214,7 +214,7 @@ function DeckCardSearch({
           </select>
           <select
             aria-label="Rareté"
-            className="h-10 rounded-md border border-input bg-card px-3 text-sm text-foreground"
+            className="h-10 min-w-0 rounded-md border border-input bg-card px-3 text-sm text-foreground"
             value={rarity}
             onChange={(event) => setRarity(event.target.value)}
           >
@@ -507,7 +507,7 @@ function DeckContents({
   const globalIssues = deck.legality.issues.filter((i) => i.code !== "not_owned");
 
   return (
-    <section aria-label="Contenu du deck" className="rounded-lg border border-border bg-card p-4">
+    <section aria-label="Contenu du deck" className="min-w-0 rounded-lg border border-border bg-card p-4">
       <div className="flex items-center justify-between">
         <h3 className="font-heading text-sm font-bold text-foreground">
           Deck · {deck.legality.card_count} / {DECK_SIZE}
@@ -865,7 +865,7 @@ export function DeckBuilderView({ deckId }: { deckId: string }) {
 
       <DeckAiAssistant deckId={deckId} onProposed={setDeck} disabled={mutating} />
 
-      <div ref={searchRef} className="mt-4 grid gap-4 lg:grid-cols-2">
+      <div ref={searchRef} className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <DeckCardSearch
           deckId={deckId}
           deckCardCounts={deckCardCounts}
