@@ -34,6 +34,7 @@ from .modele import (
     AUTEUR_SYSTEME,
     EVT_ATTAQUE_DECLAREE,
     EVT_CARTES_PIOCHEES,
+    EVT_DEGATS,
     EVT_PARTIE_TERMINEE,
     EVT_PHASE_AVANCEE,
     EVT_PIOCHE_MELANGEE,
@@ -92,6 +93,7 @@ __all__ = [
     "EVT_PHASE_AVANCEE",
     "EVT_TOUR_COMMENCE",
     "EVT_ATTAQUE_DECLAREE",
+    "EVT_DEGATS",
     "EVT_PARTIE_TERMINEE",
     # application
     "appliquer",
