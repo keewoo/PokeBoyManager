@@ -25,6 +25,9 @@ dependencies = [
     "opencv-python-headless>=4.10.0",
     "numpy>=2.0.0",
     "fpdf2>=2.8.0",
+    # Moteur de jeu pur (apps/game) — l'adaptateur de catalogue (pbm_api.jeu) en dépend
+    # pour construire les DefinitionCarte. Chemin local, éditable : jamais publié sur PyPI.
+    "pbm-game",
 ]
 
 [dependency-groups]
@@ -41,6 +44,9 @@ dev = [
 # burst contre un Redis 7 réel, voir compte rendu v2-catalogue) : la contrainte amont est
 # obsolète, pas un vrai conflit d'API.
 override-dependencies = ["redis>=8.1.0"]
+
+[tool.uv.sources]
+pbm-game = { path = "../game", editable = true }
 
 [build-system]
 requires = ["hatchling"]

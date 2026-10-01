@@ -1,0 +1,144 @@
+# evolution.yaml — cas exécutables de l'évolution et de la pile (lot j-cartes-pokemon).
+#
+# Chaque cas NOMME la ou les règles R-x.y de REGLES.md qu'il vérifie et est rejoué contre le
+# moteur par apps/game/tests/test_cas_executables.py. Format : docs/jeu/CAS-EXECUTABLES.md.
+#
+# Une carte d'évolution porte sa « definition » (fiche catalogue : stade, PV, type, marqueur de
+# règle, prédécesseur) dans les params de l'action — le service l'extrait du catalogue, le
+# journal la transporte, le moteur la valide (D9 : rien n'est deviné). « nom_base » est le nom
+# du Pokémon au sommet de la cible, pour vérifier la chaîne d'évolution (R-7.1).
+
+version: 1
+
+cas:
+  - id: evolution-conserve-energies-compteurs
+    regles: [R-7.1]
+    op: appliquer
+    description: "Faire évoluer conserve les énergies attachées et les compteurs de dégâts (R-7.1)."
+    etat:
+      alice:
+        actif: {energies: 2, degats: 30}
+        main: 1
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action:
+      type: evoluer
+      auteur: alice
+      params:
+        base: alice.actif
+        carte_main: alice.main0
+        nom_base: Carapuce
+        definition: {ref: r-carabaffe, nom: Carabaffe, stade: stade1, pv: 80, type: eau, marqueur: ordinaire, evolue_depuis: Carapuce}
+    attendu:
+      etat:
+        alice:
+          actif: {cartes: 2, energies: 2, degats: 30, etats: []}
+          main: 0
+        tour: {evolues: [alice.actif]}
+      evenements:
+        - {type: evolution, donnees: {joueur: alice, base: alice.actif}}
+
+  - id: evolution-retire-sommeil
+    regles: [R-7.2, R-11.9]
+    op: appliquer
+    description: "Faire évoluer un Pokémon Endormi retire tous ses états spéciaux (R-7.2/R-11.9)."
+    etat:
+      alice:
+        actif: {etats: [endormi], energies: 1}
+        main: 1
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action:
+      type: evoluer
+      auteur: alice
+      params:
+        base: alice.actif
+        carte_main: alice.main0
+        nom_base: Carapuce
+        definition: {ref: r-carabaffe, nom: Carabaffe, stade: stade1, pv: 80, type: eau, marqueur: ordinaire, evolue_depuis: Carapuce}
+    attendu:
+      etat:
+        alice:
+          actif: {cartes: 2, etats: [], energies: 1}
+      evenements:
+        - {type: evolution, donnees: {joueur: alice, etats_soignes: [endormi]}}
+
+  - id: evolution-interdite-tour-de-pose
+    regles: [R-7.3]
+    op: appliquer
+    description: "Un Pokémon ne peut pas évoluer le tour où il est entré en jeu (R-7.3)."
+    etat:
+      alice:
+        actif: {}
+        main: 1
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3, entres: [alice.actif]}
+    action:
+      type: evoluer
+      auteur: alice
+      params:
+        base: alice.actif
+        carte_main: alice.main0
+        nom_base: Carapuce
+        definition: {ref: r-carabaffe, nom: Carabaffe, stade: stade1, pv: 80, type: eau, marqueur: ordinaire, evolue_depuis: Carapuce}
+    erreur: "R-7.3"
+
+  - id: evolution-interdite-deux-fois
+    regles: [R-7.4]
+    op: appliquer
+    description: "Un même Pokémon ne peut pas évoluer deux fois dans le même tour (R-7.4)."
+    etat:
+      alice:
+        actif: {}
+        main: 1
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3, evolues: [alice.actif]}
+    action:
+      type: evoluer
+      auteur: alice
+      params:
+        base: alice.actif
+        carte_main: alice.main0
+        nom_base: Carapuce
+        definition: {ref: r-carabaffe, nom: Carabaffe, stade: stade1, pv: 80, type: eau, marqueur: ordinaire, evolue_depuis: Carapuce}
+    erreur: "R-7.4"
+
+  - id: evolution-interdite-premier-tour
+    regles: [R-6.5]
+    op: appliquer
+    description: "Aucun Pokémon ne peut faire évoluer au premier tour de son dresseur (R-6.5)."
+    etat:
+      alice:
+        actif: {}
+        main: 1
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 1}
+    action:
+      type: evoluer
+      auteur: alice
+      params:
+        base: alice.actif
+        carte_main: alice.main0
+        nom_base: Carapuce
+        definition: {ref: r-carabaffe, nom: Carabaffe, stade: stade1, pv: 80, type: eau, marqueur: ordinaire, evolue_depuis: Carapuce}
+    erreur: "R-6.5"
+
+  - id: evolution-ko-pile-complete
+    regles: [R-13.2]
+    op: appliquer
+    description: "Le K.O. d'une pile d'évolution défausse TOUTE la pile et ses énergies (R-13.2)."
+    etat:
+      alice:
+        actif: {cartes: 3, energies: 2, degats: 110, pv: 120, marqueur: ordinaire, etats: [empoisonne]}
+        banc: 1
+        recompenses: 6
+      bob:
+        actif: {}
+        recompenses: 6
+      tour: {joueur: alice, phase: checkup, numero: 4}
+    action: {type: checkup, auteur: systeme}
+    attendu:
+      etat:
+        alice: {actif_present: false, defausse: 5}
+      evenements:
+        - {type: ko, donnees: {joueur: alice}}

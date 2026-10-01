@@ -84,6 +84,18 @@ ACTION_ECHANGE_FORCE = "echange_force"
 #: extrait du catalogue (le moteur ne connaît ni PV ni marqueur de règle : D9, il ne devine
 #: rien). Ajoutée par ``j-checkup``. Auteur : :data:`AUTEUR_SYSTEME`.
 ACTION_CHECKUP = "checkup"
+#: **Poser** un Pokémon de base en jeu (R-5.3) — coup de la phase principale du joueur actif :
+#: une carte de base de la main entre au banc (``zone: "banc"``) ou directement comme Actif sur
+#: une place vide (``zone: "actif"``, cas particulier). ``params`` : ``carte_main`` (instance_id
+#: dans la main), ``definition`` (la fiche catalogue de la carte, D9), ``zone``. Ajoutée par
+#: ``j-cartes-pokemon``. Le Pokémon posé est « nouveau en jeu » ce tour (R-7.3).
+ACTION_POSER = "poser"
+#: **Faire évoluer** un Pokémon en jeu (R-7) — coup de la phase principale du joueur actif : la
+#: carte d'évolution de la main coiffe la pile du Pokémon. ``params`` : ``base`` (identité du
+#: Pokémon), ``carte_main`` (instance_id de l'évolution), ``definition`` (sa fiche catalogue),
+#: ``nom_base`` (nom du sommet actuel, pour la chaîne R-7.1). Conserve énergies/Outil/compteurs
+#: (R-7.1), retire les états (R-7.2). Ajoutée par ``j-cartes-pokemon``.
+ACTION_EVOLUER = "evoluer"
 
 # --- Types d'événement (ce que PRODUIT le moteur) ----------------------------
 EVT_PIOCHE_MELANGEE = "pioche_melangee"
@@ -135,6 +147,13 @@ EVT_KO = "ko"
 #: pas vide ; ce joueur doit choisir un Pokémon du banc (action ``promouvoir``) avant que le
 #: tour suivant ne commence. Produit par ``j-checkup`` ; porte le joueur concerné.
 EVT_PROMOTION_REQUISE = "promotion_requise"
+#: Un Pokémon de base a été **posé** en jeu (R-5.3). Produit par la transition ``poser``
+#: (lot ``j-cartes-pokemon``) : porte le joueur, l'identité du Pokémon posé, la zone et sa ref.
+EVT_POKEMON_POSE = "pokemon_pose"
+#: Un Pokémon a **évolué** (R-7.1). Produit par la transition ``evoluer`` (lot
+#: ``j-cartes-pokemon``) : porte le joueur, l'identité (base) du Pokémon, la ref de la carte
+#: d'évolution, son nom et les états spéciaux retirés par l'évolution (R-7.2).
+EVT_EVOLUTION = "evolution"
 
 #: Raison de fin pour un abandon (R-14.3), portée par ``EtatPartie.raison_fin`` et par
 #: l'événement :data:`EVT_PARTIE_TERMINEE`.

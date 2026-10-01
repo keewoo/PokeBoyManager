@@ -176,6 +176,8 @@ def _verifier_tour_attendu(cas_id: str, tour, attendu: dict) -> None:
     for cle, val in attendu.items():
         if cle == "entres":
             _egal(cas_id, "tour.entres", set(val), set(tour.entres_en_jeu_ce_tour))
+        elif cle == "evolues":
+            _egal(cas_id, "tour.evolues", set(val), set(tour.evolues_ce_tour))
         elif cle in correspondances:
             _egal(cas_id, f"tour.{cle}", val, correspondances[cle])
         else:

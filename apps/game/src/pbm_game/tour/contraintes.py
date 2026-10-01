@@ -31,6 +31,7 @@ from .drapeaux import (
     est_premier_tour_du_joueur_actif,
     est_premier_tour_du_joueur_qui_commence,
     pokemon_entre_ce_tour,
+    pokemon_evolue_ce_tour,
     retraite_deja_faite,
     supporter_deja_joue,
 )
@@ -71,9 +72,10 @@ def peut_evoluer(tour: Tour, base_id: str) -> Verdict:
     """R-6.5 / R-7.3 — pas d'évolution au premier tour, ni d'un Pokémon entré en jeu ce tour.
 
     ``base_id`` est l'identité stable du Pokémon (``instance_id`` de sa carte de base, voir
-    :func:`pbm_game.tour.drapeaux.identite_pokemon`). Les conditions propres à l'évolution
-    (posséder la carte d'évolution correspondante, une seule fois par Pokémon et par tour
-    R-7.4) relèvent des lots qui disposent du catalogue — on ne les approxime pas ici (D9).
+    :func:`pbm_game.tour.drapeaux.identite_pokemon`). R-7.4 (pas deux évolutions du même
+    Pokémon dans le même tour) est vérifiée ici depuis ``tour.evolues_ce_tour``. La **chaîne**
+    d'évolution (le bon prédécesseur imprimé, R-7.1) et la possession de la carte relèvent de
+    la transition ``evoluer`` qui dispose du catalogue — on ne les approxime pas ici (D9).
     """
     if est_premier_tour_du_joueur_actif(tour):
         return refus("R-6.5", "Aucun Pokémon ne peut évoluer au premier tour de son dresseur.")
@@ -81,6 +83,11 @@ def peut_evoluer(tour: Tour, base_id: str) -> Verdict:
         return refus(
             "R-7.3",
             "Ce Pokémon est entré en jeu ce tour-ci : il ne peut évoluer qu'au tour suivant.",
+        )
+    if pokemon_evolue_ce_tour(tour, base_id):
+        return refus(
+            "R-7.4",
+            "Ce Pokémon a déjà évolué ce tour-ci : un même Pokémon n'évolue qu'une fois par tour.",
         )
     return ACCORD
 

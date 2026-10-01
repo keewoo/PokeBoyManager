@@ -185,6 +185,7 @@ def _tour(spec: object, ids: tuple[str, str]) -> Tour:
         "supporter_joue",
         "retraite_faite",
         "entres",
+        "evolues",
     }
     if inconnues:
         raise ValueError(f"Clés de tour inconnues : {sorted(inconnues)}.")
@@ -196,6 +197,9 @@ def _tour(spec: object, ids: tuple[str, str]) -> Tour:
     entres = spec.get("entres", [])
     if not isinstance(entres, list) or any(not isinstance(e, str) for e in entres):
         raise ValueError("« entres » (entrés en jeu ce tour) doit être une liste de chaînes.")
+    evolues = spec.get("evolues", [])
+    if not isinstance(evolues, list) or any(not isinstance(e, str) for e in evolues):
+        raise ValueError("« evolues » (évolués ce tour) doit être une liste de chaînes.")
 
     def _drapeau(cle: str) -> bool:
         v = spec.get(cle, False)
@@ -211,6 +215,7 @@ def _tour(spec: object, ids: tuple[str, str]) -> Tour:
         supporter_joue=_drapeau("supporter_joue"),
         retraite_faite=_drapeau("retraite_faite"),
         entres_en_jeu_ce_tour=frozenset(entres),
+        evolues_ce_tour=frozenset(evolues),
     )
 
 

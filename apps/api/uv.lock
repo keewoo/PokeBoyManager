@@ -498,6 +498,7 @@ dependencies = [
     { name = "httpx" },
     { name = "numpy" },
     { name = "opencv-python-headless" },
+    { name = "pbm-game" },
     { name = "pillow" },
     { name = "pillow-heif" },
     { name = "pydantic" },
@@ -530,6 +531,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "numpy", specifier = ">=2.0.0" },
     { name = "opencv-python-headless", specifier = ">=4.10.0" },
+    { name = "pbm-game", editable = "../game" },
     { name = "pillow", specifier = ">=11.0.0" },
     { name = "pillow-heif", specifier = ">=0.18.0" },
     { name = "pydantic", specifier = ">=2.10.4" },
@@ -544,6 +546,20 @@ requires-dist = [
 dev = [
     { name = "pytest", specifier = ">=8.3.4" },
     { name = "pytest-asyncio", specifier = ">=0.25.0" },
+    { name = "ruff", specifier = ">=0.8.4" },
+]
+
+[[package]]
+name = "pbm-game"
+version = "0.1.0"
+source = { editable = "../game" }
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8.3.4" },
+    { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "ruff", specifier = ">=0.8.4" },
 ]
 
