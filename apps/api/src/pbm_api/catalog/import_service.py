@@ -39,7 +39,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.catalog.element_type import element_code
-from pbm_api.catalog.prize_marker import normalized_prize_marker
+from pbm_api.catalog.prize_marker import is_ordinary_stage, normalized_prize_marker
 from pbm_api.catalog.ptcg_client import PtcgClient, PtcgUnavailableError
 from pbm_api.catalog.reconciliation import (
     match_card_number,
@@ -74,21 +74,18 @@ def _is_safe_image_url(url: str) -> bool:
     return not (ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved)
 
 
-# Étapes d'évolution ordinaires (TCGdex `stage`) : tout `stage` en dehors de cette liste porte
-# lui-même une règle spéciale (VMAX, VSTAR, BREAK...), faute de `suffix` pour ces cas (constaté en
-# direct le 2026-09-19 : Astronelle VMAX a `stage="VMAX"`, `suffix=None`).
-# Les libellés anglais y figurent depuis le repli `fr` → `en` : une carte tirée en anglais annonce
-# `stage="Basic"` / `"Stage 1"`, qui seraient sinon pris pour des règles spéciales et recopiés
-# dans `rule_marker`. Comparaison en minuscules pour ne pas dépendre de la casse de la source.
-ORDINARY_STAGES = {"base", "niveau 1", "niveau 2", "basic", "stage 1", "stage 2"}
-
-
 def _rule_marker(detail: dict) -> str | None:
+    # Un `stage` en dehors des stades ordinaires porte lui-même une règle spéciale (VMAX, VSTAR,
+    # BREAK...), faute de `suffix` pour ces cas (constaté en direct le 2026-09-19 : Astronelle VMAX
+    # a `stage="VMAX"`, `suffix=None`). Un stade ordinaire, lui, ne doit JAMAIS finir dans
+    # `rule_marker` : la reconnaissance passe par `is_ordinary_stage`, insensible à la casse ET
+    # aux espaces/tirets — une carte tirée en anglais annonce `stage="Basic"`/`"Stage 1"`, et la
+    # PROD a montré des `"Stage1"`/`"Stage2"` sans espace (lot `fix-marqueur-stades`, 02/10/2026).
     suffix = detail.get("suffix")
     if suffix:
         return suffix
     stage = detail.get("stage")
-    if stage and stage.casefold() not in ORDINARY_STAGES:
+    if stage and not is_ordinary_stage(stage):
         return stage
     return None
 

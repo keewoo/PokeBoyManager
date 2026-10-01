@@ -404,8 +404,9 @@ EN_CARD_DETAILS = {
         "rarity": "Rare Holo",
         "category": "Pokemon",
         "hp": 70,
-        # Libellé anglais : sans les stades anglais dans ORDINARY_STAGES, "Basic" serait recopié
-        # dans `rule_marker` et cette carte passerait pour une carte à règle spéciale.
+        # Libellé anglais : sans `is_ordinary_stage` (qui reconnaît les stades sans casse ni
+        # espaces), "Basic" serait recopié dans `rule_marker` et cette carte passerait pour une
+        # carte à règle spéciale.
         "stage": "Basic",
         "suffix": None,
         "legal": {"standard": False, "expanded": False},
