@@ -696,8 +696,8 @@ footer.rf ul{margin:0;padding-left:18px}
     </section>
 
     <section class="rs" aria-label="Décisions">
-      <div class="sechead"><div><h2>Décisions à prendre par JF</h2><p>Aucune n'empêche de commencer : le palier 0 n'en dépend pas. Mais chacune bloque un lot précis, et la prendre tard coûte une reprise.</p></div></div>
-      <div class="tbl"><table><thead><tr><th>#</th><th>Question</th><th>Proposition du pilote</th><th>Bloque</th></tr></thead><tbody id="jb-decisions"></tbody></table></div>
+      <div class="sechead"><div><h2>Décisions de JF</h2><p>Chacune bloque un lot précis, et la prendre tard coûte une reprise. Une décision prise s'affiche telle que JF l'a donnée ; sinon, la proposition du pilote.</p></div></div>
+      <div class="tbl"><table><thead><tr><th>#</th><th>Question</th><th>Décision, ou proposition du pilote</th><th>Bloque</th></tr></thead><tbody id="jb-decisions"></tbody></table></div>
     </section>
 
     <section class="rs" aria-label="Ordre d'exécution">
@@ -1650,6 +1650,10 @@ const lots = J.lots || [];
 const parId = Object.fromEntries(lots.map(l => [l.id, l]));
 const nomPiste = Object.fromEntries((J.pistes || []).map(p => [p.id, p.nom]));
 const machine = Object.fromEntries((J.couloirs || []).map(c => [c.id, c.machine]));
+// État réel des lots et décisions du jeu : même etat.json que le plan daté (suivi.py).
+const ETATS = D.etats || {}, LIB = D.statuts || {}, PRISES = D.decisions_prises || {};
+const statutDe = id => (ETATS[id] || {}).statut || 'a_faire';
+const pillSt = id => '<span class="pill st-' + esc(statutDe(id)) + '">' + esc(LIB[statutDe(id)] || statutDe(id)) + '</span>';
 const COUL = { R:'#2C66D9', E:'#6B4FC8', S:'#0E7486', U:'#C85E0E', G:'#B8321F', C:'#1E7A57', Q:'#8E887B' };
 const POIDS = { S:1, M:2, L:3, XL:5 };
 const crit = new Set(J.chemin_critique || []);
@@ -1668,7 +1672,8 @@ $('#jb-facts').innerHTML = [
   '<span>chemin critique <b>' + (J.chemin_critique || []).length + '</b> lots</span>',
   '<span><b>' + (J.jalons || []).length + '</b> jalons</span>',
   '<span><b>' + (J.couloirs || []).length + '</b> couloirs</span>',
-  '<span><b>' + (J.decisions || []).length + '</b> décisions en attente</span>',
+  '<span><b>' + lots.filter(l => ['integre', 'livre', 'livre_uat', 'attente_go_prod'].includes(statutDe(l.id))).length + '</b> lots intégrés</span>',
+  '<span><b>' + (J.decisions || []).filter(d => !PRISES[d.id]).length + '</b> décisions en attente sur ' + (J.decisions || []).length + '</span>',
   '<span>version <b>' + esc(J.version) + '</b> · ' + esc(J.date) + '</span>'
 ].join('');
 $('#jb-apart').innerHTML = '<h4>Pourquoi une section à part</h4><p style="font-size:13.5px;color:var(--body)">' + md(J.pourquoi_a_part) + '</p>';
@@ -1688,7 +1693,10 @@ $('#jb-jalons').innerHTML = (J.jalons || []).map(j => {
 $('#jb-decisions').innerHTML = (J.decisions || []).map(d =>
   '<tr><td class="date">' + esc(d.id) + '</td><td style="color:var(--ink)">' + md(d.question) +
   '<div style="color:var(--body);font-size:12.5px;margin-top:4px">' + md(d.enjeu) + '</div></td>' +
-  '<td>' + md(d.proposition) + '</td><td>' + (d.debloque || []).map(lien).join(' ') + '</td></tr>').join('');
+  '<td>' + (PRISES[d.id] ? '<span class="pill st-livre">prise</span> ' + esc(PRISES[d.id].prise) +
+    ' <span style="color:var(--muted)">(' + esc(PRISES[d.id].par) + ', ' + esc((PRISES[d.id].quand || '').slice(0, 10)) + ')</span>'
+    : '<span class="pill st-attente_validation">en attente</span> ' + md(d.proposition)) +
+  '</td><td>' + (d.debloque || []).map(lien).join(' ') + '</td></tr>').join('');
 
 let rail = '';
 for (let r = 0; r <= maxPal; r++) {
@@ -1712,12 +1720,12 @@ $('#jb-pistes').innerHTML = (J.pistes || []).map(p =>
 const ul = a => '<ul>' + (a || []).map(x => '<li>' + md(x) + '</li>').join('') + '</ul>';
 $('#jb-cartes').innerHTML = lots.slice().sort((a, b) => a.palier - b.palier || a.id.localeCompare(b.id)).map(l =>
   '<details class="card" id="jb-' + esc(l.id) + '" data-id="' + esc(l.id) + '" data-jalon="' + esc(l.jalon) + '" data-piste="' + esc(l.piste) + '">' +
-  '<summary><span class="pill ' + esc(l.priorite) + '">' + esc(l.priorite) + '</span>' +
+  '<summary>' + pillSt(l.id) + '<span class="pill ' + esc(l.priorite) + '">' + esc(l.priorite) + '</span>' +
   '<span class="sumtitle"><h3>' + esc(l.titre) + '</h3><span class="meta">' +
   '<code>' + esc(l.id) + '</code><span>palier <b>' + l.palier + '</b></span><span>jalon <b>' + esc(l.jalon) + '</b></span>' +
   '<span><i class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + (COUL[l.piste] || 'var(--muted)') + ';margin-right:4px"></i>' + esc(nomPiste[l.piste] || l.piste) + '</span>' +
   '<span><code>' + esc(l.couloir) + '</code> ' + esc(machine[l.couloir] || '') + '</span><span>taille ' + esc(l.taille) + '</span>' +
-  (l.decision ? '<span class="tag decision">' + esc(l.decision) + '</span>' : '') +
+  (l.decision ? '<span class="tag decision">' + esc(l.decision) + (PRISES[l.decision] ? ' ✓' : '') + '</span>' : '') +
   (crit.has(l.id) ? '<span class="tag jalon">chemin critique</span>' : '') +
   '</span></span></summary>' +
   '<div class="cbody">' +
