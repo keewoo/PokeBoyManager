@@ -106,7 +106,9 @@ suivants s'y branchent **sans la réécrire** :
 
 - `j-etats-speciaux` (palier 7) — la **pose** des états, la matrice de cumul, la confusion à la
   déclaration d'attaque, l'orientation de la carte ;
-- `j-ko-recompenses` (palier 7) — les **conditions de victoire** complètes (plus de récompenses
-  à prendre, K.O. simultané détaillé, égalité) au-dessus des primitives de `pbm_game.combat.ko` ;
+- `j-ko-recompenses` (palier 7) — **livré** : les **conditions de victoire** complètes (plus de
+  récompenses à prendre, K.O. simultané, égalité) dans le résolveur **partagé**
+  `pbm_game.combat.fin.resoudre_kos`, que le Checkup appelle désormais à l'étape 3 (voir
+  [`FIN-DE-PARTIE.md`](FIN-DE-PARTIE.md)) ;
 - `j-effets-architecture` (palier 8) — la pile d'effets, qui remplira la fenêtre d'expiration
   (`FENETRE_EXPIRATION_EFFETS`, vide au jalon J1) et les effets « au Checkup ».

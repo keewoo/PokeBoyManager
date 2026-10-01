@@ -347,11 +347,15 @@ def test_promotion_apres_checkup_remplit_lactif_et_letat_redevient_sain():
 
     alice_actif = _pk("alice", etats=frozenset({EMPOISONNE}), compteurs=90)
     alice = Joueur(id="alice", actif=alice_actif, banc=(_pk("alice", "banc0"),),
-                   recompenses=(Carte("a-rec", "r"),))
-    bob = Joueur(id="bob", actif=_pk("bob"), recompenses=(Carte("b-rec", "r"),))
+                   recompenses=tuple(Carte(f"a-rec-{i}", "r") for i in range(6)))
+    # Bob garde 6 récompenses : prendre UNE récompense ici (sur le K.O. d'alice) ne vide pas sa
+    # réserve, donc aucune victoire par récompenses (R-14.1 cas 1) ne se mêle à la promotion.
+    bob = Joueur(id="bob", actif=_pk("bob"),
+                 recompenses=tuple(Carte(f"b-rec-{i}", "r") for i in range(6)))
     etat = _etat(alice, bob, actif="bob")
     etat2, _ = resoudre_checkup(etat, _rng(), fiches=_fiche(alice_actif, pv=100))
     assert etat2.joueurs[0].actif is None  # transitoire : promotion en attente
+    assert not etat2.terminee  # la partie continue : ni banc vide, ni dernière récompense
     etat3, _ = promouvoir(etat2, "alice", 0)
     assert etat3.joueurs[0].actif is not None and not etat3.joueurs[0].banc
     assert_invariants(etat3)

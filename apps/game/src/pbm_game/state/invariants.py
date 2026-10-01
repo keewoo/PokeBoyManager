@@ -110,8 +110,11 @@ def verifier(etat: EtatPartie, *, total_par_joueur: int | None = None) -> list[s
         etiq = f"Joueur « {joueur.id} »"
         if len(joueur.banc) > 5:
             violations.append(f"{etiq} : banc de {len(joueur.banc)} Pokémon (> 5, R-3.2).")
-        # R-3.3 : exactement 1 Actif tant qu'un Pokémon est en jeu.
-        if joueur.actif is None and joueur.banc:
+        # R-3.3 : exactement 1 Actif tant qu'un Pokémon est en jeu. Exempté quand la partie est
+        # **terminée** (R-14.6) : une fin par récompenses (R-14.1 cas 1) ou un K.O. simultané
+        # (R-14.5) fige le plateau AVANT que le perdant/vainqueur ne promeuve — un banc non promu
+        # sans Actif est alors un état terminal légitime, pas une violation de la règle en jeu.
+        if not etat.terminee and joueur.actif is None and joueur.banc:
             violations.append(f"{etiq} : banc non vide sans Actif (R-3.3).")
         if len(joueur.recompenses) > 6:
             violations.append(

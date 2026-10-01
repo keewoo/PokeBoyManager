@@ -17,7 +17,12 @@ résultat. On suit donc **à la lettre** l'ordre strict du corpus (``docs/jeu/RE
   :func:`est_ko` (compteurs ≥ PV), :func:`cartes_a_defausser` (toute la pile, R-13.2) et
   :func:`prendre_recompenses` (R-13.3). Appelées aussi bien par le Pokémon Checkup
   (``pbm_game.checkup``) que par la future résolution d'attaque — le code de K.O. ne vit pas
-  que dans l'attaque.
+  que dans l'attaque ;
+* :mod:`~pbm_game.combat.fin` — la **fin d'une partie** (lot ``j-ko-recompenses``) :
+  :func:`recompenses_pour_marqueur` (le marqueur de règle → nombre de récompenses, R-13.3/R-13.7,
+  marqueur inconnu = panne), :func:`resoudre_kos` (le résolveur de K.O. **partagé** Checkup/attaque
+  qui tranche les trois conditions de victoire, le K.O. simultané et l'égalité — R-13.5/R-14) et
+  :func:`terminer` (fige la partie : vainqueur + raison + journal clos, R-14.6).
 
 **Périmètre au palier 6 (ce lot).** Le moteur ne connaît **pas encore** les données de carte
 (type d'une énergie, coût imprimé, faiblesse d'un Pokémon, attaques) : elles arrivent avec
@@ -28,6 +33,15 @@ il reçoit des **descripteurs** déjà extraits du catalogue et ne devine rien (
 from __future__ import annotations
 
 from .cout import cout_satisfait, pool_energies
+from .fin import (
+    MARQUEUR_RECOMPENSES,
+    VOIE_ADVERSAIRE_SANS_POKEMON,
+    VOIE_DERNIERE_RECOMPENSE,
+    recompenses_pour_marqueur,
+    resoudre_kos,
+    terminer,
+    valider_fiches,
+)
 from .ko import cartes_a_defausser, est_ko, prendre_recompenses
 from .modele import (
     FAIBLESSE_FACTEUR_DEFAUT,
@@ -79,4 +93,12 @@ __all__ = [
     "cartes_a_defausser",
     "est_ko",
     "prendre_recompenses",
+    # fin de partie (R-13.3/R-14) — résolveur partagé + conditions de victoire
+    "MARQUEUR_RECOMPENSES",
+    "recompenses_pour_marqueur",
+    "valider_fiches",
+    "resoudre_kos",
+    "terminer",
+    "VOIE_DERNIERE_RECOMPENSE",
+    "VOIE_ADVERSAIRE_SANS_POKEMON",
 ]

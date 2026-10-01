@@ -141,6 +141,11 @@ RAISON_PIOCHE_IMPOSSIBLE = "pioche_impossible"
 #: impossible, c'est une **condition de défaite** vérifiée au bon moment, jamais une exception.
 #: Posée par ``j-retraite-banc`` ; réutilisée par ``j-ko-recompenses`` (conditions de victoire).
 RAISON_PLUS_DE_POKEMON = "plus_de_pokemon"
+#: Raison de fin de la **première** façon de gagner (R-14.1 cas 1) : un joueur vient de prendre
+#: sa **dernière** carte récompense (sa réserve passe à zéro à la suite d'un K.O.). Posée par
+#: ``j-ko-recompenses``. Ce n'est pas un K.O. de l'adversaire : c'est la victoire par les
+#: récompenses, distincte de :data:`RAISON_PLUS_DE_POKEMON`.
+RAISON_DERNIERE_RECOMPENSE = "derniere_recompense"
 
 
 @dataclass(frozen=True)
