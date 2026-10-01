@@ -386,7 +386,11 @@ def _abandonner(
 
 
 #: Registre des transitions reconnues. Un type d'action absent est refusé (D9). Les lots
-#: de résolution y ajoutent leurs actions (``REGISTRE[ACTION_XXX] = _handler``).
+#: de résolution y ajoutent leurs actions (``REGISTRE[ACTION_XXX] = _handler``) **depuis leur
+#: propre module**, pour ne pas alourdir ni coupler ce noyau : les trois mouvements de l'Actif
+#: (retraite, promotion, échange forcé) vivent dans :mod:`pbm_game.banc.mouvements` et s'y
+#: enregistrent eux-mêmes (lot ``j-retraite-banc``). ``pbm_game`` importe ``banc`` à son
+#: chargement pour garantir cet enregistrement.
 REGISTRE: dict[str, Transition] = {
     ACTION_MELANGER_PIOCHE: _melanger_pioche,
     ACTION_PIOCHER: _piocher,

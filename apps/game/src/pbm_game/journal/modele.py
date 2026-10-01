@@ -54,6 +54,27 @@ ACTION_DEBUT_TOUR = "debut_tour"
 #: dégâts, la faiblesse et la résistance arrivent avec ``j-degats-resolution`` (D9 : on
 #: n'approxime rien). Ce n'est donc pas encore un coup *listé* par le générateur.
 ACTION_DECLARER_ATTAQUE = "declarer_attaque"
+#: Battre en **retraite** (R-8.2/R-8.3/R-8.4) — coup volontaire du joueur actif : défausser
+#: une énergie par symbole du coût de retraite (au CHOIX du joueur), puis échanger l'Actif
+#: avec un Pokémon du banc. ``params`` : ``banc_index`` (le Pokémon du banc qui monte),
+#: ``cout_retraite`` (nombre de symboles, fourni par le service depuis le catalogue) et
+#: ``energies_defaussees`` (les ``instance_id`` des énergies que le joueur choisit de
+#: défausser). Ajoutée par ``j-retraite-banc``. La *liste* du coup par le générateur attend
+#: le catalogue (coût de retraite imprimé) : elle arrive avec ``j-cartes-pokemon`` (D9).
+ACTION_RETRAITE = "retraite"
+#: **Promotion** après un K.O. (R-8.7) — le joueur dont l'Actif est K.O. (donc absent)
+#: choisit un Pokémon de son banc comme nouvel Actif. ``params`` : ``banc_index``. Si le banc
+#: est **vide**, c'est une **défaite** (R-8.9/R-14.1), pas une exception. Ajoutée par
+#: ``j-retraite-banc``. Action imputée au joueur qui promeut (pas forcément le joueur actif :
+#: un K.O. au Checkup peut toucher les deux).
+ACTION_PROMOUVOIR = "promouvoir"
+#: **Échange forcé** provoqué par un effet (R-8.8) — change l'Actif d'un joueur **sans**
+#: consommer la retraite du tour ni d'énergie, et **autorisé** même sous Sommeil ou Paralysie
+#: (R-16.12, contrairement à la retraite volontaire). ``params`` : ``joueur`` (celui dont
+#: l'Actif change) et ``banc_index``. Auteur : :data:`AUTEUR_SYSTEME` (l'effet), ou le joueur
+#: qui joue l'effet. Ajoutée par ``j-retraite-banc`` ; l'effet qui la déclenche viendra plus
+#: tard (D9).
+ACTION_ECHANGE_FORCE = "echange_force"
 
 # --- Types d'événement (ce que PRODUIT le moteur) ----------------------------
 EVT_PIOCHE_MELANGEE = "pioche_melangee"
@@ -70,6 +91,17 @@ EVT_DEGATS = "degats"
 #: La partie se termine (R-14.6) : l'événement porte vainqueur, raison et, pour l'abandon,
 #: le joueur qui a abandonné. Produit par la transition ``abandonner`` (lot j-actions-legales).
 EVT_PARTIE_TERMINEE = "partie_terminee"
+#: Une **retraite** a eu lieu (R-8.2). Produit par la transition ``retraite`` (lot
+#: ``j-retraite-banc``) : porte le joueur, l'ancien et le nouvel Actif (identités stables), le
+#: coût payé et les énergies défaussées.
+EVT_RETRAITE = "retraite_effectuee"
+#: Une **promotion** a eu lieu après un K.O. (R-8.7). Produit par la transition ``promouvoir``
+#: (lot ``j-retraite-banc``) : porte le joueur et le nouvel Actif promu depuis le banc.
+EVT_PROMOTION = "promotion_effectuee"
+#: Un **échange forcé** a eu lieu (R-8.8). Produit par la transition ``echange_force`` (lot
+#: ``j-retraite-banc``) : porte le joueur, l'ancien et le nouvel Actif. Ne marque **pas** la
+#: retraite du tour et ne défausse **aucune** énergie.
+EVT_ECHANGE_FORCE = "echange_force_effectue"
 
 #: Raison de fin pour un abandon (R-14.3), portée par ``EtatPartie.raison_fin`` et par
 #: l'événement :data:`EVT_PARTIE_TERMINEE`.
@@ -77,6 +109,11 @@ RAISON_ABANDON = "abandon"
 #: Raison de fin pour une pioche impossible en début de tour (R-14.2) : le joueur qui ne
 #: peut pas piocher perd. Ce n'est **pas** une exception mais une condition de défaite.
 RAISON_PIOCHE_IMPOSSIBLE = "pioche_impossible"
+#: Raison de fin quand un joueur n'a **plus de Pokémon à promouvoir** après un K.O. (R-8.9,
+#: R-14.1 cas 2) : son banc est vide au moment où une promotion est requise. Comme la pioche
+#: impossible, c'est une **condition de défaite** vérifiée au bon moment, jamais une exception.
+#: Posée par ``j-retraite-banc`` ; réutilisée par ``j-ko-recompenses`` (conditions de victoire).
+RAISON_PLUS_DE_POKEMON = "plus_de_pokemon"
 
 
 @dataclass(frozen=True)

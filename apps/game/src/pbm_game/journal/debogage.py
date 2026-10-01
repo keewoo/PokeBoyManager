@@ -16,9 +16,12 @@ from collections.abc import Mapping
 
 from .modele import (
     EVT_CARTES_PIOCHEES,
+    EVT_ECHANGE_FORCE,
     EVT_PARTIE_TERMINEE,
     EVT_PHASE_AVANCEE,
     EVT_PIOCHE_MELANGEE,
+    EVT_PROMOTION,
+    EVT_RETRAITE,
     EVT_TOUR_COMMENCE,
     Entree,
     Evenement,
@@ -59,6 +62,26 @@ def _decrire_evenement(evenement: Evenement, noms: Mapping[str, str]) -> str:
         par = d.get("abandon_par")
         suffixe = f", abandon de {par}" if par is not None else ""
         return f"partie terminée ({issue}, raison {raison}{suffixe})"
+    if evenement.type == EVT_RETRAITE:
+        energies = d.get("energies_defaussees", [])
+        cartes = ", ".join(resoudre_id(i, noms) for i in energies) or "(aucune)"
+        return (
+            f"{d.get('joueur', '?')} bat en retraite "
+            f"{resoudre_id(d.get('ancien_actif', '?'), noms)} → "
+            f"{resoudre_id(d.get('nouvel_actif', '?'), noms)} "
+            f"(coût {d.get('cout', '?')}, défausse {cartes})"
+        )
+    if evenement.type == EVT_PROMOTION:
+        return (
+            f"{d.get('joueur', '?')} promeut "
+            f"{resoudre_id(d.get('nouvel_actif', '?'), noms)} comme Actif"
+        )
+    if evenement.type == EVT_ECHANGE_FORCE:
+        return (
+            f"{d.get('joueur', '?')} subit un échange forcé "
+            f"{resoudre_id(d.get('ancien_actif', '?'), noms)} → "
+            f"{resoudre_id(d.get('nouvel_actif', '?'), noms)}"
+        )
     # Événement d'un lot ultérieur, non encore gré ici : on le rend brut plutôt que de
     # prétendre le comprendre (pas d'approximation).
     return f"{evenement.type} {dict(d)}"
