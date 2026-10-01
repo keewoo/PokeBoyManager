@@ -25,7 +25,9 @@ Le moteur n'a besoin **ni de base, ni de Docker**.
 | Lot | Apport |
 |---|---|
 | `j-regles-reference` | `pbm_game.regles` : corpus de règles + table de cas, et leur vérification de cohérence. |
+| `j-modele-etat` | `pbm_game.state` : état de partie (zones, attachements, compteurs), vue par joueur, sérialisation JSON, invariants. |
+| `j-aleatoire-determinisme` | `pbm_game.rng` : aléatoire reproductible — flux nommés, journal, engagement-révélation ; vérificateur `python -m pbm_game.rng verifier`. Voir [`docs/jeu/ALEATOIRE.md`](../../docs/jeu/ALEATOIRE.md). |
 
-Lots suivants (voir `docs/roadmap/jeu/BACKLOG-JEU.md`) : `j-modele-etat` (état de partie),
-`j-aleatoire-determinisme`, `j-journal-actions`, `j-actions-legales`, `j-machine-tour`,
-`j-degats-resolution`, `j-ko-recompenses`, `j-retraite-banc`, `j-etats-speciaux`, `j-checkup`.
+Lots suivants (voir `docs/roadmap/jeu/BACKLOG-JEU.md`) : `j-journal-actions`,
+`j-actions-legales`, `j-machine-tour`, `j-degats-resolution`, `j-ko-recompenses`,
+`j-retraite-banc`, `j-etats-speciaux`, `j-checkup`.
