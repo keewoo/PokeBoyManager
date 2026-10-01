@@ -94,3 +94,22 @@ pioche pas → pioche ; cumul d'états ; confusion 30 PV → 3 compteurs). Aucun
   l'invariant de pureté posé ici.
 - `j-tests-regles` — étoffera `cas-de-regles.yaml` avec les états d'entrée et les résultats attendus,
   une fois le modèle d'état disponible.
+
+## Complément du 01/10/2026 (pilote, branche `roadmap/j-regles-complement`)
+
+Relecture du corpus fusionné : il s'appuyait sur le livret Écarlate & Violet (2023) et **ignorait la
+série en vigueur, Méga-Évolution (2025)**, dont la Méga-Évolution Pokémon ex donne **3 récompenses**
+— or son nom finit par « ex », si bien qu'un classement par suffixe l'aurait comptée à 2, en silence.
+Il ignorait aussi les marqueurs des ères anciennes, qu'un format « on joue ce qu'on possède » (DJ1)
+rencontrera, et ne disait pas si la **zone perdue** existe — question que `j-modele-etat` doit trancher.
+
+Ajouts : R-1.4 (série en vigueur, Rule Box imprimé comme source des règles propres à une carte),
+R-2.7/R-2.8 (Prisme Étoile, Pokémon ★), R-3.8 (zone perdue), R-13.3 complété, R-13.7 (le suffixe du
+nom ne suffit pas), R-15.13 à R-15.22 (Méga-Évolution ex, Pokémon-EX, M Pokémon-EX, Pokémon-ex de
+l'ère EX, BREAK, Prisme Étoile, LÉGENDE, LV.X, Pokémon ★, Rule Box inconnu refusé), R-17.10 ; dix
+cas ajoutés à la table. Source de la règle Méga-Évolution ex : annonce officielle pokemon.com du
+27/02/2025 (citée en R-1.4).
+
+**Écart connu, hors de ce corpus** : `apps/api/src/pbm_api/ingame/rules.py` (`prize_rule_of`, fiche
+« En jeu » en PROD) classe par suffixe du nom : il affiche 2 récompenses pour une Méga-Évolution ex
+et pour une TAG TEAM (3 en réalité). À corriger dans un lot dédié.

@@ -302,3 +302,44 @@ cas:
     regles: [R-2.6, R-15.12]
     categorie: setup
     description: "Une carte dont l'effet n'est pas scripté et testé est refusée au deck (D9)."
+  # --- Complément du 01/10/2026 : série Méga-Évolution, marqueurs des ères anciennes, zone perdue ---
+  - id: ko-mega-evolution-ex-trois-recompenses
+    regles: [R-13.3, R-13.7, R-15.13]
+    categorie: ko
+    description: "Le K.O. d'une Méga-Évolution Pokémon ex donne 3 récompenses, bien que son nom finisse par « ex »."
+  - id: ko-tag-team-trois-recompenses-malgre-gx
+    regles: [R-13.3, R-13.7, R-15.7]
+    categorie: ko
+    description: "Le K.O. d'une TAG TEAM donne 3 récompenses, bien que son nom finisse par « GX »."
+  - id: ko-pokemon-EX-deux-recompenses
+    regles: [R-13.3, R-15.14]
+    categorie: ko
+    description: "Le K.O. d'un Pokémon-EX (ou d'un M Pokémon-EX) donne 2 récompenses."
+  - id: ko-break-une-recompense
+    regles: [R-13.3, R-15.17]
+    categorie: ko
+    description: "Le K.O. d'un Pokémon BREAK donne 1 récompense."
+  - id: m-pokemon-ex-fin-de-tour
+    regles: [R-15.15, R-1.4]
+    categorie: cartes
+    description: "Faire méga-évoluer un Pokémon en M Pokémon-EX termine le tour ; une Méga-Évolution ex de 2025 ne le termine pas."
+  - id: prisme-etoile-va-en-zone-perdue
+    regles: [R-15.18, R-3.8]
+    categorie: cartes
+    description: "Une carte Prisme Étoile qui devrait être défaussée (K.O., effet) va dans la zone perdue."
+  - id: deck-prisme-etoile-un-par-nom
+    regles: [R-2.7]
+    categorie: setup
+    description: "Deux cartes Prisme Étoile de même nom dans un deck le rendent illégal."
+  - id: deck-un-pokemon-etoile
+    regles: [R-2.8, R-15.21]
+    categorie: setup
+    description: "Au plus un Pokémon ★ par deck, tous noms confondus."
+  - id: zone-perdue-sans-retour
+    regles: [R-3.8]
+    categorie: cartes
+    description: "Une carte envoyée en zone perdue n'en sort plus de la partie."
+  - id: rule-box-inconnu-refuse
+    regles: [R-15.22, R-13.4]
+    categorie: setup
+    description: "Une carte dont le Rule Box n'est pas couvert par R-15 est refusée au deck, jamais jouée avec une récompense devinée."
