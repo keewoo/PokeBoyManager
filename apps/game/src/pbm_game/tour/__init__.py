@@ -29,9 +29,11 @@ from .drapeaux import (
     identite_pokemon,
     marquer_energie_posee,
     marquer_entree_en_jeu,
+    marquer_evolution,
     marquer_retraite_faite,
     marquer_supporter_joue,
     pokemon_entre_ce_tour,
+    pokemon_evolue_ce_tour,
 )
 from .fenetres import (
     DECLENCHEURS,
@@ -49,10 +51,12 @@ __all__ = [
     "est_premier_tour_du_joueur_qui_commence",
     "est_premier_tour_du_joueur_actif",
     "pokemon_entre_ce_tour",
+    "pokemon_evolue_ce_tour",
     "marquer_energie_posee",
     "marquer_supporter_joue",
     "marquer_retraite_faite",
     "marquer_entree_en_jeu",
+    "marquer_evolution",
     # fenêtres
     "FENETRE_DEBUT_TOUR",
     "FENETRE_FIN_TOUR",

@@ -87,6 +87,11 @@ def pokemon_entre_ce_tour(tour: Tour, base_id: str) -> bool:
     return base_id in tour.entres_en_jeu_ce_tour
 
 
+def pokemon_evolue_ce_tour(tour: Tour, base_id: str) -> bool:
+    """Vrai si le Pokémon d'identité ``base_id`` a déjà évolué pendant CE tour (R-7.4)."""
+    return base_id in tour.evolues_ce_tour
+
+
 # --- Marqueurs : lèvent un drapeau en renvoyant un NOUVEAU Tour --------------
 
 
@@ -110,6 +115,11 @@ def marquer_entree_en_jeu(tour: Tour, base_id: str) -> Tour:
     return replace(tour, entres_en_jeu_ce_tour=tour.entres_en_jeu_ce_tour | {base_id})
 
 
+def marquer_evolution(tour: Tour, base_id: str) -> Tour:
+    """Renvoie un tour où ``base_id`` est noté comme ayant évolué ce tour (R-7.4)."""
+    return replace(tour, evolues_ce_tour=tour.evolues_ce_tour | {base_id})
+
+
 __all__ = [
     "identite_pokemon",
     "est_premier_tour_du_joueur_qui_commence",
@@ -118,8 +128,10 @@ __all__ = [
     "supporter_deja_joue",
     "retraite_deja_faite",
     "pokemon_entre_ce_tour",
+    "pokemon_evolue_ce_tour",
     "marquer_energie_posee",
     "marquer_supporter_joue",
     "marquer_retraite_faite",
     "marquer_entree_en_jeu",
+    "marquer_evolution",
 ]

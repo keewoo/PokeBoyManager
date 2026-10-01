@@ -61,6 +61,11 @@ from __future__ import annotations
 # transitions ne peut pas le faire lui-même (cycle d'import : voir ``pbm_game.banc.mouvements``).
 from . import banc as _banc  # noqa: F401  (import pour effet d'enregistrement)
 
+# ``cartes`` enregistre de même ses transitions « poser » et « evoluer » (R-5.3, R-7) dans le
+# ``REGISTRE`` à son import. On l'importe ici, après ``banc`` et ``checkup``, pour que
+# ``appliquer`` les reconnaisse dès que ``pbm_game`` est chargé.
+from . import cartes as _cartes  # noqa: F401,E402  (import pour effet d'enregistrement)
+
 # ``checkup`` enregistre de même sa transition ``checkup`` (le Pokémon Checkup, R-12) dans le
 # ``REGISTRE`` à son import. On l'importe ici, après ``banc``, pour que ``appliquer`` la
 # reconnaisse dès que ``pbm_game`` est chargé.

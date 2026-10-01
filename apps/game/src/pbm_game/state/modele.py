@@ -32,7 +32,7 @@ from dataclasses import dataclass, field
 
 # Version du schéma d'état : toute évolution incompatible de la forme sérialisée
 # l'incrémente. ``depuis_json`` refuse une version inconnue (jamais de repli silencieux).
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 # --- États spéciaux (R-11.1) -------------------------------------------------
 ENDORMI = "endormi"
@@ -151,6 +151,12 @@ class Tour:
     supporter_joue: bool = False
     retraite_faite: bool = False
     entres_en_jeu_ce_tour: frozenset[str] = field(default_factory=frozenset)
+    #: Identités (``instance_id`` de carte de base) des Pokémon qui ont **évolué** ce tour —
+    #: pour R-7.4 (pas deux évolutions du même Pokémon dans le même tour). Distinct de
+    #: ``entres_en_jeu_ce_tour`` (R-7.3, pose) : une évolution ne rend pas le Pokémon « nouveau
+    #: en jeu » pour l'attaque ou la retraite, seulement pour une seconde évolution. Remis à
+    #: vide à chaque tour neuf, comme les drapeaux — donc sérialisé, donc repris après un F5.
+    evolues_ce_tour: frozenset[str] = field(default_factory=frozenset)
 
 
 @dataclass(frozen=True)
