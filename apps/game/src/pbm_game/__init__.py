@@ -21,6 +21,13 @@ Lot `j-journal-actions` : `pbm_game.journal`, le **journal d'actions** — une p
 un nouvel état et des événements, `rejouer(partie)` reconstruit l'état en contrôlant une
 empreinte à chaque coup, et la compaction (instantané + queue) évite de tout rejouer. Les
 lots suivants y ajoutent les actions légales et la résolution.
+
+Lot `j-actions-legales` : `pbm_game.actions`, le **générateur d'actions légales** —
+`actions_legales(etat, joueur)` rend la liste exhaustive des coups jouables (étiquette +
+cibles valides) et `valider(etat, action)` rend l'accord ou un refus motivé par une règle
+citée. Une seule source de vérité : la liste ; la validation en vérifie l'appartenance. Les
+familles dépendantes du catalogue (poser, évoluer, attacher, attaquer) ne sont pas
+approximées (D9) — chaque lot de résolution enregistre la sienne dans `FAMILLES_DEFAUT`.
 """
 
 __all__: list[str] = []

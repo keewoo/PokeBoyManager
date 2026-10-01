@@ -85,9 +85,15 @@ résolution qui disposent du catalogue ; elles s'enregistrent dans le **même** 
 | `melanger_pioche` | R-4.1 | mélange la pioche du joueur cible via son flux d'aléatoire dédié | `pioche_melangee` |
 | `piocher` | R-5.2, R-4.1 | déplace `params.nombre` (défaut 1) cartes du **sommet** (`pioche[0]`) vers la main | `cartes_piochees` |
 | `avancer_phase` | R-5.1, R-12.1 | `pioche → principale → attaque → checkup` ; depuis `checkup`, ouvre le tour suivant (numéro + 1, joueur adverse, drapeaux remis, phase `pioche`) | `phase_avancee` (+ `tour_commence` au changement de tour) |
+| `abandonner` | R-14.3, R-14.6 | l'auteur abandonne : la partie se fige, l'adversaire gagne (`raison_fin = "abandon"`) ; refuse une partie déjà terminée | `partie_terminee` |
 
 Le joueur cible d'une action est `params.joueur` s'il est donné, sinon `action.auteur` ;
 une action système sans joueur cible est refusée (jamais de joueur deviné).
+
+`abandonner` est **mécanique** (aucune donnée de carte) : ajoutée par le lot
+`j-actions-legales`, elle vit dans le même registre que la pioche et l'avancée de phase. Le
+**générateur d'actions légales** qui décide *quand* elle est jouable est documenté dans
+`docs/jeu/ACTIONS.md`.
 
 ## Rejeu et compaction
 
