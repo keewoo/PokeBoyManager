@@ -14,8 +14,13 @@ invariants vérifiables.
 
 Lot `j-aleatoire-determinisme` : `pbm_game.rng`, l'aléatoire **reproductible, vérifiable
 et journalisé** — flux nommés indépendants, engagement-révélation (commit-reveal) et un
-vérificateur a posteriori (`python -m pbm_game.rng verifier`). Les lots suivants y
-ajoutent le journal d'actions et la résolution.
+vérificateur a posteriori (`python -m pbm_game.rng verifier`).
+
+Lot `j-journal-actions` : `pbm_game.journal`, le **journal d'actions** — une partie est un
+état initial, une graine et un journal numéroté ; `appliquer(etat, action, rng)` produit
+un nouvel état et des événements, `rejouer(partie)` reconstruit l'état en contrôlant une
+empreinte à chaque coup, et la compaction (instantané + queue) évite de tout rejouer. Les
+lots suivants y ajoutent les actions légales et la résolution.
 """
 
 __all__: list[str] = []
