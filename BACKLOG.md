@@ -143,7 +143,7 @@ _Le MVP en ligne a révélé ce qu'aucun test n'avait vu : formats de photo refu
 | `h1-parcours-validation` | P0 | Après la reconnaissance, l'utilisateur voit ses cartes et les ajoute | DA2 (devAI) | 21 sept. → 21 sept. | — | — | Intégré (main) | [prompt](prompts/h1-parcours-validation.md) |
 | `h1-decoupe-fiable` | P0 | Une découpe fausse se voit, et le dit | DA2 (devAI) | 22 sept. → 22 sept. | — | — | Livré | [prompt](prompts/h1-decoupe-fiable.md) |
 | `h1-seconde-passe-ia` | P0 | Quand la découpe rate, l'IA refait tout | DA2 (devAI) | 22 sept. → 22 sept. | h1-decoupe-fiable | — | Intégré (main) | [prompt](prompts/h1-seconde-passe-ia.md) |
-| `h1-ci-stockage-s3` | P0 | La CI retrouve son stockage S3 : MinIO remplacé par SeaweedFS | DA2 (devAI) | 1 oct. → 1 oct. | — | — | À faire | [prompt](prompts/h1-ci-stockage-s3.md) |
+| `h1-ci-stockage-s3` | P0 | La CI retrouve son stockage S3 : MinIO remplacé par SeaweedFS | DA2 (devAI) | 1 oct. → 1 oct. | — | — | Intégré (main) | [prompt](prompts/h1-ci-stockage-s3.md) |
 
 ## V8 — Échanger ses cartes (4 janv. → 5 mars)
 

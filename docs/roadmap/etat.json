@@ -6226,26 +6226,26 @@
       "attente": null
     },
     "h1-ci-stockage-s3": {
-      "statut": "en_cours",
+      "statut": "integre",
       "machine": "devai",
       "branche": "roadmap/h1-ci-stockage-s3",
       "debut_reel": "2026-10-01",
       "fin_reelle": null,
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "ci.yml (jobs api+e2e) et docker-compose.yml sur chrislusf/seaweedfs:4.48 -ip.bind=0.0.0.0 ; sonde apps/api/scripts/sonde_s3.py",
+          "maj": "2026-10-01T10:03+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "CI verte sur 1c16540 : api 823 tests, e2e 16 (envoi reel de photo par le navigateur), web",
+          "maj": "2026-10-01T10:03+0200"
         },
         "securite": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "signatures verifiees (mauvais secret SignatureDoesNotMatch, cle inconnue InvalidAccessKeyId, autre Content-Type 403) ; s3mock ecarte car il accepte tout ; identifiants de dev seulement",
+          "maj": "2026-10-01T10:03+0200"
         },
         "maquette": {
           "etat": "na",
@@ -6253,14 +6253,14 @@
           "maj": null
         },
         "doc_tech": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "docs/CODE.md § Stockage S3 de dev/CI ; ARCHITECTURE, PLUGINS, SECURITE, LIVRAISON, README",
+          "maj": "2026-10-01T10:03+0200"
         },
         "release_uat": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "devAI : sonde du depot conforme contre le service s3 du nouveau docker-compose (healthy en 6 s)",
+          "maj": "2026-10-01T10:03+0200"
         },
         "release_prod": {
           "etat": "na",
@@ -6268,14 +6268,14 @@
           "maj": null
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "roadmap.json + etat.json, BACKLOG.md et ROADMAP.html regeneres",
+          "maj": "2026-10-01T10:03+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "docs/roadmap/comptes-rendus/h1-ci-stockage-s3.md",
+          "maj": "2026-10-01T10:03+0200"
         }
       },
       "journal": [
@@ -6284,9 +6284,86 @@
           "machine": "devai",
           "evenement": "démarrage",
           "detail": "roadmap/h1-ci-stockage-s3"
+        },
+        {
+          "quand": "2026-10-01T10:03+0200",
+          "machine": "devai",
+          "evenement": "tâche dev → fait",
+          "detail": "ci.yml (jobs api+e2e) et docker-compose.yml sur chrislusf/seaweedfs:4.48 -ip.bind=0.0.0.0 ; sonde apps/api/scripts/sonde_s3.py"
+        },
+        {
+          "quand": "2026-10-01T10:03+0200",
+          "machine": "devai",
+          "evenement": "tâche tests → fait",
+          "detail": "CI verte sur 1c16540 : api 823 tests, e2e 16 (envoi reel de photo par le navigateur), web"
+        },
+        {
+          "quand": "2026-10-01T10:03+0200",
+          "machine": "devai",
+          "evenement": "tâche securite → fait",
+          "detail": "signatures verifiees (mauvais secret SignatureDoesNotMatch, cle inconnue InvalidAccessKeyId, autre Content-Type 403) ; s3mock ecarte car il accepte tout ; identifiants de dev seulement"
+        },
+        {
+          "quand": "2026-10-01T10:03+0200",
+          "machine": "devai",
+          "evenement": "tâche doc_tech → fait",
+          "detail": "docs/CODE.md § Stockage S3 de dev/CI ; ARCHITECTURE, PLUGINS, SECURITE, LIVRAISON, README"
+        },
+        {
+          "quand": "2026-10-01T10:03+0200",
+          "machine": "devai",
+          "evenement": "tâche release_uat → fait",
+          "detail": "devAI : sonde du depot conforme contre le service s3 du nouveau docker-compose (healthy en 6 s)"
+        },
+        {
+          "quand": "2026-10-01T10:03+0200",
+          "machine": "devai",
+          "evenement": "tâche backlog → fait",
+          "detail": "roadmap.json + etat.json, BACKLOG.md et ROADMAP.html regeneres"
+        },
+        {
+          "quand": "2026-10-01T10:03+0200",
+          "machine": "devai",
+          "evenement": "tâche compte_rendu → fait",
+          "detail": "docs/roadmap/comptes-rendus/h1-ci-stockage-s3.md"
+        },
+        {
+          "quand": "2026-10-01T10:03+0200",
+          "machine": "devai",
+          "evenement": "compte rendu publié",
+          "detail": ""
+        },
+        {
+          "quand": "2026-10-01T10:03+0200",
+          "machine": "devai",
+          "evenement": "statut → integre",
+          "detail": "branche roadmap/h1-ci-stockage-s3 (CI verte sur 1c16540) fusionnee dans main en avance rapide"
         }
       ],
-      "compte_rendu": {}
+      "compte_rendu": {
+        "resume": "MinIO n est plus distribue en image (quay.io 401, Docker Hub supprime) : la CI tombait avant le premier test. SeaweedFS 4.48 retenu apres une sonde qui rejoue les exigences du produit ; RustFS ecarte (pas de CORS), s3mock ecarte (signatures non verifiees). PROD non concernee (stockage disque, D7).",
+        "livrables": [
+          "CI api+e2e et docker-compose sur SeaweedFS 4.48",
+          "apps/api/scripts/sonde_s3.py"
+        ],
+        "preuves": [
+          "CI verte sur 1c16540 : api 823 tests, e2e 16 (envoi reel de photo par le navigateur), web",
+          "sonde du depot conforme contre le compose (devAI)"
+        ],
+        "ecarts": [
+          "-ip.bind=0.0.0.0 obligatoire, sinon SeaweedFS n ecoute que l IP du conteneur"
+        ],
+        "reste": [
+          "clones existants : docker compose up -d --remove-orphans (service renomme s3)",
+          "axllent/mailpit:latest reste une image flottante"
+        ]
+      },
+      "attente": {
+        "quand": "2026-10-01T10:03+0200",
+        "raisons": [
+          "branche roadmap/h1-ci-stockage-s3 (CI verte sur 1c16540) fusionnee dans main en avance rapide"
+        ]
+      }
     }
   },
   "decisions_prises": {
