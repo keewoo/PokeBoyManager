@@ -106,6 +106,81 @@ voisins **inchangés** (200 200 308 200 307).
   pendant les builds : ce n'est pas une panne, on réessaie. Une boucle de 5 tentatives
   espacées de 15 s a suffi à chaque fois.
 
+## Livraison du 01/10/2026 — marqueur de récompenses, fin de l'interblocage, polices embarquées
+
+Ce qui a réellement été exécuté (la chaîne n'est toujours pas scriptée dans le dépôt).
+Release **`20261001-234045`**, commit **`b0df8ae`**, précédente `20260923-024121` (`3063f41`).
+Livré depuis **devAI** en session autonome ; `main` avançait en parallèle (lot `j-cartes-pokemon`),
+on a donc livré le **commit figé `b0df8ae`**, pas `main` (`origin/main` valait `b0df8ae` au moment de
+la livraison).
+
+```bash
+# 0. Portes : CI « CI » verte sur b0df8ae (web, api, e2e, game — 4 jobs success) ;
+#    voisins AVANT 200 200 308 200 307 ; serveur sain (charge 0.11, 2379 Mo dispo).
+# 1. chimera construit — worktree de build (dépôt relais) checkout --detach b0df8ae, HEAD vérifié :
+#    pbm-build-lol.sh ne fait PAS son propre checkout (il était resté sur 3063f41, piège n°1).
+#    PATH non-interactif : node/pnpm vivent dans ~/.local/node/bin, à ajouter (pnpm: command not found sinon).
+#    Build lancé détaché (setsid, survit à la coupure SSH) puis sondé jusqu'à BUILD_DONE.
+ssh chimera 'wsl … bash -s'  # checkout b0df8ae + setsid bash ~/dev/pbm-build-lol.sh → web/api-20261001-234045.tgz
+#    Artefact web vérifié : 4 .woff2 sous .next/static/media/, 0 occurrence de fonts.googleapis/gstatic.
+# 2. transfert chimera → devAI → kailo-srv, SHA-256 comparés aux TROIS étapes (identiques) :
+#    web 280633be…d71c · api 9c6a7150…0bcb
+# 3. point de restauration frais AVANT toute écriture :
+ssh kailo-srv 'sudo -n -u pokeboy bash /srv/pokeboy/prod/backups/backup.sh'  # dump 41,5 Mo/26 tables, photos 1051, daté de l'instant
+# 4. préparation (n'engage rien : l'ancienne release sert encore ; la migration passe ici) :
+ssh kailo-srv 'TS=20261001-234045 COMMIT=b0df8ae LOT=livraison-20261001 bash /tmp/prep-lol.sh'  # → PREPARATION_OK
+# 5. bascule, avec retour arrière automatique sur échec de santé :
+ssh kailo-srv 'TS=20261001-234045 bash /tmp/deploy-switch.sh'  # → BASCULE_OK (api=200 web=200 au 1er contrôle)
+```
+
+**Migration appliquée** : Alembic `b2d4f6a8c0e1 → e7c2a9f14b63` (`cards.prize_marker`, additive et
+auto-remplissante). Tête après migration : `e7c2a9f14b63 (head)`.
+
+**Preuve relevée après bascule** : `app/ -> releases/20261001-234045`, `RELEASE_INFO` porte
+`commit=b0df8ae` ; les 3 unités `active` ; `https://pokeboy.lol/api/health` → 200 et `/` → 200.
+- **Marqueur de récompenses**, exécuté avec le **code de la release déployée** (`prize_rule_of`) sur
+  de **vraies lignes PROD** : Méga-Blizzaroi-ex (`mega_ex`) → **3 Prix** ; Dracaufeu et Roussil GX
+  (`tag_team`) → **3 Prix** ; Otaria (`ordinaire`) → **1 Prix** ; Poké Ball (Dresseur) → hors Pokémon.
+  Greedent (supertype `Pokemon` **sans accent**) est bien reconnu Pokémon : le défaut `Pokémon`/`Pokemon`
+  est corrigé. La route HTTP `GET /cards/{id}/in-game-study` n'a **pas** été appelée : elle exige une
+  session **et** déclenche une génération IA facturée — `prize_rule` étant une fonction pure du
+  marqueur, l'exécuter sur le code déployé prouve le comportement sans dépense ni compte jetable.
+- **Polices embarquées** : la page servie et son CSS (`/_next/static/css/8864c34c7e7099cc.css`, 200)
+  ne citent **aucune** URL `fonts.googleapis.com`/`fonts.gstatic.com` (0/0) et référencent **4**
+  `/_next/static/media/*.woff2`, tous en **200**.
+- **Voisins inchangés** à chaque étape et à la fin (`200 200 308 200 307`). Serveur après : charge
+  0.08, 2541 Mo dispo, 3 unités `active`.
+
+### Écart à corriger (signalé, non bloquant) : 564 cartes « Stage1/Stage2 » classées `inconnu`
+
+Les comptes `prize_marker` en PROD diffèrent de la référence de dev (`pbm_catalogue_ref`, annoncée
+« identique » mais ne l'est pas) : **148 attendus / 175 observés** pour `mega_ex`, **119/119** pour
+`tag_team`, et surtout **0 attendu / 564 observés** pour `inconnu`. Ces 564 cartes portent toutes
+`rule_marker` = **`Stage1`** (422) ou **`Stage2`** (142) — des marqueurs de **stade d'évolution** que
+`normalized_prize_marker` ne reconnaît pas et range donc en `inconnu` (refus de deviner, R-13.4), alors
+que ce sont des Pokémon **ordinaires** (Greedent, Arcanine, Beedrill…). La référence de dev avait ces
+champs vides (→ `ordinaire`) ; l'import PROD les a peuplés.
+
+**Conséquence, mesurée** : la fiche « En jeu » de ces 564 cartes affiche « Récompenses non déterminées
+(marqueur de règle inconnu) » avec `prizes_taken=None` — **dégradation d'affichage, jamais un 500** (la
+route API gère `inconnu`/`None` gracieusement, `apps/api/src/pbm_api/ingame/rules.py`), et pas pire que
+l'ancienne version qui faisait passer toute carte réelle pour « hors Pokémon ». **Non bloquant** : les
+~23 000 autres cartes sont désormais correctes. **Correctif candidat** (lot de suite, code + CI + rebuild) :
+ajouter `stage1`/`stage2` (ou tout marqueur de stade) aux marqueurs ordinaires de
+`catalog/prize_marker.py`, et poser le test qui l'aurait attrapé.
+
+### Pièges rejoués / nouveaux
+
+- **`pbm-build-lol.sh` ne fait pas son propre checkout** (contrairement au `build-pbm.sh` modèle de
+  devAI) : il construit le HEAD courant du worktree, resté sur `3063f41`. Checkout + **vérification du
+  HEAD** faits à la main avant le build — piège n°1 du 23/09, toujours valable.
+- **PATH non-interactif de chimera** : `cw.sh` ouvre un `bash -s` (non-login), où `pnpm` est absent
+  (`command not found`). node/pnpm sont dans `~/.local/node/bin` — à ajouter au PATH du build.
+- **Trace dépôt non écrite sur `/Volumes/Data`** : ce process n'a pas l'autorisation macOS d'écrire sur
+  ce volume externe (`Operation not permitted`, TCC — non contournable par le bac à sable). Repli sur un
+  worktree **transitoire** `~/dev/wt-livraison-20261001` (disque système, 22 Gi libres), **pas** le clone
+  `~/dev/pokeboy` de la file de lots, supprimé juste après le push.
+
 ## Conclure « déployé » — jamais sur une ligne de journal
 
 Un build qui échoue laisse la plateforme **debout sur l'ancienne version** : tout a l'air normal et
