@@ -6418,7 +6418,7 @@
       }
     },
     "j-regles-reference": {
-      "statut": "a_faire",
+      "statut": "integre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
@@ -6470,8 +6470,21 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-10-01T10:46+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": "branche roadmap/j-regles-reference fusionnee dans main (verifie par git merge-base)"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": {
+        "quand": "2026-10-01T10:46+0200",
+        "raisons": [
+          "branche roadmap/j-regles-reference fusionnee dans main (verifie par git merge-base)"
+        ]
+      }
     },
     "j-modele-etat": {
       "statut": "a_faire",
