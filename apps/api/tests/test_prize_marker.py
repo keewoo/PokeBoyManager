@@ -13,7 +13,12 @@ from pathlib import Path
 
 import pytest
 
-from pbm_api.catalog.prize_marker import MARQUEUR_INCONNU, normalized_prize_marker
+from pbm_api.catalog.prize_marker import (
+    MARQUEUR_INCONNU,
+    corrected_stage_row,
+    is_ordinary_stage,
+    normalized_prize_marker,
+)
 from pbm_api.ingame.rules import LABELS_BY_MARKER, PRIZES_BY_MARKER
 
 _POK = "Pokémon"  # valeur réelle du catalogue (français)
@@ -90,6 +95,55 @@ def test_complex_is_not_an_ex_card() -> None:
 def test_tag_team_without_joiner_stays_gx() -> None:
     # Un Pokémon-GX ordinaire finit par « GX » sans jointeur « et »/« & » → gx, pas tag_team.
     assert normalized_prize_marker(name="Dracaufeu GX", supertype=_POK, rule_marker=None) == "gx"
+
+
+# --- Stade d'évolution ordinaire recopié par erreur dans `rule_marker` -------------------------
+# Défaut PROD du 01/10/2026 (release 20261001-234045) : 564 cartes avec `rule_marker`=`Stage1`/
+# `Stage2` (sans espace), classées `inconnu`. Un stade ordinaire n'est JAMAIS un marqueur de règle :
+# il donne 1 récompense (R-13.3). Comparaison sans casse ET sans espaces/tirets. Ces cas échouent
+# avec l'ancien code (qui ne reconnaissait que `stage 1`/`stage 2`).
+_STAGE_CASES = [
+    ("Stage1", "ordinaire"),  # le cas exact de la PROD (sans espace)
+    ("Stage2", "ordinaire"),
+    ("Stage 1", "ordinaire"),  # libellé anglais avec espace
+    ("stage-2", "ordinaire"),  # tiret + minuscules
+    ("Basic", "ordinaire"),
+    ("Niveau 1", "ordinaire"),  # libellé français
+    ("Niveau 2", "ordinaire"),
+    ("Base", "ordinaire"),
+]
+
+
+@pytest.mark.parametrize(("rule_marker", "expected"), _STAGE_CASES)
+def test_ordinary_stage_in_rule_marker_is_ordinary(rule_marker: str, expected: str) -> None:
+    # Un stade ordinaire mal rangé dans `rule_marker` → « ordinaire », jamais « inconnu ».
+    assert (
+        normalized_prize_marker(name="Pikachu", supertype=_POK, rule_marker=rule_marker) == expected
+    )
+
+
+def test_is_ordinary_stage_normalizes_case_and_separators() -> None:
+    for value in ("Stage1", "stage 1", "Stage-1", "STAGE 2", "Niveau 1", "Basic", "Base"):
+        assert is_ordinary_stage(value), value
+    for value in (None, "", "VMAX", "ex", "GX", "Niveau Sup", "ZX-NOUVEAU"):
+        assert not is_ordinary_stage(value), value
+
+
+def test_migration_corrects_stage_row_and_leaves_vmax_intact() -> None:
+    # La décision pure que la migration `fix-marqueur-stades` applique ligne par ligne.
+    # Une ligne `Stage1` : `rule_marker` vidé, `prize_marker` recalculé à « ordinaire ».
+    assert corrected_stage_row(name="Pikachu", supertype=_POK, rule_marker="Stage1") == (
+        None,
+        "ordinaire",
+    )
+    assert corrected_stage_row(name="Pikachu", supertype=_POK, rule_marker="Stage2") == (
+        None,
+        "ordinaire",
+    )
+    # Une vraie Rule Box (VMAX) n'est PAS concernée → laissée intacte (None = aucune correction).
+    assert corrected_stage_row(name="Astronelle VMAX", supertype=_POK, rule_marker="VMAX") is None
+    # Un `rule_marker` à Rule Box inconnu n'est pas davantage touché (il reste `inconnu`, pas vidé).
+    assert corrected_stage_row(name="Truc ZX", supertype=_POK, rule_marker="ZX-NOUVEAU") is None
 
 
 def _engine_marqueur_recompenses() -> dict[str, int]:

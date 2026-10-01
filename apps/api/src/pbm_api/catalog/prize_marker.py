@@ -49,6 +49,50 @@ _ORDINARY_MARKERS_CF = frozenset(
     {"sp", "primo", "restauré", "bébé", "prime", "baby", "restored"}
 )
 
+#: Stades d'évolution **ordinaires** (TCGdex `stage`), sous forme **normalisée** : sans casse, et
+#: sans espaces ni tirets. Un stade ordinaire n'est JAMAIS un marqueur de règle — ni recopié dans
+#: `cards.rule_marker` à l'import, ni classé en Rule Box ici. Le défaut corrigé (lot
+#: `fix-marqueur-stades`, 02/10/2026) : la PROD portait 564 cartes dont `rule_marker` valait
+#: `Stage1`/`Stage2` (sans espace) — l'import ne reconnaissait que `stage 1`/`stage 2` —, classées
+#: `inconnu` faute d'une normalisation commune des stades à l'import et ici.
+_ORDINARY_STAGES_NORM = frozenset(
+    {"base", "basic", "niveau1", "niveau2", "stage1", "stage2"}
+)
+#: Sépare un libellé de stade pour le normaliser : « Stage 1 », « Stage-1 » et « Stage1 » sont un.
+_RE_STAGE_SEP = re.compile(r"[\s-]+")
+
+
+def is_ordinary_stage(value: str | None) -> bool:
+    """Vrai si ``value`` désigne un **stade d'évolution ordinaire** (Base, Basic, Niveau 1/2,
+    Stage 1/2), quelles que soient la casse et la présence d'espaces ou de tirets : ``Stage1`` =
+    ``stage 1`` = ``Stage-1``.
+
+    Définition **unique** de « stade ordinaire », partagée par l'import
+    (`catalog.import_service._rule_marker`, qui ne recopie donc jamais un stade dans
+    `rule_marker`) et par :func:`normalized_prize_marker` (qui ne le prend donc jamais pour une
+    Rule Box). Fonction pure.
+    """
+    if not value:
+        return False
+    return _RE_STAGE_SEP.sub("", value.strip()).casefold() in _ORDINARY_STAGES_NORM
+
+
+def corrected_stage_row(
+    *, name: str | None, supertype: str | None, rule_marker: str | None
+) -> tuple[None, str | None] | None:
+    """Décision de correction d'UNE ligne ``cards`` par la migration `fix-marqueur-stades`.
+
+    Rend ``None`` quand la ligne n'est **pas** concernée : son `rule_marker` n'est pas un stade
+    ordinaire, donc on n'y touche pas (une vraie Rule Box — ``VMAX``, ``ex``… — reste intacte).
+    Sinon rend le couple corrigé ``(nouveau_rule_marker, nouveau_prize_marker)`` : ``rule_marker``
+    remis à ``None`` (un stade n'est pas un marqueur de règle, R-13.3) et ``prize_marker``
+    **recalculé** par :func:`normalized_prize_marker` sur le `rule_marker` vidé. Fonction pure — la
+    migration ne fait que l'appliquer ligne par ligne, et le test la vérifie sans base.
+    """
+    if not is_ordinary_stage(rule_marker):
+        return None
+    return (None, normalized_prize_marker(name=name, supertype=supertype, rule_marker=None))
+
 # Motifs de nom. On ne s'en sert qu'en croisement d'un autre signal (jamais le suffixe de nom
 # seul là où il tromperait : cf. R-13.7 et la docstring du module).
 _RE_V_UNION = re.compile(r"\bV[\s-]?UNION\b", re.IGNORECASE)
@@ -150,7 +194,9 @@ def normalized_prize_marker(
         return "etoile"
 
     # --- Pokémon ordinaire (R-13.3) OU refus de deviner (R-13.4/R-15.22) -------------------
-    if rm == "" or rmf in _ORDINARY_MARKERS_CF:
+    # Un stade ordinaire (`Stage1`, `Niveau 1`, `Basic`…) écrit par erreur dans `rule_marker`
+    # n'est PAS une Rule Box : il donne 1 récompense comme tout Pokémon ordinaire (R-13.3).
+    if rm == "" or rmf in _ORDINARY_MARKERS_CF or is_ordinary_stage(rm):
         return "ordinaire"
     # `rule_marker` présent mais non reconnu : carte à Rule Box non classable → on ne devine pas.
     return MARQUEUR_INCONNU
