@@ -1,0 +1,3826 @@
+{
+ "version": 1,
+ "n": 200,
+ "evenements_rencontres": [
+  "attachement_energie",
+  "evolution",
+  "pose"
+ ],
+ "declencheurs_non_reconnus": 0,
+ "cartes": [
+  {
+   "id": "41610f6f-2122-4652-a9a8-a627c1e637da",
+   "name": "Germignon",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "6527aff5-cbf9-4865-adaf-1c2b4cc9edf3",
+   "name": "Hachécateur V",
+   "supertype": "Pokémon",
+   "rule_marker": "V",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "18666a8b-48a1-44ea-9a82-8730e32b8d28",
+   "name": "Lugia",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque",
+    "continu"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "continu",
+     "evenement": null,
+     "motif": "continu"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "eb613c75-c59b-41c6-b012-44eb489e7032",
+   "name": "M. Mime",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque",
+    "declenche"
+   ],
+   "evenements": [
+    "pose"
+   ],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "declenche",
+     "evenement": "pose",
+     "motif": "moment-explicite"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "efe6b54d-9911-4815-9f8c-b9eda8a5f18c",
+   "name": "Colhomard",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "c1e96fdd-8ef6-4300-bbd9-19f5a66072e5",
+   "name": "Statitik",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "d84a0525-5774-4c48-bcec-80c3bf48d9f9",
+   "name": "Crustabri",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "715db79e-3b29-4a63-a879-e31d36e0c9af",
+   "name": "Absol",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "b148e37f-f815-478d-b6f1-e23243537db1",
+   "name": "Capumain",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "active",
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "active",
+     "evenement": null,
+     "motif": "defaut-type-active"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "063afb18-9966-4a71-bf7c-faea94571292",
+   "name": "Hexagel",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "24e3b80e-2798-48b5-beba-6f4761f221d1",
+   "name": "Évoli",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque",
+    "declenche"
+   ],
+   "evenements": [
+    "attachement_energie"
+   ],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "declenche",
+     "evenement": "attachement_energie",
+     "motif": "moment-explicite"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "68189b75-a395-46c0-95be-87c49cb670bc",
+   "name": "Melmetal VMAX",
+   "supertype": "Pokémon",
+   "rule_marker": "VMAX",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "fd1508ab-48b5-42ee-ac30-507d215472fb",
+   "name": "Rongrigou",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "continu"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "continu",
+     "evenement": null,
+     "motif": "continu"
+    }
+   ]
+  },
+  {
+   "id": "fa477017-2bba-4c35-91a9-7d812298cbf6",
+   "name": "Relicanth",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "349153dc-34de-443b-a716-6d59a0d0cefb",
+   "name": "Iguolta",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "32b8d6c3-5c4a-4ac8-981a-5a472a144ae6",
+   "name": "Luxio",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "188f166d-adc2-4fb6-99ae-2b1f7be0e085",
+   "name": "Toudoudou",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "active",
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "active",
+     "evenement": null,
+     "motif": "defaut-type-active"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "68634e8b-05f4-4818-aada-7b48a755acb1",
+   "name": "Mewtwo ☆",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "0699a4b3-8d23-4f24-9291-c2b0b229ec84",
+   "name": "Gueriaigle",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "active",
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "active",
+     "evenement": null,
+     "motif": "active-pendant-tour"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "135361d0-1082-4bcb-8146-bbe02f9a3f36",
+   "name": "Ramoloss",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "288f5185-edaf-452c-89fe-c45357866335",
+   "name": "Gromago-ex",
+   "supertype": "Pokémon",
+   "rule_marker": "ex",
+   "mecanismes": [
+    "active",
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "active",
+     "evenement": null,
+     "motif": "active-pendant-tour"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "00ad54f8-f019-4556-ab6c-0ec19511cde6",
+   "name": "Sapereau",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "ee471c10-09d3-40e5-a6d2-b08e5a922352",
+   "name": "Noacier",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "active",
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "active",
+     "evenement": null,
+     "motif": "defaut-type-active"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "cbf2c48c-64fe-4682-abee-dd645ada4193",
+   "name": "Lippouti",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "4d766652-52c3-43ac-818c-e70e0f84ebb2",
+   "name": "Boumata",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "f7c54fdd-2c8b-4ed1-986e-8d0f5ac07b33",
+   "name": "Forgelina",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "ddf0bed8-98c0-4a87-8b8c-33a8b9a973d2",
+   "name": "Morpeko de Rosemary",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "10b12342-8031-4592-b341-2a2952b1c02c",
+   "name": "Clic",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "469029c8-2829-4ecd-8562-e9bb7267567f",
+   "name": "Floréclat-ex",
+   "supertype": "Pokémon",
+   "rule_marker": "ex",
+   "mecanismes": [
+    "attaque",
+    "continu"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "continu",
+     "evenement": null,
+     "motif": "continu"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "7cbf60a1-2019-47a1-ad1f-385f5f988ff4",
+   "name": "Kokiyas",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "39ee9b38-c87e-4aa2-99b4-0c4c488dab4d",
+   "name": "Carchacrok",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "74455738-cf2d-45cd-b3bd-89ecdb799305",
+   "name": "Herbizarre",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "d39e046d-89f0-4040-bdd1-3a65929ce70c",
+   "name": "Dimoclès",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "a38d0e2f-8cac-4aae-b63c-f2caac1af756",
+   "name": "Lougaroc GX",
+   "supertype": "Pokémon",
+   "rule_marker": "GX",
+   "mecanismes": [
+    "attaque",
+    "declenche"
+   ],
+   "evenements": [
+    "pose"
+   ],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "declenche",
+     "evenement": "pose",
+     "motif": "moment-explicite"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "c0bf8036-d943-4d30-8c17-41e94d1cf372",
+   "name": "Pijako",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "f64d4aff-425a-4f37-928d-86e16e679789",
+   "name": "Solgaleo ◇",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "bda30ca8-ed4e-4838-b3eb-113015656d0d",
+   "name": "Salamèche",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "43bc7705-1139-41e0-98dd-e9403627d5a3",
+   "name": "Tokorico-ex",
+   "supertype": "Pokémon",
+   "rule_marker": "EX",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "c5cce2d2-ed5b-4e22-a94d-4f3d81d84722",
+   "name": "Hippopotas",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "afda8914-f1e7-4554-8d46-da4266a3a0a4",
+   "name": "Dialga-ex",
+   "supertype": "Pokémon",
+   "rule_marker": "EX",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "9f891780-a881-4471-acb3-b4c6bf89ff71",
+   "name": "Sulfura ex",
+   "supertype": "Pokémon",
+   "rule_marker": "ex",
+   "mecanismes": [
+    "attaque",
+    "declenche"
+   ],
+   "evenements": [
+    "pose"
+   ],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "declenche",
+     "evenement": "pose",
+     "motif": "moment-explicite"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "f059454b-9d17-4436-bad7-b83e7ed92dff",
+   "name": "Nigirigon-ex",
+   "supertype": "Pokémon",
+   "rule_marker": "ex",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "17c566c6-dd55-4595-b8b5-3139a1b174c8",
+   "name": "Magmar ex",
+   "supertype": "Pokémon",
+   "rule_marker": "ex",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "58e9586a-e61b-44c0-9c37-db2fb46c2890",
+   "name": "Lucanon",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "d271beee-5b42-43e0-833d-88b4b0085aae",
+   "name": "Feunard",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "3d7b6e80-8c98-4665-92fa-197c7423519e",
+   "name": "Victini V",
+   "supertype": "Pokémon",
+   "rule_marker": "V",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "720bb949-bc65-4921-9def-0ee941f19f5b",
+   "name": "Zarbi",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "active",
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "active",
+     "evenement": null,
+     "motif": "defaut-type-active"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "cb0e4145-143b-487c-8b4e-77158ee1b7b7",
+   "name": "Olivini",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "8557300d-fb86-44f2-af2c-419d0ce1c874",
+   "name": "Ho-Oh-GX",
+   "supertype": "Pokémon",
+   "rule_marker": "GX",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "613b14c5-cd4e-4071-91ca-1567880b9324",
+   "name": "Lumivole",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque",
+    "continu"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "continu",
+     "evenement": null,
+     "motif": "continu"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "1a14f7c3-2ae0-4618-875d-8be9babe1026",
+   "name": "Lucario",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "continu"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "continu",
+     "evenement": null,
+     "motif": "continu"
+    }
+   ]
+  },
+  {
+   "id": "89bf6c22-bff4-499b-bd59-e70bce7e3e62",
+   "name": "Taupiqueur d'Alola",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "ca454fd2-ecc8-4860-afef-2e8f504abfdc",
+   "name": "Zarude",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "ccd796f7-19d7-422e-8371-34514af209a9",
+   "name": "Stalgamin",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "d74e1188-4f50-4b42-969b-64c574b4a6bc",
+   "name": "Akwakwak",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "367fe5fd-5310-4d62-ab16-ca0b90df6387",
+   "name": "Gouroutan",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "2ac2697d-d0ab-4d91-b51c-32265cbb5c73",
+   "name": "Empiflor",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "ea9f403a-5fa7-400c-86c4-56d4b6f313aa",
+   "name": "Escargaume",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "0152b7ea-e77b-4c3e-8509-e1c7abfddde4",
+   "name": "Pyroli-ex",
+   "supertype": "Pokémon",
+   "rule_marker": "EX",
+   "mecanismes": [
+    "active",
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "active",
+     "evenement": null,
+     "motif": "active-pendant-tour"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "79a81fb8-1070-4fca-9b2e-025c3de819ae",
+   "name": "Milobellus C",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "baebc6ff-ca70-4590-bdee-f90d73134c24",
+   "name": "Têtarte",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "9a1af6e9-d02b-446f-a4f6-66013ebfd329",
+   "name": "Momartik",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "active"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "active",
+     "evenement": null,
+     "motif": "defaut-type-active"
+    }
+   ]
+  },
+  {
+   "id": "c616ad0d-77f8-4f45-bc66-ff7417098a16",
+   "name": "Galvagla",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "continu"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "continu",
+     "evenement": null,
+     "motif": "continu"
+    }
+   ]
+  },
+  {
+   "id": "04816b06-4537-43f3-96a4-aab5960e6038",
+   "name": "Paras",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "8c65e350-fd71-4562-96bd-1744ae8fc23a",
+   "name": "Nosferalto",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "8cd50d01-5309-4ba6-8da8-767a66e50522",
+   "name": "Mateloutre",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "00f85bf0-08ec-43a8-ba35-441a1d8e02fb",
+   "name": "Guérilande de Lilie",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "df72318c-0f45-4137-abd6-40a831f0a432",
+   "name": "Maganon",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "8d2ec2c7-22a0-4342-a955-20487260b52c",
+   "name": "Psystigri",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "7bb54abd-f4ce-4960-948e-70ef317bf7bd",
+   "name": "Rondoudou",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "2fc5432b-9a57-4a62-bf59-4b22bc00f349",
+   "name": "Aflamanoir",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "30cd851b-c59a-4e3c-b81b-a2c7d931849b",
+   "name": "Darkrai GX",
+   "supertype": "Pokémon",
+   "rule_marker": "GX",
+   "mecanismes": [
+    "attaque",
+    "declenche"
+   ],
+   "evenements": [
+    "attachement_energie"
+   ],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "declenche",
+     "evenement": "attachement_energie",
+     "motif": "moment-explicite"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "5f787435-69e6-4589-b808-374bd8bbed40",
+   "name": "Luxray V",
+   "supertype": "Pokémon",
+   "rule_marker": "V",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "aef7a393-4499-4a41-972e-162e4737f2bc",
+   "name": "Axoloto de Paldea",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "e4fbbf3c-373d-4b72-8444-3baa84bb4854",
+   "name": "Corvaillus",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "2f603794-a07a-4839-b464-68419ac32f8f",
+   "name": "Phyllali",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "61824766-94b0-4d19-8593-355285f20ec5",
+   "name": "Pifeuil",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "f3ae93e9-8f5d-44cf-b539-1a6635a76db7",
+   "name": "Reptincel",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "7bf14383-35bc-416a-b5c6-a575f94e00c0",
+   "name": "Électhor",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "continu"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "continu",
+     "evenement": null,
+     "motif": "continu"
+    }
+   ]
+  },
+  {
+   "id": "250cd3fd-c301-446f-a3e1-8416704988ab",
+   "name": "Hippopotas",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "f58726e9-082d-491c-ac06-5a507c8e61ff",
+   "name": "Kyurem Noir-ex",
+   "supertype": "Pokémon",
+   "rule_marker": "ex",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "87a61862-de26-468b-bdf8-fcd13390a23a",
+   "name": "Héliatronc",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "f266a679-0051-4f35-b6a7-a5b5be87270c",
+   "name": "Noarfang",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "1aebf8a5-d105-4376-a0b3-34c5cbd11798",
+   "name": "Sabelette",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "abb80f94-6837-4fae-afa8-13f442a0cced",
+   "name": "Ouisticram",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "124b0670-be4c-4ec0-877b-143e0c6a065c",
+   "name": "Mew-ex",
+   "supertype": "Pokémon",
+   "rule_marker": "EX",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "487bbf6f-16b4-4bb5-acf5-931425114acd",
+   "name": "Relicanth",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "7198cddf-0a56-4e20-9744-f46f4e097861",
+   "name": "Sucreine V",
+   "supertype": "Pokémon",
+   "rule_marker": "V",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "4d992984-8824-4a8d-aa2f-5937ee1507dc",
+   "name": "Magnézone-ex",
+   "supertype": "Pokémon",
+   "rule_marker": "ex",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "98de8274-829d-4684-a1a2-6ef9c9fa00da",
+   "name": "Léviator V",
+   "supertype": "Pokémon",
+   "rule_marker": "V",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "b5018794-582f-4729-ac2a-fe192d579700",
+   "name": "Amphinobi-ex",
+   "supertype": "Pokémon",
+   "rule_marker": "ex",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "42a230d9-54ce-4ddb-8960-eb731dcfe529",
+   "name": "Meloetta",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "d939e195-ca41-41e8-a8b1-e41cea5e668c",
+   "name": "Banshitrouye",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "active",
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "active",
+     "evenement": null,
+     "motif": "defaut-type-active"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "1a88893b-77fa-4701-8e81-ab1bad1f343e",
+   "name": "Nodulithe",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "7592349b-2552-4a22-8930-fc40e2c62e74",
+   "name": "Fermite",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "cdc3b466-a522-43db-89a9-53184c9cb9fd",
+   "name": "Ponyta",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "1549568c-28e4-42d3-803f-6c605769911d",
+   "name": "Scarhino 4 Niv. 51",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "6dfe1bb1-f69f-4e1f-bd10-6993339d5ff7",
+   "name": "Barloche",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "2d4aab44-cb1a-448f-9026-f32880388256",
+   "name": "Gloupti",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "1f8476bb-48ac-46cd-86de-e8e77df51ad0",
+   "name": "Magmar",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "01cd594f-1ff2-4e4c-824a-6fdd576e9987",
+   "name": "Nanméouïe",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "d53b0b1f-9f07-4b85-9e8b-b69c2315db19",
+   "name": "Nosferapti",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "9e8ef8f0-f0d0-431a-8344-3183238fd8b7",
+   "name": "Soporifik",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "41e6f8cb-f4b1-4042-a7d0-f19bd91dc19c",
+   "name": "Mucuscule",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "continu"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "continu",
+     "evenement": null,
+     "motif": "continu"
+    }
+   ]
+  },
+  {
+   "id": "4c5934e6-0763-4497-a467-61a0c5693231",
+   "name": "Cerfrousse",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "8c945454-b4d0-40ba-9b54-724c4edfec9b",
+   "name": "Grolem d’Alola",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "6f973685-1238-4f74-a20a-5a19cc17965d",
+   "name": "Empiflor",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "active",
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "active",
+     "evenement": null,
+     "motif": "active-pendant-tour"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "ac0538ec-39d7-4847-b287-85459f6dd712",
+   "name": "Tiplouf",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "7d4c8b88-b4ba-44b3-9880-8fd699f22f78",
+   "name": "Léviator-ex",
+   "supertype": "Pokémon",
+   "rule_marker": "EX",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "a4499a26-89e6-4dd5-b28b-e2678c6c6a08",
+   "name": "Groret",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "88c801d3-505b-4318-8b09-fb0753fbf2b8",
+   "name": "Florizarre-ex",
+   "supertype": "Pokémon",
+   "rule_marker": "ex",
+   "mecanismes": [
+    "active",
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "active",
+     "evenement": null,
+     "motif": "active-pendant-tour"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "a12ff269-1b55-45f6-896d-bcec60dc057c",
+   "name": "Séléroc",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "active"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "active",
+     "evenement": null,
+     "motif": "defaut-type-active"
+    }
+   ]
+  },
+  {
+   "id": "b58d6587-55b1-49f5-9b05-6799b4204cb3",
+   "name": "Flobio",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "dbbb5609-d29e-4991-987f-83fc606d59dc",
+   "name": "Maskadra",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "4b24b6ff-1e86-460d-87b2-a432ab129126",
+   "name": "Phogleur de Team Aqua",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "a8001792-cb5e-41ba-8db8-e2cde6637e37",
+   "name": "Téraclope",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "d087a059-26d4-4077-8050-63172dd92636",
+   "name": "Giratina",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "486367fb-7795-495e-ba7b-fb2e6fd65194",
+   "name": "Férosinge",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "c2f8f76c-4f2d-4436-be8c-5a21ebf9aa65",
+   "name": "Aquali ex",
+   "supertype": "Pokémon",
+   "rule_marker": "ex",
+   "mecanismes": [
+    "attaque",
+    "declenche"
+   ],
+   "evenements": [
+    "evolution"
+   ],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "declenche",
+     "evenement": "evolution",
+     "motif": "evolue"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "fef0fcde-56b4-42ca-9ab9-3977f76d403b",
+   "name": "Noctali EX",
+   "supertype": "Pokémon",
+   "rule_marker": "EX",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "851e39a8-dc6b-4d4e-b038-7d3ad95077bf",
+   "name": "Dracaufeu-ex",
+   "supertype": "Pokémon",
+   "rule_marker": "EX",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "96f896aa-9a77-46ba-8976-02c8327f3b6b",
+   "name": "Coléodôme",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "84daced5-3879-4a2a-82e4-05ee09256853",
+   "name": "Magby",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "6b133714-5150-4a54-9e26-ddd4914ca68c",
+   "name": "Reshiram et Dracaufeu GX",
+   "supertype": "Pokémon",
+   "rule_marker": "ESCOUADE",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "13f0004b-6184-4ff2-b5da-9e9f143cdae2",
+   "name": "Élektek",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "7638ea09-5fa2-4523-844f-446f868a8708",
+   "name": "Lunala-ex",
+   "supertype": "Pokémon",
+   "rule_marker": "EX",
+   "mecanismes": [
+    "active"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "active",
+     "evenement": null,
+     "motif": "active-pendant-tour"
+    }
+   ]
+  },
+  {
+   "id": "abd7a763-15c9-45b4-8399-f05690921bb9",
+   "name": "Tadmorv",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "0a22c5ab-ba06-492b-8ac4-7e2bfc8f6cbf",
+   "name": "Strassie",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "9c932d35-e2dd-47a8-b11b-ff6eb13e8b50",
+   "name": "Cizayox",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "72481aac-7611-44b0-a190-82e4cb987559",
+   "name": "Tarinorme",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "c63c73d9-0125-4759-91a7-a2ae2218e486",
+   "name": "Bekaglaçon",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "8c719aa3-8e83-425a-9738-5cf940f7bca0",
+   "name": "Galopa",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "active"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "active",
+     "evenement": null,
+     "motif": "active-pendant-tour"
+    }
+   ]
+  },
+  {
+   "id": "db4a0e69-7c90-4816-b69e-a87ffb26f921",
+   "name": "Gardevoir",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque",
+    "continu"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "continu",
+     "evenement": null,
+     "motif": "continu"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "b5e450b6-1201-4442-ad88-db08bd971759",
+   "name": "Otarlette",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "d4f89a09-eca1-4d66-be1d-85ffc46209c4",
+   "name": "Nosferapti de la Team Rocket",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "45a7d0c0-ee90-4f14-b280-9d8390b66953",
+   "name": "Kaimorse",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "9ef5f836-1abd-4834-985e-da8a460556a3",
+   "name": "Kaiminus δ",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "001acd46-13dc-4900-8f2c-3ca68d48b9c1",
+   "name": "Draco",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "36a96ef3-19ff-4ce9-b75b-cc3ac7da134a",
+   "name": "Flagadoss",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "5b98908b-91af-499b-bc18-c0a346c14fd1",
+   "name": "Riolu",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "a7b31f6a-fc46-42f2-8a94-e5cbac7d93fe",
+   "name": "Drakkarmin",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "6a373304-57e9-4449-9c6b-49aaac8a94fd",
+   "name": "Majaspic V",
+   "supertype": "Pokémon",
+   "rule_marker": "V",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "baec1397-0637-46ba-895f-ffc0c12fce64",
+   "name": "Volcanion",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "c2c3b328-ff37-49bd-b702-161f178ec2dd",
+   "name": "Mandrillon GX",
+   "supertype": "Pokémon",
+   "rule_marker": "GX",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "b2a102aa-d218-4ffd-a578-11ba05407678",
+   "name": "Tokopisco",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "791f779a-3449-4106-a88f-b479a9de2910",
+   "name": "Lombre",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "2b5b8f6e-c357-4d50-9610-b7483d60dcfc",
+   "name": "Scorplane",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "0045ec48-3439-4b76-9d69-cd7800bee78c",
+   "name": "Tokorico GX",
+   "supertype": "Pokémon",
+   "rule_marker": "GX",
+   "mecanismes": [
+    "attaque",
+    "declenche"
+   ],
+   "evenements": [
+    "pose"
+   ],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "declenche",
+     "evenement": "pose",
+     "motif": "moment-explicite"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "4c919005-3f79-43ac-beae-10550bbae1ee",
+   "name": "Galopa",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque",
+    "continu"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "continu",
+     "evenement": null,
+     "motif": "continu"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "50c98cf7-0698-4b75-9283-abd9b056f4b9",
+   "name": "Tadmorv",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "d2f602dc-07d5-4458-97ef-e170a9d09957",
+   "name": "Roitiflam",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "active"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "active",
+     "evenement": null,
+     "motif": "active-pendant-tour"
+    }
+   ]
+  },
+  {
+   "id": "eb99fea5-9ad7-45f6-942d-ca85a15606a0",
+   "name": "Kaimorse ex",
+   "supertype": "Pokémon",
+   "rule_marker": "ex",
+   "mecanismes": [
+    "attaque",
+    "declenche"
+   ],
+   "evenements": [
+    "evolution"
+   ],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "declenche",
+     "evenement": "evolution",
+     "motif": "evolue"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "bea3330d-83bf-4b01-a5ad-aa8b22df1d8e",
+   "name": "Solochi",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "aa4d5dc3-3a6f-43fa-a549-f39fe9c95cf8",
+   "name": "Rattata d’Alola",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "c7c07831-9811-44aa-97ab-3479056eb900",
+   "name": "Méga-Staross-ex",
+   "supertype": "Pokémon",
+   "rule_marker": "ex",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "e76d93f8-2bb9-4d31-9487-414198f2b373",
+   "name": "Hoopa GX",
+   "supertype": "Pokémon",
+   "rule_marker": "GX",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "2fe30119-e22e-46a7-8ceb-f24964ccee7a",
+   "name": "Feuforêve",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "ca66b3d3-2970-452a-b53d-9362ca1ee1a0",
+   "name": "Pandespiègle",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "46fced43-9d55-4a2f-a7b1-6f3a9240ba5c",
+   "name": "M-Latios EX",
+   "supertype": "Pokémon",
+   "rule_marker": "EX",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "4381f23f-ee1b-4c33-ba6e-0581caf10929",
+   "name": "Créfadet",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "f52670db-626e-4ae2-b189-b3f94c5f679f",
+   "name": "Polagriffe",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "560791d6-f3a8-4342-bc28-cab2645794ae",
+   "name": "Solgaleo GX",
+   "supertype": "Pokémon",
+   "rule_marker": "GX",
+   "mecanismes": [
+    "active",
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "active",
+     "evenement": null,
+     "motif": "active-pendant-tour"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "8c599d2f-8b5b-49db-96f6-0ca32aca13a3",
+   "name": "Shaymin",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "active"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "active",
+     "evenement": null,
+     "motif": "active-pendant-tour"
+    }
+   ]
+  },
+  {
+   "id": "e71e9355-2b5c-4286-b112-614690a20ebe",
+   "name": "Étouraptor",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque",
+    "continu"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "continu",
+     "evenement": null,
+     "motif": "continu"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "cac65045-1746-4e81-abd9-657cb0a21dd8",
+   "name": "Typhlosion",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "active",
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "active",
+     "evenement": null,
+     "motif": "active-pendant-tour"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "36a069ed-e37e-4b54-8902-ba22c8600e4b",
+   "name": "Lainergie",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "37d97dcf-05e1-4e89-b2d0-14fb95b6c516",
+   "name": "Castorno",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "active",
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "active",
+     "evenement": null,
+     "motif": "defaut-type-active"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "e8652d01-97ac-4502-ae95-1796cd0e1918",
+   "name": "Malosse",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "dcec9429-75c2-4206-beee-f2115bcb8c3d",
+   "name": "Rosélia",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "9684f92b-1550-41cc-8302-b8ff12ad9ada",
+   "name": "Triopikeur",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "ffd815a9-5083-49ff-a66c-6828d8eb5bb2",
+   "name": "Ptéra-ex",
+   "supertype": "Pokémon",
+   "rule_marker": "EX",
+   "mecanismes": [
+    "continu"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "continu",
+     "evenement": null,
+     "motif": "continu"
+    }
+   ]
+  },
+  {
+   "id": "ad2cfd3b-a951-42c3-855b-e4e529276cc4",
+   "name": "Paras",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "48934bd7-9b8c-4693-9c5d-e080fe278337",
+   "name": "Polichombr",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "ae96658f-7ed6-4901-8f6a-af96cc3d3c85",
+   "name": "Rondoudou",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "af137428-2a72-4b5e-8fea-e5964d979a7b",
+   "name": "Mushana",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "17e7c115-a3f0-48ee-adfc-ef0c91592b9f",
+   "name": "Rafflesia",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque",
+    "continu"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "continu",
+     "evenement": null,
+     "motif": "continu"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "9951d304-2ef9-4dc8-a4ec-345002cd52f3",
+   "name": "Chenipotte",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "650ccb4b-b395-419c-8547-3f785b23fdd2",
+   "name": "Simularbre",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "618c1cc3-1f53-4062-a471-60a1b383062a",
+   "name": "Fantominus",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "230870bb-a0fd-44ea-9930-dd9b493ff6ad",
+   "name": "Galekid",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "1d3639e4-342c-429f-94eb-0c0bd7bfb42f",
+   "name": "Galeking",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "630cf30b-333d-441a-aa62-201b18088744",
+   "name": "Poichigeon",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "80f17041-2520-4224-ade6-45667acc9e23",
+   "name": "Galvaran",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "e000c32a-8d34-4764-8e57-2c8174110a3f",
+   "name": "Dracaufeu EX",
+   "supertype": "Pokémon",
+   "rule_marker": "EX",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "dc167d56-ac8d-4201-9c26-c9ec2c3970f7",
+   "name": "Mouscoto-ex",
+   "supertype": "Pokémon",
+   "rule_marker": "EX",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "4bad9dba-4cd6-446e-9b0a-dcbe98c80d22",
+   "name": "Castorno",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "active",
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "active",
+     "evenement": null,
+     "motif": "active-pendant-tour"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "81fabaa0-bbef-4b46-ae8d-6179ce26e5d2",
+   "name": "Draco δ",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "a5098a97-9ebb-44e0-b088-657136ecb11d",
+   "name": "Phione",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "3430a7ce-dc6f-4e1e-8561-da7e7481c4e7",
+   "name": "Amovénus",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "44089a91-c453-48f3-9176-9ec3104340e3",
+   "name": "Fongus-Furie",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "active",
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "active",
+     "evenement": null,
+     "motif": "active-pendant-tour"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "c3c39743-320e-479c-821a-15c7e5896a79",
+   "name": "Clamiral de Hisui V",
+   "supertype": "Pokémon",
+   "rule_marker": "V",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "04859dcf-f613-443c-92ba-7278fb549fe5",
+   "name": "Braisillon",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "7445f4d2-8f26-4ee5-b4c7-03e7bfe1013e",
+   "name": "Deoxys ex",
+   "supertype": "Pokémon",
+   "rule_marker": "EX",
+   "mecanismes": [
+    "active",
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "active",
+     "evenement": null,
+     "motif": "defaut-type-active"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "1da495cd-a52a-4c36-aa5b-85efba1e129a",
+   "name": "Ymphect",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "5ad75a91-e6b1-4f3a-9436-aa5372a7d3ef",
+   "name": "Flâmigator-ex",
+   "supertype": "Pokémon",
+   "rule_marker": "ex",
+   "mecanismes": [
+    "active",
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "active",
+     "evenement": null,
+     "motif": "active-pendant-tour"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "5d89b91a-99c4-41b9-8131-f87851f4d4d1",
+   "name": "Dodrio",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque",
+    "continu"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "continu",
+     "evenement": null,
+     "motif": "continu"
+    },
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "a1883433-8d7c-4806-91bc-daab30380547",
+   "name": "Raikou",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "9b9fd6d5-e2f3-485c-a505-b17410801195",
+   "name": "Grotadmorv d’Alola GX",
+   "supertype": "Pokémon",
+   "rule_marker": "GX",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "87bccea7-62aa-4b47-b7a2-a380b51983d9",
+   "name": "Noadkoko",
+   "supertype": "Pokémon",
+   "rule_marker": null,
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  },
+  {
+   "id": "e75af748-3d01-46bd-b906-b1e6ab7f5795",
+   "name": "Alakazam-ex",
+   "supertype": "Pokémon",
+   "rule_marker": "ex",
+   "mecanismes": [
+    "attaque"
+   ],
+   "evenements": [],
+   "declencheur_non_reconnu": false,
+   "porteurs": [
+    {
+     "mecanisme": "attaque",
+     "evenement": null,
+     "motif": "attaque"
+    }
+   ]
+  }
+ ]
+}
