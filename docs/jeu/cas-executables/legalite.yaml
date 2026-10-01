@@ -1,0 +1,176 @@
+# Cas exécutables — actions légales et validation motivée (R-5.1, R-5.2, R-4.1, R-14.3, R-14.6, R-15.12).
+# Opération `legalite` : soit `valider(etat, action)` (champ `action`), soit `actions_legales(etat, joueur)`
+# (champs `joueur` + `attendu.types`).
+version: 1
+cas:
+  # --- valider : accord ---
+  - id: valider-avancer-phase-actif
+    regles: [R-5.1]
+    op: legalite
+    description: "Avancer la phase est légal pour le joueur actif en phase principale."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale}
+    action: {type: avancer_phase, auteur: alice}
+    attendu: {accepte: true}
+  - id: valider-abandonner-joueur
+    regles: [R-14.3]
+    op: legalite
+    description: "Abandonner est légal pour un joueur de la partie."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale}
+    action: {type: abandonner, auteur: bob}
+    attendu: {accepte: true}
+
+  # --- valider : refus motivé ---
+  - id: valider-avancer-phase-non-actif
+    regles: [R-5.1]
+    op: legalite
+    description: "Avancer la phase par le joueur qui n'est pas actif est refusé."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale}
+    action: {type: avancer_phase, auteur: bob}
+    attendu: {accepte: false, regle: R-5.1}
+  - id: valider-avancer-phase-en-pioche
+    regles: [R-5.2]
+    op: legalite
+    description: "On ne quitte pas la phase de pioche par un avancement manuel (c'est automatique)."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: pioche}
+    action: {type: avancer_phase, auteur: alice}
+    attendu: {accepte: false, regle: R-5.2}
+  - id: valider-avancer-phase-avec-params
+    regles: [R-5.1]
+    op: legalite
+    description: "« avancer_phase » ne prend aucun paramètre."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale}
+    action: {type: avancer_phase, auteur: alice, params: {x: 1}}
+    attendu: {accepte: false, regle: R-5.1}
+  - id: valider-abandon-non-joueur
+    regles: [R-14.3]
+    op: legalite
+    description: "Un non-joueur ne peut pas abandonner."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale}
+    action: {type: abandonner, auteur: carol}
+    attendu: {accepte: false, regle: R-14.3}
+  - id: valider-partie-terminee
+    regles: [R-14.6]
+    op: legalite
+    description: "Une partie terminée refuse toute action."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale}
+      terminee: true
+      vainqueur: alice
+      raison_fin: abandon
+    action: {type: avancer_phase, auteur: alice}
+    attendu: {accepte: false, regle: R-14.6}
+  - id: valider-piocher-pas-un-coup-libre
+    regles: [R-5.2]
+    op: legalite
+    description: "La pioche de début de tour est automatique, pas un coup libre du joueur."
+    etat:
+      alice: {actif: {}, pioche: 5}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: pioche}
+    action: {type: piocher, auteur: alice}
+    attendu: {accepte: false, regle: R-5.2}
+  - id: valider-melange-pas-un-coup-libre
+    regles: [R-4.1]
+    op: legalite
+    description: "Le mélange du deck appartient à la mise en place, pas à un coup de joueur."
+    etat:
+      alice: {actif: {}, pioche: 5}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale}
+    action: {type: melanger_pioche, auteur: alice}
+    attendu: {accepte: false, regle: R-4.1}
+  - id: valider-type-inconnu
+    regles: [R-15.12]
+    op: legalite
+    description: "Un type d'action inconnu est refusé (D9 : jamais approximé)."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale}
+    action: {type: incantation, auteur: alice}
+    attendu: {accepte: false, regle: R-15.12}
+  - id: valider-attaque-pas-encore-coup-jouable
+    regles: [R-15.12]
+    op: legalite
+    description: "Déclarer une attaque n'est pas encore un coup listé au palier 4 (D9)."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale}
+    action: {type: declarer_attaque, auteur: alice}
+    attendu: {accepte: false, regle: R-15.12}
+
+  # --- actions_legales : la liste exhaustive ---
+  - id: legales-actif-principale
+    regles: [R-5.1, R-14.3]
+    op: legalite
+    description: "Le joueur actif en phase principale peut avancer la phase et abandonner."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale}
+    joueur: alice
+    attendu: {types: [abandonner, avancer_phase]}
+  - id: legales-non-actif-abandon-seul
+    regles: [R-14.3, R-5.1]
+    op: legalite
+    description: "Le joueur qui n'est pas actif ne peut qu'abandonner."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale}
+    joueur: bob
+    attendu: {types: [abandonner]}
+  - id: legales-pioche-abandon-seul
+    regles: [R-5.2, R-14.3]
+    op: legalite
+    description: "En phase de pioche, pas d'avancement manuel : seul l'abandon est libre."
+    etat:
+      alice: {actif: {}, pioche: 5}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: pioche}
+    joueur: alice
+    attendu: {types: [abandonner]}
+  - id: legales-checkup-terminer-le-tour
+    regles: [R-5.1, R-12.1]
+    op: legalite
+    description: "En Checkup, le joueur actif peut terminer le tour (avancer) et abandonner."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: checkup}
+    joueur: alice
+    attendu: {types: [abandonner, avancer_phase]}
+  - id: legales-partie-terminee-aucune
+    regles: [R-14.6]
+    op: legalite
+    description: "Une partie terminée ne rend aucun coup."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale}
+      terminee: true
+      vainqueur: alice
+      raison_fin: abandon
+    joueur: alice
+    attendu: {types: []}

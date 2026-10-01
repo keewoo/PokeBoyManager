@@ -1,0 +1,241 @@
+# Cas exécutables — mises K.O., récompenses par marqueur de règle, conditions de victoire (R-13, R-14, R-15).
+# Opération `recompenses` : marqueur de règle -> nombre de récompenses (table close, R-13.3/R-13.4).
+# Opération `appliquer` (checkup) : K.O. réel, défausse, récompenses, victoire/égalité.
+version: 1
+cas:
+  # --- 1 récompense (R-13.3) ---
+  - id: recompenses-ordinaire
+    regles: [R-13.3]
+    op: recompenses
+    description: "Un Pokémon ordinaire donne 1 récompense."
+    marqueur: ordinaire
+    attendu: 1
+  - id: recompenses-radiant
+    regles: [R-13.3, R-15.9]
+    op: recompenses
+    description: "Un Radiant donne 1 récompense."
+    marqueur: radiant
+    attendu: 1
+  - id: recompenses-break
+    regles: [R-13.3, R-15.17]
+    op: recompenses
+    description: "Un Pokémon BREAK donne 1 récompense."
+    marqueur: break
+    attendu: 1
+  - id: recompenses-prisme-etoile
+    regles: [R-13.3, R-15.18]
+    op: recompenses
+    description: "Un Prisme Étoile donne 1 récompense."
+    marqueur: prisme_etoile
+    attendu: 1
+  - id: recompenses-lv-x
+    regles: [R-13.3, R-15.20]
+    op: recompenses
+    description: "Un Pokémon LV.X donne 1 récompense."
+    marqueur: lv_x
+    attendu: 1
+  - id: recompenses-etoile
+    regles: [R-13.3, R-15.21]
+    op: recompenses
+    description: "Un Pokémon ★ donne 1 récompense."
+    marqueur: etoile
+    attendu: 1
+
+  # --- 2 récompenses (R-13.3) ---
+  - id: recompenses-ex
+    regles: [R-13.3, R-15.1]
+    op: recompenses
+    description: "Un Pokémon ex donne 2 récompenses."
+    marqueur: ex
+    attendu: 2
+  - id: recompenses-ex-ere-ex
+    regles: [R-13.3, R-15.16]
+    op: recompenses
+    description: "Un Pokémon-ex de l'ère EX (minuscules) donne 2 récompenses — même marqueur."
+    marqueur: ex
+    attendu: 2
+  - id: recompenses-tera-ex
+    regles: [R-13.3, R-15.2]
+    op: recompenses
+    description: "Un Tera Pokémon ex donne 2 récompenses."
+    marqueur: tera_ex
+    attendu: 2
+  - id: recompenses-pokemon-ex
+    regles: [R-13.3, R-15.14]
+    op: recompenses
+    description: "Un Pokémon-EX (majuscules, tiret) donne 2 récompenses."
+    marqueur: pokemon_ex
+    attendu: 2
+  - id: recompenses-m-pokemon-ex
+    regles: [R-13.3, R-15.15]
+    op: recompenses
+    description: "Un M Pokémon-EX donne 2 récompenses."
+    marqueur: m_pokemon_ex
+    attendu: 2
+  - id: recompenses-gx
+    regles: [R-13.3, R-15.3]
+    op: recompenses
+    description: "Un Pokémon-GX donne 2 récompenses."
+    marqueur: gx
+    attendu: 2
+  - id: recompenses-v
+    regles: [R-13.3, R-15.4]
+    op: recompenses
+    description: "Un Pokémon V donne 2 récompenses."
+    marqueur: v
+    attendu: 2
+  - id: recompenses-vstar
+    regles: [R-13.3, R-15.6]
+    op: recompenses
+    description: "Un Pokémon VSTAR donne 2 récompenses."
+    marqueur: vstar
+    attendu: 2
+  - id: recompenses-legende
+    regles: [R-13.3, R-15.19]
+    op: recompenses
+    description: "Une LÉGENDE donne 2 récompenses."
+    marqueur: legende
+    attendu: 2
+
+  # --- 3 récompenses (R-13.3) ---
+  - id: recompenses-mega-ex
+    regles: [R-13.3, R-15.13]
+    op: recompenses
+    description: "Une Méga-Évolution Pokémon ex donne 3 récompenses."
+    marqueur: mega_ex
+    attendu: 3
+  - id: recompenses-vmax
+    regles: [R-13.3, R-15.5]
+    op: recompenses
+    description: "Un Pokémon VMAX donne 3 récompenses."
+    marqueur: vmax
+    attendu: 3
+  - id: recompenses-tag-team
+    regles: [R-13.3, R-15.7]
+    op: recompenses
+    description: "Une TAG TEAM donne 3 récompenses."
+    marqueur: tag_team
+    attendu: 3
+  - id: recompenses-v-union
+    regles: [R-13.3, R-15.8]
+    op: recompenses
+    description: "Un V-UNION donne 3 récompenses."
+    marqueur: v_union
+    attendu: 3
+
+  # --- Le marqueur fait foi, pas le nom (R-13.7) ---
+  - id: recompenses-tag-team-trois-malgre-gx
+    regles: [R-13.7, R-15.7]
+    op: recompenses
+    description: "Le marqueur tag_team donne 3, même si le nom finit par « GX »."
+    marqueur: tag_team
+    attendu: 3
+  - id: recompenses-mega-ex-trois-malgre-ex
+    regles: [R-13.7, R-15.13]
+    op: recompenses
+    description: "Le marqueur mega_ex donne 3, même si le nom finit par « ex »."
+    marqueur: mega_ex
+    attendu: 3
+
+  # --- Marqueur inconnu : panne bruyante, jamais « par défaut 1 » (R-13.4, R-15.22) ---
+  - id: recompenses-marqueur-inconnu
+    regles: [R-13.4, R-15.22]
+    op: recompenses
+    description: "Un marqueur de règle inconnu fait échouer bruyamment."
+    marqueur: zorglub
+    erreur: "R-13.4"
+  - id: recompenses-marqueur-vide
+    regles: [R-13.4]
+    op: recompenses
+    description: "Un marqueur vide est refusé (jamais deviné)."
+    marqueur: ""
+    erreur: "Marqueur de règle invalide"
+
+  # --- K.O. réel : récompenses prises selon le marqueur de la fiche (R-13.3 par le catalogue) ---
+  - id: ko-prend-deux-recompenses-ex
+    regles: [R-13.3]
+    op: appliquer
+    description: "Mettre K.O. un Pokémon ex fait prendre 2 récompenses à l'adversaire."
+    etat:
+      alice: {actif: {etats: [empoisonne], degats: 190, pv: 200, marqueur: ex}, banc: 1}
+      bob: {actif: {pv: 100, recompenses: 1}, recompenses: 6}
+      tour: {joueur: alice, phase: checkup, numero: 4}
+    action: {type: checkup, auteur: systeme}
+    attendu:
+      etat: {bob: {recompenses: 4}}
+      evenements: [{type: ko, donnees: {joueur: alice, par: bob, recompenses_prises: 2}}]
+  - id: ko-prend-trois-recompenses-vmax
+    regles: [R-13.3, R-15.5]
+    op: appliquer
+    description: "Mettre K.O. un VMAX fait prendre 3 récompenses."
+    etat:
+      alice: {actif: {etats: [empoisonne], degats: 320, pv: 330, marqueur: vmax}, banc: 1}
+      bob: {actif: {pv: 100, recompenses: 1}, recompenses: 6}
+      tour: {joueur: alice, phase: checkup, numero: 4}
+    action: {type: checkup, auteur: systeme}
+    attendu:
+      etat: {bob: {recompenses: 3}}
+
+  # --- K.O. défausse toute la pile, les énergies et l'Outil (R-13.2) ---
+  - id: ko-defausse-pile-complete
+    regles: [R-13.2]
+    op: appliquer
+    description: "Un K.O. défausse la pile (2) + énergies (2) + Outil (1) = 5 cartes."
+    etat:
+      alice: {actif: {etats: [empoisonne], degats: 90, pv: 100, recompenses: 1, cartes: 2, energies: 2, outil: true}, banc: 1}
+      bob: {actif: {pv: 100, recompenses: 1}, recompenses: 6}
+      tour: {joueur: alice, phase: checkup, numero: 4}
+    action: {type: checkup, auteur: systeme}
+    attendu:
+      etat: {alice: {defausse: 5, actif_present: false}}
+
+  # --- Conditions de victoire / égalité (R-13.5, R-14.1/4/5, R-16.3/6/10) ---
+  - id: ko-simultane-chacun-prend
+    regles: [R-13.5, R-16.3]
+    op: appliquer
+    description: "K.O. simultané sans fin : chacun prend 1 récompense, chacun doit promouvoir."
+    etat:
+      alice: {actif: {etats: [empoisonne], degats: 100, pv: 100, recompenses: 1}, banc: 1, recompenses: 6}
+      bob: {actif: {etats: [empoisonne], degats: 100, pv: 100, recompenses: 1}, banc: 1, recompenses: 6}
+      tour: {joueur: alice, phase: checkup, numero: 4}
+    action: {type: checkup, auteur: systeme}
+    attendu:
+      etat: {terminee: false, alice: {recompenses: 5, actif_present: false}, bob: {recompenses: 5, actif_present: false}}
+      evenements:
+        - {type: ko, donnees: {joueur: alice}}
+        - {type: ko, donnees: {joueur: bob}}
+        - {type: promotion_requise, donnees: {joueur: alice}}
+        - {type: promotion_requise, donnees: {joueur: bob}}
+  - id: egalite-double-derniere-recompense
+    regles: [R-14.4, R-16.6, R-16.10]
+    op: appliquer
+    description: "Double K.O. où chacun prend sa dernière récompense : partie NULLE."
+    etat:
+      alice: {actif: {etats: [empoisonne], degats: 100, pv: 100, recompenses: 1}, banc: 1, recompenses: 1}
+      bob: {actif: {etats: [empoisonne], degats: 100, pv: 100, recompenses: 1}, banc: 1, recompenses: 1}
+      tour: {joueur: alice, phase: checkup, numero: 4}
+    action: {type: checkup, auteur: systeme}
+    attendu:
+      etat: {terminee: true, vainqueur: null, raison_fin: egalite}
+  - id: victoire-double-voie-prime
+    regles: [R-14.5]
+    op: appliquer
+    description: "Un joueur gagne par deux voies et l'autre par une : le premier est vainqueur, pas d'égalité."
+    etat:
+      alice: {actif: {etats: [empoisonne], degats: 100, pv: 100, recompenses: 1}, banc: 0, recompenses: 6}
+      bob: {actif: {etats: [empoisonne], degats: 100, pv: 100, recompenses: 1}, banc: 1, recompenses: 1}
+      tour: {joueur: alice, phase: checkup, numero: 4}
+    action: {type: checkup, auteur: systeme}
+    attendu:
+      etat: {terminee: true, vainqueur: bob}
+  - id: ko-promotion-obligatoire-banc-vide-defaite
+    regles: [R-13.6, R-8.9]
+    op: appliquer
+    description: "Promotion obligatoire après K.O. ; banc vide = défaite (R-13.6)."
+    etat:
+      alice: {actif: {etats: [empoisonne], degats: 90, pv: 100, recompenses: 1}, banc: 0}
+      bob: {actif: {pv: 100, recompenses: 1}, recompenses: 6}
+      tour: {joueur: alice, phase: checkup, numero: 4}
+    action: {type: checkup, auteur: systeme}
+    attendu:
+      etat: {terminee: true, vainqueur: bob, raison_fin: plus_de_pokemon}

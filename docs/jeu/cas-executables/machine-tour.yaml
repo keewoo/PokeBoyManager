@@ -1,0 +1,318 @@
+# Cas exécutables — machine à tour : mélange, pioche, phases, attaque, premier tour, abandon, fin figée.
+# (R-4.1, R-5.*, R-6.1, R-8.5, R-9.1, R-11.3/5/6, R-14.2/3/6, R-16.1/5, R-17.3/5/7).
+version: 1
+cas:
+  # --- Mélange et pioche (R-4.1, R-5.2) ---
+  - id: melange-conserve-la-taille
+    regles: [R-4.1]
+    op: appliquer
+    description: "Mélanger la pioche en conserve la taille et émet l'événement."
+    etat:
+      alice: {actif: {}, pioche: 10}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale}
+    action: {type: melanger_pioche, auteur: systeme, params: {joueur: alice}}
+    attendu:
+      etat: {alice: {pioche: 10}}
+      evenements: [{type: pioche_melangee, donnees: {joueur: alice, taille: 10}}]
+  - id: piocher-deplace-pioche-vers-main
+    regles: [R-5.2, R-4.1]
+    op: appliquer
+    description: "Piocher 1 carte : -1 pioche, +1 main."
+    etat:
+      alice: {actif: {}, pioche: 5, main: 2}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: pioche}
+    action: {type: piocher, auteur: systeme, params: {joueur: alice, nombre: 1}}
+    attendu:
+      etat: {alice: {pioche: 4, main: 3}}
+      evenements: [{type: cartes_piochees, donnees: {joueur: alice, nombre: 1}}]
+  - id: piocher-plus-que-la-pioche-refuse
+    regles: [R-5.2]
+    op: appliquer
+    description: "Demander plus de cartes que la pioche n'en a est refusé (pas de repli)."
+    etat:
+      alice: {actif: {}, pioche: 1}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: pioche}
+    action: {type: piocher, auteur: systeme, params: {joueur: alice, nombre: 3}}
+    erreur: "Pioche insuffisante"
+
+  # --- Début de tour : pioche obligatoire (R-5.2, R-6.3, R-17.3) ---
+  - id: debut-tour-pioche-et-passe-en-principale
+    regles: [R-5.2, R-5.1]
+    op: appliquer
+    description: "Le début de tour pioche 1 carte puis passe en phase principale."
+    etat:
+      alice: {actif: {}, pioche: 5, main: 3}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: pioche, numero: 3}
+    action: {type: debut_tour, auteur: systeme}
+    attendu:
+      etat: {alice: {pioche: 4, main: 4}, tour: {phase: principale}}
+  - id: debut-tour-premier-joueur-pioche
+    regles: [R-6.3, R-17.3]
+    op: appliquer
+    description: "Le joueur qui commence pioche normalement à son premier tour (variante « ne pioche pas » écartée)."
+    etat:
+      alice: {actif: {}, pioche: 5, main: 7}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: pioche, numero: 1}
+    action: {type: debut_tour, auteur: systeme}
+    attendu:
+      etat: {alice: {pioche: 4, main: 8}, tour: {phase: principale}}
+  - id: debut-tour-pioche-vide-defaite
+    regles: [R-14.2, R-16.1]
+    op: appliquer
+    description: "Pioche vide au début de tour : défaite du joueur qui doit piocher (pas une exception)."
+    etat:
+      alice: {actif: {}, pioche: 0}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: pioche, numero: 3}
+    action: {type: debut_tour, auteur: systeme}
+    attendu:
+      etat: {terminee: true, vainqueur: bob, raison_fin: pioche_impossible}
+      evenements: [{type: partie_terminee, donnees: {vainqueur: bob, raison: pioche_impossible, perdant: alice}}]
+  - id: debut-tour-hors-phase-pioche-refuse
+    regles: [R-5.1]
+    op: appliquer
+    description: "Un début de tour hors de la phase de pioche est refusé."
+    etat:
+      alice: {actif: {}, pioche: 5}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action: {type: debut_tour, auteur: systeme}
+    erreur: "R-5.1"
+
+  # --- Progression des phases (R-5.1, R-12.1) ---
+  - id: avancer-principale-vers-attaque
+    regles: [R-5.1]
+    op: appliquer
+    description: "La phase principale avance vers la phase d'attaque."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action: {type: avancer_phase, auteur: alice}
+    attendu:
+      etat: {tour: {phase: attaque, numero: 3, joueur_actif: alice}}
+  - id: avancer-attaque-vers-checkup
+    regles: [R-5.1, R-12.1]
+    op: appliquer
+    description: "La phase d'attaque avance vers le Checkup (fin du tour)."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: attaque, numero: 3}
+    action: {type: avancer_phase, auteur: alice}
+    attendu:
+      etat: {tour: {phase: checkup, numero: 3}}
+  - id: avancer-checkup-ouvre-tour-suivant
+    regles: [R-5.1, R-12.1]
+    op: appliquer
+    description: "Depuis le Checkup, le tour suivant s'ouvre : numéro +1, joueur adverse, phase pioche."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: checkup, numero: 3}
+    action: {type: avancer_phase, auteur: alice}
+    attendu:
+      etat: {tour: {phase: pioche, numero: 4, joueur_actif: bob}}
+      evenements:
+        - {type: phase_avancee, donnees: {vers: pioche, numero: 4, joueur_actif: bob}}
+        - {type: tour_commence, donnees: {numero: 4, joueur_actif: bob}}
+  - id: avancer-phase-partie-terminee-refuse
+    regles: [R-14.6]
+    op: appliquer
+    description: "Une partie terminée refuse d'avancer la phase."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+      terminee: true
+      vainqueur: alice
+      raison_fin: abandon
+    action: {type: avancer_phase, auteur: alice}
+    erreur: "R-14.6"
+
+  # --- Déclarer une attaque termine le tour (R-5.7, R-5.8) ---
+  - id: attaque-termine-le-tour
+    regles: [R-5.7, R-5.8]
+    op: appliquer
+    description: "Déclarer une attaque (sans dégât mécanisé au J1) termine le tour : passage en Checkup."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action: {type: declarer_attaque, auteur: alice}
+    attendu:
+      etat: {tour: {phase: checkup}}
+      evenements: [{type: attaque_declaree, donnees: {joueur: alice, degats: 0}}]
+  - id: attaque-depuis-phase-attaque
+    regles: [R-5.1, R-5.7]
+    op: appliquer
+    description: "Une attaque peut aussi se déclarer depuis la phase d'attaque."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: attaque, numero: 3}
+    action: {type: declarer_attaque, auteur: alice}
+    attendu:
+      etat: {tour: {phase: checkup}}
+
+  # --- Premier tour (R-6.1, R-16.11, R-17.5) ---
+  - id: premier-joueur-ne-peut-attaquer
+    regles: [R-6.1, R-16.11, R-17.5]
+    op: appliquer
+    description: "Le joueur qui commence (tour n°1) ne peut pas attaquer."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 1}
+    action: {type: declarer_attaque, auteur: alice}
+    erreur: "R-6.1"
+  - id: second-joueur-peut-attaquer-son-premier-tour
+    regles: [R-6.1]
+    op: appliquer
+    description: "Le second joueur (tour n°2) peut attaquer dès son premier tour."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      tour: {joueur: bob, phase: principale, numero: 2}
+    action: {type: declarer_attaque, auteur: bob}
+    attendu:
+      etat: {tour: {phase: checkup}}
+
+  # --- Gardes de l'attaque (R-9.1, R-5.7) ---
+  - id: attaque-sans-actif-refusee
+    regles: [R-9.1]
+    op: appliquer
+    description: "Sans Pokémon Actif, aucune attaque ne peut être portée."
+    etat:
+      alice: {actif: null, banc: 0}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action: {type: declarer_attaque, auteur: alice}
+    erreur: "R-9.1"
+  - id: attaque-par-non-actif-refusee
+    regles: [R-5.7]
+    op: appliquer
+    description: "Seul le joueur dont c'est le tour peut déclarer une attaque."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action: {type: declarer_attaque, auteur: bob}
+    erreur: "R-5.7"
+
+  # --- États qui bloquent l'attaque (R-11.3, R-11.6) et confusion (R-11.5, R-17.7) ---
+  - id: attaque-endormi-refusee
+    regles: [R-11.3]
+    op: appliquer
+    description: "Un Actif Endormi ne peut pas attaquer."
+    etat:
+      alice: {actif: {etats: [endormi]}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action: {type: declarer_attaque, auteur: alice}
+    erreur: "R-11.3"
+  - id: attaque-paralyse-refusee
+    regles: [R-11.6]
+    op: appliquer
+    description: "Un Actif Paralysé ne peut pas attaquer."
+    etat:
+      alice: {actif: {etats: [paralyse]}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action: {type: declarer_attaque, auteur: alice}
+    erreur: "R-11.6"
+  - id: attaque-confus-face-a-lieu
+    regles: [R-11.5]
+    op: appliquer
+    description: "Confus + face : l'attaque a lieu, le tour se termine, aucun auto-dégât."
+    etat:
+      alice: {actif: {etats: [confus]}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    tirages: [{flux: "confusion:alice", resultat: face}]
+    action: {type: declarer_attaque, auteur: alice}
+    attendu:
+      etat: {alice: {actif: {degats: 0}}, tour: {phase: checkup}}
+      evenements:
+        - {type: confusion_resolue, donnees: {attaque_annulee: false, degats: 0}}
+        - {type: attaque_declaree, donnees: {joueur: alice}}
+  - id: attaque-confus-pile-echoue
+    regles: [R-11.5, R-17.7]
+    op: appliquer
+    description: "Confus + pile : l'attaque n'a pas lieu, 3 compteurs (=30) sur soi, le tour se termine."
+    etat:
+      alice: {actif: {etats: [confus]}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    tirages: [{flux: "confusion:alice", resultat: pile}]
+    action: {type: declarer_attaque, auteur: alice}
+    attendu:
+      etat: {alice: {actif: {degats: 30}}, tour: {phase: checkup}}
+      evenements: [{type: confusion_resolue, donnees: {attaque_annulee: true, degats: 30}}]
+
+  # --- Le nouvel Actif peut attaquer le même tour (R-8.5) ---
+  - id: nouvel-actif-attaque-apres-retraite
+    regles: [R-8.5]
+    op: appliquer
+    description: "Après une retraite, le nouvel Actif attaque le même tour (deux actions à la suite)."
+    etat:
+      alice: {actif: {energies: 1}, banc: 1}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    actions:
+      - {type: retraite, auteur: alice, params: {banc_index: 0, cout_retraite: 1, energies_defaussees: ["alice.actif.e0"]}}
+      - {type: declarer_attaque, auteur: alice}
+    attendu:
+      etat: {tour: {phase: checkup, retraite_faite: true}}
+
+  # --- Abandon et fin figée (R-14.3, R-16.5, R-14.6) ---
+  - id: abandon-defaite-immediate
+    regles: [R-14.3, R-16.5]
+    op: appliquer
+    description: "Abandonner fait perdre immédiatement ; l'adversaire gagne."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action: {type: abandonner, auteur: alice}
+    attendu:
+      etat: {terminee: true, vainqueur: bob, raison_fin: abandon}
+      evenements: [{type: partie_terminee, donnees: {vainqueur: bob, raison: abandon, abandon_par: alice}}]
+  - id: abandon-par-non-joueur-refuse
+    regles: [R-14.3]
+    op: appliquer
+    description: "Un auteur qui n'est pas un joueur de la partie ne peut pas abandonner."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action: {type: abandonner, auteur: carol}
+    erreur: "absent de la partie"
+  - id: partie-terminee-refuse-toute-action
+    regles: [R-14.6]
+    op: appliquer
+    description: "Une partie terminée refuse toute action, l'abandon compris."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+      terminee: true
+      vainqueur: bob
+      raison_fin: abandon
+    action: {type: abandonner, auteur: alice}
+    erreur: "R-14.6"
+  - id: action-de-type-inconnu-refusee
+    regles: [R-14.6]
+    op: appliquer
+    description: "Un type d'action inconnu est refusé, jamais deviné (D9)."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action: {type: teleportation_magique, auteur: alice}
+    erreur: "Type d'action inconnu"

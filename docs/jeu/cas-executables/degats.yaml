@@ -1,0 +1,250 @@
+# Cas exécutables — calcul des dégâts (R-10, R-16.7/8, R-17.1/2).
+# Opération `degats` : resoudre_degats(**args) dans l'ordre strict R-10.1.
+# Format complet : docs/jeu/CAS-EXECUTABLES.md.
+version: 1
+cas:
+  # --- Dégâts de base, sans rien (R-10.1 étape 1, R-10.4 conversion en compteurs) ---
+  - id: degats-base-10
+    regles: [R-10.1]
+    op: degats
+    description: "10 de base = 1 compteur."
+    args: {base: 10}
+    attendu: {degats: 10, compteurs: 1}
+  - id: degats-base-60
+    regles: [R-10.1]
+    op: degats
+    description: "60 de base = 6 compteurs."
+    args: {base: 60}
+    attendu: {degats: 60, compteurs: 6}
+  - id: degats-base-200
+    regles: [R-10.1]
+    op: degats
+    description: "200 de base = 20 compteurs."
+    args: {base: 200}
+    attendu: {degats: 200, compteurs: 20}
+  - id: degats-base-non-multiple-de-10
+    regles: [R-10.1]
+    op: degats
+    description: "25 de base : 1 compteur par 10 dégâts, le reste est tronqué (2 compteurs)."
+    args: {base: 25}
+    attendu: {degats: 20, compteurs: 2}
+  - id: degats-base-zero
+    regles: [R-10.1]
+    op: degats
+    description: "0 de base : aucun compteur."
+    args: {base: 0}
+    attendu: {degats: 0, compteurs: 0}
+
+  # --- Faiblesse ×2 (R-10.2, R-17.1 : la variante ancienne « +X » est écartée) ---
+  - id: faiblesse-x2-base-10
+    regles: [R-10.2, R-17.1]
+    op: degats
+    description: "Faiblesse ×2 sur 10 = 20."
+    args: {base: 10, type_attaque: feu, faiblesse: {type: feu}}
+    attendu: {degats: 20, compteurs: 2}
+  - id: faiblesse-x2-base-50
+    regles: [R-10.2]
+    op: degats
+    description: "Faiblesse ×2 sur 50 = 100."
+    args: {base: 50, type_attaque: eau, faiblesse: {type: eau}}
+    attendu: {degats: 100, compteurs: 10}
+  - id: faiblesse-x2-base-90
+    regles: [R-10.2]
+    op: degats
+    description: "Faiblesse ×2 sur 90 = 180."
+    args: {base: 90, type_attaque: plante, faiblesse: {type: plante}}
+    attendu: {degats: 180, compteurs: 18}
+  - id: faiblesse-x2-base-120
+    regles: [R-10.2]
+    op: degats
+    description: "Faiblesse ×2 sur 120 = 240."
+    args: {base: 120, type_attaque: psy, faiblesse: {type: psy}}
+    attendu: {degats: 240, compteurs: 24}
+  - id: faiblesse-mauvais-type-pas-appliquee
+    regles: [R-10.2, R-10.8]
+    op: degats
+    description: "La faiblesse ne s'applique que si l'attaque est de son type : feu ≠ eau."
+    args: {base: 60, type_attaque: feu, faiblesse: {type: eau}}
+    attendu: {degats: 60, compteurs: 6}
+  - id: faiblesse-facteur-personnalise-x3
+    regles: [R-10.2]
+    op: degats
+    description: "Une faiblesse peut porter un facteur explicite (×3) venu du catalogue."
+    args: {base: 40, type_attaque: feu, faiblesse: {type: feu, facteur: 3}}
+    attendu: {degats: 120, compteurs: 12}
+
+  # --- Résistance −30 (R-10.3, R-17.2 : la variante ancienne « −20 » est écartée) ---
+  - id: resistance-moins-30-base-60
+    regles: [R-10.3, R-17.2]
+    op: degats
+    description: "Résistance −30 sur 60 = 30."
+    args: {base: 60, type_attaque: eau, resistance: {type: eau}}
+    attendu: {degats: 30, compteurs: 3}
+  - id: resistance-moins-30-base-120
+    regles: [R-10.3]
+    op: degats
+    description: "Résistance −30 sur 120 = 90."
+    args: {base: 120, type_attaque: feu, resistance: {type: feu}}
+    attendu: {degats: 90, compteurs: 9}
+  - id: resistance-reduction-personnalisee-20
+    regles: [R-10.3]
+    op: degats
+    description: "Une résistance peut porter une réduction explicite (−20)."
+    args: {base: 50, type_attaque: eau, resistance: {type: eau, reduction: 20}}
+    attendu: {degats: 30, compteurs: 3}
+  - id: resistance-mauvais-type-pas-appliquee
+    regles: [R-10.3]
+    op: degats
+    description: "La résistance ne s'applique que si l'attaque est de son type."
+    args: {base: 60, type_attaque: feu, resistance: {type: eau}}
+    attendu: {degats: 60, compteurs: 6}
+
+  # --- Ordre strict : faiblesse PUIS résistance (R-10.1, R-10.8) ---
+  - id: ordre-faiblesse-puis-resistance
+    regles: [R-10.1, R-10.8]
+    op: degats
+    description: "Faiblesse puis résistance, dans cet ordre : 60 ×2 = 120, −30 = 90."
+    args: {base: 60, faiblesse: {type: feu}, resistance: {type: feu}}
+    attendu: {degats: 90, compteurs: 9}
+  - id: detail-journalise-faiblesse-resistance
+    regles: [R-10.9]
+    op: degats
+    description: "Le détail de calcul lisible est produit (R-10.9)."
+    args: {base: 60, faiblesse: {type: feu}, resistance: {type: feu}}
+    attendu: {detail: "60 base, ×2 faiblesse, −30 résistance = 90", degats: 90}
+  - id: detail-journalise-base-seule
+    regles: [R-10.9]
+    op: degats
+    description: "Détail d'une attaque sans modificateur."
+    args: {base: 30}
+    attendu: {detail: "30 base = 30"}
+
+  # --- Plancher à 0 (R-10.7, R-16.7) ---
+  - id: plancher-resistance-superieure-base
+    regles: [R-10.7, R-16.7]
+    op: degats
+    description: "Résistance supérieure aux dégâts : plancher à 0, aucun compteur."
+    args: {base: 20, type_attaque: eau, resistance: {type: eau}}
+    attendu: {degats: 0, compteurs: 0}
+  - id: plancher-resistance-egale-base
+    regles: [R-10.7]
+    op: degats
+    description: "Résistance égale aux dégâts : résultat 0, aucun compteur."
+    args: {base: 30, type_attaque: eau, resistance: {type: eau}}
+    attendu: {degats: 0, compteurs: 0}
+
+  # --- Arrêt à l'étape 2 : base 0, la faiblesse n'est jamais appliquée (R-16.8, R-10.1) ---
+  - id: faiblesse-sur-degats-nuls
+    regles: [R-16.8, R-10.1]
+    op: degats
+    description: "Attaque de 0 dégât : on s'arrête à l'étape 2, la faiblesse n'est jamais appliquée."
+    args: {base: 0, type_attaque: feu, faiblesse: {type: feu}}
+    attendu: {degats: 0, compteurs: 0, arrete_avant_degats: true}
+  - id: modificateur-ramene-a-zero-arrete
+    regles: [R-10.1, R-16.8]
+    op: degats
+    description: "Un modificateur attaquant ramène à 0 : arrêt avant faiblesse."
+    args: {base: 20, type_attaque: feu, faiblesse: {type: feu}, modificateurs_attaquant: [{op: ajout, valeur: -20}]}
+    attendu: {degats: 0, arrete_avant_degats: true}
+
+  # --- Modificateurs côté attaquant (R-10.1 étape 2) ---
+  - id: modificateur-attaquant-ajout
+    regles: [R-10.1]
+    op: degats
+    description: "Un modificateur attaquant additif (+20) s'applique avant la faiblesse."
+    args: {base: 40, modificateurs_attaquant: [{op: ajout, valeur: 20}]}
+    attendu: {degats: 60, compteurs: 6}
+  - id: modificateur-attaquant-multiplie
+    regles: [R-10.1]
+    op: degats
+    description: "Un modificateur attaquant multiplicatif (×2) s'applique avant la faiblesse."
+    args: {base: 30, modificateurs_attaquant: [{op: multiplie, valeur: 2}]}
+    attendu: {degats: 60, compteurs: 6}
+  - id: modificateur-attaquant-fixe
+    regles: [R-10.1]
+    op: degats
+    description: "Un modificateur fixe impose la valeur (les dégâts deviennent 100)."
+    args: {base: 30, modificateurs_attaquant: [{op: fixe, valeur: 100}]}
+    attendu: {degats: 100, compteurs: 10}
+  - id: modificateur-attaquant-puis-faiblesse
+    regles: [R-10.1, R-10.2]
+    op: degats
+    description: "+20 attaquant (60) PUIS ×2 faiblesse = 120."
+    args: {base: 40, type_attaque: feu, faiblesse: {type: feu}, modificateurs_attaquant: [{op: ajout, valeur: 20}]}
+    attendu: {degats: 120, compteurs: 12}
+
+  # --- Modificateurs côté défenseur (R-10.1 étape 5) ---
+  - id: modificateur-defenseur-reduction
+    regles: [R-10.1]
+    op: degats
+    description: "Un modificateur défenseur (−20) réduit après faiblesse et résistance."
+    args: {base: 60, modificateurs_defenseur: [{op: ajout, valeur: -20}]}
+    attendu: {degats: 40, compteurs: 4}
+  - id: modificateur-defenseur-apres-faiblesse
+    regles: [R-10.1, R-10.2]
+    op: degats
+    description: "60 ×2 faiblesse = 120, puis −40 défenseur = 80."
+    args: {base: 60, faiblesse: {type: feu}, modificateurs_defenseur: [{op: ajout, valeur: -40}]}
+    attendu: {degats: 80, compteurs: 8}
+  - id: modificateur-defenseur-plancher
+    regles: [R-10.1, R-10.7]
+    op: degats
+    description: "Une réduction défenseur supérieure aux dégâts : plancher à 0."
+    args: {base: 30, modificateurs_defenseur: [{op: ajout, valeur: -50}]}
+    attendu: {degats: 0, compteurs: 0}
+
+  # --- Dégâts au banc : ni faiblesse ni résistance (R-10.5) ---
+  - id: banc-pas-de-faiblesse
+    regles: [R-10.5]
+    op: degats
+    description: "Au banc, la faiblesse n'est pas appliquée."
+    args: {base: 60, type_attaque: feu, faiblesse: {type: feu}, au_banc: true}
+    attendu: {degats: 60, compteurs: 6}
+  - id: banc-pas-de-resistance
+    regles: [R-10.5]
+    op: degats
+    description: "Au banc, la résistance n'est pas appliquée non plus."
+    args: {base: 60, type_attaque: eau, resistance: {type: eau}, au_banc: true}
+    attendu: {degats: 60, compteurs: 6}
+  - id: banc-modificateurs-s-appliquent
+    regles: [R-10.5, R-10.1]
+    op: degats
+    description: "Au banc, les modificateurs s'appliquent toujours (seules faiblesse/résistance sautent)."
+    args: {base: 60, modificateurs_defenseur: [{op: ajout, valeur: -20}], au_banc: true}
+    attendu: {degats: 40, compteurs: 4}
+
+  # --- Pose directe de compteurs/dégâts (R-10.4, R-10.6) ---
+  - id: compteurs-directs-non-modifies
+    regles: [R-10.6]
+    op: compteurs
+    description: "« Placer N compteurs » pose N×10 dégâts, sans faiblesse/résistance/modificateur."
+    pokemon: {degats: 10}
+    poser_compteurs: 3
+    attendu: {degats: 40}
+  - id: compteurs-directs-sur-sain
+    regles: [R-10.6]
+    op: compteurs
+    description: "Placer 2 compteurs sur un Pokémon intact = 20 dégâts."
+    poser_compteurs: 2
+    attendu: {degats: 20}
+  - id: poser-degats-cumule-en-compteurs
+    regles: [R-10.4]
+    op: compteurs
+    description: "Les dégâts se posent en compteurs cumulatifs, jamais en PV soustraits."
+    pokemon: {degats: 30}
+    poser_degats: 20
+    attendu: {degats: 50}
+  - id: poser-compteurs-negatif-refuse
+    regles: [R-10.6]
+    op: compteurs
+    description: "Un nombre de compteurs négatif est une panne (jamais un soin déguisé)."
+    poser_compteurs: -1
+    erreur: "Nombre de compteurs invalide"
+
+  # --- Erreurs : base négative refusée (jamais un repli silencieux) ---
+  - id: degats-base-negative-refusee
+    regles: [R-10.1]
+    op: degats
+    description: "Des dégâts de base négatifs sont une panne, pas un repli à 0."
+    args: {base: -10}
+    erreur: "Dégâts de base invalides"

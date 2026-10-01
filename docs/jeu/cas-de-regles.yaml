@@ -7,9 +7,12 @@
 #   - chaque cas cite au moins une règle ;
 #   - les dix cas limites de la mission j-regles-reference sont couverts (champ `cas_limite`).
 #
-# Les champs `entree` / `attendu` sont volontairement absents à ce stade : ce lot fixe la
-# RÉFÉRENCE (règles + table qui les nomme). Le lot j-tests-regles les remplira avec les états
-# d'entrée et les résultats attendus, une fois le modèle d'état (j-modele-etat) disponible.
+# Cette table reste **documentaire** : elle NOMME, pour chaque règle, un cas qui la vérifie, sans
+# état d'entrée ni résultat attendu. Les cas **exécutables** (état de départ, action, résultat
+# attendu, rejoués contre le moteur) vivent à part, dans `docs/jeu/cas-executables/*.yaml` — lot
+# j-tests-regles ; leur format est documenté dans `docs/jeu/CAS-EXECUTABLES.md`. La garde de
+# couverture (apps/game/tests/test_couverture_regles.py) traite les deux ensembles : une règle du
+# corpus sans aucun cas (ici OU exécutable) ni exception justifiée fait échouer la CI.
 #
 # Schéma d'un cas :
 #   id          : identifiant unique kebab-case

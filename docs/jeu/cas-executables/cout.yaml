@@ -1,0 +1,117 @@
+# Cas exécutables — coût d'une attaque (R-9.1, R-9.2).
+# Opération `cout` : cout_satisfait(CoutAttaque(types, incolore), fournitures) -> accord / refus motivé.
+# `fournitures` = ce que chaque énergie attachée FOURNIT, mapping {type: unités}.
+version: 1
+cas:
+  - id: cout-gratuit-toujours-satisfait
+    regles: [R-9.2]
+    op: cout
+    description: "Un coût vide (attaque gratuite) est toujours satisfait."
+    cout: {}
+    fournitures: []
+    attendu: {accepte: true}
+  - id: cout-un-colore-satisfait
+    regles: [R-9.1, R-9.2]
+    op: cout
+    description: "1 symbole feu payé par 1 énergie Feu."
+    cout: {types: {feu: 1}}
+    fournitures: [{feu: 1}]
+    attendu: {accepte: true}
+  - id: cout-un-colore-manquant
+    regles: [R-9.2]
+    op: cout
+    description: "1 symbole feu non payé (aucune énergie Feu) : refus motivé."
+    cout: {types: {feu: 1}}
+    fournitures: [{eau: 1}]
+    attendu: {accepte: false, regle: R-9.2}
+  - id: cout-deux-colores-satisfait
+    regles: [R-9.2]
+    op: cout
+    description: "2 symboles feu payés par 2 énergies Feu."
+    cout: {types: {feu: 2}}
+    fournitures: [{feu: 1}, {feu: 1}]
+    attendu: {accepte: true}
+  - id: cout-deux-colores-un-seul-fourni
+    regles: [R-9.2]
+    op: cout
+    description: "2 symboles feu, 1 seule énergie Feu : refus."
+    cout: {types: {feu: 2}}
+    fournitures: [{feu: 1}]
+    attendu: {accepte: false, regle: R-9.2}
+  - id: cout-colore-exige-le-bon-type
+    regles: [R-9.2]
+    op: cout
+    description: "Un symbole coloré n'accepte que son type exact (Feu ne paie pas Eau)."
+    cout: {types: {eau: 1}}
+    fournitures: [{feu: 1}]
+    attendu: {accepte: false, regle: R-9.2}
+  - id: cout-incolore-paye-par-n-importe-quoi
+    regles: [R-9.2]
+    op: cout
+    description: "Un symbole incolore se paie par n'importe quelle énergie."
+    cout: {incolore: 1}
+    fournitures: [{feu: 1}]
+    attendu: {accepte: true}
+  - id: cout-incolore-non-satisfait
+    regles: [R-9.2]
+    op: cout
+    description: "Pas assez d'énergie pour le coût incolore : refus."
+    cout: {incolore: 2}
+    fournitures: [{feu: 1}]
+    attendu: {accepte: false, regle: R-9.2}
+  - id: cout-colore-plus-incolore
+    regles: [R-9.2]
+    op: cout
+    description: "1 feu + 1 incolore : le feu paie le coloré, le reste paie l'incolore."
+    cout: {types: {feu: 1}, incolore: 1}
+    fournitures: [{feu: 1}, {eau: 1}]
+    attendu: {accepte: true}
+  - id: cout-energie-multi-unites
+    regles: [R-9.2]
+    op: cout
+    description: "Une énergie peut fournir plusieurs unités : une Double Incolore paie 2 incolores."
+    cout: {incolore: 2}
+    fournitures: [{incolore: 2}]
+    attendu: {accepte: true}
+  - id: cout-energie-speciale-bi-type
+    regles: [R-9.2]
+    op: cout
+    description: "Une énergie spéciale bi-type fournit deux unités de types différents."
+    cout: {types: {feu: 1, eau: 1}}
+    fournitures: [{feu: 1, eau: 1}]
+    attendu: {accepte: true}
+  - id: cout-energie-en-trop-ne-gene-pas
+    regles: [R-9.2]
+    op: cout
+    description: "De l'énergie en trop ne gêne pas (« au moins » l'énergie requise)."
+    cout: {types: {feu: 1}}
+    fournitures: [{feu: 1}, {feu: 1}, {eau: 1}]
+    attendu: {accepte: true}
+  - id: cout-colore-paye-puis-incolore-sur-le-reste
+    regles: [R-9.2]
+    op: cout
+    description: "On paie d'abord le coloré, puis l'incolore avec ce qui reste."
+    cout: {types: {feu: 1}, incolore: 2}
+    fournitures: [{feu: 1}, {feu: 1}, {eau: 1}]
+    attendu: {accepte: true}
+  - id: cout-incolore-manque-apres-colore
+    regles: [R-9.2]
+    op: cout
+    description: "Le coloré consomme l'énergie, il n'en reste pas assez pour l'incolore : refus."
+    cout: {types: {feu: 2}, incolore: 1}
+    fournitures: [{feu: 1}, {feu: 1}]
+    attendu: {accepte: false, regle: R-9.2}
+  - id: cout-fourniture-unites-negatives-refusee
+    regles: [R-9.2]
+    op: cout
+    description: "Une fourniture d'énergie avec des unités négatives est une panne."
+    cout: {types: {feu: 1}}
+    fournitures: [{feu: -1}]
+    erreur: "unités invalides"
+  - id: cout-fourniture-type-vide-refusee
+    regles: [R-9.2]
+    op: cout
+    description: "Une fourniture d'énergie avec un type vide est une panne."
+    cout: {types: {feu: 1}}
+    fournitures: [{"": 1}]
+    erreur: "type invalide"

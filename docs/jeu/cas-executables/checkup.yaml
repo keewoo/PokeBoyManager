@@ -1,0 +1,222 @@
+# Cas exécutables — Pokémon Checkup : états entre les tours, ordre, K.O. hors attaque (R-11, R-12, R-13.1).
+# Opération `appliquer` avec l'action système `checkup` ; les fiches (PV/récompenses) sont
+# construites depuis l'état. Les tirages (réveil, brûlure) sont fixés par `tirages`.
+version: 1
+cas:
+  # --- Empoisonné : 1 compteur, pas de pile ou face (R-11.7) ---
+  - id: checkup-poison-un-compteur
+    regles: [R-11.7, R-12.2]
+    op: appliquer
+    description: "Empoisonné : 1 compteur de dégâts au Checkup."
+    etat:
+      alice: {actif: {etats: [empoisonne], pv: 100, recompenses: 1}}
+      bob: {actif: {pv: 100, recompenses: 1}}
+      tour: {joueur: alice, phase: checkup, numero: 4}
+    action: {type: checkup, auteur: systeme}
+    attendu:
+      etat: {alice: {actif: {degats: 10, etats: [empoisonne]}}}
+      evenements: [{type: etat_checkup, donnees: {etat: empoisonne, degats: 10, gueri: false}}]
+
+  # --- Brûlé : 2 compteurs puis pile ou face de guérison (R-11.4) ---
+  - id: checkup-brulure-face-guerit
+    regles: [R-11.4]
+    op: appliquer
+    description: "Brûlé : 2 compteurs, puis face = guéri (marqueur retiré)."
+    etat:
+      alice: {actif: {etats: [brule], pv: 100, recompenses: 1}}
+      bob: {actif: {pv: 100, recompenses: 1}}
+      tour: {joueur: alice, phase: checkup, numero: 4}
+    tirages: [{flux: "checkup:brule:alice", resultat: face}]
+    action: {type: checkup, auteur: systeme}
+    attendu:
+      etat: {alice: {actif: {degats: 20, etats: []}}}
+      evenements: [{type: etat_checkup, donnees: {etat: brule, degats: 20, gueri: true}}]
+  - id: checkup-brulure-pile-persiste
+    regles: [R-11.4]
+    op: appliquer
+    description: "Brûlé : 2 compteurs, puis pile = reste Brûlé."
+    etat:
+      alice: {actif: {etats: [brule], pv: 100, recompenses: 1}}
+      bob: {actif: {pv: 100, recompenses: 1}}
+      tour: {joueur: alice, phase: checkup, numero: 4}
+    tirages: [{flux: "checkup:brule:alice", resultat: pile}]
+    action: {type: checkup, auteur: systeme}
+    attendu:
+      etat: {alice: {actif: {degats: 20, etats: [brule]}}}
+      evenements: [{type: etat_checkup, donnees: {etat: brule, gueri: false}}]
+
+  # --- Endormi : pile ou face de réveil (R-11.3) ---
+  - id: checkup-endormi-face-reveil
+    regles: [R-11.3]
+    op: appliquer
+    description: "Endormi : face = réveil (aucun dégât)."
+    etat:
+      alice: {actif: {etats: [endormi], pv: 100, recompenses: 1}}
+      bob: {actif: {pv: 100, recompenses: 1}}
+      tour: {joueur: alice, phase: checkup, numero: 4}
+    tirages: [{flux: "checkup:endormi:alice", resultat: face}]
+    action: {type: checkup, auteur: systeme}
+    attendu:
+      etat: {alice: {actif: {degats: 0, etats: []}}}
+      evenements: [{type: etat_checkup, donnees: {etat: endormi, degats: 0, gueri: true}}]
+  - id: checkup-endormi-pile-persiste
+    regles: [R-11.3]
+    op: appliquer
+    description: "Endormi : pile = reste endormi."
+    etat:
+      alice: {actif: {etats: [endormi], pv: 100, recompenses: 1}}
+      bob: {actif: {pv: 100, recompenses: 1}}
+      tour: {joueur: alice, phase: checkup, numero: 4}
+    tirages: [{flux: "checkup:endormi:alice", resultat: pile}]
+    action: {type: checkup, auteur: systeme}
+    attendu:
+      etat: {alice: {actif: {etats: [endormi]}}}
+
+  # --- Paralysé : guérit au Checkup après le tour de son propriétaire (R-11.6) ---
+  - id: checkup-paralysie-guerit-son-tour
+    regles: [R-11.6]
+    op: appliquer
+    description: "Paralysé de l'Actif dont le tour s'achève : guérit."
+    etat:
+      alice: {actif: {etats: [paralyse], pv: 100, recompenses: 1}}
+      bob: {actif: {pv: 100, recompenses: 1}}
+      tour: {joueur: alice, phase: checkup, numero: 4}
+    action: {type: checkup, auteur: systeme}
+    attendu:
+      etat: {alice: {actif: {etats: []}}}
+      evenements: [{type: etat_checkup, donnees: {etat: paralyse, gueri: true}}]
+  - id: checkup-paralysie-persiste-tour-adverse
+    regles: [R-11.6]
+    op: appliquer
+    description: "Paralysé de l'adversaire (ce n'est pas son tour) : persiste."
+    etat:
+      alice: {actif: {pv: 100, recompenses: 1}}
+      bob: {actif: {etats: [paralyse], pv: 100, recompenses: 1}}
+      tour: {joueur: alice, phase: checkup, numero: 4}
+    action: {type: checkup, auteur: systeme}
+    attendu:
+      etat: {bob: {actif: {etats: [paralyse]}}}
+      evenements: [{type: etat_checkup, donnees: {joueur: bob, etat: paralyse, gueri: false}}]
+
+  # --- Ordre de résolution : Empoisonné, Brûlé, Endormi, Paralysé (R-12.2) ---
+  - id: checkup-ordre-des-etats
+    regles: [R-12.2]
+    op: appliquer
+    description: "Les événements sortent dans l'ordre poison, brûlure, endormi, paralysie."
+    etat:
+      alice: {actif: {etats: [empoisonne, brule, endormi, paralyse], pv: 200, recompenses: 1}}
+      bob: {actif: {pv: 100, recompenses: 1}}
+      tour: {joueur: alice, phase: checkup, numero: 4}
+    tirages:
+      - {flux: "checkup:brule:alice", resultat: pile}
+      - {flux: "checkup:endormi:alice", resultat: pile}
+    action: {type: checkup, auteur: systeme}
+    attendu:
+      evenements:
+        - {type: etat_checkup, donnees: {etat: empoisonne}}
+        - {type: etat_checkup, donnees: {etat: brule}}
+        - {type: etat_checkup, donnees: {etat: endormi}}
+        - {type: etat_checkup, donnees: {etat: paralyse}}
+  - id: checkup-poison-plus-brulure-cumulent-degats
+    regles: [R-11.7, R-11.4, R-12.2]
+    op: appliquer
+    description: "Poison (10) + brûlure (20) au même Checkup : 30 compteurs."
+    etat:
+      alice: {actif: {etats: [empoisonne, brule], pv: 200, recompenses: 1}}
+      bob: {actif: {pv: 100, recompenses: 1}}
+      tour: {joueur: alice, phase: checkup, numero: 4}
+    tirages: [{flux: "checkup:brule:alice", resultat: pile}]
+    action: {type: checkup, auteur: systeme}
+    attendu:
+      etat: {alice: {actif: {degats: 30}}}
+
+  # --- Un état ne frappe que l'Actif (R-11.2) ---
+  - id: checkup-banc-non-affecte
+    regles: [R-11.2]
+    op: appliquer
+    description: "Un Pokémon de banc Empoisonné n'est pas résolu au Checkup (seul l'Actif l'est)."
+    etat:
+      alice: {actif: {pv: 100, recompenses: 1}, banc: [{etats: [empoisonne], degats: 0}]}
+      bob: {actif: {pv: 100, recompenses: 1}}
+      tour: {joueur: alice, phase: checkup, numero: 4}
+    action: {type: checkup, auteur: systeme}
+    attendu:
+      etat: {alice: {banc: [{degats: 0, etats: [empoisonne]}]}}
+
+  # --- Les deux joueurs : le joueur dont le tour s'achève est résolu d'abord (R-12.2) ---
+  - id: checkup-deux-joueurs-poison
+    regles: [R-12.2, R-11.7]
+    op: appliquer
+    description: "Les deux Actifs empoisonnés : chacun prend 1 compteur, le joueur actif d'abord."
+    etat:
+      alice: {actif: {etats: [empoisonne], pv: 100, recompenses: 1}}
+      bob: {actif: {etats: [empoisonne], pv: 100, recompenses: 1}}
+      tour: {joueur: alice, phase: checkup, numero: 4}
+    action: {type: checkup, auteur: systeme}
+    attendu:
+      etat: {alice: {actif: {degats: 10}}, bob: {actif: {degats: 10}}}
+      evenements:
+        - {type: etat_checkup, donnees: {joueur: alice, etat: empoisonne}}
+        - {type: etat_checkup, donnees: {joueur: bob, etat: empoisonne}}
+
+  # --- K.O. hors attaque au Checkup (R-12.4, R-13.1) ---
+  - id: checkup-ko-poison-promotion-requise
+    regles: [R-12.4, R-13.1]
+    op: appliquer
+    description: "Le poison met l'Actif K.O. : défausse, l'adversaire prend 1 récompense, promotion requise."
+    etat:
+      alice: {actif: {etats: [empoisonne], degats: 90, pv: 100, recompenses: 1}, banc: 1}
+      bob: {actif: {pv: 100, recompenses: 1}, recompenses: 6}
+      tour: {joueur: alice, phase: checkup, numero: 4}
+    action: {type: checkup, auteur: systeme}
+    attendu:
+      etat: {alice: {actif_present: false, banc: 1}, bob: {recompenses: 5}, terminee: false}
+      evenements:
+        - {type: ko, donnees: {joueur: alice, par: bob, recompenses_prises: 1}}
+        - {type: promotion_requise, donnees: {joueur: alice}}
+  - id: checkup-ko-dernier-pokemon-defaite
+    regles: [R-16.4, R-16.2, R-12.4, R-8.9]
+    op: appliquer
+    description: "Dernier Pokémon mis K.O. hors attaque (banc vide) : défaite."
+    etat:
+      alice: {actif: {etats: [empoisonne], degats: 90, pv: 100, recompenses: 1}, banc: 0}
+      bob: {actif: {pv: 100, recompenses: 1}, recompenses: 6}
+      tour: {joueur: alice, phase: checkup, numero: 4}
+    action: {type: checkup, auteur: systeme}
+    attendu:
+      etat: {terminee: true, vainqueur: bob, raison_fin: plus_de_pokemon}
+  - id: checkup-ko-derniere-recompense-victoire
+    regles: [R-14.1, R-12.4]
+    op: appliquer
+    description: "Un K.O. au Checkup qui fait prendre à l'adversaire sa dernière récompense : victoire."
+    etat:
+      alice: {actif: {etats: [empoisonne], degats: 90, pv: 100, recompenses: 1}, banc: 1}
+      bob: {actif: {pv: 100, recompenses: 1}, recompenses: 1}
+      tour: {joueur: alice, phase: checkup, numero: 4}
+    action: {type: checkup, auteur: systeme}
+    attendu:
+      etat: {terminee: true, vainqueur: bob, raison_fin: derniere_recompense}
+
+  # --- Le Checkup ne se résout qu'en phase checkup (R-12.1) ---
+  - id: checkup-hors-phase-refuse
+    regles: [R-12.1]
+    op: appliquer
+    description: "Un Checkup demandé hors de la phase checkup est refusé."
+    etat:
+      alice: {actif: {pv: 100, recompenses: 1}}
+      bob: {actif: {pv: 100, recompenses: 1}}
+      tour: {joueur: alice, phase: principale, numero: 4}
+    action: {type: checkup, auteur: systeme}
+    erreur: "R-12.1"
+
+  # --- Fiche manquante pour un Pokémon endommagé : panne bruyante (D9) ---
+  - id: checkup-fiche-manquante-echoue
+    regles: [R-13.1, R-13.4]
+    op: appliquer
+    description: "Un Actif endommagé sans fiche catalogue fait échouer le Checkup (jamais deviné)."
+    etat:
+      alice: {actif: {etats: [empoisonne], degats: 50}}
+      bob: {actif: {pv: 100, recompenses: 1}}
+      tour: {joueur: alice, phase: checkup, numero: 4}
+    action: {type: checkup, auteur: systeme}
+    erreur: "Fiche de catalogue manquante"
