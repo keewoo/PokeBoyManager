@@ -93,6 +93,20 @@ def flux_checkup(etat_nom: str, joueur_id: str) -> str:
     return f"checkup:{etat_nom}:{joueur_id}"
 
 
+def flux_confusion(joueur_id: str) -> str:
+    """Nom de flux du pile ou face de **confusion avant l'attaque** (R-11.5) — par joueur.
+
+    La confusion tire un pile ou face **à la déclaration d'attaque** (R-11.5), pas au Checkup :
+    c'est un moment distinct, donc un **flux distinct** de ceux du Checkup (R-11.3/R-11.4). Un
+    flux par joueur, pour qu'une attaque de plus de l'un ne décale jamais la suite de l'autre
+    (exigence « flux séparés » du jalon J1). Les tirages successifs forment la suite 0, 1, 2…
+    que :func:`verifier_journal` contrôle.
+    """
+    if not joueur_id:
+        raise ValueError("joueur_id vide : un flux doit être nommé.")
+    return f"confusion:{joueur_id}"
+
+
 #: Flux du pile ou face de début de partie — qui commence (R-4.7).
 FLUX_QUI_COMMENCE = "partie:qui-commence"
 
@@ -460,6 +474,7 @@ __all__ = [
     "FLUX_QUI_COMMENCE",
     "flux_melange_deck",
     "flux_checkup",
+    "flux_confusion",
     "Tirage",
     "Rng",
     "engagement",

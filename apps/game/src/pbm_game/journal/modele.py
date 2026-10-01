@@ -93,6 +93,12 @@ EVT_TOUR_COMMENCE = "tour_commence"
 #: Une attaque est déclarée (R-5.7). Produit par la transition ``declarer_attaque`` ; au
 #: jalon J1 (ce lot) il ne porte aucun dégât — seul l'effet « termine le tour » est mécanisé.
 EVT_ATTAQUE_DECLAREE = "attaque_declaree"
+#: Le pile ou face de **confusion** a été résolu **avant** l'attaque (R-11.5). Produit par la
+#: transition ``declarer_attaque`` quand l'Actif est Confus : porte le joueur, le ``pile_ou_face``
+#: tiré, ``attaque_annulee`` (vrai sur **pile** : l'attaque n'a pas lieu et 3 compteurs sont
+#: posés sur le Pokémon confus) et les ``degats`` d'auto-blessure (0 sur face, 30 sur pile).
+#: Ajouté par ``j-etats-speciaux``.
+EVT_CONFUSION = "confusion_resolue"
 #: Des dégâts sont résolus et posés sur un Pokémon (R-10). Produit par la résolution d'attaque
 #: (lot ``j-degats-resolution``) : il porte la cible, les dégâts, le nombre de compteurs et le
 #: **détail de calcul** lisible (R-10.9) qu'affichent le journal de partie et l'aide en jeu.

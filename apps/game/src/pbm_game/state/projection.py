@@ -26,7 +26,7 @@ vérifiable en la parcourant (test de non-fuite).
 
 from __future__ import annotations
 
-from .modele import Carte, EtatPartie, Joueur, PokemonEnJeu
+from .modele import Carte, EtatPartie, Joueur, PokemonEnJeu, orientation
 
 
 def _carte_publique(carte: Carte) -> dict:
@@ -34,13 +34,21 @@ def _carte_publique(carte: Carte) -> dict:
 
 
 def _pokemon_public(pokemon: PokemonEnJeu) -> dict:
-    """Un Pokémon en jeu est **entièrement public** (R-3.6) : les deux joueurs le voient."""
+    """Un Pokémon en jeu est **entièrement public** (R-3.6) : les deux joueurs le voient.
+
+    ``orientation`` est l'**orientation physique de la carte** (R-11.8), dérivée des états
+    (``endormi`` / ``confus`` / ``paralyse`` l'orientent, sinon ``normale``) : l'interface la
+    montre comme sur une vraie table sans avoir à redériver la règle côté écran (L'interface ne
+    décide de rien). Elle est redondante avec ``etats_speciaux`` mais calculée **une fois** ici,
+    par le moteur qui fait autorité.
+    """
     return {
         "cartes": [_carte_publique(c) for c in pokemon.cartes],
         "energies": [_carte_publique(c) for c in pokemon.energies],
         "outil": _carte_publique(pokemon.outil) if pokemon.outil is not None else None,
         "compteurs_degats": pokemon.compteurs_degats,
         "etats_speciaux": sorted(pokemon.etats_speciaux),
+        "orientation": orientation(pokemon),
     }
 
 

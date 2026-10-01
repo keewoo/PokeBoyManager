@@ -30,6 +30,12 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import replace
 
+# Importé APRÈS les modules du paquet journal (modele, rng, state déjà chargés) : le paquet
+# ``pbm_game.tour`` ne tire ici que ses sous-modules sans dépendance à ``pbm_game.actions``
+# (fenêtres, drapeaux), ce qui évite tout cycle avec le générateur d'actions.
+# La résolution des états avant l'attaque (``pbm_game.etats.attaque``) est importée **au moment
+# de l'appel** dans ``_declarer_attaque`` : ce module importe ``journal.modele``, dont le paquet
+# ``journal`` importe en retour ce fichier — un import au chargement formerait donc un cycle.
 from ..rng import Rng, flux_melange_deck
 from ..state.modele import (
     PHASE_ATTAQUE,
@@ -40,10 +46,6 @@ from ..state.modele import (
     Joueur,
     Tour,
 )
-
-# Importé APRÈS les modules du paquet journal (modele, rng, state déjà chargés) : le paquet
-# ``pbm_game.tour`` ne tire ici que ses sous-modules sans dépendance à ``pbm_game.actions``
-# (fenêtres, drapeaux), ce qui évite tout cycle avec le générateur d'actions.
 from ..tour.drapeaux import est_premier_tour_du_joueur_qui_commence
 from ..tour.fenetres import FENETRE_DEBUT_TOUR, FENETRE_FIN_TOUR, declencher
 from .empreinte import empreinte
@@ -356,9 +358,19 @@ def _declarer_attaque(
     if etat.joueurs[_index_joueur(etat, jid)].actif is None:
         raise ValueError("Aucun Pokémon Actif ne peut porter l'attaque (R-9.1).")
 
-    # R-5.8 : l'attaque termine le tour même sans dégât. Au jalon J1, « degats: 0 » est la
-    # seule vérité disponible — le calcul réel arrive avec j-degats-resolution.
-    evenements = [Evenement(EVT_ATTAQUE_DECLAREE, {"joueur": jid, "degats": 0})]
+    # R-11.3/R-11.5/R-11.6 : les états de l'Actif se résolvent AVANT l'attaque — Sommeil et
+    # Paralysie l'interdisent (ValueError), la Confusion impose un pile ou face (face = l'attaque
+    # a lieu normalement, pile = l'attaque ratée + 3 compteurs sur soi). Délégué à
+    # ``pbm_game.etats.attaque`` ; import local pour casser le cycle d'import (voir l'en-tête).
+    from ..etats.attaque import resoudre_etats_avant_attaque
+
+    etat, attaque_a_lieu, evenements = resoudre_etats_avant_attaque(etat, jid, rng)
+
+    # R-5.8 : déclarer une attaque **termine le tour**, qu'elle ait eu lieu ou non (confusion
+    # tombée sur pile). Au jalon J1, « degats: 0 » est la seule vérité disponible pour une attaque
+    # qui a lieu — le calcul réel arrive avec ``j-degats-resolution``.
+    if attaque_a_lieu:
+        evenements.append(Evenement(EVT_ATTAQUE_DECLAREE, {"joueur": jid, "degats": 0}))
     etat2, evts_checkup = _entrer_checkup(etat, rng, de=etat.tour.phase)
     evenements.extend(evts_checkup)
     return etat2, evenements
