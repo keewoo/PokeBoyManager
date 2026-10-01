@@ -182,7 +182,7 @@ le compte rendu du lot (`docs/roadmap/comptes-rendus/pbm-carte-remplacement.md`)
   booléens TCGdex `normal`/`holo`/`reverse`/`firstEdition`/`wPromo`), `rule_marker` — règle
   spéciale ex/GX/V/VMAX/VSTAR/BREAK... TCGdex l'expose tantôt en `suffix` (ex, GX — la carte garde
   un stade d'évolution ordinaire), tantôt directement en `stage` (V/VMAX/VSTAR n'ont pas de
-  `suffix`) : `catalog.import_service._rule_marker` réconcilie les deux. `Set.release_date`/
+  `suffix`) : `catalog.import_service._rule_marker` réconcilie les deux. De ce `rule_marker` (suffixe BRUT) et du nom, `catalog.prize_marker.normalized_prize_marker` dérive à l'import **`cards.prize_marker`**, le marqueur de règle **normalisé** (vocabulaire du moteur `pbm_game`) qui fait foi pour la règle des Prix (R-13.3/R-13.7, lot `fix-marqueur-recompenses`) ; `rule_marker` garde le suffixe brut (lecteurs `decks.stats`/`decks.service`, inchangés). `Set.release_date`/
   `logo_url`/`symbol_url` existaient déjà (`v2-catalogue`). Toutes les colonnes JSONB de
   `Card`/`CardInsight` utilisent `none_as_null=True` (sinon un champ absent écrit un scalaire JSON
   `null`, pas un SQL NULL — fausse tout calcul `IS NOT NULL`, voir rapport de complétude).
@@ -430,9 +430,11 @@ trois sources indépendantes, sur le principe « la base sait, l'IA reconnaît �
 
 - **Légalités et règle des Prix** (`pbm_api.ingame.rules`, mission point 1) : déterministe,
   recalculée à chaque appel (gratuite, jamais mise en cache) depuis `Card.legal_standard`/
-  `legal_expanded` (catalogue TCGdex) et le suffixe du nom de la carte (`ex`/`V`/`VSTAR`/`GX`
-  prennent 2 Prix, `VMAX` en prend 3, une carte Pokémon sans suffixe 1 Prix, hors Pokémon
-  « non applicable ») — la vraie règle du jeu, jamais une IA.
+  `legal_expanded` (catalogue TCGdex) et le **marqueur de règle normalisé** `Card.prize_marker`
+  (`catalog.prize_marker`, calculé à l'import, jamais le suffixe du nom : R-13.7) — une Méga-Évolution
+  Pokémon ex donne **3** Prix bien qu'elle finisse par « ex », une TAG TEAM **3** bien qu'elle finisse
+  par « GX » ; `ex`/`EX`/`V`/`VSTAR`/`GX` donnent 2, `VMAX`/`V-UNION` 3, un Pokémon ordinaire 1, un
+  marqueur inconnu « non déterminées », hors Pokémon « non applicable ». La vraie règle du jeu, jamais une IA.
 - **Présence en tournoi** (`pbm_api.ingame.tournaments`/`tournaments_job`, mission point 2),
   source publique Limitless TCG (`robots.txt` sans restriction). Aucun identifiant partagé avec
   notre catalogue : le rapprochement se fait par **date de sortie de l'extension** (`Set.

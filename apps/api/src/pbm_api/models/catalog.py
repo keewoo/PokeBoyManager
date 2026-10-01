@@ -106,6 +106,13 @@ class Card(Base, TimestampMixin):
     # (ex, GX — la carte garde un stade d'évolution ordinaire), sinon `stage` quand il porte
     # lui-même la règle (VMAX/VSTAR n'ont pas de `suffix`, voir catalog/import_service.py).
     rule_marker: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # Marqueur de règle **normalisé** (vocabulaire du moteur `pbm_game.combat.fin
+    # .MARQUEUR_RECOMPENSES`) d'où se déduit le nombre de récompenses d'une carte K.O.
+    # (R-13.3/R-13.7), calculé à l'import par `catalog.prize_marker.normalized_prize_
+    # marker` depuis (nom, supertype, `rule_marker`). `None` hors Pokémon ; « inconnu »
+    # pour une carte à Rule Box non classable (jamais « par défaut 1 »). Distinct de
+    # `rule_marker`, qui garde le suffixe BRUT de TCGdex (lecteurs `decks`, inchangés).
+    prize_marker: Mapped[str | None] = mapped_column(String(16), nullable=True)
     # Variantes existantes pour cette carte (ex: {"normal": false, "holo": true, "reverse": false,
     # "firstEdition": false, "wPromo": false}), telles qu'exposées par TCGdex (`variants`).
     variants: Mapped[dict | None] = mapped_column(JSONB(none_as_null=True), nullable=True)

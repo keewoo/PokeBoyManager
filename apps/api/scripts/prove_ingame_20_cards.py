@@ -18,6 +18,7 @@ règle des Prix réelle, decklists réellement récupérées) — jamais un appe
 
 import asyncio
 
+from pbm_api.catalog.prize_marker import normalized_prize_marker
 from pbm_api.ingame.rules import prize_rule_of
 from pbm_api.ingame.tournaments import LimitlessTcgClient, find_card_page, parse_decklists
 
@@ -77,7 +78,8 @@ async def main() -> None:
                 card_number=number,
                 expected_en_name=name,
             )
-            prize = prize_rule_of(card_name=name, supertype=supertype)
+            marker = normalized_prize_marker(name=name, supertype=supertype, rule_marker=None)
+            prize = prize_rule_of(marker=marker, supertype=supertype)
 
             if found is None:
                 print(f"{name:24s} status=unavailable prize={prize.label}")

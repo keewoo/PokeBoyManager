@@ -15,6 +15,7 @@ import sys
 
 from pbm_api.ai.errors import AIProviderError
 from pbm_api.ai.factory import create_provider
+from pbm_api.catalog.prize_marker import normalized_prize_marker
 from pbm_api.ingame.generation import InGameStudyExtraction, build_prompt, render_study_text
 from pbm_api.ingame.rules import legalities_of, prize_rule_of
 from pbm_api.ingame.tournaments import LimitlessTcgClient, find_card_page, parse_decklists
@@ -37,7 +38,8 @@ async def main() -> None:
     card_name, set_code, number, supertype, set_name = sys.argv[3:8]
     legal_standard = _parse_bool(sys.argv[8])
 
-    prize_rule = prize_rule_of(card_name=card_name, supertype=supertype)
+    marker = normalized_prize_marker(name=card_name, supertype=supertype, rule_marker=None)
+    prize_rule = prize_rule_of(marker=marker, supertype=supertype)
     legalities = legalities_of(legal_standard=legal_standard, legal_expanded=None)
     print(f"Règle des Prix : {prize_rule.label}")
 

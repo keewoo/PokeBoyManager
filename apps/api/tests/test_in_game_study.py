@@ -88,6 +88,7 @@ async def _make_card(
     *,
     name: str = "Dracaufeu-ex",
     supertype: str = "Pokemon",
+    prize_marker: str | None = "ex",
     legal_standard: bool | None = False,
     legal_expanded: bool | None = True,
 ) -> Card:
@@ -100,6 +101,7 @@ async def _make_card(
         number="1",
         name=name,
         supertype=supertype,
+        prize_marker=prize_marker,
         legal_standard=legal_standard,
         legal_expanded=legal_expanded,
         attacks=[{"name": "Vortex Explosif", "damage": 330}],
@@ -210,7 +212,11 @@ async def test_get_in_game_study_without_default_key_still_exposes_deterministic
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["legalities"] == {"standard": False, "expanded": True}
-    assert body["prize_rule"] == {"applies": True, "prizes_taken": 2, "label": "2 Prix (carte ex)"}
+    assert body["prize_rule"] == {
+        "applies": True,
+        "prizes_taken": 2,
+        "label": "2 Prix (Pokémon ex)",
+    }
     assert body["attacks"] == [{"name": "Vortex Explosif", "damage": 330}]
     assert body["tournament_presence"]["status"] == "checked"
     assert body["study"]["status"] == "no_ai_key"

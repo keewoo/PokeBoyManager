@@ -176,7 +176,7 @@ async def _prepare_card(
     legalities = legalities_of(
         legal_standard=card.legal_standard, legal_expanded=card.legal_expanded
     )
-    prize_rule = prize_rule_of(card_name=card.name, supertype=card.supertype)
+    prize_rule = prize_rule_of(marker=card.prize_marker, supertype=card.supertype)
     tournament_decks = await _tournament_decks(db, card.id)
 
     prompt = build_combined_prompt(
