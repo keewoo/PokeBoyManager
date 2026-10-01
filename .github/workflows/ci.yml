@@ -158,6 +158,34 @@ jobs:
       - working-directory: apps/api
         run: uv run pytest -q
 
+  game:
+    # Moteur de jeu `pbm_game` : règles PURES, aucune E/S — ni base, ni Redis, ni S3, ni
+    # navigateur (principe du jalon J1). Ce job n'a donc aucun `services:`. Il vérifie la
+    # cohérence du corpus de règles (docs/jeu/REGLES.md) avec sa table de cas
+    # (docs/jeu/cas-de-regles.yaml) et la pureté du paquet. Ajouté par le lot
+    # `j-regles-reference` : une suite que la CI n'exécute pas est une CI verte sur rien.
+    name: game — moteur (ruff, tests purs)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: "0.12.13"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - working-directory: apps/game
+        run: uv sync --locked
+
+      - working-directory: apps/game
+        run: uv run ruff check .
+
+      - working-directory: apps/game
+        run: uv run pytest -q
+
   e2e:
     name: e2e — parcours auth (Playwright)
     runs-on: ubuntu-latest

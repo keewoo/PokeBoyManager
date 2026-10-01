@@ -1,0 +1,304 @@
+# cas-de-regles.yaml — table de cas de test du moteur de jeu
+#
+# GÉNÉRÉ PAR AUCUN SCRIPT — édité à la main avec REGLES.md, son unique source.
+# Chaque cas NOMME la ou les règles `R-x.y` qu'il vérifie (champ `regles`). Le test
+# apps/game/tests/test_corpus_regles.py garantit que :
+#   - chaque `regles` cite un identifiant qui EXISTE dans docs/jeu/REGLES.md ;
+#   - chaque cas cite au moins une règle ;
+#   - les dix cas limites de la mission j-regles-reference sont couverts (champ `cas_limite`).
+#
+# Les champs `entree` / `attendu` sont volontairement absents à ce stade : ce lot fixe la
+# RÉFÉRENCE (règles + table qui les nomme). Le lot j-tests-regles les remplira avec les états
+# d'entrée et les résultats attendus, une fois le modèle d'état (j-modele-etat) disponible.
+#
+# Schéma d'un cas :
+#   id          : identifiant unique kebab-case
+#   regles      : liste d'au moins un R-x.y défini dans REGLES.md
+#   categorie   : famille (setup, tour, premier-tour, degats, etats, checkup, ko, victoire,
+#                 mouvement, cartes, cas-limite)
+#   description : ce que le cas vérifie, en une phrase
+#   cas_limite  : (facultatif) slug canonique quand le cas couvre un des dix cas limites
+
+version: 1
+
+cas:
+  # --- Mise en place et mulligan ---
+  - id: setup-six-recompenses
+    regles: [R-3.4, R-4.3]
+    categorie: setup
+    description: "La mise en place pose exactement 6 récompenses face cachée par joueur."
+  - id: setup-banc-max-cinq
+    regles: [R-3.2, R-4.2]
+    categorie: setup
+    description: "On pose au plus 5 Pokémon de base au banc à la mise en place."
+  - id: mulligan-sans-base
+    regles: [R-4.4]
+    categorie: setup
+    description: "Une main d'ouverture sans Pokémon de base déclenche un mulligan."
+  - id: mulligan-cartes-bonus
+    regles: [R-4.5]
+    categorie: cas-limite
+    cas_limite: mulligan-multiple
+    description: "L'adversaire pioche une carte par mulligan supplémentaire pris par l'autre joueur."
+
+  # --- Déroulé d'un tour ---
+  - id: tour-une-energie
+    regles: [R-5.4]
+    categorie: tour
+    description: "On ne peut attacher qu'une seule énergie par tour (2e tentative refusée, R-5.4)."
+  - id: tour-un-supporter
+    regles: [R-5.5]
+    categorie: tour
+    description: "On ne peut jouer qu'un seul Supporter par tour."
+  - id: tour-une-retraite
+    regles: [R-5.6, R-8.3]
+    categorie: tour
+    description: "On ne peut battre en retraite qu'une seule fois par tour."
+  - id: tour-attaque-termine
+    regles: [R-5.7]
+    categorie: tour
+    description: "Déclarer une attaque termine le tour ; plus aucune action ensuite."
+  - id: tour-attaque-sans-degat-termine
+    regles: [R-5.8]
+    categorie: tour
+    description: "Une attaque qui n'inflige aucun dégât termine quand même le tour."
+  - id: evolution-interdite-tour-de-pose
+    regles: [R-7.3]
+    categorie: tour
+    description: "Un Pokémon ne peut pas évoluer le tour où il est entré en jeu."
+  - id: evolution-retire-etats
+    regles: [R-7.2, R-11.9]
+    categorie: etats
+    description: "Faire évoluer un Pokémon retire tous ses états spéciaux."
+
+  # --- Premier tour ---
+  - id: premier-tour-pas-attaque
+    regles: [R-6.1]
+    categorie: premier-tour
+    cas_limite: premier-tour
+    description: "Le joueur qui commence ne peut pas attaquer à son premier tour."
+  - id: premier-tour-pas-supporter
+    regles: [R-6.2]
+    categorie: premier-tour
+    description: "Le joueur qui commence ne peut pas jouer de Supporter à son premier tour."
+  - id: premier-tour-pioche-et-energie
+    regles: [R-6.3, R-6.4]
+    categorie: premier-tour
+    description: "Le joueur qui commence pioche et peut attacher une énergie à son premier tour."
+  - id: premier-tour-pas-evolution
+    regles: [R-6.5]
+    categorie: premier-tour
+    description: "Aucun joueur ne peut faire évoluer à son premier tour."
+
+  # --- Attaque et dégâts ---
+  - id: degats-faiblesse-x2
+    regles: [R-10.2, R-10.1]
+    categorie: degats
+    description: "La faiblesse multiplie les dégâts de base par 2 à l'étape 3 de l'ordre officiel."
+  - id: degats-resistance-moins-30
+    regles: [R-10.3, R-10.1]
+    categorie: degats
+    description: "La résistance réduit les dégâts de 30 à l'étape 4 de l'ordre officiel."
+  - id: degats-ordre-faiblesse-puis-resistance
+    regles: [R-10.1, R-10.8]
+    categorie: degats
+    description: "Faiblesse PUIS résistance ; l'ordre des opérations est respecté (bi-type inclus)."
+  - id: degats-compteurs-pas-pv
+    regles: [R-10.4]
+    categorie: degats
+    description: "Les dégâts se posent en compteurs, jamais en soustrayant des PV."
+  - id: degats-banc-sans-faiblesse-resistance
+    regles: [R-10.5]
+    categorie: degats
+    description: "Les dégâts au banc n'appliquent ni faiblesse ni résistance."
+  - id: degats-plancher-zero
+    regles: [R-10.7]
+    categorie: cas-limite
+    cas_limite: resistance-superieure-aux-degats
+    description: "Résistance supérieure aux dégâts : plancher à 0, aucun compteur."
+  - id: degats-faiblesse-sur-zero
+    regles: [R-10.1]
+    categorie: cas-limite
+    cas_limite: faiblesse-sur-degats-nuls
+    description: "Attaque de 0 dégât : l'attaque s'arrête à l'étape 2, la faiblesse n'est jamais appliquée."
+  - id: degats-detail-journalise
+    regles: [R-10.9]
+    categorie: degats
+    description: "Le détail de calcul est produit et journalisé pour chaque attaque."
+
+  # --- États spéciaux ---
+  - id: etat-endormi-bloque-attaque-retraite
+    regles: [R-11.3, R-8.4]
+    categorie: etats
+    description: "Endormi : ni attaque ni retraite ; réveil au pile ou face du Checkup."
+  - id: etat-paralyse-bloque-attaque-retraite
+    regles: [R-11.6, R-8.4]
+    categorie: etats
+    description: "Paralysé : ni attaque ni retraite ; guérit au Checkup après le tour suivant."
+  - id: etat-confus-pile-ou-face
+    regles: [R-11.5]
+    categorie: etats
+    description: "Confus : pile ou face avant l'attaque ; sur pile, 3 compteurs et attaque annulée."
+  - id: etat-brule-deux-compteurs
+    regles: [R-11.4]
+    categorie: etats
+    description: "Brûlé : 2 compteurs au Checkup puis pile ou face de guérison ; un seul marqueur."
+  - id: etat-empoisonne-un-compteur
+    regles: [R-11.7]
+    categorie: etats
+    description: "Empoisonné : 1 compteur au Checkup ; un seul marqueur."
+  - id: cumul-orientation-exclusive
+    regles: [R-11.8]
+    categorie: etats
+    description: "Endormi/Confus/Paralysé s'excluent : le dernier posé remplace le précédent."
+  - id: cumul-marqueurs-avec-orientation
+    regles: [R-11.8]
+    categorie: etats
+    description: "Un Pokémon peut être Brûlé + Paralysé + Empoisonné simultanément (matrice R-11.8)."
+  - id: guerison-passage-banc
+    regles: [R-11.9, R-8.6]
+    categorie: etats
+    description: "Le passage au banc retire tous les états spéciaux."
+
+  # --- Phase entre les tours ---
+  - id: checkup-ordre-poison-brulure-sommeil-paralysie
+    regles: [R-12.2]
+    categorie: checkup
+    description: "Ordre du Checkup : Empoisonné, Brûlé, Endormi, Paralysé."
+  - id: checkup-ko-entre-tours
+    regles: [R-12.4, R-13.1]
+    categorie: checkup
+    description: "Un Pokémon sans PV après le Checkup est K.O. et donne ses récompenses."
+  - id: checkup-expiration-journalisee
+    regles: [R-12.5]
+    categorie: checkup
+    description: "Les effets « jusqu'à la fin du tour » expirent au Checkup, chaque expiration journalisée."
+
+  # --- Mises K.O. et récompenses ---
+  - id: ko-defausse-pile-complete
+    regles: [R-13.2]
+    categorie: ko
+    description: "Un K.O. défausse le Pokémon avec sa pile d'évolutions, ses énergies et son Outil."
+  - id: ko-recompenses-selon-marqueur
+    regles: [R-13.3]
+    categorie: ko
+    description: "1/2/3 récompenses selon le marqueur de règle de la carte K.O."
+  - id: ko-marqueur-inconnu-echoue
+    regles: [R-13.4]
+    categorie: ko
+    description: "Un marqueur de règle inconnu fait échouer bruyamment, jamais 1 par défaut."
+  - id: ko-recompenses-ex-vaut-deux
+    regles: [R-13.3, R-15.1]
+    categorie: cartes
+    description: "Un Pokémon ex K.O. donne 2 récompenses."
+  - id: ko-recompenses-vmax-vaut-trois
+    regles: [R-13.3, R-15.5]
+    categorie: cartes
+    description: "Un Pokémon VMAX K.O. donne 3 récompenses."
+  - id: ko-recompenses-radiant-vaut-un
+    regles: [R-13.3, R-15.9]
+    categorie: cartes
+    description: "Un Pokémon Radiant K.O. donne 1 récompense."
+
+  # --- Mouvement : retraite, promotion, échange forcé ---
+  - id: retraite-coute-energie
+    regles: [R-8.2]
+    categorie: mouvement
+    description: "La retraite défausse une énergie par symbole du coût, au choix du joueur."
+  - id: retraite-bloquee-endormi-paralyse
+    regles: [R-8.4]
+    categorie: mouvement
+    description: "Un Pokémon Endormi ou Paralysé ne peut pas battre en retraite."
+  - id: echange-force-ignore-etat
+    regles: [R-8.8]
+    categorie: cas-limite
+    cas_limite: echange-force-sous-etat
+    description: "Un échange forcé peut viser un Pokémon Endormi/Paralysé et ne consomme ni retraite ni énergie."
+  - id: promotion-obligatoire
+    regles: [R-8.7]
+    categorie: mouvement
+    description: "Après un K.O., la promotion d'un Pokémon du banc est obligatoire."
+  - id: passage-banc-conserve-conserve
+    regles: [R-8.6]
+    categorie: mouvement
+    description: "Le passage au banc conserve énergies, Outil, compteurs et pile ; retire états et effets."
+
+  # --- Conditions de victoire, abandon, égalité (cas limites nommés) ---
+  - id: victoire-derniere-recompense
+    regles: [R-14.1]
+    categorie: victoire
+    description: "Prendre sa dernière carte récompense gagne la partie."
+  - id: pioche-impossible-defaite
+    regles: [R-14.2, R-5.2]
+    categorie: cas-limite
+    cas_limite: pioche-vide-debut-tour
+    description: "Ne pas pouvoir piocher en début de tour est une défaite, pas une exception."
+  - id: banc-vide-apres-ko-defaite
+    regles: [R-8.9, R-14.1]
+    categorie: cas-limite
+    cas_limite: banc-vide-apres-ko
+    description: "Un K.O. sans Pokémon au banc pour promouvoir fait perdre la partie."
+  - id: ko-simultane-recompenses
+    regles: [R-13.5]
+    categorie: cas-limite
+    cas_limite: ko-simultane
+    description: "Un K.O. simultané fait prendre à chaque joueur ses récompenses."
+  - id: dernier-pokemon-ko-hors-attaque
+    regles: [R-16.4, R-12.4]
+    categorie: cas-limite
+    cas_limite: dernier-pokemon-ko-hors-attaque
+    description: "Le dernier Pokémon mis K.O. par un effet hors attaque (Checkup) peut terminer la partie."
+  - id: abandon-defaite-immediate
+    regles: [R-14.3]
+    categorie: cas-limite
+    cas_limite: abandon
+    description: "Abandonner fait perdre immédiatement."
+  - id: egalite-partie-nulle
+    regles: [R-14.4, R-16.10]
+    categorie: cas-limite
+    cas_limite: egalite
+    description: "Deux conditions de victoire remplies au même instant donnent une partie nulle."
+  - id: victoire-double-voie-prime
+    regles: [R-14.5]
+    categorie: victoire
+    description: "Gagner par deux voies quand l'autre gagne par une seule : pas d'égalité, on est vainqueur."
+  - id: partie-terminee-figee
+    regles: [R-14.6]
+    categorie: victoire
+    description: "Une partie terminée refuse toute action supplémentaire."
+
+  # --- Cartes particulières : une seule utilisation par partie ---
+  - id: gx-une-attaque-par-partie
+    regles: [R-15.3]
+    categorie: cartes
+    description: "Une seule attaque GX par partie et par joueur."
+  - id: vstar-un-power-par-partie
+    regles: [R-15.6]
+    categorie: cartes
+    description: "Un seul VSTAR Power (attaque ou talent) par partie et par joueur."
+  - id: tera-ex-protege-au-banc
+    regles: [R-15.2]
+    categorie: cartes
+    description: "Un Tera Pokémon ex est protégé des dégâts d'attaque tant qu'il est au banc."
+
+  # --- Construction de deck ---
+  - id: deck-60-cartes
+    regles: [R-2.1]
+    categorie: setup
+    description: "Un deck compte exactement 60 cartes."
+  - id: deck-quatre-max-sauf-energie-base
+    regles: [R-2.2]
+    categorie: setup
+    description: "Au plus 4 cartes de même nom, sauf l'énergie de base."
+  - id: deck-un-ace-spec
+    regles: [R-2.3, R-15.10]
+    categorie: setup
+    description: "Au plus une carte ACE SPEC par deck."
+  - id: deck-un-radiant
+    regles: [R-2.4, R-15.9]
+    categorie: setup
+    description: "Au plus un Pokémon Radiant par deck."
+  - id: deck-carte-non-scriptee-refusee
+    regles: [R-2.6, R-15.12]
+    categorie: setup
+    description: "Une carte dont l'effet n'est pas scripté et testé est refusée au deck (D9)."
