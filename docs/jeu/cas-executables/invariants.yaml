@@ -1,0 +1,106 @@
+# Cas exécutables — invariants d'un état de partie (R-3, R-8.1, R-11.1/8, R-17.8/9).
+# Opération `invariants` : verifier(etat) ; `attendu.saines: true` = aucune violation,
+# `attendu.violation_contient: "R-x.y"` = au moins une violation citant cette règle.
+version: 1
+cas:
+  - id: invariants-etat-sain
+    regles: [R-3.1, R-3.4]
+    op: invariants
+    description: "Un état complet (zones, 1 Actif, 6 récompenses) ne viole aucun invariant."
+    etat:
+      alice: {actif: {}, banc: 2, pioche: 40, main: 5, recompenses: 6}
+      bob: {actif: {}, banc: 1, pioche: 40, main: 5, recompenses: 6}
+    attendu: {saines: true}
+  - id: invariants-banc-trop-grand
+    regles: [R-3.2, R-8.1]
+    op: invariants
+    description: "Un banc de plus de 5 Pokémon est une violation."
+    etat:
+      alice: {actif: {}, banc: 6}
+      bob: {actif: {}}
+    attendu: {violation_contient: "R-3.2"}
+  - id: invariants-banc-cinq-ok
+    regles: [R-17.8]
+    op: invariants
+    description: "Un banc de 5 Pokémon (maximum retenu) est valide."
+    etat:
+      alice: {actif: {}, banc: 5, recompenses: 6}
+      bob: {actif: {}, recompenses: 6}
+    attendu: {saines: true}
+  - id: invariants-banc-sans-actif
+    regles: [R-3.3]
+    op: invariants
+    description: "Un banc non vide sans Actif (hors partie terminée) est une violation."
+    etat:
+      alice: {actif: null, banc: 2}
+      bob: {actif: {}}
+    attendu: {violation_contient: "R-3.3"}
+  - id: invariants-recompenses-trop
+    regles: [R-3.4, R-17.9]
+    op: invariants
+    description: "Plus de 6 récompenses est une violation."
+    etat:
+      alice: {actif: {}, recompenses: 7}
+      bob: {actif: {}}
+    attendu: {violation_contient: "R-3.4"}
+  - id: invariants-six-recompenses-ok
+    regles: [R-3.4, R-17.9]
+    op: invariants
+    description: "Six récompenses (nombre retenu) est valide."
+    etat:
+      alice: {actif: {}, recompenses: 6}
+      bob: {actif: {}, recompenses: 6}
+    attendu: {saines: true}
+  - id: invariants-stade-proprietaire-hors-partie
+    regles: [R-3.5]
+    op: invariants
+    description: "Un propriétaire de Stade qui n'est pas un joueur de la partie est une violation."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      stade: true
+      stade_proprietaire: carol
+    attendu: {violation_contient: "R-3.5"}
+  - id: invariants-stade-proprietaire-sans-stade
+    regles: [R-3.5]
+    op: invariants
+    description: "Un propriétaire de Stade renseigné sans Stade en jeu est une violation."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {}}
+      stade_proprietaire: alice
+    attendu: {violation_contient: "R-3.5"}
+  - id: invariants-stade-partage-ok
+    regles: [R-3.5]
+    op: invariants
+    description: "Un seul Stade avec un propriétaire joueur est valide."
+    etat:
+      alice: {actif: {}, recompenses: 6}
+      bob: {actif: {}, recompenses: 6}
+      stade: true
+      stade_proprietaire: alice
+    attendu: {saines: true}
+  - id: invariants-etat-special-inconnu
+    regles: [R-11.1]
+    op: invariants
+    description: "Un état spécial hors des cinq connus est une violation."
+    etat:
+      alice: {actif: {etats: [gele]}}
+      bob: {actif: {}}
+    attendu: {violation_contient: "R-11.1"}
+  - id: invariants-orientation-ambigue
+    regles: [R-11.8]
+    op: invariants
+    description: "Deux états d'orientation sur un même Pokémon est une violation (un seul autorisé)."
+    etat:
+      alice: {actif: {etats: [endormi, confus]}}
+      bob: {actif: {}}
+    attendu: {violation_contient: "R-11.8"}
+  - id: invariants-actif-sans-banc-ok
+    regles: [R-3.3]
+    op: invariants
+    description: "Un Actif sans banc est valide (le banc n'est pas obligatoire)."
+    etat:
+      alice: {actif: {}, banc: 0, recompenses: 6}
+      bob: {actif: {}, recompenses: 6}
+    attendu: {saines: true}

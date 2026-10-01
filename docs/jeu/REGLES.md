@@ -377,7 +377,15 @@
 
 ## Table de cas
 
-La table de cas de test qui nomme, pour chaque cas, la règle `R-x.y` qu'il vérifie, vit dans
-**`docs/jeu/cas-de-regles.yaml`** (lot `j-tests-regles` l'étoffera avec les entrées/attendus du
-moteur). Le test `apps/game/tests/test_corpus_regles.py` garantit que **chaque cas cite une règle
-qui existe dans ce document** et que les dix cas limites de la mission y sont couverts.
+La table de cas **documentaire** qui nomme, pour chaque cas, la règle `R-x.y` qu'il vérifie, vit
+dans **`docs/jeu/cas-de-regles.yaml`**. Le test `apps/game/tests/test_corpus_regles.py` garantit
+que **chaque cas cite une règle qui existe dans ce document** et que les dix cas limites de la
+mission y sont couverts.
+
+La **batterie de cas exécutables** (lot `j-tests-regles`) vit dans
+**`docs/jeu/cas-executables/*.yaml`** : chaque cas porte un état de départ, une action (ou un appel
+de fonction) et un résultat attendu, **rejoués contre le moteur** par
+`apps/game/tests/test_cas_executables.py`. Son format est documenté dans
+**`docs/jeu/CAS-EXECUTABLES.md`**. La garde `apps/game/tests/test_couverture_regles.py` fait
+échouer la CI dès qu'une règle de ce corpus n'a **aucun** cas (documentaire ou exécutable) ni
+exception écrite et justifiée (`docs/jeu/couverture-exceptions.yaml`).

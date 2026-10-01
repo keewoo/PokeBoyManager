@@ -1,0 +1,194 @@
+# Cas exécutables — états spéciaux : pose, matrice de cumul, orientation, guérison (R-11, R-17.6).
+# Opération `etat` : part d'un Pokémon (`pokemon`), applique `poser` (liste d'états) et/ou
+# `soigner`, puis vérifie `etats` / `orientation` / `bloquant`.
+version: 1
+cas:
+  # --- Les cinq états connus (R-11.1) ---
+  - id: pose-endormi
+    regles: [R-11.1]
+    op: etat
+    description: "Poser Endormi : l'état est présent, la carte est orientée « endormi »."
+    poser: [endormi]
+    attendu: {etats: [endormi], orientation: endormi}
+  - id: pose-brule
+    regles: [R-11.1]
+    op: etat
+    description: "Poser Brûlé : marqueur présent, orientation normale."
+    poser: [brule]
+    attendu: {etats: [brule], orientation: normale}
+  - id: pose-confus
+    regles: [R-11.1]
+    op: etat
+    description: "Poser Confus : orientation « confus »."
+    poser: [confus]
+    attendu: {etats: [confus], orientation: confus}
+  - id: pose-paralyse
+    regles: [R-11.1]
+    op: etat
+    description: "Poser Paralysé : orientation « paralyse »."
+    poser: [paralyse]
+    attendu: {etats: [paralyse], orientation: paralyse}
+  - id: pose-empoisonne
+    regles: [R-11.1]
+    op: etat
+    description: "Poser Empoisonné : marqueur présent, orientation normale."
+    poser: [empoisonne]
+    attendu: {etats: [empoisonne], orientation: normale}
+  - id: etat-inconnu-refuse
+    regles: [R-11.1]
+    op: etat
+    description: "Un état hors des cinq connus est refusé, jamais posé « au mieux » (D9)."
+    poser: [gele]
+    erreur: "R-11.1"
+
+  # --- Orientation exclusive : le dernier posé remplace (R-11.8, R-17.6) ---
+  - id: orientation-endormi-remplace-confus
+    regles: [R-11.8, R-17.6]
+    op: etat
+    description: "Endormi posé sur Confus : remplace (un seul état d'orientation)."
+    pokemon: {etats: [confus]}
+    poser: [endormi]
+    attendu: {etats: [endormi], orientation: endormi}
+  - id: orientation-endormi-remplace-paralyse
+    regles: [R-11.8]
+    op: etat
+    description: "Endormi posé sur Paralysé : remplace."
+    pokemon: {etats: [paralyse]}
+    poser: [endormi]
+    attendu: {etats: [endormi]}
+  - id: orientation-confus-remplace-endormi
+    regles: [R-11.8]
+    op: etat
+    description: "Confus posé sur Endormi : remplace."
+    pokemon: {etats: [endormi]}
+    poser: [confus]
+    attendu: {etats: [confus], orientation: confus}
+  - id: orientation-confus-remplace-paralyse
+    regles: [R-11.8]
+    op: etat
+    description: "Confus posé sur Paralysé : remplace."
+    pokemon: {etats: [paralyse]}
+    poser: [confus]
+    attendu: {etats: [confus]}
+  - id: orientation-paralyse-remplace-endormi
+    regles: [R-11.8]
+    op: etat
+    description: "Paralysé posé sur Endormi : remplace."
+    pokemon: {etats: [endormi]}
+    poser: [paralyse]
+    attendu: {etats: [paralyse], orientation: paralyse}
+  - id: orientation-paralyse-remplace-confus
+    regles: [R-11.8]
+    op: etat
+    description: "Paralysé posé sur Confus : remplace."
+    pokemon: {etats: [confus]}
+    poser: [paralyse]
+    attendu: {etats: [paralyse]}
+  - id: orientation-dernier-de-trois
+    regles: [R-11.8]
+    op: etat
+    description: "Trois orientations posées successivement : seule la dernière reste."
+    poser: [endormi, confus, paralyse]
+    attendu: {etats: [paralyse], orientation: paralyse}
+
+  # --- Marqueurs cumulables, entre eux et avec l'orientation (R-11.8) ---
+  - id: cumul-endormi-plus-brule
+    regles: [R-11.8]
+    op: etat
+    description: "Brûlé posé sur Endormi : les deux coexistent (marqueur + orientation)."
+    pokemon: {etats: [endormi]}
+    poser: [brule]
+    attendu: {etats: [endormi, brule], orientation: endormi}
+  - id: cumul-confus-plus-empoisonne
+    regles: [R-11.8]
+    op: etat
+    description: "Empoisonné posé sur Confus : coexistent."
+    pokemon: {etats: [confus]}
+    poser: [empoisonne]
+    attendu: {etats: [confus, empoisonne], orientation: confus}
+  - id: cumul-brule-plus-empoisonne
+    regles: [R-11.8]
+    op: etat
+    description: "Les deux marqueurs cumulent, sans orientation."
+    poser: [brule, empoisonne]
+    attendu: {etats: [brule, empoisonne], orientation: normale}
+  - id: cumul-exemple-officiel-trois
+    regles: [R-11.8]
+    op: etat
+    description: "Exemple officiel : Brûlé + Paralysé + Empoisonné en même temps."
+    poser: [brule, paralyse, empoisonne]
+    attendu: {etats: [brule, paralyse, empoisonne], orientation: paralyse}
+  - id: cumul-orientation-change-garde-marqueurs
+    regles: [R-11.8]
+    op: etat
+    description: "Changer d'orientation garde les marqueurs (Brûlé reste quand Endormi devient Paralysé)."
+    pokemon: {etats: [endormi, brule, empoisonne]}
+    poser: [paralyse]
+    attendu: {etats: [paralyse, brule, empoisonne]}
+  - id: marqueur-brule-reste-unique
+    regles: [R-11.8, R-11.4]
+    op: etat
+    description: "Re-poser Brûlé ne crée pas un second marqueur : un seul."
+    pokemon: {etats: [brule]}
+    poser: [brule]
+    attendu: {etats: [brule]}
+  - id: marqueur-poison-reste-unique
+    regles: [R-11.8, R-11.7]
+    op: etat
+    description: "Re-poser Empoisonné ne crée pas un second marqueur."
+    pokemon: {etats: [empoisonne]}
+    poser: [empoisonne]
+    attendu: {etats: [empoisonne]}
+
+  # --- Blocage d'attaque : Endormi et Paralysé bloquent, pas la Confusion (R-11.3/5/6) ---
+  - id: bloquant-endormi
+    regles: [R-11.3]
+    op: etat
+    description: "Endormi empêche d'attaquer (état bloquant)."
+    poser: [endormi]
+    attendu: {bloquant: endormi}
+  - id: bloquant-paralyse
+    regles: [R-11.6]
+    op: etat
+    description: "Paralysé empêche d'attaquer (état bloquant)."
+    poser: [paralyse]
+    attendu: {bloquant: paralyse}
+  - id: bloquant-confus-non
+    regles: [R-11.5]
+    op: etat
+    description: "La Confusion ne BLOQUE pas l'attaque (elle impose un pile ou face avant)."
+    poser: [confus]
+    attendu: {bloquant: null}
+  - id: bloquant-marqueurs-non
+    regles: [R-11.4, R-11.7]
+    op: etat
+    description: "Brûlé et Empoisonné seuls ne bloquent pas l'attaque."
+    poser: [brule, empoisonne]
+    attendu: {bloquant: null}
+  - id: bloquant-sain
+    regles: [R-11.2]
+    op: etat
+    description: "Un Pokémon sans état n'est pas bloqué."
+    attendu: {bloquant: null, orientation: normale}
+
+  # --- Guérison de TOUS les états (R-11.9) ---
+  - id: guerison-retire-tout
+    regles: [R-11.9]
+    op: etat
+    description: "La guérison retire tous les états spéciaux à la fois."
+    pokemon: {etats: [paralyse, brule, empoisonne]}
+    soigner: true
+    attendu: {etats: [], orientation: normale, bloquant: null}
+  - id: guerison-sur-sain
+    regles: [R-11.9]
+    op: etat
+    description: "Guérir un Pokémon sans état ne change rien."
+    soigner: true
+    attendu: {etats: []}
+  - id: guerison-apres-pose
+    regles: [R-11.9, R-11.8]
+    op: etat
+    description: "Poser trois états puis guérir : plus aucun état."
+    poser: [endormi, brule, empoisonne]
+    soigner: true
+    attendu: {etats: []}

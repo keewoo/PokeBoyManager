@@ -1,0 +1,234 @@
+# Cas exécutables — retraite, promotion, échange forcé (R-8, R-5.6, R-11.10, R-3.6).
+# Opération `appliquer` avec les actions `retraite`, `promouvoir`, `echange_force`.
+version: 1
+cas:
+  # --- Retraite volontaire (R-8.2/R-8.3) ---
+  - id: retraite-defausse-une-energie-par-symbole
+    regles: [R-8.2]
+    op: appliquer
+    description: "Retraite de coût 1 : défausse 1 énergie choisie, échange avec le banc."
+    etat:
+      alice: {actif: {energies: 2}, banc: 1}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action: {type: retraite, auteur: alice, params: {banc_index: 0, cout_retraite: 1, energies_defaussees: ["alice.actif.e0"]}}
+    attendu:
+      etat: {alice: {defausse: 1}, tour: {retraite_faite: true}}
+      evenements: [{type: retraite_effectuee, donnees: {joueur: alice, cout: 1}}]
+  - id: retraite-cout-nul-gratuite
+    regles: [R-8.2]
+    op: appliquer
+    description: "Coût de retraite nul : aucune énergie défaussée."
+    etat:
+      alice: {actif: {energies: 1}, banc: 1}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action: {type: retraite, auteur: alice, params: {banc_index: 0, cout_retraite: 0, energies_defaussees: []}}
+    attendu:
+      etat: {alice: {defausse: 0}, tour: {retraite_faite: true}}
+  - id: retraite-cout-deux-choisit-deux
+    regles: [R-8.2]
+    op: appliquer
+    description: "Coût 2 : le joueur choisit 2 énergies parmi 3 à défausser."
+    etat:
+      alice: {actif: {energies: 3}, banc: 1}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action: {type: retraite, auteur: alice, params: {banc_index: 0, cout_retraite: 2, energies_defaussees: ["alice.actif.e0", "alice.actif.e2"]}}
+    attendu:
+      etat: {alice: {defausse: 2}}
+  - id: retraite-conserve-au-banc
+    regles: [R-8.6, R-3.6]
+    op: appliquer
+    description: "Le Pokémon qui descend garde énergies, Outil et compteurs ; perd ses états (R-8.6)."
+    etat:
+      alice: {actif: {energies: 2, degats: 30, outil: true, etats: [empoisonne]}, banc: 1}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action: {type: retraite, auteur: alice, params: {banc_index: 0, cout_retraite: 1, energies_defaussees: ["alice.actif.e0"]}}
+    attendu:
+      etat: {alice: {banc: [{energies: 1, degats: 30, outil: true, etats: []}]}}
+
+  # --- Retraite refusée (R-5.6/R-8.3/R-8.4/R-11.10) ---
+  - id: retraite-endormi-refusee
+    regles: [R-8.4, R-11.10]
+    op: appliquer
+    description: "Un Actif Endormi ne peut pas battre en retraite."
+    etat:
+      alice: {actif: {etats: [endormi], energies: 1}, banc: 1}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action: {type: retraite, auteur: alice, params: {banc_index: 0, cout_retraite: 1, energies_defaussees: ["alice.actif.e0"]}}
+    erreur: "R-8.4"
+  - id: retraite-paralyse-refusee
+    regles: [R-8.4, R-11.10]
+    op: appliquer
+    description: "Un Actif Paralysé ne peut pas battre en retraite."
+    etat:
+      alice: {actif: {etats: [paralyse], energies: 1}, banc: 1}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action: {type: retraite, auteur: alice, params: {banc_index: 0, cout_retraite: 1, energies_defaussees: ["alice.actif.e0"]}}
+    erreur: "R-8.4"
+  - id: retraite-deux-fois-refusee
+    regles: [R-5.6, R-8.3]
+    op: appliquer
+    description: "Une seule retraite par tour : la seconde est refusée."
+    etat:
+      alice: {actif: {energies: 1}, banc: 1}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3, retraite_faite: true}
+    action: {type: retraite, auteur: alice, params: {banc_index: 0, cout_retraite: 1, energies_defaussees: ["alice.actif.e0"]}}
+    erreur: "R-5.6"
+  - id: retraite-sans-banc-refusee
+    regles: [R-8.2]
+    op: appliquer
+    description: "Sans Pokémon de banc, aucune retraite possible."
+    etat:
+      alice: {actif: {energies: 1}, banc: 0}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action: {type: retraite, auteur: alice, params: {banc_index: 0, cout_retraite: 1, energies_defaussees: ["alice.actif.e0"]}}
+    erreur: "Aucun Pokémon de banc"
+  - id: retraite-cout-non-paye-refusee
+    regles: [R-8.2]
+    op: appliquer
+    description: "Défausser moins d'énergies que le coût est refusé (jamais une retraite au rabais)."
+    etat:
+      alice: {actif: {energies: 2}, banc: 1}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action: {type: retraite, auteur: alice, params: {banc_index: 0, cout_retraite: 2, energies_defaussees: ["alice.actif.e0"]}}
+    erreur: "Coût de retraite non payé"
+  - id: retraite-energie-non-attachee-refusee
+    regles: [R-8.2]
+    op: appliquer
+    description: "Défausser une énergie qui n'est pas attachée à l'Actif est refusé."
+    etat:
+      alice: {actif: {energies: 1}, banc: 1}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action: {type: retraite, auteur: alice, params: {banc_index: 0, cout_retraite: 1, energies_defaussees: ["alice.actif.e9"]}}
+    erreur: "non attachées"
+  - id: retraite-par-non-actif-refusee
+    regles: [R-5.1]
+    op: appliquer
+    description: "Seul le joueur actif bat en retraite."
+    etat:
+      alice: {actif: {}}
+      bob: {actif: {energies: 1}, banc: 1}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action: {type: retraite, auteur: bob, params: {banc_index: 0, cout_retraite: 1, energies_defaussees: ["bob.actif.e0"]}}
+    erreur: "R-5.1"
+  - id: retraite-banc-index-hors-banc
+    regles: [R-8.2]
+    op: appliquer
+    description: "Un banc_index hors du banc est refusé."
+    etat:
+      alice: {actif: {energies: 1}, banc: 1}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action: {type: retraite, auteur: alice, params: {banc_index: 5, cout_retraite: 1, energies_defaussees: ["alice.actif.e0"]}}
+    erreur: "hors du banc"
+
+  # --- Promotion après K.O. (R-8.7/R-8.9) ---
+  - id: promotion-depuis-le-banc
+    regles: [R-8.7]
+    op: appliquer
+    description: "Après un K.O. (Actif absent), promouvoir un Pokémon du banc comme nouvel Actif."
+    etat:
+      alice: {actif: null, banc: 2}
+      bob: {actif: {}}
+      tour: {joueur: bob, phase: checkup, numero: 4}
+    action: {type: promouvoir, auteur: alice, params: {banc_index: 1}}
+    attendu:
+      etat: {alice: {actif_present: true, banc: 1}}
+      evenements: [{type: promotion_effectuee, donnees: {joueur: alice}}]
+  - id: promotion-banc-vide-defaite
+    regles: [R-8.9, R-14.1]
+    op: appliquer
+    description: "Promotion requise mais banc vide : défaite."
+    etat:
+      alice: {actif: null, banc: 0}
+      bob: {actif: {}}
+      tour: {joueur: bob, phase: checkup, numero: 4}
+    action: {type: promouvoir, auteur: alice, params: {banc_index: 0}}
+    attendu:
+      etat: {terminee: true, vainqueur: bob, raison_fin: plus_de_pokemon}
+  - id: promotion-actif-present-refusee
+    regles: [R-8.7]
+    op: appliquer
+    description: "La promotion ne s'applique qu'après un K.O. : Actif présent = refus."
+    etat:
+      alice: {actif: {}, banc: 1}
+      bob: {actif: {}}
+      tour: {joueur: bob, phase: checkup, numero: 4}
+    action: {type: promouvoir, auteur: alice, params: {banc_index: 0}}
+    erreur: "R-8.7"
+
+  # --- Échange forcé (R-8.8/R-16.12) ---
+  - id: echange-force-ne-consomme-pas-la-retraite
+    regles: [R-8.8]
+    op: appliquer
+    description: "L'échange forcé change l'Actif sans marquer la retraite ni défausser d'énergie."
+    etat:
+      alice: {actif: {energies: 2}, banc: 1}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action: {type: echange_force, auteur: systeme, params: {joueur: alice, banc_index: 0}}
+    attendu:
+      etat: {alice: {defausse: 0, banc: [{energies: 2}]}, tour: {retraite_faite: false}}
+      evenements: [{type: echange_force_effectue, donnees: {joueur: alice}}]
+  - id: echange-force-sous-endormi-autorise
+    regles: [R-8.8, R-16.12]
+    op: appliquer
+    description: "L'échange forcé peut viser un Actif Endormi (contrairement à la retraite)."
+    etat:
+      alice: {actif: {etats: [endormi]}, banc: 1}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action: {type: echange_force, auteur: systeme, params: {joueur: alice, banc_index: 0}}
+    attendu:
+      etat: {alice: {banc: [{etats: []}]}}
+  - id: echange-force-sous-paralyse-autorise
+    regles: [R-8.8, R-16.12]
+    op: appliquer
+    description: "L'échange forcé peut viser un Actif Paralysé."
+    etat:
+      alice: {actif: {etats: [paralyse]}, banc: 1}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action: {type: echange_force, auteur: systeme, params: {joueur: alice, banc_index: 0}}
+    attendu:
+      etat: {alice: {banc: [{etats: []}]}}
+  - id: echange-force-nettoie-au-banc
+    regles: [R-8.6]
+    op: appliquer
+    description: "Le descendu par échange forcé perd ses états mais garde énergies et compteurs."
+    etat:
+      alice: {actif: {energies: 1, degats: 20, etats: [empoisonne, brule]}, banc: 1}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action: {type: echange_force, auteur: systeme, params: {joueur: alice, banc_index: 0}}
+    attendu:
+      etat: {alice: {banc: [{energies: 1, degats: 20, etats: []}]}}
+  - id: echange-force-sans-actif-refuse
+    regles: [R-8.7, R-8.8]
+    op: appliquer
+    description: "Sans Actif, c'est une promotion (R-8.7), pas un échange forcé."
+    etat:
+      alice: {actif: null, banc: 1}
+      bob: {actif: {}}
+      tour: {joueur: bob, phase: checkup, numero: 4}
+    action: {type: echange_force, auteur: systeme, params: {joueur: alice, banc_index: 0}}
+    erreur: "R-8.7"
+  - id: echange-force-sans-cible-refuse
+    regles: [R-8.8]
+    op: appliquer
+    description: "Un échange forcé sans « joueur » nommé est refusé (on ne devine pas la cible)."
+    etat:
+      alice: {actif: {}, banc: 1}
+      bob: {actif: {}}
+      tour: {joueur: alice, phase: principale, numero: 3}
+    action: {type: echange_force, auteur: systeme, params: {banc_index: 0}}
+    erreur: "sans cible"

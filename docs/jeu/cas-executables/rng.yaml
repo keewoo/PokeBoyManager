@@ -1,0 +1,51 @@
+# Cas exécutables — aléatoire reproductible et vérifiable (R-4.7, et les pile ou face de R-11).
+# Opération `rng` : on cherche une graine produisant les `tirages` voulus, on les rejoue (ils
+# doivent correspondre EXACTEMENT), puis le vérificateur de journal ne relève aucune anomalie.
+version: 1
+cas:
+  - id: rng-qui-commence-face
+    regles: [R-4.7]
+    op: rng
+    description: "Le pile ou face « qui commence » peut tomber sur face, de façon reproductible."
+    tirages: [{flux: "partie:qui-commence", resultat: face}]
+  - id: rng-qui-commence-pile
+    regles: [R-4.7]
+    op: rng
+    description: "…et sur pile, tout aussi reproductible."
+    tirages: [{flux: "partie:qui-commence", resultat: pile}]
+  - id: rng-deux-tirages-meme-flux
+    regles: [R-4.7]
+    op: rng
+    description: "Deux tirages du même flux forment une séquence 0, 1 reproductible et vérifiable."
+    tirages:
+      - {flux: "partie:qui-commence", resultat: face}
+      - {flux: "partie:qui-commence", resultat: pile}
+  - id: rng-flux-separes
+    regles: [R-4.7]
+    op: rng
+    description: "Des flux séparés sont indépendants : chacun garde son propre résultat."
+    tirages:
+      - {flux: "partie:qui-commence", resultat: face}
+      - {flux: "melange:deck:alice", resultat: pile}
+  - id: rng-confusion-flux
+    regles: [R-11.5]
+    op: rng
+    description: "Le pile ou face de confusion tire dans son flux dédié, reproductible."
+    tirages: [{flux: "confusion:alice", resultat: pile}]
+  - id: rng-checkup-brule-flux
+    regles: [R-11.4]
+    op: rng
+    description: "La guérison de brûlure tire dans le flux Checkup de la brûlure."
+    tirages: [{flux: "checkup:brule:alice", resultat: face}]
+  - id: rng-checkup-endormi-flux
+    regles: [R-11.3]
+    op: rng
+    description: "Le réveil tire dans le flux Checkup du sommeil."
+    tirages: [{flux: "checkup:endormi:bob", resultat: face}]
+  - id: rng-checkup-flux-par-joueur
+    regles: [R-4.7]
+    op: rng
+    description: "Un même état a un flux distinct par joueur : les deux ne se décalent pas."
+    tirages:
+      - {flux: "checkup:endormi:alice", resultat: pile}
+      - {flux: "checkup:endormi:bob", resultat: face}

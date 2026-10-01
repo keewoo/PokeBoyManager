@@ -1,0 +1,27 @@
+# Exceptions de couverture — règles du corpus SANS cas, avec leur justification écrite.
+#
+# La garde CI (apps/game/tests/test_couverture_regles.py) exige que CHAQUE règle définie dans
+# docs/jeu/REGLES.md ait au moins un cas — exécutable (docs/jeu/cas-executables/) ou documentaire
+# (docs/jeu/cas-de-regles.yaml). Les règles ci-dessous n'en ont volontairement aucun : elles ne
+# sont pas exécutables au jalon J1 (règles méta sur le corpus, ou mécaniques non encore
+# implémentées — D9 : un effet non implémenté n'est jamais « testé » pour de faux). Chacune NOMME
+# sa raison. La garde vérifie aussi qu'aucune exception n'est PÉRIMÉE (une règle ici alors qu'un
+# cas la couvre déjà) ni INCONNUE (absente de REGLES.md) : quand une mécanique arrive, on retire
+# son exception et on ajoute ses cas.
+version: 1
+exceptions:
+  R-1.1: "Règle méta : source officielle du corpus. Non exécutable (ne décrit aucun comportement du moteur)."
+  R-1.2: "Règle méta : format « maison » DJ1 (pas de rotation). Décision de corpus, non exécutable."
+  R-1.3: "Règle méta : priorité du corpus sur une carte ancienne. Arbitrage de corpus, non exécutable."
+  R-2.5: "Construction de deck (le nom fait foi pour la limite des 4) : la construction de deck n'est pas implémentée au J1."
+  R-3.7: "Au plus 1 Outil par Pokémon : garanti PAR CONSTRUCTION (champ `outil` unique) ; aucune action d'attache d'Outil au J1."
+  R-4.6: "Double mulligan (les deux joueurs sans base) : la mise en place / le mulligan ne sont pas implémentés au J1."
+  R-5.3: "Actions libres de la phase principale (poser, évoluer, attacher, Dresseur) : non implémentées au J1 (D9)."
+  R-7.1: "Évolution (conservation d'énergies/compteurs) : l'évolution n'est pas implémentée au J1 (D9)."
+  R-7.4: "Pas de double évolution le même tour : l'évolution n'est pas implémentée au J1 (D9)."
+  R-9.3: "Ordre complet A–F de résolution d'attaque : seule la vérification de Confusion (étape C) est mécanisée ; le reste attend les effets de cartes (D9)."
+  R-12.3: "Effets « au Checkup » de cartes (talents, Dresseurs) : aucun effet de carte n'existe au J1 (D9)."
+  R-15.11: "Label Ancien/Futur : sans effet de règle propre au-delà de ce qu'imprime la carte — rien à exécuter."
+  R-16.9: "Mulligan multiple (cartes bonus à l'adversaire) : la mise en place / le mulligan ne sont pas implémentés au J1."
+  R-17.4: "Premier tour — pas de Supporter : jouer un Supporter n'est pas implémenté au J1 (aucune action Supporter)."
+  R-17.10: "Variante Méga-Évolution (XY vs 2025) : les cartes Méga-Évolution et leurs effets ne sont pas implémentés au J1."
