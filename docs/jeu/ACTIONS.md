@@ -70,14 +70,17 @@ répondre à une demande de décision. Chacune a besoin de données de carte ou 
 ce coup » que de le proposer de travers.
 
 Les types d'action **mécaniques mais non libres** sont refusés en nommant leur règle :
-`piocher` (R-5.2 : la pioche de début de tour est automatique), `melanger_pioche` (R-4.1 :
-mise en place). Un type inconnu, ou pas encore scripté comme coup jouable, est refusé par
-**D9 / R-15.12**.
+`piocher` et `debut_tour` (R-5.2 : la pioche de début de tour est automatique, action
+système), `melanger_pioche` (R-4.1 : mise en place). Un type inconnu, ou pas encore scripté
+comme coup jouable, est refusé par **D9 / R-15.12** — c'est le cas de `declarer_attaque`, dont
+le coup complet (coût, dégâts) attend `j-degats-resolution`.
 
-> ⚠️ `avancer_phase` est proposé à chaque phase d'une partie vivante. Les **contraintes fines
-> de phase** (la pioche de début de tour obligatoire, l'attaque qui termine le tour, le
-> premier tour du joueur qui commence) relèvent du lot suivant `j-machine-tour` : elles
-> affineront cette famille, elles ne la remplacent pas.
+> ℹ️ Depuis `j-machine-tour`, `avancer_phase` est proposé à chaque phase d'une partie vivante
+> **sauf pendant la pioche** : on ne quitte pas la phase de pioche manuellement, c'est la
+> pioche obligatoire de début de tour (action système `debut_tour`, R-5.2) qui s'en charge.
+> Le reste du déroulé d'un tour (pioche obligatoire, défaite sur pioche impossible, attaque qui
+> termine le tour, règle du premier tour, drapeaux « une fois par tour ») est documenté dans
+> `docs/jeu/MACHINE-TOUR.md`.
 
 ## Le point d'extension — comment un lot de résolution branche sa famille
 

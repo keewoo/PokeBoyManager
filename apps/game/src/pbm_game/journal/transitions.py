@@ -40,19 +40,29 @@ from ..state.modele import (
     Joueur,
     Tour,
 )
+
+# Importé APRÈS les modules du paquet journal (modele, rng, state déjà chargés) : le paquet
+# ``pbm_game.tour`` ne tire ici que ses sous-modules sans dépendance à ``pbm_game.actions``
+# (fenêtres, drapeaux), ce qui évite tout cycle avec le générateur d'actions.
+from ..tour.drapeaux import est_premier_tour_du_joueur_qui_commence
+from ..tour.fenetres import FENETRE_DEBUT_TOUR, FENETRE_FIN_TOUR, declencher
 from .empreinte import empreinte
 from .modele import (
     ACTION_ABANDONNER,
     ACTION_AVANCER_PHASE,
+    ACTION_DEBUT_TOUR,
+    ACTION_DECLARER_ATTAQUE,
     ACTION_MELANGER_PIOCHE,
     ACTION_PIOCHER,
     AUTEUR_SYSTEME,
+    EVT_ATTAQUE_DECLAREE,
     EVT_CARTES_PIOCHEES,
     EVT_PARTIE_TERMINEE,
     EVT_PHASE_AVANCEE,
     EVT_PIOCHE_MELANGEE,
     EVT_TOUR_COMMENCE,
     RAISON_ABANDON,
+    RAISON_PIOCHE_IMPOSSIBLE,
     Action,
     Entree,
     Evenement,
@@ -157,15 +167,48 @@ def _piocher(etat: EtatPartie, action: Action, rng: Rng) -> tuple[EtatPartie, li
     return etat2, [evt]
 
 
+def _entrer_checkup(etat: EtatPartie, rng: Rng, *, de: str) -> tuple[EtatPartie, list[Evenement]]:
+    """Entre en phase Checkup (fin du tour) et ouvre la fenêtre « fin de tour » (R-12.1).
+
+    Renvoie ``(etat, evenements)`` avec l'événement de phase, **puis** les événements produits
+    par la fenêtre de fin de tour (vide au jalon J1 : elle ne produit rien, voir
+    :mod:`pbm_game.tour.fenetres`). Partagé par ``avancer_phase`` (attaque → checkup) et
+    ``declarer_attaque`` : une seule porte vers le Checkup, donc une seule fenêtre de fin de tour.
+    """
+    tour2 = replace(etat.tour, phase=PHASE_CHECKUP)
+    etat2 = replace(etat, tour=tour2)
+    evenements = [
+        Evenement(
+            EVT_PHASE_AVANCEE,
+            {
+                "de": de,
+                "vers": PHASE_CHECKUP,
+                "numero": tour2.numero,
+                "joueur_actif": tour2.joueur_actif,
+            },
+        )
+    ]
+    etat2, evts_fenetre = declencher(etat2, FENETRE_FIN_TOUR, rng)
+    evenements.extend(evts_fenetre)
+    return etat2, evenements
+
+
 def _avancer_phase(
     etat: EtatPartie, action: Action, rng: Rng
 ) -> tuple[EtatPartie, list[Evenement]]:
     """Avance d'une phase (R-5.1) ; depuis ``checkup`` (R-12.1), ouvre le tour suivant.
 
-    Progression : ``pioche → principale → attaque → checkup``. Après ``checkup``, un
-    nouveau tour s'ouvre : numéro + 1, joueur actif adverse, drapeaux « une fois par tour »
-    (R-5.4/5/6) remis à zéro, phase ``pioche``. Refuse d'avancer une partie terminée
-    (R-14.6) ou depuis une phase inconnue.
+    Progression : ``pioche → principale → attaque → checkup``. L'entrée en ``checkup`` (fin
+    du tour) ouvre la fenêtre « fin de tour ». Après ``checkup``, un nouveau tour s'ouvre :
+    numéro + 1, joueur actif adverse, drapeaux « une fois par tour » (R-5.4/5/6) **et**
+    l'ensemble « entrés en jeu ce tour » (R-7.3) remis à zéro par construction d'un ``Tour``
+    neuf, phase ``pioche``. Refuse d'avancer une partie terminée (R-14.6) ou depuis une phase
+    inconnue.
+
+    Transition **mécanique** : elle n'effectue PAS la pioche obligatoire de début de tour —
+    c'est le rôle de l'action système ``debut_tour`` (R-5.2), qui seule quitte proprement la
+    phase de pioche. Le générateur d'actions ne propose donc pas « avancer la phase » pendant
+    la pioche (voir ``FamilleAvancerPhase``).
     """
     if etat.terminee:
         raise ValueError("Partie terminée : aucune phase n'avance (R-14.6).")
@@ -191,6 +234,8 @@ def _avancer_phase(
         ]
 
     vers = _ORDRE_PHASES[_ORDRE_PHASES.index(phase) + 1]
+    if vers == PHASE_CHECKUP:
+        return _entrer_checkup(etat, rng, de=phase)
     tour2 = replace(etat.tour, phase=vers)
     etat2 = replace(etat, tour=tour2)
     evt = Evenement(
@@ -203,6 +248,120 @@ def _avancer_phase(
         },
     )
     return etat2, [evt]
+
+
+def _debut_tour(
+    etat: EtatPartie, action: Action, rng: Rng
+) -> tuple[EtatPartie, list[Evenement]]:
+    """Début de tour (R-5.1/R-5.2) : pioche obligatoire, défaite sur pioche impossible (R-14.2).
+
+    Action **système**, pas un coup libre du joueur (R-5.2) : le service l'applique quand un
+    tour s'ouvre (en phase de pioche). Le joueur concerné est le joueur actif du tour.
+
+    Déroulé :
+
+    1. si sa pioche est **vide**, il ne peut pas piocher → **défaite** (R-14.2), condition
+       vérifiée ici au bon moment (jamais une exception) : la partie se fige, l'adversaire
+       gagne, et l'on **n'avance pas** la phase ;
+    2. sinon, il pioche 1 carte (R-5.2) ;
+    3. la fenêtre « début de tour » s'ouvre (R-5.1 ; vide au jalon J1) ;
+    4. la phase passe en principale (R-5.1 : pioche → principale).
+    """
+    if etat.terminee:
+        raise ValueError("Partie terminée : aucun tour ne commence (R-14.6).")
+    if etat.tour.phase != PHASE_PIOCHE:
+        raise ValueError(
+            f"Début de tour hors de la phase de pioche (phase : {etat.tour.phase!r}, R-5.1)."
+        )
+    jid = etat.tour.joueur_actif
+    index = _index_joueur(etat, jid)
+    joueur = etat.joueurs[index]
+
+    # (1) Pioche impossible = DÉFAITE (R-14.2) — pas une exception, une condition de fin.
+    if not joueur.pioche:
+        gagnant = _autre_joueur(etat, jid)
+        etat2 = replace(
+            etat, terminee=True, vainqueur=gagnant, raison_fin=RAISON_PIOCHE_IMPOSSIBLE
+        )
+        evt = Evenement(
+            EVT_PARTIE_TERMINEE,
+            {"vainqueur": gagnant, "raison": RAISON_PIOCHE_IMPOSSIBLE, "perdant": jid},
+        )
+        return etat2, [evt]
+
+    # (2) Pioche obligatoire d'une carte (R-5.2).
+    piochee = joueur.pioche[0]
+    reste = joueur.pioche[1:]
+    etat2 = _remplacer_joueur(
+        etat, index, replace(joueur, pioche=reste, main=joueur.main + (piochee,))
+    )
+    evenements = [
+        Evenement(
+            EVT_CARTES_PIOCHEES,
+            {"joueur": jid, "nombre": 1, "instance_ids": [piochee.instance_id]},
+        )
+    ]
+
+    # (3) Fenêtre « début de tour » (R-5.1) — câblée, vide au jalon J1.
+    etat2, evts_fenetre = declencher(etat2, FENETRE_DEBUT_TOUR, rng)
+    evenements.extend(evts_fenetre)
+
+    # (4) Passage en phase principale (R-5.1).
+    etat2 = replace(etat2, tour=replace(etat2.tour, phase=PHASE_PRINCIPALE))
+    evenements.append(
+        Evenement(
+            EVT_PHASE_AVANCEE,
+            {
+                "de": PHASE_PIOCHE,
+                "vers": PHASE_PRINCIPALE,
+                "numero": etat2.tour.numero,
+                "joueur_actif": jid,
+            },
+        )
+    )
+    return etat2, evenements
+
+
+def _declarer_attaque(
+    etat: EtatPartie, action: Action, rng: Rng
+) -> tuple[EtatPartie, list[Evenement]]:
+    """Déclarer une attaque (R-5.7/R-5.8) : **termine le tour**, même sans aucun dégât.
+
+    Ce lot (``j-machine-tour``) ne mécanise QUE la fin de tour : aucun coût d'énergie, aucun
+    dégât, aucune faiblesse ni résistance (D9 — ils arrivent avec ``j-degats-resolution``, qui
+    enregistrera le vrai coup jouable dans le générateur). Déclarer une attaque fait passer en
+    phase Checkup (fin du tour) et ouvre la fenêtre « fin de tour ».
+
+    Gardes serveur (le serveur tient les règles seul) : partie vivante (R-14.6), joueur actif
+    seulement (R-5.7), phase principale ou d'attaque (R-5.1), pas au premier tour du joueur
+    qui commence (R-6.1), et un Pokémon Actif pour porter l'attaque (R-9.1).
+    """
+    if etat.terminee:
+        raise ValueError("Partie terminée : aucune attaque n'est déclarée (R-14.6).")
+    jid = action.auteur
+    if jid != etat.tour.joueur_actif:
+        raise ValueError(
+            f"Seul le joueur actif déclare une attaque ; le tour est à "
+            f"« {etat.tour.joueur_actif} » (R-5.7)."
+        )
+    if etat.tour.phase not in (PHASE_PRINCIPALE, PHASE_ATTAQUE):
+        raise ValueError(
+            f"Une attaque se déclare en phase principale ou d'attaque "
+            f"(phase : {etat.tour.phase!r}, R-5.1)."
+        )
+    if est_premier_tour_du_joueur_qui_commence(etat.tour):
+        raise ValueError(
+            "Le joueur qui commence ne peut pas attaquer à son premier tour (R-6.1)."
+        )
+    if etat.joueurs[_index_joueur(etat, jid)].actif is None:
+        raise ValueError("Aucun Pokémon Actif ne peut porter l'attaque (R-9.1).")
+
+    # R-5.8 : l'attaque termine le tour même sans dégât. Au jalon J1, « degats: 0 » est la
+    # seule vérité disponible — le calcul réel arrive avec j-degats-resolution.
+    evenements = [Evenement(EVT_ATTAQUE_DECLAREE, {"joueur": jid, "degats": 0})]
+    etat2, evts_checkup = _entrer_checkup(etat, rng, de=etat.tour.phase)
+    evenements.extend(evts_checkup)
+    return etat2, evenements
 
 
 def _abandonner(
@@ -233,6 +392,8 @@ REGISTRE: dict[str, Transition] = {
     ACTION_PIOCHER: _piocher,
     ACTION_AVANCER_PHASE: _avancer_phase,
     ACTION_ABANDONNER: _abandonner,
+    ACTION_DEBUT_TOUR: _debut_tour,
+    ACTION_DECLARER_ATTAQUE: _declarer_attaque,
 }
 
 
