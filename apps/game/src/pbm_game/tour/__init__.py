@@ -36,6 +36,7 @@ from .drapeaux import (
 from .fenetres import (
     DECLENCHEURS,
     FENETRE_DEBUT_TOUR,
+    FENETRE_EXPIRATION_EFFETS,
     FENETRE_FIN_TOUR,
     FENETRES,
     Declencheur,
@@ -55,6 +56,7 @@ __all__ = [
     # fenêtres
     "FENETRE_DEBUT_TOUR",
     "FENETRE_FIN_TOUR",
+    "FENETRE_EXPIRATION_EFFETS",
     "FENETRES",
     "Declencheur",
     "DECLENCHEURS",

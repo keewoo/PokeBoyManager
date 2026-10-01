@@ -75,6 +75,15 @@ ACTION_PROMOUVOIR = "promouvoir"
 #: qui joue l'effet. Ajoutée par ``j-retraite-banc`` ; l'effet qui la déclenche viendra plus
 #: tard (D9).
 ACTION_ECHANGE_FORCE = "echange_force"
+#: **Pokémon Checkup** (R-12) — action **système** résolue en phase ``checkup``, entre la fin
+#: d'un tour et le début du suivant. Elle résout, dans l'ordre fixé par le corpus : les états
+#: spéciaux de chaque Actif (Empoisonné, Brûlé, Endormi, Paralysé — R-12.2), l'expiration des
+#: effets « jusqu'à la fin de ce tour » (R-12.5), puis les K.O. qui en découlent (R-12.4) avec
+#: récompenses (R-13) et promotion demandée. ``params`` : ``fiches`` — un mapping
+#: ``instance_id de la carte au sommet → {"pv": int, "recompenses": int}`` que le **service**
+#: extrait du catalogue (le moteur ne connaît ni PV ni marqueur de règle : D9, il ne devine
+#: rien). Ajoutée par ``j-checkup``. Auteur : :data:`AUTEUR_SYSTEME`.
+ACTION_CHECKUP = "checkup"
 
 # --- Types d'événement (ce que PRODUIT le moteur) ----------------------------
 EVT_PIOCHE_MELANGEE = "pioche_melangee"
@@ -102,6 +111,24 @@ EVT_PROMOTION = "promotion_effectuee"
 #: ``j-retraite-banc``) : porte le joueur, l'ancien et le nouvel Actif. Ne marque **pas** la
 #: retraite du tour et ne défausse **aucune** énergie.
 EVT_ECHANGE_FORCE = "echange_force_effectue"
+#: Un **état spécial** a été résolu au Checkup (R-12.2) sur l'Actif d'un joueur. Produit par
+#: ``j-checkup`` : porte le joueur, l'état (``empoisonne``/``brule``/``endormi``/``paralyse``),
+#: la règle citée, les dégâts posés (poison/brûlure) et, le cas échéant, le pile ou face
+#: (``endormi``/``brulure``) et si l'état est **guéri** à ce Checkup.
+EVT_ETAT_CHECKUP = "etat_checkup"
+#: Un **effet temporaire** « jusqu'à la fin de ce tour » a **expiré** au Checkup (R-12.5).
+#: Produit par la fenêtre d'expiration : journalise chaque retrait, pour qu'un effet temporaire
+#: ne devienne jamais éternel sans que rien ne le dise. Vide au jalon J1 (aucun effet temporaire).
+EVT_EFFET_EXPIRE = "effet_expire"
+#: Un Pokémon est **K.O.** (R-13.1) — ses compteurs de dégâts ont atteint ses PV. Produit par
+#: ``j-checkup`` pour les K.O. survenus **hors attaque** (poison, brûlure…). Porte le joueur
+#: dont le Pokémon est K.O., son identité, le nombre de **récompenses prises** par l'adversaire
+#: (R-13.3) et l'adversaire qui les prend.
+EVT_KO = "ko"
+#: Une **promotion est requise** (R-8.7/R-12.4) : l'Actif d'un joueur est K.O. et son banc n'est
+#: pas vide ; ce joueur doit choisir un Pokémon du banc (action ``promouvoir``) avant que le
+#: tour suivant ne commence. Produit par ``j-checkup`` ; porte le joueur concerné.
+EVT_PROMOTION_REQUISE = "promotion_requise"
 
 #: Raison de fin pour un abandon (R-14.3), portée par ``EtatPartie.raison_fin`` et par
 #: l'événement :data:`EVT_PARTIE_TERMINEE`.

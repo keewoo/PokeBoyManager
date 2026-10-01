@@ -43,6 +43,14 @@ Sommeil/Paralysie), `promouvoir` (obligatoire après un K.O., **banc vide = déf
 Les trois partagent le **passage au banc** (R-8.6) : le Pokémon qui descend perd ses états mais
 garde énergies, Outil, compteurs et pile d'évolutions. Ce sont des transitions journalisées,
 enregistrées dans le `REGISTRE` comme les autres.
+
+Lot `j-checkup` : `pbm_game.checkup`, le **Pokémon Checkup** (R-12) — la phase entre les deux
+tours, dans un ordre fixé : états de chaque Actif (Empoisonné, Brûlé, Endormi, Paralysé —
+R-12.2), expiration journalisée des effets « jusqu'à la fin de ce tour » (R-12.5), puis les
+K.O. qui en découlent hors attaque (R-12.4) — récompenses (R-13) et promotion demandée, banc
+vide = défaite. `resoudre_checkup` est la phase de bout en bout ; la transition système
+`checkup` la journalise. Les K.O. s'appuient sur les primitives partagées de `pbm_game.combat.ko`
+(le code de K.O. ne vit pas que dans la résolution d'attaque).
 """
 
 from __future__ import annotations
@@ -52,5 +60,10 @@ from __future__ import annotations
 # fait dès que ``pbm_game`` est chargé — sinon ``appliquer`` ignorerait ces actions. Le noyau des
 # transitions ne peut pas le faire lui-même (cycle d'import : voir ``pbm_game.banc.mouvements``).
 from . import banc as _banc  # noqa: F401  (import pour effet d'enregistrement)
+
+# ``checkup`` enregistre de même sa transition ``checkup`` (le Pokémon Checkup, R-12) dans le
+# ``REGISTRE`` à son import. On l'importe ici, après ``banc``, pour que ``appliquer`` la
+# reconnaisse dès que ``pbm_game`` est chargé.
+from . import checkup as _checkup  # noqa: F401,E402  (import pour effet d'enregistrement)
 
 __all__: list[str] = []

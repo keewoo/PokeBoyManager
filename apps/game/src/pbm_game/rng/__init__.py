@@ -73,6 +73,26 @@ def flux_melange_deck(joueur_id: str) -> str:
     return f"melange:deck:{joueur_id}"
 
 
+def flux_checkup(etat_nom: str, joueur_id: str) -> str:
+    """Nom de flux d'un pile ou face du Checkup (R-11.3/R-11.4) — un flux **par état et joueur**.
+
+    Le réveil (Endormi, R-11.3) et la guérison de brûlure (R-11.4) tirent un pile ou face **à
+    chaque Checkup**. Chaque (état, joueur) a son propre flux : un Checkup de plus pour l'un ne
+    décale jamais la suite de tirages de l'autre (exigence « flux séparés » du jalon J1). Les
+    tirages successifs d'un même (état, joueur) forment la suite 0, 1, 2… que
+    :func:`verifier_journal` contrôle. ``etat_nom`` est un des états à pile ou face au Checkup
+    (``endormi``, ``brule``) ; les refuser ici serait un flux muet, jamais approximé.
+    """
+    if etat_nom not in ("endormi", "brule"):
+        raise ValueError(
+            f"Flux de Checkup inconnu : {etat_nom!r} — seuls « endormi » (R-11.3) et « brule » "
+            "(R-11.4) tirent un pile ou face au Checkup."
+        )
+    if not joueur_id:
+        raise ValueError("joueur_id vide : un flux doit être nommé.")
+    return f"checkup:{etat_nom}:{joueur_id}"
+
+
 #: Flux du pile ou face de début de partie — qui commence (R-4.7).
 FLUX_QUI_COMMENCE = "partie:qui-commence"
 
@@ -439,6 +459,7 @@ __all__ = [
     "GRAINE_MIN_OCTETS",
     "FLUX_QUI_COMMENCE",
     "flux_melange_deck",
+    "flux_checkup",
     "Tirage",
     "Rng",
     "engagement",
