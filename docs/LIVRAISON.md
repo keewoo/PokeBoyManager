@@ -181,6 +181,67 @@ ajouter `stage1`/`stage2` (ou tout marqueur de stade) aux marqueurs ordinaires d
   worktree **transitoire** `~/dev/wt-livraison-20261001` (disque système, 22 Gi libres), **pas** le clone
   `~/dev/pokeboy` de la file de lots, supprimé juste après le push.
 
+## Livraison du 02/10/2026 — correctif des stades : un stade ordinaire n'est jamais un marqueur de règle
+
+Ce qui a réellement été exécuté (la chaîne n'est toujours pas scriptée dans le dépôt).
+Release **`20261002-005119`**, commit **`124f0cd`** (tête de `roadmap/fix-marqueur-stades`, **basée sur
+`b0df8ae`**), précédente `20261001-234045` (`b0df8ae`). Livré depuis **devAI** en session autonome ;
+on a livré le **commit figé** `124f0cd`, **pas** `main` (qui portait d'autres lots, `j-cartes-pokemon`…).
+Ce lot corrige l'écart signalé le 01/10 : **564 cartes `Stage1`/`Stage2` classées `inconnu`**.
+
+```bash
+# 0. Portes : CI « CI » verte sur 124f0cd (passage push, success) ; voisins AVANT 200 200 308 200 307 ;
+#    serveur sain (charge 0.13, 2500 Mo dispo). Comptes prize_marker AVANT relevés (inconnu=564, ordinaire=16055).
+#    (Le run « CI » pull_request du même SHA est en échec à 0 job — démarrage de workflow sur le merge-ref
+#    de main, pas un échec de test ; la porte nommée est le passage push, vert.)
+# 1. chimera construit — worktree de build (dépôt relais) checkout --detach 124f0cd, HEAD vérifié
+#    (pbm-build-lol.sh ne fait PAS son propre checkout, il était resté sur b0df8ae — piège n°1).
+#    Build détaché (setsid, survit à la coupure SSH), sondé jusqu'à BUILD_DONE. TS=20261002-005119.
+#    Artefact web vérifié : 4 .woff2 sous .next/static/media/, 0 occurrence fonts.googleapis/gstatic.
+# 2. transfert chimera → devAI → kailo-srv, SHA-256 identiques aux TROIS étapes :
+#    web 7329b919…c60247 · api 54f776a3…ca5c3d
+# 3. point de restauration frais AVANT toute écriture :
+ssh kailo-srv 'sudo -n -u pokeboy bash /srv/pokeboy/prod/backups/backup.sh'  # pokeboy_prod-20261001-225356.dump (41,5 Mo/26 tables), photos 1051, daté de l'instant
+# 4. préparation (n'engage rien ; la migration passe ici) :
+ssh kailo-srv 'TS=20261002-005119 COMMIT=124f0cd… LOT=livraison-20261002 bash /tmp/prep-lol.sh'  # → PREPARATION_OK
+# 5. bascule, retour arrière automatique sur échec de santé :
+ssh kailo-srv 'TS=20261002-005119 bash /tmp/deploy-switch.sh'  # → BASCULE_OK (api=200 web=200 au 1er contrôle)
+```
+
+**Migration appliquée** : Alembic `e7c2a9f14b63 → a3f9c2e5b1d4` (`fix_marqueur_stades`) — correction de
+**données** : pour toute carte dont `rule_marker` était un stade ordinaire (`Stage1`/`Stage2`, sans espace),
+`rule_marker` repasse à NULL et `prize_marker` est recalculé via la **même** fonction pure que l'import
+(`corrected_stage_row`). Les vraies Rule Box (`VMAX`, `ex`, `GX`…) sont laissées intactes. Additive et
+rejouable ; `downgrade` = no-op explicite (le libellé brut n'est pas reconstituable). Tête après migration :
+`a3f9c2e5b1d4 (head)`.
+
+**Preuve du correctif en base** (lecture seule, `pokeboy_prod`, relevée avant/après) :
+- `prize_marker = 'inconnu'` : **564 → 0** ✔
+- `prize_marker = 'ordinaire'` : 16055 → **16619** (+564) ✔ ; **tous les autres marqueurs inchangés**
+  (ex 1248, v 607, gx 472, pokemon_ex 354, vmax 210, mega_ex 175, tag_team 119, vstar 95, m_pokemon_ex 89,
+  lv_x 71, break 37, etoile 29, v_union 24, legende 20, radiant 16, prisme_etoile 16, `(null)` 3628).
+- `rule_marker` : `Stage1` (422) et `Stage2` (142) **disparus** ; EX/V/GX/VMAX/ESCOUADE… intacts.
+
+**Preuve du code déployé** (`prize_rule_of` de la release, sur de vraies lignes PROD, **sans** appeler la
+route IA facturée `GET /cards/{id}/in-game-study`) :
+- Arcanine (ex-`Stage1`, désormais `ordinaire`) → **1 Prix** ✔ — avant : « Récompenses non déterminées »
+- Méga-Blizzaroi-ex (`mega_ex`) → **3 Prix** ✔
+- Dracaufeu et Roussil GX (`tag_team`) → **3 Prix** ✔
+- Poké Ball (Dresseur) → hors Pokémon ✔
+
+**Preuve de mise en ligne** : `app/ -> releases/20261002-005119` ; `RELEASE_INFO` porte
+`commit=124f0cd8c5bf6a0c4cc90eb2a9c34b8488c429a2` ; les 3 unités `active` ;
+`https://pokeboy.lol/api/health` → 200 et `/` → 200. **Voisins inchangés** à chaque étape et à la fin
+(`200 200 308 200 307`). Serveur après : charge 0.31, 2527 Mo dispo, 3 unités `active`.
+
+### Pièges rejoués
+- **Worktree de build (dépôt relais) resté sur `b0df8ae`** : `checkout --detach 124f0cd` + **vérification du
+  HEAD** faits à la main avant le build — piège n°1, toujours réel.
+- **PATH non-interactif de chimera** : node/pnpm/uv ajoutés (`~/.local/node/bin`, `~/.local/bin`) au lancement.
+- **Trace dépôt** écrite dans un worktree **transitoire** `~/dev/wt-livraison-20261002` (disque système),
+  **pas** le clone `~/dev/pokeboy` de la file de lots, supprimé juste après le push. `graphify update` non
+  exécuté (doc seule ; le faire toucherait le clone de la file) — à rattraper au prochain entretien de `main`.
+
 ## Conclure « déployé » — jamais sur une ligne de journal
 
 Un build qui échoue laisse la plateforme **debout sur l'ancienne version** : tout a l'air normal et
