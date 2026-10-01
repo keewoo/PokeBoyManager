@@ -31,7 +31,7 @@
 | **PokéPedia** (`pokepedia.fr`) | sources des anecdotes | `pbm_api.insights.service`, `pbm_api.routers.card_insights` | aucune | l'anecdote est rendue sans sa source plutôt qu'inventée |
 | **Limitless TCG** (`limitlesstcg.com`) | présence en tournoi | `pbm_api.ingame.tournaments` | aucune | l'étude en jeu se rend sans la partie tournoi, et le dit |
 | **Have I Been Pwned** | refus des mots de passe déjà compromis | `pbm_api.security.compromised` | aucune (k-anonymat : le mot de passe ne sort jamais) | on **n'assouplit pas** la règle en silence : indisponible = on le journalise |
-| **SMTP** | vérification d'adresse, mot de passe oublié, lien d'export RGPD | `SMTP_*` de `pbm_api.config.Settings` | selon l'hôte | Mailpit en dev (port 51025) ; en PROD, un e-mail non parti est une panne visible |
+| **SMTP — Resend en PROD** | vérification d'adresse, mot de passe oublié, lien d'export RGPD | `SMTP_*` de `pbm_api.config.Settings` (`pbm_api.email.SmtpEmailSender`) | en PROD, la clé Resend (portée « envoi » seule, hors dépôt — voir `docs/infra/DOMAINE-POKEBOY-LOL.md`) | Mailpit en dev (port 51025) ; en PROD `smtp.resend.com:587`, expéditeur `no-reply@pokeboy.lol` depuis le 22/09 (D5) ; un e-mail non parti est une panne visible |
 | **Stockage objet S3 / MinIO** | photos envoyées | `STORAGE_BACKEND=s3` (dev/CI) — `local` en PROD (D7, `PHOTOS_STORAGE_PATH`) | `S3_*` | en `s3`, l'origine doit être dans la CSP `connect-src` du middleware, sinon **tout envoi de photo échoue** |
 
 ## Envisagé, **pas** branché
@@ -40,7 +40,6 @@ Vérifié dans le dépôt et dans la configuration de ce poste le 22/09/2026 :
 
 | Candidat | Pour quoi faire | État réel | Ce qu'il manque |
 |---|---|---|---|
-| **Resend** | e-mails transactionnels | **non branché.** Le produit envoie par SMTP ; Resend n'apparaît que comme option de la décision **D5**, non tranchée. Expéditeur prévu : `no-reply@acx-connect.com` | la décision de JF, puis une clé et un domaine vérifié |
 | **ClickUp** | suivi des lots hors du dépôt | **non branché côté produit.** Un connecteur ClickUp existe côté Claude (outils `clickup_*`) mais rien dans PokeBoyManager ne l'appelle, et le plan ne s'y synchronise pas — la source du suivi reste `docs/roadmap/roadmap.json` + `etat.json` | savoir ce que JF veut y voir : les lots ? les décisions ? et dans quel sens (miroir, ou source) |
 
 ### Outillage de développement — Graphify (installé le 22/09/2026)

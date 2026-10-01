@@ -24,7 +24,7 @@ describe("getFeaturedCards", () => {
   });
 
   it("appelle /cards/featured sur l'origine absolue configurée et renvoie les cartes", async () => {
-    process.env.NEXT_PUBLIC_API_URL = "https://pokeboy.acx-connect.com/api";
+    process.env.NEXT_PUBLIC_API_URL = "https://pokeboy.lol/api";
     const cards = [{ id: "1", name: "Dracaufeu-EX", number: "6", set_name: "Écarlate et Violet" }];
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
@@ -35,14 +35,14 @@ describe("getFeaturedCards", () => {
     const result = await getFeaturedCards();
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://pokeboy.acx-connect.com/api/cards/featured",
+      "https://pokeboy.lol/api/cards/featured",
       expect.objectContaining({ next: { revalidate: 3600 } })
     );
     expect(result).toEqual(cards);
   });
 
   it("renvoie une liste vide (sans lever) quand l'API répond une erreur", async () => {
-    process.env.NEXT_PUBLIC_API_URL = "https://pokeboy.acx-connect.com/api";
+    process.env.NEXT_PUBLIC_API_URL = "https://pokeboy.lol/api";
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({ ok: false, status: 500, statusText: "Internal Server Error" })
@@ -55,7 +55,7 @@ describe("getFeaturedCards", () => {
   });
 
   it("renvoie une liste vide (sans lever) quand le fetch échoue", async () => {
-    process.env.NEXT_PUBLIC_API_URL = "https://pokeboy.acx-connect.com/api";
+    process.env.NEXT_PUBLIC_API_URL = "https://pokeboy.lol/api";
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
     vi.spyOn(console, "error").mockImplementation(() => {});
 

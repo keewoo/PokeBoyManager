@@ -32,7 +32,7 @@ describe("getServerApiBaseUrl", () => {
   });
 
   it("returns the configured absolute URL, trailing slash stripped", () => {
-    process.env.NEXT_PUBLIC_API_URL = "https://pokeboy.acx-connect.com/api/";
-    expect(getServerApiBaseUrl()).toBe("https://pokeboy.acx-connect.com/api");
+    process.env.NEXT_PUBLIC_API_URL = "https://pokeboy.lol/api/";
+    expect(getServerApiBaseUrl()).toBe("https://pokeboy.lol/api");
   });
 });

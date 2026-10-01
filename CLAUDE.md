@@ -12,7 +12,8 @@ Espace privé (compte e-mail + mot de passe) : photos de cartes Pokémon → rec
 valeur dans le temps, fiche carte (image officielle, état estimé, anecdotes sourcées, étude en jeu).
 Puis, plus tard, **jouer** avec ses propres cartes.
 
-En service : **https://pokeboy.acx-connect.com** (depuis le 20/09/2026).
+En service : **https://pokeboy.lol** — domaine propre depuis le 22/09/2026. Mis en ligne le 20/09 sous
+`pokeboy.acx-connect.com`, qui redirige désormais en 308 vers `pokeboy.lol`.
 
 ## Le plan fait foi
 
@@ -77,6 +78,7 @@ existe. Détail : `docs/PLUGINS.md`.
 | `docs/PLUGINS.md` | on ajoute ou on diagnostique un service tiers : catalogue, prix, IA, e-mails, stockage — et ce qui n'est **pas** branché |
 | `docs/SECURITE.md` | on touche à l'authentification, aux clés, aux envois de fichiers, ou avant d'ouvrir un accès |
 | `docs/infra/SERVEUR-POKEBOY.md` | on veut l'état exact du serveur (rapport daté du 19/09) |
+| `docs/infra/DOMAINE-POKEBOY-LOL.md` | on touche au domaine `pokeboy.lol` : DNS, Caddy, URL figées dans le build, e-mails Resend |
 | `docs/infra/JOBS-LOURDS.md` | on planifie ou on diagnostique un traitement lourd |
 | `docs/catalogue/COMPLETUDE.md` | on se demande si le catalogue est complet, et où sont les trous |
 | `docs/roadmap/jeu/BACKLOG-JEU.md` | on travaille sur le jeu (67 lots, paliers, décisions `DJ*`) |

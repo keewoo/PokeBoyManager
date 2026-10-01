@@ -84,12 +84,12 @@ describe("middleware", () => {
     });
 
     it("ajoute l'origine absolue configurée quand NEXT_PUBLIC_API_URL est définie", () => {
-      process.env.NEXT_PUBLIC_API_URL = "https://pokeboy.acx-connect.com/api";
+      process.env.NEXT_PUBLIC_API_URL = "https://pokeboy.lol/api";
 
       const csp = middleware(requestFor("/")).headers.get("Content-Security-Policy");
 
-      expect(csp).toContain("connect-src 'self' https://pokeboy.acx-connect.com;");
-      expect(csp).toContain("img-src 'self' data: https://pokeboy.acx-connect.com;");
+      expect(csp).toContain("connect-src 'self' https://pokeboy.lol;");
+      expect(csp).toContain("img-src 'self' data: https://pokeboy.lol;");
     });
   });
 

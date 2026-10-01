@@ -2,7 +2,7 @@
 demande JF 20/09/2026) : quand le meilleur score combiné d'une détection reste sous
 `RESCUE_CONFIDENCE_THRESHOLD`, la découpe elle-même est suspecte — un quadrilatère OpenCV
 géométriquement plausible peut couper la carte (miniatures tronquées observées en production
-sur pokeboy.acx-connect.com), et un recadrage faux fait chuter toutes les confiances de
+le 20/09), et un recadrage faux fait chuter toutes les confiances de
 lecture. Le LLM vision refait alors les deux : la boîte de la carte est redemandée sur la zone
 concernée de la photo d'origine (jamais la photo entière : il ne doit localiser QUE la carte de
 cette détection), affinée par le même OpenCV que le repli de détection, redressée en 630×880,

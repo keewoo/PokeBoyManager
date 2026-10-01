@@ -1,3 +1,8 @@
+> **Domaine** : depuis le 22/09/2026, la PROD est servie sur **`https://pokeboy.lol`**. Les noms
+> `pokeboy.acx-connect.com` et `uat.pokeboy.acx-connect.com` cités plus bas sont ceux de la
+> préparation du 19/09 ; l'ancien nom de PROD redirige en 308 vers `pokeboy.lol`. État actuel :
+> `docs/infra/DOMAINE-POKEBOY-LOL.md`.
+
 > Rapport de la session devAI du 19/09/2026 (lot `pbm-serveur`), versé tel quel. Correction du pilote : le serveur **est** dans le compte UpCloud « kailo » (uuid 004ba88c…, lu par l’API le 19/09) — la remarque « compte distinct » du §Capacité est erronée.
 
 # Rapport — pbm-serveur : préparation de kailo-srv pour PokeBoyManager

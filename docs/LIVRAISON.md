@@ -36,7 +36,7 @@ PokeBoyManager.
 
 | | |
 |---|---|
-| PROD | **https://pokeboy.acx-connect.com** — en service depuis le **20/09/2026 15h39** (commit `5873a9c`) |
+| PROD | **https://pokeboy.lol** — domaine propre depuis le **22/09/2026** ; en service depuis le **20/09/2026 15h39** (commit `5873a9c`) sous `pokeboy.acx-connect.com`, qui redirige désormais en 308 vers l'apex (`docs/infra/DOMAINE-POKEBOY-LOL.md`) |
 | UAT | **aucun** (D2, JF 19/09) : la recette se fait en local sur chimera, on déploie directement en PROD |
 | Machine | `kailo-srv` / UpCloud « sites-and-crons » (`004ba88c…`), 5.22.213.226 |
 | Services | `pokeboy-prod-web` (Next.js, port 3100), `pokeboy-prod-api` (FastAPI/uvicorn, 8100), `pokeboy-prod-worker` (arq) |
@@ -113,7 +113,7 @@ rien n'est livré. La preuve minimale, dans cet ordre :
 
 ```bash
 systemctl is-active pokeboy-prod-api pokeboy-prod-web pokeboy-prod-worker   # active ×3
-curl -s https://pokeboy.acx-connect.com/api/health                          # 200
+curl -s https://pokeboy.lol/api/health                                      # 200
 # et la version servie est bien le commit attendu
 ```
 
