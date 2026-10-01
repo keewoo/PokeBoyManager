@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { cookies, headers } from "next/headers";
-import { Exo_2, JetBrains_Mono, Press_Start_2P, Roboto } from "next/font/google";
+import { exo2, jetbrainsMono, pressStart2P, roboto } from "./fonts";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { AppShell } from "@/components/app-shell";
 import { getSessionCookieName } from "@/lib/config";
@@ -8,29 +8,10 @@ import "./globals.css";
 
 // Charte PokéBoy : Roboto pour tout ce qui se lit longtemps, Exo 2 pour les titres de
 // section, les onglets, les étiquettes et les chiffres. Press Start 2P reste réservée aux
-// titres de niveau 1, courts — au-delà de trois mots elle devient illisible.
-const roboto = Roboto({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-  variable: "--font-roboto",
-});
-
-const exo2 = Exo_2({
-  subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
-  variable: "--font-exo2",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-jetbrains-mono",
-});
-
-const pressStart2P = Press_Start_2P({
-  subsets: ["latin"],
-  weight: "400",
-  variable: "--font-press-start",
-});
+// titres de niveau 1, courts — au-delà de trois mots elle devient illisible. Les quatre
+// familles sont embarquées dans le dépôt et servies par `next/font/local` (voir `./fonts.ts`),
+// jamais téléchargées depuis Google au build — un flux `next/font/google` incomplet cassait
+// `next build` par intermittence (lot `fix-ci-fiabilite`).
 
 // `metadataBase` est l'origine qui absolutise `opengraph-image` : sans elle, Next avertit à la
 // construction et sert une URL relative, que les aperçus (réseaux sociaux, messageries) ne savent
