@@ -168,10 +168,16 @@ async def _estimate_one(db: AsyncSession, storage: StorageBackend, detection: De
 async def run_state_estimation_for_upload(
     db: AsyncSession, storage: StorageBackend, upload: Upload
 ) -> StateEstimationRunSummary:
+    # Même ordre de verrouillage ASCENDANT par id que `confirm_all`
+    # (`pbm_api.validation.service`) : ces deux transactions écrivent les mêmes lignes `detections`
+    # en gardant leurs verrous jusqu'au commit final. L'ordre commun par id supprime l'interblocage
+    # observé au build e2e (voir le commentaire détaillé de `confirm_all`).
     result = await db.execute(
-        select(Detection).where(
+        select(Detection)
+        .where(
             Detection.upload_id == upload.id, Detection.condition_assessment.is_(None)
         )
+        .order_by(Detection.id)
     )
     detections = list(result.scalars().all())
     if not detections:
