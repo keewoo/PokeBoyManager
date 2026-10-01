@@ -152,6 +152,30 @@ direct du navigateur. Mesuré le 01/10, chaque candidat dans un conteneur sur de
   `docker compose up -d --remove-orphans`. Les objets de l'ancien MinIO ne sont pas repris (ce
   sont des données de dev), et il n'y a plus de console web sur 59001.
 
+## Relancer une CI instable — jamais un commit vide
+
+Quand la CI de `main` échoue sur une cause transitoire (pas une régression), on ne pousse **pas** de
+commit vide pour la relancer : `main` se retrouve sinon avec des commits « CI : relance » qui ne
+changent rien (trois le 01/10/2026). La bonne voie est l'API GitHub :
+
+```bash
+source ~/.kailo-tokens   # sur devAI
+curl -X POST -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
+  https://api.github.com/repos/keewoo/PokeBoyManager/actions/runs/<run_id>/rerun-failed-jobs
+```
+
+⚠️ **Le jeton de devAI ne peut PAS le faire** (vérifié le 01/10/2026) : il a `actions=read` mais pas
+**`actions=write`**, donc l'appel répond `403`
+(`x-accepted-github-permissions: actions=write`). Tant que ce jeton n'a pas la permission
+`actions: write` (jeton à grain fin ; équivalent classique : scope `workflow`), la relance par API
+est indisponible depuis devAI — et le commit vide reste interdit. La vraie parade est de
+**supprimer la cause du flake** : c'est ce qu'a fait le lot `fix-ci-fiabilite` (polices embarquées
+au lieu de `next/font/google` ; ordre de verrouillage global des `detections` contre l'interblocage
+`confirm_all` ↔ passage d'état).
+
+Seul le workflow **« CI »** fait foi : « PR automatique des lots » tourne sur le même push et finit
+avant lui — le prendre pour la CI, c'est conclure sur un workflow qui ne teste rien.
+
 ## Parcours e2e complet (lot `v5-e2e`)
 
 `apps/web/e2e/parcours-complet.spec.ts` — inscription → vérification (Mailpit) → clé IA

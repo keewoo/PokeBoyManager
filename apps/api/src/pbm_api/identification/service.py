@@ -365,10 +365,16 @@ async def run_identification_for_upload(
     """`force_ai` : seconde passe (lot `h1-seconde-passe-ia`). L'index visuel est mis de côté —
     JF demande que l'IA fasse ET la découpe ET la reconnaissance, et une correspondance visuelle
     confiante court-circuiterait l'appel IA."""
+    # Ordre de verrouillage ASCENDANT par id, commun à toutes les transactions qui écrivent
+    # `detections` (voir `confirm_all`) : discipline uniforme contre l'interblocage. Ce passage
+    # committe par détection (il ne garde donc qu'un verrou à la fois et ne peut pas, seul, être le
+    # second maillon d'un cycle), mais l'ordre commun le garde sûr si l'un de ces commits disparaît.
     result = await db.execute(
-        select(Detection).where(
+        select(Detection)
+        .where(
             Detection.upload_id == upload.id, Detection.status == DetectionStatus.pending
         )
+        .order_by(Detection.id)
     )
     detections = list(result.scalars().all())
     if not detections:

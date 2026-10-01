@@ -143,10 +143,20 @@ async def confirm_all(
     db: AsyncSession, user: User, upload_id: uuid.UUID
 ) -> ConfirmAllResult:
     upload = await get_owned_upload(db, user, upload_id)
+    # Verrou pris d'emblée, en ordre d'id ASCENDANT (ORDER BY + FOR UPDATE) : `confirm_all` et le
+    # passage d'état du worker (`pbm_api.state.service.run_state_estimation_for_upload`) écrivent
+    # les MÊMES lignes `detections`, chacun gardant tous ses verrous jusqu'à un unique commit. Sans
+    # ordre commun, les deux transactions prenaient ces verrous dans des ordres différents ->
+    # interblocage Postgres (`DeadlockDetectedError` levé pendant le build e2e, 01/10/2026). Un
+    # ordre total unique partagé par toutes les transactions qui écrivent ces lignes (l'id) rend le
+    # cycle impossible ; `with_for_update` prend le verrou à la lecture, avant toute écriture.
     result = await db.execute(
-        select(Detection).where(
+        select(Detection)
+        .where(
             Detection.upload_id == upload.id, Detection.status == DetectionStatus.pending
         )
+        .order_by(Detection.id)
+        .with_for_update()
     )
     detections = list(result.scalars().all())
 
