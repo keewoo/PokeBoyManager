@@ -127,7 +127,7 @@ async def get_or_create_in_game_study(
     legalities = legalities_of(
         legal_standard=card.legal_standard, legal_expanded=card.legal_expanded
     )
-    prize_rule = prize_rule_of(card_name=card.name, supertype=card.supertype)
+    prize_rule = prize_rule_of(marker=card.prize_marker, supertype=card.supertype)
     presence = await _tournament_presence(db, card.id)
 
     tournament_status = presence.status if presence else TournamentPresenceStatus.unavailable

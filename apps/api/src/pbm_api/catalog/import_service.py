@@ -39,6 +39,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.catalog.element_type import element_code
+from pbm_api.catalog.prize_marker import normalized_prize_marker
 from pbm_api.catalog.ptcg_client import PtcgClient, PtcgUnavailableError
 from pbm_api.catalog.reconciliation import (
     match_card_number,
@@ -214,6 +215,11 @@ async def _upsert_card(
     card.resistances = detail.get("resistances")
     card.retreat_cost = detail.get("retreat")
     card.rule_marker = _rule_marker(detail)
+    # Marqueur de règle normalisé pour la règle des Prix (R-13.3/R-13.7) — une seule
+    # logique de classification, partagée avec la migration de remplissage.
+    card.prize_marker = normalized_prize_marker(
+        name=detail["name"], supertype=detail.get("category"), rule_marker=card.rule_marker
+    )
     # Stade d'évolution (`stage`) — sert au « au moins un Pokémon de base » de la légalité
     # des decks (lot `v7-decks-legalite`). `None` hors Pokémon. `is_basic_pokemon` accepte déjà
     # les libellés des deux langues ("Base" / "Basic"), le repli `en` ne le met pas en défaut.
