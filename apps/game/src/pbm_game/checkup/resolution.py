@@ -40,14 +40,10 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from ..combat.ko import cartes_a_defausser, est_ko, prendre_recompenses
+from ..combat.fin import resoudre_kos, valider_fiches
 from ..journal.modele import (
     ACTION_CHECKUP,
     EVT_ETAT_CHECKUP,
-    EVT_KO,
-    EVT_PARTIE_TERMINEE,
-    EVT_PROMOTION_REQUISE,
-    RAISON_PLUS_DE_POKEMON,
     Action,
     Evenement,
 )
@@ -59,13 +55,9 @@ from ..state.modele import (
     ENDORMI,
     PARALYSE,
     PHASE_CHECKUP,
-    RAISON_EGALITE,
     EtatPartie,
     Joueur,
-    PokemonEnJeu,
-    carte_active,
 )
-from ..tour.drapeaux import identite_pokemon
 from ..tour.fenetres import FENETRE_EXPIRATION_EFFETS, Declencheur, declencher
 
 #: Dégâts posés par l'empoisonnement à chaque Checkup (R-11.7) — **1** compteur.
@@ -183,158 +175,13 @@ def _resoudre_etats_actif(
     return etat2, evenements
 
 
-# --- Étape 3 : K.O. de la phase, récompenses, promotion / fin (R-12.4, R-13) --------------
-
-
-def _fiche(fiches: dict, pokemon: PokemonEnJeu) -> dict:
-    """La fiche catalogue (PV + récompenses) du Pokémon, par l'``instance_id`` de sa carte au
-    sommet. **Absente = panne bruyante** (D9) : le moteur ne devine ni PV ni marqueur de règle.
-    """
-    cle = carte_active(pokemon).instance_id
-    fiche = fiches.get(cle)
-    if not isinstance(fiche, dict):
-        raise ValueError(
-            f"Fiche de catalogue manquante pour le Pokémon « {cle} » : PV (R-13.1) et nombre de "
-            "récompenses (R-13.3) sont requis au Checkup et fournis par le service (D9)."
-        )
-    return fiche
-
-
-def _trouver_ko(joueur: Joueur, fiches: dict) -> tuple[str, int] | None:
-    """Localise un Pokémon K.O. de ``joueur`` (``("actif", -1)`` ou ``("banc", i)``), ou ``None``.
-
-    Ne considère que les Pokémon **endommagés** (compteurs > 0) : un Pokémon intact n'est jamais
-    K.O. et n'exige donc pas de fiche. Un Pokémon endommagé **sans** fiche fait échouer
-    :func:`_fiche` (bruyamment). L'Actif est examiné avant le banc (ordre déterministe).
-    """
-    if joueur.actif is not None and joueur.actif.compteurs_degats > 0:
-        if est_ko(joueur.actif.compteurs_degats, _fiche(fiches, joueur.actif)["pv"]):
-            return ("actif", -1)
-    for i, p in enumerate(joueur.banc):
-        if p.compteurs_degats > 0 and est_ko(p.compteurs_degats, _fiche(fiches, p)["pv"]):
-            return ("banc", i)
-    return None
-
-
-def _appliquer_ko(
-    etat: EtatPartie, jid: str, cible: tuple[str, int], fiches: dict
-) -> tuple[EtatPartie, Evenement]:
-    """Met K.O. le Pokémon ``cible`` de ``jid`` : défausse (R-13.2), l'adversaire prend ses
-    récompenses (R-13.3). L'Actif K.O. laisse la place **vide** (``None``) — la promotion suit.
-    """
-    index = _index_joueur(etat, jid)
-    joueur = etat.joueurs[index]
-    zone, i = cible
-    pokemon = joueur.actif if zone == "actif" else joueur.banc[i]
-    nb = _fiche(fiches, pokemon)["recompenses"]
-
-    defausse = joueur.defausse + cartes_a_defausser(pokemon)
-    if zone == "actif":
-        joueur = replace(joueur, actif=None, defausse=defausse)
-    else:
-        banc = joueur.banc[:i] + joueur.banc[i + 1 :]
-        joueur = replace(joueur, banc=banc, defausse=defausse)
-    etat = _remplacer_joueur(etat, index, joueur)
-
-    adversaire = _autre_joueur(etat, jid)
-    idx_adv = _index_joueur(etat, adversaire)
-    joueur_adv, prises = prendre_recompenses(etat.joueurs[idx_adv], nb)
-    etat = _remplacer_joueur(etat, idx_adv, joueur_adv)
-
-    evt = Evenement(
-        EVT_KO,
-        {"joueur": jid, "pokemon": identite_pokemon(pokemon),
-         "compteurs": pokemon.compteurs_degats, "recompenses_prises": prises, "par": adversaire},
-    )
-    return etat, evt
-
-
-def _resoudre_kos(
-    etat: EtatPartie, fiches: dict, ordre: tuple[str, str]
-) -> tuple[EtatPartie, list[Evenement]]:
-    """Met K.O. tous les Pokémon dont les compteurs ont atteint les PV (R-12.4), puis demande les
-    promotions ou clôt la partie. Le joueur dont le tour s'achève est traité en premier.
-    """
-    evenements: list[Evenement] = []
-    # On ne traite que les K.O. survenus **pendant cette phase** : un joueur qui entre déjà sans
-    # Actif (promotion d'un tour précédent encore en attente) ne relève pas de ce Checkup.
-    avait_actif = {jid: etat.joueurs[_index_joueur(etat, jid)].actif is not None for jid in ordre}
-    for jid in ordre:
-        # Boucle : retirer un K.O. du banc décale les index — on rescanne jusqu'à épuisement.
-        while True:
-            cible = _trouver_ko(etat.joueurs[_index_joueur(etat, jid)], fiches)
-            if cible is None:
-                break
-            etat, evt = _appliquer_ko(etat, jid, cible, fiches)
-            evenements.append(evt)
-
-    # Après tous les K.O. : qui doit promouvoir (R-8.7), qui a perdu (banc vide, R-8.9/R-14.1) ?
-    # Seuls comptent les joueurs dont l'Actif **est tombé pendant cette phase**.
-    perdants: list[str] = []
-    a_promouvoir: list[str] = []
-    for jid in ordre:
-        joueur = etat.joueurs[_index_joueur(etat, jid)]
-        if avait_actif[jid] and joueur.actif is None:
-            (a_promouvoir if joueur.banc else perdants).append(jid)
-
-    if perdants:
-        if len(perdants) == 2:
-            # Les deux joueurs sans Pokémon au même Checkup = égalité (R-14.4 ; détail complet
-            # du K.O. simultané et de l'égalité : lot j-ko-recompenses).
-            etat = replace(etat, terminee=True, vainqueur=None, raison_fin=RAISON_EGALITE)
-            evenements.append(
-                Evenement(
-                    EVT_PARTIE_TERMINEE,
-                    {"vainqueur": None, "raison": RAISON_EGALITE, "perdants": perdants},
-                )
-            )
-        else:
-            perdant = perdants[0]
-            gagnant = _autre_joueur(etat, perdant)
-            etat = replace(
-                etat, terminee=True, vainqueur=gagnant, raison_fin=RAISON_PLUS_DE_POKEMON
-            )
-            evenements.append(
-                Evenement(
-                    EVT_PARTIE_TERMINEE,
-                    {"vainqueur": gagnant, "raison": RAISON_PLUS_DE_POKEMON, "perdant": perdant},
-                )
-            )
-        return etat, evenements
-
-    for jid in a_promouvoir:
-        evenements.append(Evenement(EVT_PROMOTION_REQUISE, {"joueur": jid}))
-    return etat, evenements
-
-
 # --- La phase, de bout en bout ------------------------------------------------------------
-
-
-def _valider_fiches(fiches: object) -> dict:
-    """Valide ``params["fiches"]`` : un mapping ``instance_id → {pv ≥ 1, recompenses ≥ 1}``.
-
-    Toute entrée malformée est une panne (D9 : jamais un repli « par défaut 1 »). Un mapping vide
-    est permis — une partie sans aucun Pokémon endommagé n'a besoin d'aucune fiche.
-    """
-    if not isinstance(fiches, dict):
-        raise ValueError(
-            "« fiches » doit être un mapping instance_id → {pv, recompenses}, fourni par le "
-            "service depuis le catalogue (R-13.1/R-13.3, D9)."
-        )
-    for cle, fiche in fiches.items():
-        if not isinstance(cle, str) or not cle:
-            raise ValueError(f"Fiche : clé invalide {cle!r} (un instance_id est attendu).")
-        if not isinstance(fiche, dict):
-            raise ValueError(f"Fiche « {cle} » : doit être un mapping {{pv, recompenses}}.")
-        pv = fiche.get("pv")
-        if not isinstance(pv, int) or isinstance(pv, bool) or pv <= 0:
-            raise ValueError(f"Fiche « {cle} » : « pv » invalide {pv!r} (entier ≥ 1, R-13.1).")
-        rec = fiche.get("recompenses")
-        if not isinstance(rec, int) or isinstance(rec, bool) or rec < 1:
-            raise ValueError(
-                f"Fiche « {cle} » : « recompenses » invalide {rec!r} (entier ≥ 1, R-13.3)."
-            )
-    return fiches
+#
+# Étape 3 (K.O. de la phase, récompenses, promotion / fin — R-12.4, R-13) : déléguée à
+# :func:`pbm_game.combat.fin.resoudre_kos`, **partagée** avec la résolution d'attaque. Le code de
+# K.O. et des conditions de victoire ne vit pas dans le Checkup : il est au même endroit pour les
+# deux chemins (lot ``j-ko-recompenses``). Le Checkup lui passe l'ordre « joueur dont le tour
+# s'achève d'abord » (R-12.2/R-12.4), pour que la suite des événements reste déterministe.
 
 
 def resoudre_checkup(
@@ -356,7 +203,9 @@ def resoudre_checkup(
     """
     if etat.terminee:
         raise ValueError("Partie terminée : aucun Pokémon Checkup (R-14.6).")
-    fiches = _valider_fiches(fiches)
+    # Validation **eager** des fiches : une fiche malformée est une panne même si aucun Pokémon
+    # n'est K.O. ce Checkup (D9 : jamais un repli silencieux).
+    fiches = valider_fiches(fiches)
     evenements: list[Evenement] = []
     ordre = (etat.tour.joueur_actif, _autre_joueur(etat, etat.tour.joueur_actif))
 
@@ -369,8 +218,9 @@ def resoudre_checkup(
     etat, evts = declencher(etat, FENETRE_EXPIRATION_EFFETS, rng, declencheurs)
     evenements.extend(evts)
 
-    # 3) K.O. provoqués pendant la phase (R-12.4) + récompenses (R-13) + promotion/fin.
-    etat, evts = _resoudre_kos(etat, fiches, ordre)
+    # 3) K.O. provoqués pendant la phase (R-12.4) + récompenses + conditions de victoire (R-13,
+    #    R-14) — résolveur partagé avec l'attaque.
+    etat, evts = resoudre_kos(etat, fiches, ordre)
     evenements.extend(evts)
 
     return etat, evenements

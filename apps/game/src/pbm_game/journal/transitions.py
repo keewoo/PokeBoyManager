@@ -412,6 +412,14 @@ def appliquer(
     """
     if not isinstance(action, Action):
         raise TypeError(f"appliquer attend une Action, reçu {type(action).__name__}.")
+    # R-14.6 — une partie terminée est figée : elle refuse TOUTE action, quel que soit son type.
+    # Garde centrale (en plus de celles des transitions) : le journal est clos, plus rien ne
+    # s'applique, pas même une action mécanique (mélange, pioche) oubliée par un appelant.
+    if etat.terminee:
+        raise ValueError(
+            f"Partie terminée : elle refuse toute action supplémentaire, « {action.type} » "
+            "comprise (R-14.6)."
+        )
     handler = REGISTRE.get(action.type)
     if handler is None:
         raise ValueError(
