@@ -25,15 +25,18 @@ from __future__ import annotations
 from .debogage import decrire_entree, decrire_journal, resoudre_id
 from .empreinte import empreinte
 from .modele import (
+    ACTION_ABANDONNER,
     ACTION_AVANCER_PHASE,
     ACTION_MELANGER_PIOCHE,
     ACTION_PIOCHER,
     AUTEUR_SYSTEME,
     EVT_CARTES_PIOCHEES,
+    EVT_PARTIE_TERMINEE,
     EVT_PHASE_AVANCEE,
     EVT_PIOCHE_MELANGEE,
     EVT_TOUR_COMMENCE,
     JOURNAL_VERSION,
+    RAISON_ABANDON,
     Action,
     Entree,
     Evenement,
@@ -65,6 +68,7 @@ __all__ = [
     # format / version
     "JOURNAL_VERSION",
     "AUTEUR_SYSTEME",
+    "RAISON_ABANDON",
     # modèle
     "Action",
     "Evenement",
@@ -75,10 +79,12 @@ __all__ = [
     "ACTION_MELANGER_PIOCHE",
     "ACTION_PIOCHER",
     "ACTION_AVANCER_PHASE",
+    "ACTION_ABANDONNER",
     "EVT_PIOCHE_MELANGEE",
     "EVT_CARTES_PIOCHEES",
     "EVT_PHASE_AVANCEE",
     "EVT_TOUR_COMMENCE",
+    "EVT_PARTIE_TERMINEE",
     # application
     "appliquer",
     "jouer",

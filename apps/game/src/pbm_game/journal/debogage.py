@@ -16,6 +16,7 @@ from collections.abc import Mapping
 
 from .modele import (
     EVT_CARTES_PIOCHEES,
+    EVT_PARTIE_TERMINEE,
     EVT_PHASE_AVANCEE,
     EVT_PIOCHE_MELANGEE,
     EVT_TOUR_COMMENCE,
@@ -51,6 +52,13 @@ def _decrire_evenement(evenement: Evenement, noms: Mapping[str, str]) -> str:
         )
     if evenement.type == EVT_TOUR_COMMENCE:
         return f"tour {d.get('numero', '?')} commence (actif {d.get('joueur_actif', '?')})"
+    if evenement.type == EVT_PARTIE_TERMINEE:
+        raison = d.get("raison", "?")
+        vainqueur = d.get("vainqueur")
+        issue = f"vainqueur {vainqueur}" if vainqueur is not None else "égalité"
+        par = d.get("abandon_par")
+        suffixe = f", abandon de {par}" if par is not None else ""
+        return f"partie terminée ({issue}, raison {raison}{suffixe})"
     # Événement d'un lot ultérieur, non encore gré ici : on le rend brut plutôt que de
     # prétendre le comprendre (pas d'approximation).
     return f"{evenement.type} {dict(d)}"

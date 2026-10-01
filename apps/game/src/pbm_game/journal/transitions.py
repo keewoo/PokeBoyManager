@@ -42,14 +42,17 @@ from ..state.modele import (
 )
 from .empreinte import empreinte
 from .modele import (
+    ACTION_ABANDONNER,
     ACTION_AVANCER_PHASE,
     ACTION_MELANGER_PIOCHE,
     ACTION_PIOCHER,
     AUTEUR_SYSTEME,
     EVT_CARTES_PIOCHEES,
+    EVT_PARTIE_TERMINEE,
     EVT_PHASE_AVANCEE,
     EVT_PIOCHE_MELANGEE,
     EVT_TOUR_COMMENCE,
+    RAISON_ABANDON,
     Action,
     Entree,
     Evenement,
@@ -202,12 +205,34 @@ def _avancer_phase(
     return etat2, [evt]
 
 
+def _abandonner(
+    etat: EtatPartie, action: Action, rng: Rng
+) -> tuple[EtatPartie, list[Evenement]]:
+    """Abandon : la partie se termine, l'adversaire gagne (R-14.3, R-14.6).
+
+    L'auteur de l'action est le joueur qui abandonne ; l'autre joueur devient vainqueur.
+    Refuse d'abandonner une partie déjà terminée (R-14.6) et refuse un auteur qui n'est pas
+    un joueur de la partie (``_autre_joueur`` lève alors) — jamais de repli silencieux.
+    """
+    if etat.terminee:
+        raise ValueError("Partie terminée : plus aucune action, l'abandon compris (R-14.6).")
+    perdant = action.auteur
+    gagnant = _autre_joueur(etat, perdant)  # lève si l'auteur n'est pas un joueur
+    etat2 = replace(etat, terminee=True, vainqueur=gagnant, raison_fin=RAISON_ABANDON)
+    evt = Evenement(
+        EVT_PARTIE_TERMINEE,
+        {"vainqueur": gagnant, "raison": RAISON_ABANDON, "abandon_par": perdant},
+    )
+    return etat2, [evt]
+
+
 #: Registre des transitions reconnues. Un type d'action absent est refusé (D9). Les lots
 #: de résolution y ajoutent leurs actions (``REGISTRE[ACTION_XXX] = _handler``).
 REGISTRE: dict[str, Transition] = {
     ACTION_MELANGER_PIOCHE: _melanger_pioche,
     ACTION_PIOCHER: _piocher,
     ACTION_AVANCER_PHASE: _avancer_phase,
+    ACTION_ABANDONNER: _abandonner,
 }
 
 

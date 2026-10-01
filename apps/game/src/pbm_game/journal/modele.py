@@ -40,12 +40,23 @@ AUTEUR_SYSTEME = "systeme"
 ACTION_MELANGER_PIOCHE = "melanger_pioche"
 ACTION_PIOCHER = "piocher"
 ACTION_AVANCER_PHASE = "avancer_phase"
+#: Abandon de la partie (R-14.3) : action légale d'un joueur, à tout moment, sans aucune
+#: donnée de carte. Ajoutée par le lot ``j-actions-legales`` (elle est purement mécanique,
+#: comme la pioche et l'avancée de phase).
+ACTION_ABANDONNER = "abandonner"
 
 # --- Types d'événement (ce que PRODUIT le moteur) ----------------------------
 EVT_PIOCHE_MELANGEE = "pioche_melangee"
 EVT_CARTES_PIOCHEES = "cartes_piochees"
 EVT_PHASE_AVANCEE = "phase_avancee"
 EVT_TOUR_COMMENCE = "tour_commence"
+#: La partie se termine (R-14.6) : l'événement porte vainqueur, raison et, pour l'abandon,
+#: le joueur qui a abandonné. Produit par la transition ``abandonner`` (lot j-actions-legales).
+EVT_PARTIE_TERMINEE = "partie_terminee"
+
+#: Raison de fin pour un abandon (R-14.3), portée par ``EtatPartie.raison_fin`` et par
+#: l'événement :data:`EVT_PARTIE_TERMINEE`.
+RAISON_ABANDON = "abandon"
 
 
 @dataclass(frozen=True)
