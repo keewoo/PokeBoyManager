@@ -3463,8 +3463,8 @@
         "apps/api/scripts/sonde_s3.py et son verdict par candidat dans le compte rendu"
       ],
       "taches_na": {
-        "maquette": "sans objet : infrastructure de test",
-        "release_prod": "sans objet : la PROD stocke sur disque (D7), rien n'y change"
+        "maquette": "infrastructure de test",
+        "release_prod": "la PROD stocke sur disque (D7), rien n'y change"
       },
       "couloir": "DA2",
       "decision": null,

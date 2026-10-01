@@ -35,7 +35,24 @@ un champ obligatoire vide, une décision qui débloque un lot qui n'existe pas.
 3. Dans `apres`, ne mettre que les **vraies** dépendances — ce sans quoi le lot ne peut pas
    être écrit. Le fait que deux lots soient portés par le même couloir n'est pas une
    dépendance : c'est une contrainte de ressource, et le tableau des paliers la rend visible.
-4. Relancer `build-jeu.py` et committer **les sources et les fichiers générés ensemble**.
+4. Relancer `build-jeu.py` puis `suivi.py build`, et committer **les sources et les fichiers générés
+   ensemble**.
+
+## Suivre un lot (depuis le 01/10/2026)
+
+Les lots du jeu passent par **les mêmes commandes que le plan daté** — un seul `etat.json`, un seul
+garde-fou :
+
+```bash
+python3 docs/roadmap/suivi.py verifier j-modele-etat     # code 2 tant que `apres` n'est pas intégré
+python3 docs/roadmap/suivi.py decision DJ3 "<texte exact de JF>"
+python3 docs/roadmap/suivi.py statut j-modele-etat integre
+```
+
+`verifier` contrôle les lots de `apres` et la décision `DJ*` du lot. `suivi.py build` génère le prompt
+de chaque lot dans `prompts/<id>.md` à partir de sa fiche, et l'onglet « Backlog du jeu » de
+`ROADMAP.html` affiche le statut de chaque lot et les décisions prises. `BACKLOG-JEU.md` reste le
+**plan** : il ne porte pas d'état.
 
 ## Ce que ce plan ne contient pas
 
@@ -43,5 +60,4 @@ un champ obligatoire vide, une décision qui débloque un lot qui n'existe pas.
   sans moteur de règles, et il est un préalable à la file d'attente.
 - **Des dates.** Si JF en veut, elles se posent au moment où un couloir prend un lot,
   dans l'état du plan daté — pas ici.
-- **Les prompts de lots.** Ils s'écrivent lot par lot, à partir de la fiche du backlog,
-  quand le lot est sur le point d'être lancé.
+- **Les prompts de lots.** Ils sont générés par `suivi.py build` dans `prompts/`, depuis la fiche du lot.

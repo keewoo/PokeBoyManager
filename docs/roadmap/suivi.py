@@ -4,6 +4,10 @@
 Le plan (`roadmap.json`) est la seule source ; l'état réel vit dans `etat.json`.
 Tout le reste est GÉNÉRÉ : prompts/<id>.md, BACKLOG.md, docs/roadmap/ROADMAP.html.
 
+Les lots du jeu (`j-*`, plan sans dates de `docs/roadmap/jeu/`, lu dans `jeu.json`) sont suivis
+par les MÊMES commandes : même `etat.json`, même garde-fou (`apres` + décision `DJ*`), prompts
+générés dans `prompts/` à côté de ceux du plan daté.
+
     python3 docs/roadmap/suivi.py build                    # valide le plan, régénère tout
     python3 docs/roadmap/suivi.py verifier <id>            # garde-fou d'ordre (code 2 = ordre non tenu)
     python3 docs/roadmap/suivi.py demarrer <id> --machine chimera --branche roadmap/<id>
@@ -60,10 +64,16 @@ def maintenant() -> str:
     return dt.datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M%z")
 
 
+def charger_jeu() -> dict | None:
+    """Le backlog du jeu à plat (généré par build-jeu.py), ou None s'il n'a pas été généré."""
+    return json.loads(PLAN_JEU.read_text(encoding="utf-8")) if PLAN_JEU.exists() else None
+
+
 def charger() -> tuple[dict, dict]:
     plan = json.loads(PLAN.read_text(encoding="utf-8"))
     etat = json.loads(ETAT.read_text(encoding="utf-8")) if ETAT.exists() else {"etats": {}, "decisions_prises": {}}
-    for it in plan["items"]:
+    jeu = charger_jeu()
+    for it in plan["items"] + (jeu["lots"] if jeu else []):
         e = etat["etats"].setdefault(it["id"], {"statut": "a_faire", "machine": None, "branche": None,
                                                  "debut_reel": None, "fin_reelle": None, "taches": {},
                                                  "journal": [], "compte_rendu": {}})
@@ -73,6 +83,17 @@ def charger() -> tuple[dict, dict]:
                 e["taches"][t["id"]] = {"etat": "na", "preuve": f"sans objet : {na}", "maj": None} if na \
                     else {"etat": "a_faire", "preuve": "", "maj": None}
     return plan, etat
+
+
+def trouver(plan: dict, jeu: dict | None, i_id: str) -> tuple[dict, list[str], str | None] | None:
+    """(lot, dépendances, décision) d'un lot du plan daté OU du backlog du jeu ; None s'il n'existe pas."""
+    for it in plan["items"]:
+        if it["id"] == i_id:
+            return it, it["dependances"], it["decision"]
+    for it in (jeu or {}).get("lots", []):
+        if it["id"] == i_id:
+            return it, it["apres"], it.get("decision")
+    return None
 
 
 def sauver(etat: dict) -> None:
@@ -133,7 +154,6 @@ def prompt(plan: dict, it: dict) -> str:
     j1 = plan["meta"]["jalons"][0]
     jalon = j1["nom"] if it["fin"] <= j1["date"] else plan["meta"]["jalons"][1]["nom"]
     dec = {d["id"]: d for d in plan["decisions"]}.get(it["decision"] or "")
-    m = MACHINES.get(coul["machine"])
     i_id = it["id"]
     L = []
     L += [f"# Lot `{i_id}` — {it['titre']}", "",
@@ -142,34 +162,7 @@ def prompt(plan: dict, it: dict) -> str:
           f"**{it['priorite']}** · piste {piste} · couloir **{it['couloir']}** — {coul['nom']} (**{coul['machine']}**) · "
           f"prévu du {fr_date(it['debut'])} au {fr_date(it['fin'])} · jalon **{jalon}** · taille {it['taille']} · "
           f"complexité {it['complexite']}/5 · difficulté {it['difficulte']}/5", ""]
-
-    if m:
-        prep = f"cd ~/dev/pokeboy && git fetch -q origin && git worktree add ../wt-{i_id} -b roadmap/{i_id} origin/main && mkdir -p ~/dev/logs"
-        L += ["## A. Où tourne cette session ? — à trancher AVANT tout le reste", "",
-              f"Ce lot **s'exécute sur {coul['machine']}**. Lance `hostname -s` :", "",
-              f"- **{m['hostname']}** → **mode EXÉCUTANT** : passe à la section 0.",
-              "- **Toute autre machine** (le Mac de JF `M-DRHKN6GJ77` notamment) → **mode PILOTE** : tu ne codes rien ici. Section P uniquement.", "",
-              "## P. Mode PILOTE", "",
-              f"1. Garde-fou : `python3 docs/roadmap/suivi.py verifier {i_id}`. Code 2 → présente les raisons à JF et demande-lui quoi faire ; ne passe jamais outre sans son « oui » explicite.",
-              f"2. Prépare le worktree sur {coul['machine']} :", "",
-              "```bash", m["ssh"].format(cmd=prep), "```", "",
-              f"3. Lance le lot autonome : {m['lot'].format(id=i_id)}",
-              f"4. **3 minutes plus tard**, lis le journal du lot. Journal vide et processus mort = lot mort au démarrage : relance UNE fois, puis arrête-toi et alerte JF avec la cause. Un lot silencieux n'est jamais une conclusion.",
-              f"5. À la fin : `git fetch` et lis le compte rendu du lot dans `docs/roadmap/etat.json` de la branche `roadmap/{i_id}` ; résume à JF : statut, grille, preuves, décisions attendues.", "",
-              "---", ""]
-    else:
-        L += ["## A. Qui fait ce lot ?", "", "Ce lot est un **geste de JF** (console, décision, compte externe). Une session Claude l'accompagne : elle prépare, vérifie et consigne ; elle ne fait pas le geste à sa place.", ""]
-
-    L += ["> ⛔ **RÈGLE DE CLÔTURE — QUELLE QUE SOIT L'ISSUE.** Livré, partiel, bloqué, erreur, contexte qui s'épuise : avant ton dernier message, fais la section 7 (état + compte rendu + build). Un lot qui s'arrête sans compte rendu est une PANNE.", "",
-          "## 0. Garde-fou d'ordre — avant toute ligne de code", "",
-          f"Dépôt : `{m['depot'] if m else '—'}`. Travaille dans ton **worktree** `../wt-{i_id}`, branche `roadmap/{i_id}` depuis `origin/main` — jamais dans l'arbre commun, jamais `git stash`, jamais `git add -A`.", "",
-          "```bash",
-          f"python3 docs/roadmap/suivi.py verifier {i_id}",
-          f"python3 docs/roadmap/suivi.py demarrer {i_id} --machine \"$(hostname -s)\" --branche roadmap/{i_id}",
-          "```", "",
-          "- **Code 0** → continuer.",
-          f"- **Code 2 — ordre non tenu** (dépendance non livrée, décision non prise) → ne rien coder. Session interactive : demande à JF. Lot autonome : `suivi.py statut {i_id} attente_validation --motif \"<raisons>\"`, section 7, dernier message `ATTENTE VALIDATION — {i_id} — <raisons>`.",
-          "- Tu n'accordes **jamais** toi-même une dérogation.", ""]
+    L += _bloc_depart(coul["machine"], i_id, "7")
 
     L += ["## 1. Cadre — relire avant d'agir", "",
           "| Document | Pourquoi |", "|---|---|",
@@ -201,9 +194,51 @@ def prompt(plan: dict, it: dict) -> str:
           "- Route utilisateur → test d'accès croisé (l'utilisateur B reçoit 404 sur les objets de A).",
           "- Front → conformité à l'écran de la maquette (capture jointe au compte rendu).",
           "- Suites complètes lancées sur la flotte (`fleet-run` depuis le Mac, ou directement sur la machine), jamais sur le Mac de JF.", ""]
+    L += _bloc_cloture(plan, it, "7")
+    return "\n".join(L)
+
+
+def _bloc_depart(machine: str, i_id: str, sec_cloture: str) -> list[str]:
+    """Sections A / P / 0 : où tourne la session, mode pilote, garde-fou d'ordre."""
+    m = MACHINES.get(machine)
+    L = []
+    if m:
+        prep = f"cd ~/dev/pokeboy && git fetch -q origin && git worktree add ../wt-{i_id} -b roadmap/{i_id} origin/main && mkdir -p ~/dev/logs"
+        L += ["## A. Où tourne cette session ? — à trancher AVANT tout le reste", "",
+              f"Ce lot **s'exécute sur {machine}**. Lance `hostname -s` :", "",
+              f"- **{m['hostname']}** → **mode EXÉCUTANT** : passe à la section 0.",
+              "- **Toute autre machine** (le Mac de JF `M-DRHKN6GJ77` notamment) → **mode PILOTE** : tu ne codes rien ici. Section P uniquement.", "",
+              "## P. Mode PILOTE", "",
+              f"1. Garde-fou : `python3 docs/roadmap/suivi.py verifier {i_id}`. Code 2 → présente les raisons à JF et demande-lui quoi faire ; ne passe jamais outre sans son « oui » explicite.",
+              f"2. Prépare le worktree sur {machine} :", "",
+              "```bash", m["ssh"].format(cmd=prep), "```", "",
+              f"3. Lance le lot autonome : {m['lot'].format(id=i_id)}",
+              f"4. **3 minutes plus tard**, lis le journal du lot. Journal vide et processus mort = lot mort au démarrage : relance UNE fois, puis arrête-toi et alerte JF avec la cause. Un lot silencieux n'est jamais une conclusion.",
+              f"5. À la fin : `git fetch` et lis le compte rendu du lot dans `docs/roadmap/etat.json` de la branche `roadmap/{i_id}` ; résume à JF : statut, grille, preuves, décisions attendues.", "",
+              "---", ""]
+    else:
+        L += ["## A. Qui fait ce lot ?", "", "Ce lot est un **geste de JF** (console, décision, compte externe). Une session Claude l'accompagne : elle prépare, vérifie et consigne ; elle ne fait pas le geste à sa place.", ""]
+
+    L += [f"> ⛔ **RÈGLE DE CLÔTURE — QUELLE QUE SOIT L'ISSUE.** Livré, partiel, bloqué, erreur, contexte qui s'épuise : avant ton dernier message, fais la section {sec_cloture} (état + compte rendu + build). Un lot qui s'arrête sans compte rendu est une PANNE.", "",
+          "## 0. Garde-fou d'ordre — avant toute ligne de code", "",
+          f"Dépôt : `{m['depot'] if m else '—'}`. Travaille dans ton **worktree** `../wt-{i_id}`, branche `roadmap/{i_id}` depuis `origin/main` — jamais dans l'arbre commun, jamais `git stash`, jamais `git add -A`.", "",
+          "```bash",
+          f"python3 docs/roadmap/suivi.py verifier {i_id}",
+          f"python3 docs/roadmap/suivi.py demarrer {i_id} --machine \"$(hostname -s)\" --branche roadmap/{i_id}",
+          "```", "",
+          "- **Code 0** → continuer.",
+          f"- **Code 2 — ordre non tenu** (dépendance non livrée, décision non prise) → ne rien coder. Session interactive : demande à JF. Lot autonome : `suivi.py statut {i_id} attente_validation --motif \"<raisons>\"`, section {sec_cloture}, dernier message `ATTENTE VALIDATION — {i_id} — <raisons>`.",
+          "- Tu n'accordes **jamais** toi-même une dérogation.", ""]
+    return L
+
+
+def _bloc_cloture(plan: dict, it: dict, sec: str) -> list[str]:
+    """Dernière section : grille de tâches, compte rendu, statut, build, commit, PR, republication."""
+    i_id = it["id"]
     taches = "\n".join(f"- `{t['id']}` — {t['lib']}" + (f" (sans objet : {it['taches_na'][t['id']]})" if t["id"] in it.get("taches_na", {}) else "")
                        for t in plan["taches"])
-    L += ["## 7. Clôture — obligatoire", "",
+    L = []
+    L += [f"## {sec}. Clôture — obligatoire", "",
           "Grille de tâches du lot :", taches, "",
           "```bash",
           f"python3 docs/roadmap/suivi.py tache {i_id} <tache> fait \"<preuve : commit, test, URL, capture>\"",
@@ -219,6 +254,68 @@ def prompt(plan: dict, it: dict) -> str:
           "dans ton compte rendu et dans ton dernier message.", "",
           f"Puis republie la page : lis l'artefact {ARTEFACT} (action `read`) et publie `docs/roadmap/ROADMAP.html` avec ce même `url`.", "",
           f"Dernier message : statut, grille, preuves, écarts au plan, ce qui attend JF.", ""]
+    return L
+
+
+def prompt_jeu(plan: dict, jeu: dict, it: dict) -> str:
+    """Prompt d'un lot du backlog du jeu : même départ et même clôture que le plan daté, contexte du jeu."""
+    par_id = {l["id"]: l for l in jeu["lots"]}
+    coul = {c["id"]: c for c in jeu["couloirs"]}[it["couloir"]]
+    piste = {p["id"]: p["nom"] for p in jeu["pistes"]}[it["piste"]]
+    jalon = {j["id"]: j for j in jeu["jalons"]}[it["jalon"]]
+    dec = {d["id"]: d for d in jeu["decisions"]}.get(it.get("decision") or "")
+    suivants = sorted(l["id"] for l in jeu["lots"] if it["id"] in l["apres"])
+    i_id = it["id"]
+    L = [f"# Lot `{i_id}` — {it['titre']}", "",
+         "> Prompt GÉNÉRÉ depuis `docs/roadmap/jeu/plan/` (via `jeu.json`) par `docs/roadmap/suivi.py build` — ne pas éditer à la main.",
+         "> Plan du jeu : `docs/roadmap/jeu/BACKLOG-JEU.md` · onglet « Backlog du jeu » de `docs/roadmap/ROADMAP.html`.", "",
+         f"**{it['priorite']}** · piste {piste} · couloir **{it['couloir']}** (**{coul['machine']}**) · "
+         f"jalon **{jalon['id']} — {jalon['nom']}** · palier {it['palier']} · taille {it['taille']} · "
+         f"complexité {it['complexite']}/5 · difficulté {it['difficulte']}/5", ""]
+    L += _bloc_depart(coul["machine"], i_id, "8")
+
+    L += ["## 1. Cadre — relire avant d'agir", "",
+          "| Document | Pourquoi |", "|---|---|",
+          "| `CLAUDE.md` | règles du dépôt, carte des fiches, « où écrire quoi » |",
+          "| `docs/CODE.md` | structure du monorepo, commandes, tests, définition du « fini » |",
+          "| `docs/roadmap/jeu/BACKLOG-JEU.md` | le plan du jeu : principes, jalons, décisions `DJ*`, fiches des 67 lots |",
+          "| `docs/jeu/REGLES.md` | le corpus de règles qui fait foi (créé par `j-regles-reference`) : tout test de règle cite son identifiant `R-x.y` |",
+          "| `docs/ARCHITECTURE.md` | données, catalogue, decks — ce que le jeu consomme |",
+          "| `~/.claude/CLAUDE.md` de la machine | règles de la flotte (construire ≠ servir, Python 3.12, WSL) |", "",
+          "Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_validation` avec la contradiction en motif.", ""]
+
+    apres = "\n".join(f"- `{d}` — {par_id[d]['titre']}" for d in it["apres"]) or "- rien : premier lot de sa chaîne"
+    ouvre = "\n".join(f"- `{d}` — {par_id[d]['titre']}" for d in suivants) or "- aucun lot n'en dépend"
+    L += ["## 2. Contexte", "",
+          f"**Jalon {jalon['id']} — {jalon['nom']}.** {jalon['these']}", "",
+          "**Principes du jeu — ils valent pour ce lot comme pour tous les autres :**", ""]
+    L += [f"- {p}" for p in jeu["principes"]] + [""]
+    L += [f"**Gain.** {it['gain']}", "",
+          f"**Fonctionnalités.** {it['fonctionnalites']}", "",
+          "**Vient après :**", apres, "",
+          "**Débloque :**", ouvre, ""]
+    if dec:
+        L += [f"**Décision {dec['id']}** — {dec['question']} Lis la décision prise dans `docs/roadmap/etat.json` "
+              f"(`decisions_prises.{dec['id']}`) et applique-la à la lettre ; la proposition du pilote n'est qu'un contexte : "
+              f"_{dec['proposition']}_", ""]
+
+    L += ["## 3. Mission", ""] + [f"{n}. {x}" for n, x in enumerate(it["mission"], 1)] + [""]
+    L += ["## 4. Critères d'acceptation", "",
+          "Le lot n'est fini que si **chacun** est vrai, preuve à l'appui dans le compte rendu :", ""]
+    L += [f"- [ ] {x}" for x in it["acceptation"]] + [""]
+    L += ["## 5. Risques & pièges", "", it["risques"], ""]
+    L += ["## 6. Livrables — définition de « fini »", ""] + [f"- {x}" for x in it["livrables"]] + [
+          "- CI GitHub Actions verte sur la PR (elle fait foi, pas une suite verte sur une machine).",
+          f"- Compte rendu `docs/roadmap/comptes-rendus/{i_id}.md` : résumé, livrables, preuves, écarts, reste à faire.",
+          "- Le savoir durable va dans **une** fiche (« Où écrire quoi » de `CLAUDE.md`) ; pour le jeu, `docs/jeu/`.",
+          "- Aucun secret dans le dépôt, les journaux ou les sorties.", ""]
+    L += ["## 7. Tests exigés", "",
+          "- Un test qui **échoue sans** ton changement et passe avec.",
+          "- Moteur : fonctions pures, aucune entrée/sortie — un test d'import le prouve ; chaque test de règle cite son `R-x.y`.",
+          "- Route utilisateur → test d'accès croisé (l'utilisateur B reçoit 404 sur les objets de A).",
+          "- Écran → conforme à l'onglet « Maquette du jeu » (capture jointe au compte rendu).",
+          "- Suites complètes lancées sur la flotte, jamais sur le Mac de JF.", ""]
+    L += _bloc_cloture(plan, it, "8")
     return "\n".join(L)
 
 
@@ -266,12 +363,19 @@ def build(_a=None) -> int:
     # Backlog du jeu : plan séparé, sans dates, généré par docs/roadmap/jeu/build-jeu.py.
     # Son absence ne bloque pas la génération, mais elle se DIT ici et dans l'onglet — un
     # onglet vide sans explication est exactement le genre de panne muette qu'on ne remarque pas.
-    jeu = None
-    if PLAN_JEU.exists():
-        jeu = json.loads(PLAN_JEU.read_text(encoding="utf-8"))
+    jeu = charger_jeu()
+    if jeu:
+        doublons = {l["id"] for l in jeu["lots"]} & {i["id"] for i in plan["items"]}
+        doublons |= {d["id"] for d in jeu["decisions"]} & {d["id"] for d in plan["decisions"]}
+        if doublons:
+            print("PLAN INCOHÉRENT — rien n'est généré :", *(f"{x} existe dans les deux plans" for x in sorted(doublons)), sep="\n  - ")
+            return 1
+        for it in jeu["lots"]:
+            prompts[it["id"]] = prompt_jeu(plan, jeu, it)
+            (PROMPTS / f"{it['id']}.md").write_text(prompts[it["id"]] + "\n", encoding="utf-8")
     else:
         print(f"ATTENTION — {PLAN_JEU.relative_to(RACINE)} absent : l'onglet « Backlog du jeu » "
-              f"sera vide. Lancer d'abord : python3 docs/roadmap/jeu/build-jeu.py")
+              f"sera vide et ses lots n'ont pas de prompt. Lancer d'abord : python3 docs/roadmap/jeu/build-jeu.py")
     data = dict(plan, etats=etat["etats"], decisions_prises=etat["decisions_prises"], prompts=prompts,
                 jeu=jeu, artefact=ARTEFACT, genere=maintenant())
     html = GABARIT.read_text(encoding="utf-8").replace("/*__DATA__*/null", json.dumps(data, ensure_ascii=False).replace("</", "<\\/"))
@@ -284,14 +388,15 @@ def build(_a=None) -> int:
 
 def verifier(a) -> int:
     plan, etat = charger()
-    it = next((i for i in plan["items"] if i["id"] == a.id), None)
-    if not it:
+    trouve = trouver(plan, charger_jeu(), a.id)
+    if not trouve:
         print(f"lot inconnu : {a.id}")
         return 1
-    raisons = [f"dépendance {d} non livrée ({etat['etats'][d]['statut']})" for d in it["dependances"]
+    _, deps, dec = trouve
+    raisons = [f"dépendance {d} non livrée ({etat['etats'][d]['statut']})" for d in deps
                if etat["etats"][d]["statut"] not in ACQUIS]
-    if it["decision"] and it["decision"] not in etat["decisions_prises"]:
-        raisons.append(f"décision {it['decision']} non prise")
+    if dec and dec not in etat["decisions_prises"]:
+        raisons.append(f"décision {dec} non prise")
     if etat["etats"][a.id].get("derogation"):
         raisons = []
     if raisons:
@@ -319,6 +424,9 @@ def demarrer(a) -> int:
 
 def tache(a) -> int:
     plan, etat = charger()
+    if a.id not in etat["etats"]:
+        print(f"lot inconnu : {a.id}")
+        return 1
     e = etat["etats"][a.id]
     if a.tache not in e["taches"]:
         print(f"tâche inconnue : {a.tache}")
@@ -331,6 +439,9 @@ def tache(a) -> int:
 
 def statut(a) -> int:
     plan, etat = charger()
+    if a.id not in etat["etats"]:
+        print(f"lot inconnu : {a.id}")
+        return 1
     if a.statut not in plan["statuts"]:
         print(f"statut inconnu : {a.statut}")
         return 1
@@ -346,6 +457,9 @@ def statut(a) -> int:
 
 def compte_rendu(a) -> int:
     plan, etat = charger()
+    if a.id not in etat["etats"]:
+        print(f"lot inconnu : {a.id}")
+        return 1
     e = etat["etats"][a.id]
     e["compte_rendu"] = {"resume": a.resume, "livrables": a.livrable or [], "preuves": a.preuve or [],
                          "ecarts": a.ecart or [], "reste": a.reste or []}
@@ -356,7 +470,8 @@ def compte_rendu(a) -> int:
 
 def decision(a) -> int:
     plan, etat = charger()
-    if a.id not in {d["id"] for d in plan["decisions"]}:
+    jeu = charger_jeu()
+    if a.id not in {d["id"] for d in plan["decisions"] + (jeu["decisions"] if jeu else [])}:
         print(f"décision inconnue : {a.id}")
         return 1
     etat["decisions_prises"][a.id] = {"prise": a.texte, "par": "JF", "quand": maintenant()}

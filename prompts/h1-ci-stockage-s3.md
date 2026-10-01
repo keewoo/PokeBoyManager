@@ -99,10 +99,10 @@ Grille de tâches du lot :
 - `dev` — Développement
 - `tests` — Tests (unitaires, API, e2e)
 - `securite` — Contrôle sécurité (isolation, secrets)
-- `maquette` — Conforme à la maquette (sans objet : sans objet : infrastructure de test)
+- `maquette` — Conforme à la maquette (sans objet : infrastructure de test)
 - `doc_tech` — Doc technique (CLAUDE.md, docs/)
 - `release_uat` — Recette locale sur chimera
-- `release_prod` — Livré en PROD (preuve) (sans objet : sans objet : la PROD stocke sur disque (D7), rien n'y change)
+- `release_prod` — Livré en PROD (preuve) (sans objet : la PROD stocke sur disque (D7), rien n'y change)
 - `backlog` — BACKLOG.md et état à jour
 - `compte_rendu` — Compte rendu dans le suivi
 
