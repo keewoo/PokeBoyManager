@@ -3483,11 +3483,11 @@
       "compte_rendu": {}
     },
     "v7-decks-api": {
-      "statut": "integre",
+      "statut": "livre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
-      "fin_reelle": null,
+      "fin_reelle": "2026-10-01",
       "taches": {
         "dev": {
           "etat": "a_faire",
@@ -3547,6 +3547,12 @@
           "machine": "?",
           "evenement": "compte rendu publié",
           "detail": ""
+        },
+        {
+          "quand": "2026-10-01T10:10+0200",
+          "machine": "?",
+          "evenement": "statut → livre",
+          "detail": "en PROD depuis le 23/09/2026 02:41 — release 20260923-024121, commit 3063f41 (CI verte), docs/LIVRAISON.md § Livraison du 23/09/2026 ; reverifie le 01/10/2026 sur https://pokeboy.lol/api/openapi.json : /me/decks, /me/decks/{deck_id}, /duplicate exposes"
         }
       ],
       "compte_rendu": {
@@ -3558,14 +3564,19 @@
           "Compte rendu détaillé à reprendre au prochain passage."
         ]
       },
-      "attente": null
+      "attente": {
+        "quand": "2026-10-01T10:10+0200",
+        "raisons": [
+          "en PROD depuis le 23/09/2026 02:41 — release 20260923-024121, commit 3063f41 (CI verte), docs/LIVRAISON.md § Livraison du 23/09/2026 ; reverifie le 01/10/2026 sur https://pokeboy.lol/api/openapi.json : /me/decks, /me/decks/{deck_id}, /duplicate exposes"
+        ]
+      }
     },
     "v7-decks-ui": {
-      "statut": "integre",
+      "statut": "livre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
-      "fin_reelle": null,
+      "fin_reelle": "2026-10-01",
       "taches": {
         "dev": {
           "etat": "a_faire",
@@ -3619,13 +3630,19 @@
           "machine": "?",
           "evenement": "statut → integre",
           "detail": "branche roadmap/v7-decks-ui fusionnee dans main (verifie par git merge-base)"
+        },
+        {
+          "quand": "2026-10-01T10:10+0200",
+          "machine": "?",
+          "evenement": "statut → livre",
+          "detail": "en PROD depuis le 23/09/2026 02:41 — release 20260923-024121, commit 3063f41 (CI verte), docs/LIVRAISON.md § Livraison du 23/09/2026 ; reverifie le 01/10/2026 sur https://pokeboy.lol/api/openapi.json ; /jeu/decks repond 307 (route presente et gardee)"
         }
       ],
       "compte_rendu": {},
       "attente": {
-        "quand": "2026-09-22T22:20+0200",
+        "quand": "2026-10-01T10:10+0200",
         "raisons": [
-          "branche roadmap/v7-decks-ui fusionnee dans main (verifie par git merge-base)"
+          "en PROD depuis le 23/09/2026 02:41 — release 20260923-024121, commit 3063f41 (CI verte), docs/LIVRAISON.md § Livraison du 23/09/2026 ; reverifie le 01/10/2026 sur https://pokeboy.lol/api/openapi.json ; /jeu/decks repond 307 (route presente et gardee)"
         ]
       }
     },
@@ -4265,11 +4282,11 @@
       "compte_rendu": {}
     },
     "v7-decks-recherche": {
-      "statut": "integre",
+      "statut": "livre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
-      "fin_reelle": null,
+      "fin_reelle": "2026-10-01",
       "taches": {
         "dev": {
           "etat": "a_faire",
@@ -4323,22 +4340,28 @@
           "machine": "?",
           "evenement": "statut → integre",
           "detail": "Fusionne le 22/09 (45b371e) apres correction de la CI (pbm_immutable_unaccent qualifie par son schema, revision rebranchee sur c3a7e1f4d820). CI verte sur main."
+        },
+        {
+          "quand": "2026-10-01T10:10+0200",
+          "machine": "?",
+          "evenement": "statut → livre",
+          "detail": "en PROD depuis le 23/09/2026 02:41 — release 20260923-024121, commit 3063f41 (CI verte), docs/LIVRAISON.md § Livraison du 23/09/2026 ; reverifie le 01/10/2026 sur https://pokeboy.lol/api/openapi.json : /me/decks/cards et /me/decks/cards/facets exposes"
         }
       ],
       "compte_rendu": {},
       "attente": {
-        "quand": "2026-09-22T21:38+0200",
+        "quand": "2026-10-01T10:10+0200",
         "raisons": [
-          "Fusionne le 22/09 (45b371e) apres correction de la CI (pbm_immutable_unaccent qualifie par son schema, revision rebranchee sur c3a7e1f4d820). CI verte sur main."
+          "en PROD depuis le 23/09/2026 02:41 — release 20260923-024121, commit 3063f41 (CI verte), docs/LIVRAISON.md § Livraison du 23/09/2026 ; reverifie le 01/10/2026 sur https://pokeboy.lol/api/openapi.json : /me/decks/cards et /me/decks/cards/facets exposes"
         ]
       }
     },
     "v7-decks-legalite": {
-      "statut": "integre",
+      "statut": "livre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
-      "fin_reelle": null,
+      "fin_reelle": "2026-10-01",
       "taches": {
         "dev": {
           "etat": "a_faire",
@@ -4392,22 +4415,28 @@
           "machine": "?",
           "evenement": "statut → integre",
           "detail": "Deja dans main depuis le 21/09 (commit 8e09389, apps/api/src/pbm_api/decks/legality.py) : etat.json etait reste a a_faire, l ordonnanceur de chimera qui devait le tenir a jour s est arrete le 20/09."
+        },
+        {
+          "quand": "2026-10-01T10:10+0200",
+          "machine": "?",
+          "evenement": "statut → livre",
+          "detail": "en PROD depuis le 23/09/2026 02:41 — release 20260923-024121, commit 3063f41 (CI verte), docs/LIVRAISON.md § Livraison du 23/09/2026 ; reverifie le 01/10/2026 sur https://pokeboy.lol/api/openapi.json : legalite calculee par /me/decks/{deck_id}"
         }
       ],
       "compte_rendu": {},
       "attente": {
-        "quand": "2026-09-22T21:38+0200",
+        "quand": "2026-10-01T10:10+0200",
         "raisons": [
-          "Deja dans main depuis le 21/09 (commit 8e09389, apps/api/src/pbm_api/decks/legality.py) : etat.json etait reste a a_faire, l ordonnanceur de chimera qui devait le tenir a jour s est arrete le 20/09."
+          "en PROD depuis le 23/09/2026 02:41 — release 20260923-024121, commit 3063f41 (CI verte), docs/LIVRAISON.md § Livraison du 23/09/2026 ; reverifie le 01/10/2026 sur https://pokeboy.lol/api/openapi.json : legalite calculee par /me/decks/{deck_id}"
         ]
       }
     },
     "v7-decks-collection-sync": {
-      "statut": "integre",
+      "statut": "livre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
-      "fin_reelle": null,
+      "fin_reelle": "2026-10-01",
       "taches": {
         "dev": {
           "etat": "a_faire",
@@ -4461,13 +4490,19 @@
           "machine": "?",
           "evenement": "statut → integre",
           "detail": "branche roadmap/v7-decks-collection-sync fusionnee dans main (CI verte, PR #16)"
+        },
+        {
+          "quand": "2026-10-01T10:10+0200",
+          "machine": "?",
+          "evenement": "statut → livre",
+          "detail": "en PROD depuis le 23/09/2026 02:41 — release 20260923-024121, commit 3063f41 (CI verte), docs/LIVRAISON.md § Livraison du 23/09/2026 ; reverifie le 01/10/2026 sur https://pokeboy.lol/api/openapi.json : /me/decks/alerts, /alerts/read, /history et /cards/{card_id}/replacements exposes"
         }
       ],
       "compte_rendu": {},
       "attente": {
-        "quand": "2026-09-22T23:27+0200",
+        "quand": "2026-10-01T10:10+0200",
         "raisons": [
-          "branche roadmap/v7-decks-collection-sync fusionnee dans main (CI verte, PR #16)"
+          "en PROD depuis le 23/09/2026 02:41 — release 20260923-024121, commit 3063f41 (CI verte), docs/LIVRAISON.md § Livraison du 23/09/2026 ; reverifie le 01/10/2026 sur https://pokeboy.lol/api/openapi.json : /me/decks/alerts, /alerts/read, /history et /cards/{card_id}/replacements exposes"
         ]
       }
     },
@@ -4547,11 +4582,11 @@
       }
     },
     "v7-decks-import-export": {
-      "statut": "integre",
+      "statut": "livre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
-      "fin_reelle": null,
+      "fin_reelle": "2026-10-01",
       "taches": {
         "dev": {
           "etat": "a_faire",
@@ -4605,13 +4640,19 @@
           "machine": "?",
           "evenement": "statut → integre",
           "detail": "Deja dans main depuis le 21/09 (commit ceceff8, apps/api/src/pbm_api/decks/import_service.py) : meme cause."
+        },
+        {
+          "quand": "2026-10-01T10:10+0200",
+          "machine": "?",
+          "evenement": "statut → livre",
+          "detail": "en PROD depuis le 23/09/2026 02:41 — release 20260923-024121, commit 3063f41 (CI verte), docs/LIVRAISON.md § Livraison du 23/09/2026 ; reverifie le 01/10/2026 sur https://pokeboy.lol/api/openapi.json : /me/decks/import et /me/decks/{deck_id}/export exposes"
         }
       ],
       "compte_rendu": {},
       "attente": {
-        "quand": "2026-09-22T21:38+0200",
+        "quand": "2026-10-01T10:10+0200",
         "raisons": [
-          "Deja dans main depuis le 21/09 (commit ceceff8, apps/api/src/pbm_api/decks/import_service.py) : meme cause."
+          "en PROD depuis le 23/09/2026 02:41 — release 20260923-024121, commit 3063f41 (CI verte), docs/LIVRAISON.md § Livraison du 23/09/2026 ; reverifie le 01/10/2026 sur https://pokeboy.lol/api/openapi.json : /me/decks/import et /me/decks/{deck_id}/export exposes"
         ]
       }
     },
@@ -6117,11 +6158,11 @@
       "compte_rendu": {}
     },
     "h1-seconde-passe-ia": {
-      "statut": "integre",
+      "statut": "livre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
-      "fin_reelle": null,
+      "fin_reelle": "2026-10-01",
       "taches": {
         "dev": {
           "etat": "fait",
@@ -6205,6 +6246,12 @@
           "machine": "?",
           "evenement": "statut → integre",
           "detail": ""
+        },
+        {
+          "quand": "2026-10-01T10:10+0200",
+          "machine": "?",
+          "evenement": "statut → livre",
+          "detail": "en PROD depuis la release 20260922-234920 (commit b32daec), reconduit dans 20260923-024121 (3063f41 contient b32daec) — docs/LIVRAISON.md"
         }
       ],
       "compte_rendu": {
@@ -6223,7 +6270,12 @@
           "Le delai maximal de 300 s de la reconnaissance reste un probleme distinct : une seconde passe ajoute un appel IA, donc du temps."
         ]
       },
-      "attente": null
+      "attente": {
+        "quand": "2026-10-01T10:10+0200",
+        "raisons": [
+          "en PROD depuis la release 20260922-234920 (commit b32daec), reconduit dans 20260923-024121 (3063f41 contient b32daec) — docs/LIVRAISON.md"
+        ]
+      }
     },
     "h1-ci-stockage-s3": {
       "statut": "integre",
