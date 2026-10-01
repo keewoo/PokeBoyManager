@@ -107,10 +107,10 @@ _Avant le jeu lui-même : construire, nommer, corriger et partager des decks à 
 | `v7-decks-ui` | P0 | Constructeur de deck | CH5 (chimera) | 29 sept. → 2 oct. | v7-decks-api, v7-decks-recherche | — | Intégré (main) | [prompt](prompts/v7-decks-ui.md) |
 | `v7-decks-legalite` | P0 | Contrôle de légalité d'un deck, expliqué ligne par ligne | DA3 (devAI) | 29 sept. → 2 oct. | v7-decks-api | D10 | Intégré (main) | [prompt](prompts/v7-decks-legalite.md) |
 | `v7-decks-collection-sync` | P0 | Une carte quitte la collection : les decks le disent tout de suite | DA3 (devAI) | 5 oct. → 8 oct. | v7-decks-legalite | — | Intégré (main) | [prompt](prompts/v7-decks-collection-sync.md) |
-| `v7-decks-stats` | P1 | Fiche d'un deck : composition, courbe d'énergie et valeur | CH5 (chimera) | 5 oct. → 8 oct. | v7-decks-ui | — | À faire | [prompt](prompts/v7-decks-stats.md) |
-| `v7-deck-ia` | P1 | Deck proposé par l'IA du joueur, selon les types voulus | CH5 (chimera) | 9 oct. → 13 oct. | v7-decks-legalite, v7-decks-ui | — | À faire | [prompt](prompts/v7-deck-ia.md) |
+| `v7-decks-stats` | P1 | Fiche d'un deck : composition, courbe d'énergie et valeur | CH5 (chimera) | 5 oct. → 8 oct. | v7-decks-ui | — | Livré | [prompt](prompts/v7-decks-stats.md) |
+| `v7-deck-ia` | P1 | Deck proposé par l'IA du joueur, selon les types voulus | CH5 (chimera) | 9 oct. → 13 oct. | v7-decks-legalite, v7-decks-ui | — | Livré | [prompt](prompts/v7-deck-ia.md) |
 | `v7-decks-import-export` | P2 | Importer et exporter une liste de deck | CH5 (chimera) | 14 oct. → 17 oct. | v7-decks-legalite | — | Intégré (main) | [prompt](prompts/v7-decks-import-export.md) |
-| `v7-decks-e2e` | P1 | Parcours complet du gestionnaire de decks, joué automatiquement | CH5 (chimera) | 20 oct. → 23 oct. | v7-decks-stats, v7-deck-ia, v7-decks-collection-sync | — | À faire | [prompt](prompts/v7-decks-e2e.md) |
+| `v7-decks-e2e` | P1 | Parcours complet du gestionnaire de decks, joué automatiquement | CH5 (chimera) | 20 oct. → 23 oct. | v7-decks-stats, v7-deck-ia, v7-decks-collection-sync | — | Livré | [prompt](prompts/v7-decks-e2e.md) |
 
 ## V7 — Jouer avec ses cartes (30 nov. → 26 mars)
 

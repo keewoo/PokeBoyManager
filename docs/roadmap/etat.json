@@ -3630,11 +3630,11 @@
       }
     },
     "v7-deck-ia": {
-      "statut": "integre",
+      "statut": "livre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
-      "fin_reelle": null,
+      "fin_reelle": "2026-10-01",
       "taches": {
         "dev": {
           "etat": "a_faire",
@@ -3688,13 +3688,19 @@
           "machine": "?",
           "evenement": "statut → integre",
           "detail": "branche roadmap/v7-deck-ia fusionnee dans main (verifie par git merge-base)"
+        },
+        {
+          "quand": "2026-10-01T09:16+0200",
+          "machine": "?",
+          "evenement": "statut → livre",
+          "detail": "en PROD depuis le 23/09/2026 02:41 — release 20260923-024121, commit 3063f41 (CI verte) ; reverifie le 01/10/2026 : https://pokeboy.lol/api/openapi.json expose 14 routes decks dont /me/decks/{deck_id}/stats et /propose, /jeu/decks 307. Detail : docs/LIVRAISON.md § Livraison du 23/09/2026"
         }
       ],
       "compte_rendu": {},
       "attente": {
-        "quand": "2026-09-23T01:16+0200",
+        "quand": "2026-10-01T09:16+0200",
         "raisons": [
-          "branche roadmap/v7-deck-ia fusionnee dans main (verifie par git merge-base)"
+          "en PROD depuis le 23/09/2026 02:41 — release 20260923-024121, commit 3063f41 (CI verte) ; reverifie le 01/10/2026 : https://pokeboy.lol/api/openapi.json expose 14 routes decks dont /me/decks/{deck_id}/stats et /propose, /jeu/decks 307. Detail : docs/LIVRAISON.md § Livraison du 23/09/2026"
         ]
       }
     },
@@ -4466,11 +4472,11 @@
       }
     },
     "v7-decks-stats": {
-      "statut": "integre",
+      "statut": "livre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
-      "fin_reelle": null,
+      "fin_reelle": "2026-10-01",
       "taches": {
         "dev": {
           "etat": "a_faire",
@@ -4524,13 +4530,19 @@
           "machine": "?",
           "evenement": "statut → integre",
           "detail": "branche roadmap/v7-decks-stats fusionnee dans main (9925948), CI verte — le lot a conclu sans ecrire la ligne FAIT"
+        },
+        {
+          "quand": "2026-10-01T09:16+0200",
+          "machine": "?",
+          "evenement": "statut → livre",
+          "detail": "en PROD depuis le 23/09/2026 02:41 — release 20260923-024121, commit 3063f41 (CI verte) ; reverifie le 01/10/2026 : https://pokeboy.lol/api/openapi.json expose 14 routes decks dont /me/decks/{deck_id}/stats et /propose, /jeu/decks 307. Detail : docs/LIVRAISON.md § Livraison du 23/09/2026"
         }
       ],
       "compte_rendu": {},
       "attente": {
-        "quand": "2026-09-23T00:21+0200",
+        "quand": "2026-10-01T09:16+0200",
         "raisons": [
-          "branche roadmap/v7-decks-stats fusionnee dans main (9925948), CI verte — le lot a conclu sans ecrire la ligne FAIT"
+          "en PROD depuis le 23/09/2026 02:41 — release 20260923-024121, commit 3063f41 (CI verte) ; reverifie le 01/10/2026 : https://pokeboy.lol/api/openapi.json expose 14 routes decks dont /me/decks/{deck_id}/stats et /propose, /jeu/decks 307. Detail : docs/LIVRAISON.md § Livraison du 23/09/2026"
         ]
       }
     },
@@ -4604,11 +4616,11 @@
       }
     },
     "v7-decks-e2e": {
-      "statut": "integre",
+      "statut": "livre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
-      "fin_reelle": null,
+      "fin_reelle": "2026-10-01",
       "taches": {
         "dev": {
           "etat": "a_faire",
@@ -4662,13 +4674,19 @@
           "machine": "?",
           "evenement": "statut → integre",
           "detail": "branche roadmap/v7-decks-e2e fusionnee dans main (verifie par git merge-base)"
+        },
+        {
+          "quand": "2026-10-01T09:16+0200",
+          "machine": "?",
+          "evenement": "statut → livre",
+          "detail": "en PROD depuis le 23/09/2026 02:41 — release 20260923-024121, commit 3063f41 (CI verte) ; reverifie le 01/10/2026 : https://pokeboy.lol/api/openapi.json expose 14 routes decks dont /me/decks/{deck_id}/stats et /propose, /jeu/decks 307. Detail : docs/LIVRAISON.md § Livraison du 23/09/2026"
         }
       ],
       "compte_rendu": {},
       "attente": {
-        "quand": "2026-09-23T02:36+0200",
+        "quand": "2026-10-01T09:16+0200",
         "raisons": [
-          "branche roadmap/v7-decks-e2e fusionnee dans main (verifie par git merge-base)"
+          "en PROD depuis le 23/09/2026 02:41 — release 20260923-024121, commit 3063f41 (CI verte) ; reverifie le 01/10/2026 : https://pokeboy.lol/api/openapi.json expose 14 routes decks dont /me/decks/{deck_id}/stats et /propose, /jeu/decks 307. Detail : docs/LIVRAISON.md § Livraison du 23/09/2026"
         ]
       }
     },
