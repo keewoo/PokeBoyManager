@@ -21,6 +21,13 @@
   livret débutant (limite d'un Outil par Pokémon, décomptes de récompenses des cartes à Rule Box)
   sont pris dans le même corpus actuel (appendices du même livret et usage standard en vigueur),
   jamais dans une ère antérieure.
+- **R-1.4** — **Série en vigueur au 01/10/2026 : Méga-Évolution** (depuis 2025). Sa règle propre —
+  la Méga-Évolution Pokémon ex donne **3 récompenses** — est publiée par The Pokémon Company
+  (`https://www.pokemon.com/us/pokemon-news/the-pokemon-tcg-mega-evolution-series-begins`,
+  27/02/2025) et **imprimée dans le Rule Box** de chaque carte concernée. Plus généralement, les
+  règles **propres à une catégorie de cartes** (récompenses, limite par deck, zone d'arrivée) se
+  lisent dans le **Rule Box imprimé** de la carte, quelle que soit son ère : c'est le texte
+  officiel de la carte, pas une variante d'époque (R-17 ne concerne que les règles générales).
 - **R-1.2** — **Format retenu — décision DJ1, validée par JF le 01/10/2026 (2026-10-01T09:50+0200)** :
   format **« maison » sans rotation** — toute carte possédée est jouable, quelle que soit son
   époque — jouée avec le **corpus de règles ACTUEL**. Une carte ancienne se joue avec les règles
@@ -42,6 +49,8 @@
 - **R-2.6** — **D9 (projet)** : un deck ne peut contenir que des cartes dont l'effet est **scripté
   et testé**. Une carte non scriptée est **refusée** à la construction du deck, en disant
   pourquoi. Le jeu préfère dire « je ne sais pas jouer cette carte » que de la jouer de travers.
+- **R-2.7** — Au plus **1 carte Prisme Étoile (◇) de même nom** par deck (Rule Box imprimé).
+- **R-2.8** — Au plus **1 Pokémon ★ (Étoile)** par deck, tous noms confondus (Rule Box imprimé).
 
 ## Zones et limites (R-3)
 
@@ -58,6 +67,10 @@
 - **R-3.7** — Au plus **1 Outil Pokémon** attaché par Pokémon (règle de référence du corpus
   actuel ; le livret débutant permet de jouer autant d'Outils qu'on veut mais un Pokémon n'en
   porte qu'un).
+- **R-3.8** — Chaque joueur a une **zone perdue** (publique, face visible). Une carte qui y est
+  envoyée **n'en sort plus de la partie**. Le format maison accepte toute carte possédée (DJ1),
+  y compris celles qui y envoient des cartes (Prisme Étoile, effets « zone perdue ») : la zone
+  existe donc dès le modèle d'état, vide tant qu'aucune carte ne s'en sert.
 
 ## Mise en place et mulligan (R-4)
 
@@ -227,12 +240,17 @@
   son Outil**.
 - **R-13.3** — **Récompenses prises par l'adversaire** selon le **marqueur de règle** de la carte
   K.O. :
-  - **1** : Pokémon ordinaire, Radiant.
-  - **2** : Pokémon ex (y compris Tera ex), Pokémon-GX, Pokémon V, Pokémon VSTAR.
-  - **3** : Pokémon VMAX, TAG TEAM, V-UNION.
+  - **1** : Pokémon ordinaire, Radiant, Pokémon BREAK, Prisme Étoile, Pokémon LV.X, Pokémon ★.
+  - **2** : Pokémon ex (y compris Tera ex et Pokémon-ex de l'ère EX), Pokémon-EX (y compris
+    M Pokémon-EX), Pokémon-GX, Pokémon V, Pokémon VSTAR, LÉGENDE.
+  - **3** : **Méga-Évolution Pokémon ex**, Pokémon VMAX, TAG TEAM, V-UNION.
 - **R-13.4** — Le nombre de récompenses se **lit sur la carte (catalogue)**, **jamais** depuis une
   liste en dur. Un **marqueur de règle inconnu** fait **échouer bruyamment** (interdiction du
   repli silencieux), **jamais** « par défaut 1 ».
+- **R-13.7** — **Le suffixe du nom ne suffit pas** à classer une carte : une Méga-Évolution
+  Pokémon ex finit par « ex » comme un Pokémon ex ordinaire, mais donne 3 récompenses (R-15.13),
+  et une TAG TEAM finit par « GX » mais en donne 3 (R-15.7). Le marqueur se lit dans les
+  **sous-types / le Rule Box du catalogue** ; un nom seul ne tranche jamais.
 - **R-13.5** — **K.O. simultané** : les deux Pokémon sont K.O. en même temps ; **chaque joueur
   prend ses récompenses** ; si la partie n'est pas finie, chacun promeut (R-8.7). Voir R-14.4 pour
   l'égalité éventuelle.
@@ -283,6 +301,28 @@
 - **R-15.12** — **D9 (projet)** : un **effet non implémenté n'est jamais approximé**. Une carte
   dont l'effet — y compris VSTAR Power, attaque GX, protection Tera — n'est pas **scripté et
   testé** est **refusée au deck** (R-2.6).
+- **R-15.13** — **Méga-Évolution Pokémon ex** (série Méga-Évolution, 2025–) : **3 récompenses**.
+  Elle se joue selon le **stade imprimé** ; la Méga-Évolution de cette série **ne termine pas le
+  tour** (aucune règle de fin de tour n'est imprimée).
+- **R-15.14** — **Pokémon-EX** (ères Noir & Blanc et XY, majuscules, avec tiret) : **2 récompenses**.
+- **R-15.15** — **M Pokémon-EX** (Méga-Évolution de l'ère XY) : **2 récompenses** (c'est un
+  Pokémon-EX). Son Rule Box imprimé dit que **le tour se termine** quand un de vos Pokémon
+  devient une Méga-Évolution : c'est le texte de la carte, il **s'applique** (R-1.4) — et, comme
+  tout effet, la carte n'entre au deck que si ce texte est scripté et testé (R-15.12).
+- **R-15.16** — **Pokémon-ex** de l'ère EX (2003–2007, minuscules) : **2 récompenses** — même
+  traitement que R-15.1.
+- **R-15.17** — **Pokémon BREAK** : **1 récompense** ; se pose sur le Pokémon de même nom (sans
+  « BREAK ») et **conserve** ses attaques, talents, faiblesse, résistance et coût de retraite,
+  comme l'imprime son Rule Box.
+- **R-15.18** — **Prisme Étoile (◇)** : **1 récompense** ; **1 par nom** dans le deck (R-2.7) ;
+  une carte ◇ qui devrait aller dans la **défausse** va dans la **zone perdue** (R-3.8).
+- **R-15.19** — **LÉGENDE** (ère HeartGold SoulSilver) : les **deux moitiés** se mettent en jeu
+  **ensemble**, comme l'imprime le Rule Box ; **2 récompenses**.
+- **R-15.20** — **Pokémon LV.X** : **1 récompense** ; se pose sur le Pokémon Actif de même nom
+  selon son Rule Box imprimé.
+- **R-15.21** — **Pokémon ★ (Étoile)** : **1 récompense** ; **1 seul par deck** (R-2.8).
+- **R-15.22** — Une carte à **Rule Box** absente de R-15 est **refusée au deck** tant qu'une règle
+  ne l'y ajoute pas (R-13.4, R-15.12) : jamais de récompense ni de limite devinée.
 
 ## Cas limites (R-16)
 
@@ -328,6 +368,10 @@
   (= 30) » — identique en valeur, posés en compteurs. **Retenu : 3 compteurs** (R-11.5).
 - **R-17.8** — **Taille du banc** : historiquement **5** (stable). **Retenu : 5** (R-3.2).
 - **R-17.9** — **Récompenses** : **6** (stable). **Retenu : 6** (R-3.4).
+- **R-17.10** — **Méga-Évolution** : ère XY (M Pokémon-EX, 2 récompenses, **le tour se termine**)
+  → série Méga-Évolution (2025, Méga-Évolution Pokémon ex, **3 récompenses**, le tour continue).
+  **Retenu : chaque carte suit son propre Rule Box imprimé** (R-15.13, R-15.15) — ce n'est pas
+  une règle générale qui aurait changé, ce sont deux catégories de cartes distinctes.
 
 ---
 
