@@ -23,9 +23,11 @@ sous Paralysie (R-16.12) ou leur ferait consommer la retraite du tour. Chacun a 
 
 Les trois mouvements partagent la même porte, `_nettoyer_pour_banc` : le Pokémon qui **descend
 au banc** perd ses **états spéciaux** et les **effets d'attaque**, mais **conserve** énergies,
-Outil, compteurs de dégâts (R-10.4) et pile d'évolutions. C'est là, et nulle part ailleurs, que
-les effets temporaires portés par l'état se retireront quand les lots d'effets arriveront — une
-seule porte, pour qu'un effet ne devienne jamais éternel en silence. En promotion, le Pokémon qui
+Outil, compteurs de dégâts (R-10.4) et pile d'évolutions. Depuis `j-etats-speciaux`, le retrait
+des états passe par `pbm_game.etats.soigner_etats_speciaux` (R-11.9), **partagé** avec la guérison
+par évolution et par effet de soin — voir [`ETATS-SPECIAUX.md`](ETATS-SPECIAUX.md). C'est là, et
+nulle part ailleurs, que les effets temporaires portés par l'état se retireront quand les lots
+d'effets arriveront — une seule porte, pour qu'un effet ne devienne jamais éternel en silence. En promotion, le Pokémon qui
 monte vient du banc, où aucun état ne peut vivre (R-11.2) : il est propre par construction.
 
 ## Ce que le moteur reçoit, ce qu'il ne devine pas (D9)

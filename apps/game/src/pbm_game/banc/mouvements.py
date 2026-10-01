@@ -35,6 +35,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 
+from ..etats.matrice import soigner_etats_speciaux
 from ..journal.modele import (
     ACTION_ECHANGE_FORCE,
     ACTION_PROMOUVOIR,
@@ -112,13 +113,13 @@ def _nettoyer_pour_banc(pokemon: PokemonEnJeu) -> PokemonEnJeu:
     """Le Pokémon qui **descend au banc** (R-8.6) : perd ses états spéciaux et les effets
     d'attaque, **conserve** énergies, Outil, compteurs de dégâts et pile d'évolutions.
 
-    Au jalon J1, « effets d'attaque » n'existe encore sur aucune carte (D9) : la seule chose à
-    retirer est l'ensemble des états spéciaux. Quand les effets temporaires seront portés par
-    l'état (lots d'effets), ils se retireront **ici**, au même endroit — c'est la seule porte.
+    La guérison de **tous** les états passe par :func:`pbm_game.etats.soigner_etats_speciaux`
+    (R-11.9), **partagée** avec l'évolution et les effets de soin : une seule porte, pour que
+    « que garde / que perd un Pokémon qui guérit » ne diverge pas entre ces chemins. Au jalon J1,
+    « effets d'attaque » n'existe encore sur aucune carte (D9) ; quand les effets temporaires
+    seront portés par l'état (lots d'effets), ils se retireront **ici**, au même endroit.
     """
-    if not pokemon.etats_speciaux:
-        return pokemon
-    return replace(pokemon, etats_speciaux=frozenset())
+    return soigner_etats_speciaux(pokemon)
 
 
 def _echanger_actif_et_banc(joueur: Joueur, banc_index: int) -> Joueur:
