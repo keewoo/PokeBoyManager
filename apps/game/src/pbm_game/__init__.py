@@ -35,6 +35,22 @@ dégâts dans l'ordre strict du corpus (`resoudre_degats` : base, modificateurs,
 résistance −30, plancher, R-10.1). Les dégâts se posent en **compteurs** (`poser_degats` /
 `poser_compteurs`), jamais en PV soustraits (R-10.4), et le **détail de calcul** lisible
 (« 60 base, ×2 faiblesse, −30 résistance = 90 ») est produit et porté par le journal (R-10.9).
+
+Lot `j-retraite-banc` : `pbm_game.banc`, le Pokémon Actif **change de place** (R-8) —
+`battre_en_retraite` (volontaire : coût en énergies au choix, une fois par tour, interdit sous
+Sommeil/Paralysie), `promouvoir` (obligatoire après un K.O., **banc vide = défaite** R-8.9) et
+`echange_force` (provoqué par un effet, sans coût ni retraite consommée, autorisé sous état).
+Les trois partagent le **passage au banc** (R-8.6) : le Pokémon qui descend perd ses états mais
+garde énergies, Outil, compteurs et pile d'évolutions. Ce sont des transitions journalisées,
+enregistrées dans le `REGISTRE` comme les autres.
 """
+
+from __future__ import annotations
+
+# ``banc`` enregistre ses trois transitions de mouvement (retraite, promotion, échange forcé)
+# dans le ``REGISTRE`` du journal **à son import**. On l'importe ici pour que ce soit toujours
+# fait dès que ``pbm_game`` est chargé — sinon ``appliquer`` ignorerait ces actions. Le noyau des
+# transitions ne peut pas le faire lui-même (cycle d'import : voir ``pbm_game.banc.mouvements``).
+from . import banc as _banc  # noqa: F401  (import pour effet d'enregistrement)
 
 __all__: list[str] = []
