@@ -30,9 +30,19 @@ from ..state.modele import EtatPartie
 FENETRE_DEBUT_TOUR = "debut_tour"
 #: Fenêtre ouverte à la **fin du tour**, à l'entrée du Pokémon Checkup (R-12.1).
 FENETRE_FIN_TOUR = "fin_tour"
+#: Fenêtre d'**expiration des effets temporaires** « jusqu'à la fin de ce tour » (R-12.5),
+#: ouverte pendant le Pokémon Checkup par ``pbm_game.checkup``. Chaque déclencheur y retire
+#: son marqueur et **journalise** l'expiration : un effet temporaire ne disparaît jamais en
+#: silence (sinon un effet « jusqu'à la fin du tour » devient éternel sans que rien ne le dise).
+#: **Vide au jalon J1** — aucun effet temporaire n'existe encore (la pile d'effets, lot
+#: ``j-effets-architecture``, l'alimentera), mais la fenêtre est câblée et franchie à chaque
+#: Checkup.
+FENETRE_EXPIRATION_EFFETS = "expiration_effets"
 
 #: Les fenêtres reconnues. En demander une autre est une erreur, jamais un silence.
-FENETRES: frozenset[str] = frozenset({FENETRE_DEBUT_TOUR, FENETRE_FIN_TOUR})
+FENETRES: frozenset[str] = frozenset(
+    {FENETRE_DEBUT_TOUR, FENETRE_FIN_TOUR, FENETRE_EXPIRATION_EFFETS}
+)
 
 # Un déclencheur transforme l'état et rend les événements qu'il a produits. Il reçoit le
 # Rng (certains effets tirent au sort) ; comme les transitions, il est pur côté état.
@@ -44,6 +54,7 @@ Declencheur = Callable[[EtatPartie, Rng], tuple[EtatPartie, list[Evenement]]]
 DECLENCHEURS: dict[str, tuple[Declencheur, ...]] = {
     FENETRE_DEBUT_TOUR: (),
     FENETRE_FIN_TOUR: (),
+    FENETRE_EXPIRATION_EFFETS: (),
 }
 
 
@@ -76,6 +87,7 @@ def declencher(
 __all__ = [
     "FENETRE_DEBUT_TOUR",
     "FENETRE_FIN_TOUR",
+    "FENETRE_EXPIRATION_EFFETS",
     "FENETRES",
     "Declencheur",
     "DECLENCHEURS",

@@ -12,7 +12,12 @@ résultat. On suit donc **à la lettre** l'ordre strict du corpus (``docs/jeu/RE
   l'attaque (colorés, incolores, énergies multi-unités) ? (R-9.1, R-9.2) ;
 * :mod:`~pbm_game.combat.resolution` — :func:`resoudre_degats` (l'ordre strict R-10.1),
   :func:`poser_degats` / :func:`poser_compteurs` (en **compteurs**, jamais en PV — R-10.4) et
-  :func:`evenement_degats` (le détail porté par le journal).
+  :func:`evenement_degats` (le détail porté par le journal) ;
+* :mod:`~pbm_game.combat.ko` — les primitives **partagées** de mise K.O. (R-13) :
+  :func:`est_ko` (compteurs ≥ PV), :func:`cartes_a_defausser` (toute la pile, R-13.2) et
+  :func:`prendre_recompenses` (R-13.3). Appelées aussi bien par le Pokémon Checkup
+  (``pbm_game.checkup``) que par la future résolution d'attaque — le code de K.O. ne vit pas
+  que dans l'attaque.
 
 **Périmètre au palier 6 (ce lot).** Le moteur ne connaît **pas encore** les données de carte
 (type d'une énergie, coût imprimé, faiblesse d'un Pokémon, attaques) : elles arrivent avec
@@ -23,6 +28,7 @@ il reçoit des **descripteurs** déjà extraits du catalogue et ne devine rien (
 from __future__ import annotations
 
 from .cout import cout_satisfait, pool_energies
+from .ko import cartes_a_defausser, est_ko, prendre_recompenses
 from .modele import (
     FAIBLESSE_FACTEUR_DEFAUT,
     INCOLORE,
@@ -69,4 +75,8 @@ __all__ = [
     "poser_degats",
     "poser_compteurs",
     "evenement_degats",
+    # mise K.O. (R-13) — primitives partagées
+    "cartes_a_defausser",
+    "est_ko",
+    "prendre_recompenses",
 ]
