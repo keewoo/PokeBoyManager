@@ -28,6 +28,13 @@ cibles valides) et `valider(etat, action)` rend l'accord ou un refus motivé par
 citée. Une seule source de vérité : la liste ; la validation en vérifie l'appartenance. Les
 familles dépendantes du catalogue (poser, évoluer, attacher, attaquer) ne sont pas
 approximées (D9) — chaque lot de résolution enregistre la sienne dans `FAMILLES_DEFAUT`.
+
+Lot `j-degats-resolution` : `pbm_game.combat`, la **résolution d'attaque** — vérification du
+coût (`cout_satisfait` : colorés, incolores, énergies multi-unités, R-9.2) et calcul des
+dégâts dans l'ordre strict du corpus (`resoudre_degats` : base, modificateurs, faiblesse ×2,
+résistance −30, plancher, R-10.1). Les dégâts se posent en **compteurs** (`poser_degats` /
+`poser_compteurs`), jamais en PV soustraits (R-10.4), et le **détail de calcul** lisible
+(« 60 base, ×2 faiblesse, −30 résistance = 90 ») est produit et porté par le journal (R-10.9).
 """
 
 __all__: list[str] = []

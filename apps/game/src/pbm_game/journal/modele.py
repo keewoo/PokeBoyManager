@@ -63,6 +63,10 @@ EVT_TOUR_COMMENCE = "tour_commence"
 #: Une attaque est déclarée (R-5.7). Produit par la transition ``declarer_attaque`` ; au
 #: jalon J1 (ce lot) il ne porte aucun dégât — seul l'effet « termine le tour » est mécanisé.
 EVT_ATTAQUE_DECLAREE = "attaque_declaree"
+#: Des dégâts sont résolus et posés sur un Pokémon (R-10). Produit par la résolution d'attaque
+#: (lot ``j-degats-resolution``) : il porte la cible, les dégâts, le nombre de compteurs et le
+#: **détail de calcul** lisible (R-10.9) qu'affichent le journal de partie et l'aide en jeu.
+EVT_DEGATS = "degats"
 #: La partie se termine (R-14.6) : l'événement porte vainqueur, raison et, pour l'abandon,
 #: le joueur qui a abandonné. Produit par la transition ``abandonner`` (lot j-actions-legales).
 EVT_PARTIE_TERMINEE = "partie_terminee"
