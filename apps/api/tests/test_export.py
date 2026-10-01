@@ -66,7 +66,7 @@ async def _register_verify_login(client: httpx.AsyncClient, email: str) -> str:
 @pytest.fixture(autouse=True)
 def _local_photo_storage(tmp_path):
     """Backend `local` (D7) pour toute la suite, comme `tests/test_profile.py` : preuve
-    indépendante de MinIO que l'export fonctionne aussi sur la cible retenue pour l'UAT/PROD."""
+    indépendante du S3 que l'export fonctionne aussi sur la cible retenue pour l'UAT/PROD."""
     storage = LocalObjectStorage(root=str(tmp_path))
     fastapi_app.dependency_overrides[get_storage] = lambda: storage
     yield storage

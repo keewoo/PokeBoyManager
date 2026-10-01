@@ -76,7 +76,7 @@ export default defineConfig({
       env: {
         NEXT_PUBLIC_API_URL: API_BASE_URL,
         // CSP `connect-src` (lot `v5-securite`) : sans l'origine du stockage objet, le `PUT`
-        // présigné direct du navigateur vers MinIO est bloqué et tout envoi de photo échoue
+        // présigné direct du navigateur vers le stockage S3 est bloqué et tout envoi de photo échoue
         // (constaté par le lot `v5-e2e`, voir `src/middleware.ts`/`src/lib/config.ts`). Doit
         // rester alignée avec `S3_ENDPOINT_URL` de l'entrée `webServer` API ci-dessus.
         NEXT_PUBLIC_UPLOAD_ORIGIN: process.env.S3_ENDPOINT_URL || "http://localhost:59000",

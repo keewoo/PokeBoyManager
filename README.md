@@ -20,7 +20,7 @@ métier encore.
 
 ```bash
 cp .env.example .env   # optionnel, les valeurs par défaut suffisent
-docker compose up -d   # Postgres 16, Redis 7, MinIO, Mailpit
+docker compose up -d   # Postgres 16, Redis 7, SeaweedFS (S3), Mailpit
 pnpm install
 pnpm --filter @pbm/web dev        # http://localhost:3000
 cd apps/api && uv sync && uv run uvicorn pbm_api.main:app --reload   # http://localhost:8000/health

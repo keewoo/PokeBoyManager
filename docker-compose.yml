@@ -30,20 +30,22 @@ services:
       timeout: 5s
       retries: 10
 
-  minio:
-    image: quay.io/minio/minio:latest
+  # Stockage S3 de dev : SeaweedFS, épinglé — MinIO n'est plus distribué en image depuis le
+  # 01/10/2026. Mêmes identifiants que l'API (S3_ACCESS_KEY / S3_SECRET_KEY de .env), donc
+  # rien à aligner à la main. Voir docs/CODE.md § « Stockage S3 de dev/CI ».
+  s3:
+    image: chrislusf/seaweedfs:4.48
     restart: unless-stopped
-    command: server /data --console-address ":9001"
+    command: server -s3 -dir=/data -ip.bind=0.0.0.0
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-pbm}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-pbmpbmpbm}
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:-pbm}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:-pbmpbmpbm}
     ports:
-      - "${MINIO_API_PORT:-59000}:9000"
-      - "${MINIO_CONSOLE_PORT:-59001}:9001"
+      - "${S3_API_PORT:-59000}:8333"
     volumes:
-      - pbm_minio_data:/data
+      - pbm_s3_data:/data
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8333/healthz"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -58,4 +60,4 @@ services:
 volumes:
   pbm_postgres_data:
   pbm_redis_data:
-  pbm_minio_data:
+  pbm_s3_data:

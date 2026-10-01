@@ -88,7 +88,7 @@ apps/web            Next.js 15 (App Router), TypeScript strict, Tailwind 4, ESLi
 apps/api             FastAPI, Python 3.12, uv, ruff, pytest — /health
 packages/api-client  Client TypeScript généré depuis l'OpenAPI de apps/api (openapi-typescript)
 infra/postgres/init  Scripts d'initialisation (extensions pg_trgm, unaccent)
-docker-compose.yml   Postgres 16, Redis 7, MinIO, Mailpit — ports par défaut = infra partagée de la flotte
+docker-compose.yml   Postgres 16, Redis 7, SeaweedFS (S3), Mailpit — ports par défaut = infra partagée de la flotte
 ```
 
 Versions épinglées : Node 24, pnpm 12.4.2 (`packageManager` dans `package.json`), Python 3.12,
@@ -96,7 +96,7 @@ uv (voir `uv.lock` dans `apps/api`) ; images Docker à tag majeur fixe (`postgre
 `redis:7-alpine`).
 
 ```bash
-# Infra locale (Postgres, Redis, MinIO, Mailpit)
+# Infra locale (Postgres, Redis, SeaweedFS pour le S3, Mailpit)
 cp .env.example .env   # optionnel : les valeurs par défaut suffisent
 docker compose up -d
 docker compose down -v # arrêt + purge des volumes
@@ -119,6 +119,38 @@ uv run pytest -q
 # Client TypeScript généré depuis l'OpenAPI (à relancer après tout changement de schéma API)
 pnpm gen:api
 ```
+
+## Stockage S3 de dev/CI — SeaweedFS (depuis le 01/10/2026)
+
+`docker-compose.yml` et la CI servent le S3 avec **`chrislusf/seaweedfs:4.48`** (`server -s3`),
+épinglé. MinIO a cessé d'être distribué en image le 01/10/2026 (quay.io répond 401, le dépôt
+Docker Hub a disparu) : la CI de `main` tombait avant le premier test, quel que soit le commit.
+La PROD n'est pas concernée — elle stocke les photos sur disque (D7).
+
+Ce que le produit exige d'un serveur S3, et que **`apps/api/scripts/sonde_s3.py`** vérifie :
+bucket absent → `ClientError` (c'est là-dessus que `ensure_bucket` crée), codes `NoSuchKey`/`404`
+sur clé absente, URL présignées **SigV2** (ce que boto3 produit ici) avec Content-Type signé —
+**refusées en 403 avec un autre type** —, et **CORS ouvert sans configuration** pour le dépôt
+direct du navigateur. Mesuré le 01/10, chaque candidat dans un conteneur sur devAI :
+
+| Candidat | Verdict |
+|---|---|
+| MinIO (référence, image restée en cache sur devAI) | conforme |
+| **SeaweedFS 4.48** | **conforme — retenu** |
+| RustFS 1.0.0 | aucun en-tête CORS : l'envoi de photo depuis le navigateur échouerait |
+| adobe/s3mock 5.2.3 | accepte une URL signée avec un autre Content-Type : les signatures ne sont pas vérifiées, les tests ne prouveraient plus rien |
+
+- **Changer d'image, ou de version, c'est repasser la sonde d'abord** :
+  `uv run python scripts/sonde_s3.py <endpoint>` (code 1 = non conforme, chaque contrôle imprimé).
+- Identifiants : `S3_ACCESS_KEY` / `S3_SECRET_KEY`, les mêmes que l'API — le compose les transmet
+  à SeaweedFS (`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`). Port 8333 dans le conteneur,
+  publié en **59000** en dev (`S3_API_PORT`) et en **9000** en CI. Santé : `GET /healthz`.
+- **`-ip.bind=0.0.0.0` est obligatoire** : sans lui, SeaweedFS n'écoute que sur l'IP que le
+  conteneur avait au démarrage — pas sur `localhost` (le healthcheck du compose reste « unhealthy »
+  indéfiniment) ni sur un réseau Docker branché après coup (`Connection refused`).
+- Clone existant : le service s'appelle `s3` (plus `minio`) et son volume `pbm_s3_data` →
+  `docker compose up -d --remove-orphans`. Les objets de l'ancien MinIO ne sont pas repris (ce
+  sont des données de dev), et il n'y a plus de console web sur 59001.
 
 ## Parcours e2e complet (lot `v5-e2e`)
 
@@ -169,7 +201,7 @@ un résultat *semé*, jamais encore sur un envoi/détections produits par le vra
 **Deux bogues trouvés en étant la première spec à exercer un vrai envoi de photo par le
 navigateur** (les e2e précédentes sèment leur résultat directement en base) :
 - La CSP `connect-src` du lot `v5-securite` (`apps/web/src/middleware.ts`) n'autorisait que
-  `'self'` et l'origine de l'API — pas celle du stockage objet. Avec `STORAGE_BACKEND=s3` (MinIO
+  `'self'` et l'origine de l'API — pas celle du stockage objet. Avec `STORAGE_BACKEND=s3` (serveur S3
   en dev/CI), le navigateur dépose la photo brute par un `PUT` direct vers cette origine
   (présignée, `pbm_api.s3.ObjectStorage.presign_put`) : la CSP le bloquait, et **tout envoi de
   photo échouait silencieusement** (page affichant « L'envoi a échoué. », rien dans les journaux

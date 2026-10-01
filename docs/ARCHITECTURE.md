@@ -24,7 +24,7 @@ flowchart LR
 | API | FastAPI, Python 3.12, SQLAlchemy 2 async, Alembic, Pydantic v2 | la vision (OpenCV) et les SDK IA sont en Python ; même pile que les autres projets de JF |
 | Jobs | arq + Redis | reconnaissance, import du catalogue, relevé des prix : tout est asynchrone et reprenable |
 | Base | PostgreSQL 16 + `pg_trgm`, `unaccent` | recherche floue FR/EN, historique de prix volumineux mais simple |
-| Photos | S3 (MinIO en local, Object Storage en ligne — D7) | envoi direct du navigateur, pas de fichier sur les serveurs web |
+| Photos | S3 en dev/CI (SeaweedFS) ; disque du serveur en PROD (D7) | envoi direct du navigateur, pas de fichier sur les serveurs web |
 | Monorepo | pnpm workspaces + uv ; client TS généré depuis l'OpenAPI | un seul contrat entre front et back |
 
 ## Principe : la base sait, l'IA reconnaît (JF, 19/09/2026)
@@ -657,7 +657,7 @@ photos de collection, envois originaux, recadrages de détection et archives d'e
 
 | | Où | Comment |
 |---|---|---|
-| Local | chaque machine de la flotte | `docker compose up` (Postgres, Redis, MinIO, Mailpit) |
+| Local | chaque machine de la flotte | `docker compose up` (Postgres, Redis, SeaweedFS pour le S3, Mailpit) |
 | CI | GitHub Actions | lint, tests, e2e Playwright |
 | UAT / PROD | selon D2 | images construites sur chimera, déployées par devAI (`pull` + `up -d`) |
 

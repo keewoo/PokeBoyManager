@@ -60,7 +60,7 @@ class Settings(BaseSettings):
     ai_key_encryption_key: str = "bo8a8UxneCy51yL6Mhan73p0Yxh+tKGlj4cIAbrfRvo="
 
     # --- Stockage des photos (lots v3-upload, v1-profil) ---
-    # D7 : deux implémentations de stockage — "s3" (MinIO en dev/CI, Object Storage en ligne)
+    # D7 : deux implémentations de stockage — "s3" (SeaweedFS en dev/CI, Object Storage en ligne)
     # ou "local" (disque du serveur en UAT/PROD, `PHOTOS_STORAGE_PATH`). Voir `pbm_api.storage`.
     # Sert les photos de cartes (v3-upload) et l'avatar utilisateur (v1-profil).
     storage_backend: str = "s3"

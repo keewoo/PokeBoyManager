@@ -1,6 +1,6 @@
 """Stockage des photos (D7) : deux implémentations, choisies par `STORAGE_BACKEND`.
 
-- `s3` (défaut, MinIO en dev/CI, Object Storage en ligne) : `pbm_api.s3.ObjectStorage`, déjà
+- `s3` (défaut, SeaweedFS en dev/CI, Object Storage en ligne) : `pbm_api.s3.ObjectStorage`, déjà
   utilisé par le proxy d'images du catalogue.
 - `local` (UAT/PROD, disque du serveur) : `pbm_api.storage.local.LocalObjectStorage`.
 

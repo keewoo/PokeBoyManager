@@ -14,7 +14,7 @@
       "**Back** : FastAPI (Python 3.12) + SQLAlchemy 2 (async) + Alembic, Pydantic v2, argon2id pour les mots de passe, `cryptography` (AES-256-GCM) pour le coffre de clés IA.",
       "**Jobs** : arq sur Redis 7 — reconnaissance des photos, import du catalogue, relevé quotidien des prix.",
       "**Vision** : OpenCV (détection et redressement des cartes) + LLM vision de l'utilisateur via une couche fournisseurs unique (Anthropic, Google, OpenAI).",
-      "**Données** : PostgreSQL 16 (`pg_trgm`, `unaccent`) ; photos sur stockage objet S3 (MinIO en local).",
+      "**Données** : PostgreSQL 16 (`pg_trgm`, `unaccent`) ; photos sur stockage objet S3 (SeaweedFS en dev/CI ; disque du serveur en PROD, D7).",
       "**Catalogue & prix** : TCGdex (cartes FR + EN, images officielles, prix Cardmarket) et Pokémon TCG API (prix TCGplayer, légalités) ; l'historique est construit par nos relevés quotidiens.",
       "**Monorepo** : pnpm workspaces (`apps/web`) + uv (`apps/api`) ; client TypeScript généré depuis l'OpenAPI de l'API ; CI GitHub Actions."
     ],
@@ -3432,6 +3432,43 @@
       "dependances": [
         "h1-decoupe-fiable"
       ],
+      "vague": "H1",
+      "piste": "F"
+    },
+    {
+      "id": "h1-ci-stockage-s3",
+      "debut": "2026-10-01",
+      "fin": "2026-10-01",
+      "priorite": "P0",
+      "taille": "S",
+      "complexite": 2,
+      "difficulte": 2,
+      "titre": "La CI retrouve son stockage S3 : MinIO remplacé par SeaweedFS",
+      "gain": "MinIO n'est plus distribué en image (quay.io répond 401, le dépôt Docker Hub a disparu) : depuis le 01/10, les jobs api et e2e échouent avant le premier test, quel que soit le commit. Sans CI, plus rien ne peut être déclaré fini.",
+      "fonctionnalites": "Remplacer le serveur S3 de la CI et du docker-compose de dev par une image maintenue, épinglée, qui se comporte comme MinIO sur tout ce que le produit utilise : bucket créé à la volée, objets, codes NoSuchKey/404, URL présignées SigV2 avec Content-Type signé, et CORS ouvert pour le dépôt direct du navigateur.",
+      "risques": "Un remplaçant qui accepte tout (signatures non vérifiées) laisserait passer des tests qui ne prouvent plus rien ; un remplaçant sans CORS casserait l'e2e d'envoi de photo. La PROD n'est pas concernée : elle stocke les photos sur disque (D7).",
+      "tenants": "CI GitHub Actions, docker-compose de dev, stockage objet.",
+      "aboutissants": "CI de nouveau verte ; tous les lots suivants retrouvent leur verdict.",
+      "refs": [
+        "échec CI du 01/10/2026 sur a97a6c1 : `quay.io/minio/minio:latest` — unauthorized"
+      ],
+      "mission": [
+        "Mesurer les candidats contre la même sonde que MinIO, MinIO compris comme référence.",
+        "Remplacer MinIO dans la CI (jobs api et e2e) et dans docker-compose.yml, image épinglée.",
+        "Garder la sonde dans le dépôt pour revalider tout futur remplaçant.",
+        "Mettre à jour les fiches et les commentaires qui nomment MinIO comme serveur courant."
+      ],
+      "livrables": [
+        "CI verte sur la branche du lot puis sur main",
+        "apps/api/scripts/sonde_s3.py et son verdict par candidat dans le compte rendu"
+      ],
+      "taches_na": {
+        "maquette": "sans objet : infrastructure de test",
+        "release_prod": "sans objet : la PROD stocke sur disque (D7), rien n'y change"
+      },
+      "couloir": "DA2",
+      "decision": null,
+      "dependances": [],
       "vague": "H1",
       "piste": "F"
     }

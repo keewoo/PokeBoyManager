@@ -57,7 +57,7 @@ async def _register_verify_login(client: httpx.AsyncClient, email: str) -> str:
 
 @pytest.fixture(autouse=True)
 def _local_photo_storage(tmp_path):
-    """Backend `local` pour toute la suite : preuve indépendante de MinIO que la route
+    """Backend `local` pour toute la suite : preuve indépendante du stockage S3 que la route
     `/me/avatar` fonctionne aussi sur la cible retenue pour l'UAT/PROD sans Docker (voir
     `pbm_api.storage`, lot `v3-upload`). Comme `tests/test_uploads.py`."""
     storage = LocalObjectStorage(root=str(tmp_path))

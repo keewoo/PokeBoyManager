@@ -1,4 +1,4 @@
-"""Client S3 (MinIO en local, Object Storage en ligne — D7). Synchrone (boto3), délégué à un
+"""Client S3 (SeaweedFS en dev/CI, Object Storage en ligne — D7). Synchrone (boto3), délégué à un
 thread pour ne pas bloquer la boucle asyncio, comme le reste de l'API attend des appels I/O non
 bloquants.
 """

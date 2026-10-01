@@ -105,10 +105,10 @@ Le backend `local` (disque, **cible réelle de PROD** — voir `docs/infra/SERVE
 était déjà correctement gardé : `PUT /uploads/{id}/raw` vérifie l'en-tête `Content-Length` *et*
 la taille réelle du corps avant d'écrire sur disque (`routers/uploads.py`).
 
-**Faille trouvée et corrigée** sur le backend `s3` (MinIO en dev/CI — pas la cible de PROD, mais
+**Faille trouvée et corrigée** sur le backend `s3` (serveur S3 de dev/CI — pas la cible de PROD, mais
 un même code sert les deux) : `POST /uploads` valide la taille **déclarée** par le client avant
 d'émettre une URL présignée, mais `generate_presigned_url("put_object", ...)` (boto3) n'impose
-**aucune** limite de taille côté S3/MinIO lui-même (contrairement à un présignage POST avec
+**aucune** limite de taille côté serveur S3 lui-même (contrairement à un présignage POST avec
 condition `content-length-range`) — un appelant qui capture cette URL peut y déposer un objet
 de n'importe quelle taille. `POST /uploads/{id}/complete` chargeait ensuite tout l'objet en
 mémoire (`storage.get()` → `bytes`) pour le traiter : sans garde-fou, un dépôt volumineux aurait
@@ -117,11 +117,11 @@ nouveau sur les deux backends — `HEAD`/`stat`, sans télécharger le corps) **
 chargement en mémoire : au-delà de `upload_max_size_bytes`, l'objet est supprimé du stockage,
 l'envoi passé en `failed`, réponse `413`. Vérifié :
 `test_complete_rejects_an_object_bigger_than_declared_at_creation` (`test_uploads.py`), qui
-dépose réellement un objet de `upload_max_size_bytes + 1` octets sur MinIO (contournant la
+dépose réellement un objet de `upload_max_size_bytes + 1` octets sur le serveur S3 (contournant la
 taille déclarée) et vérifie le rejet, la suppression de l'objet et le statut `failed`.
 
 Ce correctif reste partiel pour le backend `s3` : l'objet trop volumineux transite bien vers
-MinIO avant d'être détecté et supprimé (coût de stockage transitoire), contrairement à un
+le serveur S3 avant d'être détecté et supprimé (coût de stockage transitoire), contrairement à un
 présignage POST qui l'aurait refusé à l'écriture. Non corrigé dans ce lot (changerait le contrat
 front/back du flux d'envoi, hors budget de cette revue) — sans conséquence en PROD puisque le
 backend réel y est `local`, déjà protégé en amont. Limite de fichiers par lot
@@ -235,7 +235,7 @@ confiance seul.
   non bloquante ajoutée, visible à chaque run.
 - **Rate limit sur `POST /me/ai-keys/{provider}/test`** : non ajouté (coût aux frais de
   l'utilisateur, pas un vecteur d'abus vers un tiers) — faible priorité.
-- **Présignage S3 sans limite de taille imposée par MinIO lui-même** (§ Taille d'envoi) :
+- **Présignage S3 sans limite de taille imposée par le serveur S3 lui-même** (§ Taille d'envoi) :
   mitigation par rejet + suppression après coup, pas un refus à l'écriture — sans impact PROD
   (backend réel = `local`, déjà protégé en amont) ; un vrai correctif (présignage POST avec
   `content-length-range`) changerait le contrat front/back du flux d'envoi.

@@ -20,7 +20,7 @@ from pbm_api.storage import StorageBackend, build_storage
 router = APIRouter()
 
 # `build_storage()` (comme `routers/uploads.py`), jamais `ObjectStorage()` en dur : sur le PROD
-# `STORAGE_BACKEND=local` (disque du serveur, aucun S3/MinIO) — un client S3 codé en dur y lève
+# `STORAGE_BACKEND=local` (disque du serveur, aucun S3) — un client S3 codé en dur y lève
 # une erreur de connexion et le proxy renvoie 500 pour TOUTES les cartes (l'accueil visiteur du
 # lot `pbm-front-accueil` retombait alors sur neuf vignettes « Image à venir »). Trouvé en servant
 # la première fois de vraies images officielles depuis la PROD.

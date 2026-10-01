@@ -113,19 +113,22 @@ jobs:
         with:
           python-version: "3.12"
 
-      # MinIO n'a pas de commande par défaut compatible avec le bloc `services:` de GitHub
-      # Actions (pas d'option pour surcharger la commande) : démarré comme un conteneur
-      # ordinaire, comme dans docker-compose.yml.
-      - name: Start MinIO
+      # Stockage S3 de la CI : SeaweedFS, épinglé. MinIO n'est plus distribué en image depuis
+      # le 01/10/2026 (quay.io 401, dépôt Docker Hub supprimé) ; SeaweedFS passe la même sonde
+      # que lui (`apps/api/scripts/sonde_s3.py`, docs/CODE.md § « Stockage S3 de dev/CI »).
+      # Le bloc `services:` ne permet pas de surcharger la commande : démarré comme un
+      # conteneur ordinaire, comme dans docker-compose.yml.
+      - name: Start SeaweedFS (S3)
         run: |
-          docker run -d --name minio -p 9000:9000 \
-            -e MINIO_ROOT_USER=pbm -e MINIO_ROOT_PASSWORD=pbmpbmpbm \
-            quay.io/minio/minio:latest server /data
-          for _ in $(seq 1 20); do
-            curl -sf http://localhost:9000/minio/health/live && exit 0
+          docker run -d --name s3 -p 9000:8333 \
+            -e AWS_ACCESS_KEY_ID=pbm -e AWS_SECRET_ACCESS_KEY=pbmpbmpbm \
+            chrislusf/seaweedfs:4.48 server -s3 -dir=/data -ip.bind=0.0.0.0
+          for _ in $(seq 1 30); do
+            curl -sf http://localhost:9000/healthz && exit 0
             sleep 2
           done
-          echo "MinIO n'a jamais répondu" >&2
+          docker logs s3 >&2
+          echo "SeaweedFS (S3) n'a jamais répondu" >&2
           exit 1
 
       - working-directory: apps/api
@@ -205,22 +208,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # MinIO n'a pas de commande par défaut compatible avec le bloc `services:` de GitHub
-      # Actions (pas d'option pour surcharger la commande) : démarré comme un conteneur
-      # ordinaire, comme dans le job `api` ci-dessus. Nécessaire depuis que des specs e2e
-      # au-delà du parcours auth (validation, fiche carte) sèment des photos en stockage objet
-      # (`pbm_api.storage.build_storage`) — sans lui, le script de semis échoue
-      # (`EndpointConnectionError`) avant même que le navigateur ouvre une page.
-      - name: Start MinIO
+      # Stockage S3 (SeaweedFS) démarré comme un conteneur ordinaire, comme dans le job `api`
+      # ci-dessus. Nécessaire depuis que des specs e2e au-delà du parcours auth (validation,
+      # fiche carte) sèment des photos en stockage objet (`pbm_api.storage.build_storage`) —
+      # sans lui, le script de semis échoue (`EndpointConnectionError`) avant même que le
+      # navigateur ouvre une page.
+      - name: Start SeaweedFS (S3)
         run: |
-          docker run -d --name minio -p 9000:9000 \
-            -e MINIO_ROOT_USER=pbm -e MINIO_ROOT_PASSWORD=pbmpbmpbm \
-            quay.io/minio/minio:latest server /data
-          for _ in $(seq 1 20); do
-            curl -sf http://localhost:9000/minio/health/live && exit 0
+          docker run -d --name s3 -p 9000:8333 \
+            -e AWS_ACCESS_KEY_ID=pbm -e AWS_SECRET_ACCESS_KEY=pbmpbmpbm \
+            chrislusf/seaweedfs:4.48 server -s3 -dir=/data -ip.bind=0.0.0.0
+          for _ in $(seq 1 30); do
+            curl -sf http://localhost:9000/healthz && exit 0
             sleep 2
           done
-          echo "MinIO n'a jamais répondu" >&2
+          docker logs s3 >&2
+          echo "SeaweedFS (S3) n'a jamais répondu" >&2
           exit 1
 
       - uses: pnpm/action-setup@v4

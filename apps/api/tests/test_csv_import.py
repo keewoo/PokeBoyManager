@@ -90,7 +90,7 @@ async def _simulate_import_worker(db_session, storage: LocalObjectStorage, uploa
 
 @pytest.fixture(autouse=True)
 def _local_import_storage(tmp_path):
-    """Backend `local` (D7), comme `test_export.py` : preuve indépendante de MinIO."""
+    """Backend `local` (D7), comme `test_export.py` : preuve indépendante du stockage S3."""
     storage = LocalObjectStorage(root=str(tmp_path))
     fastapi_app.dependency_overrides[get_storage] = lambda: storage
     yield storage

@@ -216,7 +216,7 @@ async def test_create_uploads_requires_csrf_token(api_client):
     assert response.status_code == 403
 
 
-# --- Bout en bout : envoi réel vers MinIO, complétion, EXIF, HEIC -------------------------
+# --- Bout en bout : envoi réel vers le S3, complétion, EXIF, HEIC -------------------------
 
 
 async def test_upload_end_to_end_strips_exif_and_marks_processed(api_client, db_session, storage):
@@ -324,7 +324,7 @@ async def test_complete_rejects_an_object_bigger_than_declared_at_creation(
 ):
     """Mission `v5-securite` point 2 : une URL présignée S3 (`generate_presigned_url`, pas de
     présignage POST) n'impose aucune limite de taille au navigateur — `size_bytes` déclaré à
-    `POST /uploads` n'est qu'une métadonnée, jamais appliquée par MinIO/S3 lui-même. Simule
+    `POST /uploads` n'est qu'une métadonnée, jamais appliquée par le serveur S3 lui-même. Simule
     l'écart : un dépôt réel plus gros que `upload_max_size_bytes`, jamais lu en mémoire
     entièrement (`storage.head` avant `storage.get`), objet supprimé du stockage."""
     csrf = await _register_verify_login(api_client, _unique_email("up-oversized"))

@@ -23,7 +23,7 @@ function apiOriginForCsp(): string | null {
 
 function buildCsp(nonce: string): string {
   const apiOrigin = apiOriginForCsp();
-  // Avec `STORAGE_BACKEND=s3` (MinIO en dev/CI), le navigateur dépose la photo brute par un
+  // Avec `STORAGE_BACKEND=s3` (SeaweedFS en dev/CI), le navigateur dépose la photo brute par un
   // `PUT` direct vers l'origine du stockage objet, présignée par l'API (`pbm_api.uploads`,
   // `pbm_api.s3.ObjectStorage.presign_put`) — jamais via l'API elle-même. Sans cette origine en
   // `connect-src`, ce `PUT` est bloqué par la CSP et tout envoi de photo échoue

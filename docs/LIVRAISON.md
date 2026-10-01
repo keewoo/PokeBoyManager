@@ -225,7 +225,7 @@ pour le cookie de session) — obligatoire dès qu'ils tournent sur des ports/do
 `apps/web` lit aussi `NEXT_PUBLIC_UPLOAD_ORIGIN` (lot `v5-e2e`, doit rester alignée avec
 `S3_ENDPOINT_URL` côté API quand `STORAGE_BACKEND=s3` — vide/absente avec `STORAGE_BACKEND=local`) :
 la CSP `connect-src` du middleware (lot `v5-securite`) doit inclure l'origine du stockage objet,
-sinon le `PUT` présigné direct du navigateur vers MinIO est bloqué et **tout envoi de photo
+sinon le `PUT` présigné direct du navigateur vers le stockage S3 est bloqué et **tout envoi de photo
 échoue** — trouvé en faisant tourner un vrai envoi par le navigateur pour la première fois
 (`parcours-complet.spec.ts`), jamais exercé avant par les e2e précédentes (résultat toujours semé
 directement en base).

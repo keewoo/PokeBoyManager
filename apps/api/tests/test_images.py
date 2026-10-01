@@ -1,4 +1,4 @@
-"""Proxy `/img/cards/{id}` — MinIO/S3 réel (bucket du lot, `S3_BUCKET`), TCGdex remplacé par une
+"""Proxy `/img/cards/{id}` — S3 réel (bucket du lot, `S3_BUCKET`), TCGdex remplacé par une
 doublure qui compte ses appels : le test prouve la mise en cache au premier accès sans dépendre
 du réseau externe.
 """
@@ -100,7 +100,7 @@ async def test_image_proxy_502_when_official_source_unreachable(db_session, stor
 
 
 async def test_image_proxy_works_with_local_storage_backend(db_session, tmp_path):
-    """Sur le PROD `STORAGE_BACKEND=local` (disque du serveur, aucun S3/MinIO) : le proxy doit
+    """Sur le PROD `STORAGE_BACKEND=local` (disque du serveur, aucun S3) : le proxy doit
     cacher puis servir depuis le disque. Le proxy codait `ObjectStorage()` en dur et renvoyait 500
     pour TOUTES les cartes en PROD — l'accueil visiteur (`pbm-front-accueil`) retombait alors sur
     neuf « Image à venir ». Ce test aurait mordu (`pbm-hotfix-img-proxy-storage`)."""

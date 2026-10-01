@@ -6224,6 +6224,69 @@
         ]
       },
       "attente": null
+    },
+    "h1-ci-stockage-s3": {
+      "statut": "en_cours",
+      "machine": "devai",
+      "branche": "roadmap/h1-ci-stockage-s3",
+      "debut_reel": "2026-10-01",
+      "fin_reelle": null,
+      "taches": {
+        "dev": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "tests": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "securite": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "maquette": {
+          "etat": "na",
+          "preuve": "sans objet : sans objet : infrastructure de test",
+          "maj": null
+        },
+        "doc_tech": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_uat": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "release_prod": {
+          "etat": "na",
+          "preuve": "sans objet : sans objet : la PROD stocke sur disque (D7), rien n'y change",
+          "maj": null
+        },
+        "backlog": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        },
+        "compte_rendu": {
+          "etat": "a_faire",
+          "preuve": "",
+          "maj": null
+        }
+      },
+      "journal": [
+        {
+          "quand": "2026-10-01T09:50+0200",
+          "machine": "devai",
+          "evenement": "démarrage",
+          "detail": "roadmap/h1-ci-stockage-s3"
+        }
+      ],
+      "compte_rendu": {}
     }
   },
   "decisions_prises": {
