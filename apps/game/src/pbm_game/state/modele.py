@@ -130,6 +130,18 @@ class Tour:
     tour (1-based). ``phase`` ∈ :data:`PHASES`. Les trois drapeaux portent les « une
     seule fois par tour » : énergie attachée (R-5.4), Supporter joué (R-5.5), retraite
     faite (R-5.6).
+
+    ``entres_en_jeu_ce_tour`` : identités (``instance_id`` de la **carte de base**, qui ne
+    change pas à l'évolution) des Pokémon **entrés en jeu pendant CE tour**. Sert la règle
+    R-7.3 — on ne peut pas faire évoluer un Pokémon le tour où il est entré en jeu. Comme
+    les drapeaux, cet ensemble est **remis à vide** à chaque nouveau tour (un tour neuf naît
+    sans historique) : toute cette information est donc portée par l'état, donc sérialisée,
+    donc reprise après un F5.
+
+    **Convention de numérotation (invariant du moteur)** : le tour 1 est celui du joueur
+    **qui commence** (R-4.7) ; les tours alternent ensuite. Le premier tour de chaque joueur
+    est donc : numéro 1 pour celui qui commence, numéro 2 pour l'autre. Les règles du premier
+    tour (R-6.*) se dérivent de ce seul numéro (voir :mod:`pbm_game.tour.drapeaux`).
     """
 
     joueur_actif: str
@@ -138,6 +150,7 @@ class Tour:
     energie_posee: bool = False
     supporter_joue: bool = False
     retraite_faite: bool = False
+    entres_en_jeu_ce_tour: frozenset[str] = field(default_factory=frozenset)
 
 
 @dataclass(frozen=True)

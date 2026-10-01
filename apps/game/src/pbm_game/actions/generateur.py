@@ -44,12 +44,13 @@ from abc import ABC, abstractmethod
 from ..journal.modele import (
     ACTION_ABANDONNER,
     ACTION_AVANCER_PHASE,
+    ACTION_DEBUT_TOUR,
     ACTION_MELANGER_PIOCHE,
     ACTION_PIOCHER,
     Action,
 )
 from ..journal.transitions import REGISTRE
-from ..state.modele import PHASE_CHECKUP, EtatPartie
+from ..state.modele import PHASE_CHECKUP, PHASE_PIOCHE, EtatPartie
 from .modele import ActionLegale, Verdict, refus
 
 
@@ -90,7 +91,13 @@ class Famille(ABC):
 
 
 class FamilleAvancerPhase(Famille):
-    """Avancer la phase / terminer le tour (R-5.1) — réservé au joueur actif."""
+    """Avancer la phase / terminer le tour (R-5.1) — réservé au joueur actif.
+
+    Pas proposé pendant la **phase de pioche** : on ne quitte pas la pioche manuellement, c'est
+    la pioche obligatoire de début de tour (action système ``debut_tour``, R-5.2) qui s'en
+    charge. Le joueur n'a donc, en phase de pioche, que des coups indépendants du tour (comme
+    abandonner).
+    """
 
     nom = "avancer_phase"
 
@@ -99,6 +106,9 @@ class FamilleAvancerPhase(Famille):
 
     def generer(self, etat: EtatPartie, joueur: str) -> list[ActionLegale]:
         if joueur != etat.tour.joueur_actif:
+            return []
+        if etat.tour.phase == PHASE_PIOCHE:
+            # Le début de tour (pioche obligatoire) est automatique (R-5.2) : rien à avancer ici.
             return []
         if etat.tour.phase == PHASE_CHECKUP:
             etiquette = "Terminer le tour"
@@ -112,6 +122,12 @@ class FamilleAvancerPhase(Famille):
                 "R-5.1",
                 f"Ce n'est pas le tour de « {action.auteur} » : "
                 f"le tour est à « {etat.tour.joueur_actif} ».",
+            )
+        if etat.tour.phase == PHASE_PIOCHE:
+            return refus(
+                "R-5.2",
+                "La phase de pioche se quitte par la pioche de début de tour (automatique), "
+                "pas par un avancement manuel.",
             )
         if action.params:
             return refus("R-5.1", "« avancer_phase » ne prend aucun paramètre.")
@@ -178,10 +194,11 @@ def _refus_type_non_gouverne(action: Action) -> Verdict:
     * tout autre type (inconnu du moteur, ou pas encore scripté comme coup jouable) — **D9**
       (R-15.12) : un effet non implémenté n'est jamais approximé.
     """
-    if action.type == ACTION_PIOCHER:
+    if action.type in (ACTION_PIOCHER, ACTION_DEBUT_TOUR):
         return refus(
             "R-5.2",
-            "La pioche de début de tour est automatique, pas un coup libre du joueur.",
+            "La pioche de début de tour est automatique (action système), pas un coup libre "
+            "du joueur.",
         )
     if action.type == ACTION_MELANGER_PIOCHE:
         return refus(

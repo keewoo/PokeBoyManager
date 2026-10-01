@@ -44,12 +44,25 @@ ACTION_AVANCER_PHASE = "avancer_phase"
 #: donnée de carte. Ajoutée par le lot ``j-actions-legales`` (elle est purement mécanique,
 #: comme la pioche et l'avancée de phase).
 ACTION_ABANDONNER = "abandonner"
+#: Début de tour (R-5.1/R-5.2) — action **système**, pas un coup libre du joueur : pioche
+#: obligatoire d'1 carte, et si la pioche est vide, **défaite** du joueur actif (R-14.2) ;
+#: puis ouverture de la fenêtre « début de tour » et passage en phase principale. Ajoutée
+#: par ``j-machine-tour``.
+ACTION_DEBUT_TOUR = "debut_tour"
+#: Déclarer une attaque (R-5.7/R-5.8) : **termine le tour**, même si l'attaque n'inflige
+#: aucun dégât. Ce lot (``j-machine-tour``) ne mécanise QUE la fin de tour ; le coût, les
+#: dégâts, la faiblesse et la résistance arrivent avec ``j-degats-resolution`` (D9 : on
+#: n'approxime rien). Ce n'est donc pas encore un coup *listé* par le générateur.
+ACTION_DECLARER_ATTAQUE = "declarer_attaque"
 
 # --- Types d'événement (ce que PRODUIT le moteur) ----------------------------
 EVT_PIOCHE_MELANGEE = "pioche_melangee"
 EVT_CARTES_PIOCHEES = "cartes_piochees"
 EVT_PHASE_AVANCEE = "phase_avancee"
 EVT_TOUR_COMMENCE = "tour_commence"
+#: Une attaque est déclarée (R-5.7). Produit par la transition ``declarer_attaque`` ; au
+#: jalon J1 (ce lot) il ne porte aucun dégât — seul l'effet « termine le tour » est mécanisé.
+EVT_ATTAQUE_DECLAREE = "attaque_declaree"
 #: La partie se termine (R-14.6) : l'événement porte vainqueur, raison et, pour l'abandon,
 #: le joueur qui a abandonné. Produit par la transition ``abandonner`` (lot j-actions-legales).
 EVT_PARTIE_TERMINEE = "partie_terminee"
@@ -57,6 +70,9 @@ EVT_PARTIE_TERMINEE = "partie_terminee"
 #: Raison de fin pour un abandon (R-14.3), portée par ``EtatPartie.raison_fin`` et par
 #: l'événement :data:`EVT_PARTIE_TERMINEE`.
 RAISON_ABANDON = "abandon"
+#: Raison de fin pour une pioche impossible en début de tour (R-14.2) : le joueur qui ne
+#: peut pas piocher perd. Ce n'est **pas** une exception mais une condition de défaite.
+RAISON_PIOCHE_IMPOSSIBLE = "pioche_impossible"
 
 
 @dataclass(frozen=True)
