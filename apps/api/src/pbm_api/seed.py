@@ -127,6 +127,7 @@ DEMO_CARDS = [
 
 
 async def seed(session: AsyncSession) -> None:
+    """Insère l'utilisateur, les extensions et les cartes de démo s'ils n'existent pas déjà."""
     result = await session.execute(select(User).where(User.email == DEMO_USER_EMAIL))
     if result.scalar_one_or_none() is None:
         # `last_name`/`birth_date`/`terms_version`/`terms_accepted_at` sont NOT NULL depuis le
@@ -184,6 +185,7 @@ async def seed(session: AsyncSession) -> None:
 
 
 async def main() -> None:
+    """Point d'entrée CLI (`python -m pbm_api.seed`) : ouvre une session puis amorce les données."""
     async with async_session_factory() as session:
         await seed(session)
 

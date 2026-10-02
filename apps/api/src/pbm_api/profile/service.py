@@ -63,6 +63,11 @@ async def update_identity(
     last_name: str,
     birth_date: date,
 ) -> User:
+    """Met à jour l'identité affichée (pseudo, nom, prénom, date de naissance).
+
+    Refuse un pseudo déjà pris par un autre compte (`PseudoAlreadyTakenError`) ou une date de
+    naissance non passée (`InvalidBirthDateError`). Effet de bord : commit en base.
+    """
     existing = await db.execute(
         select(User).where(User.pseudo == pseudo, User.id != user.id)
     )
@@ -84,6 +89,9 @@ async def update_identity(
 
 
 async def set_avatar(db: AsyncSession, user: User, storage: StorageBackend, data: bytes) -> User:
+    """Valide le format de l'image, la recadre/réencode (`process_avatar`) puis la dépose dans
+    le stockage objet sous `avatars/<id>.jpg`. Met à jour `user.avatar_key` et commit.
+    """
     media_type = detect_media_type(data)
     if media_type not in ALLOWED_MEDIA_TYPES:
         raise UnsupportedImageFormatError("Format d'image non reconnu (JPEG ou PNG attendus).")
@@ -98,6 +106,9 @@ async def set_avatar(db: AsyncSession, user: User, storage: StorageBackend, data
 
 
 async def get_avatar_bytes(user: User, storage: StorageBackend) -> bytes:
+    """Lit l'avatar de l'utilisateur dans le stockage objet ; lève `AvatarNotFoundError` si
+    aucun avatar n'est enregistré ou si l'objet a disparu du stockage.
+    """
     if user.avatar_key is None:
         raise AvatarNotFoundError
 
@@ -146,6 +157,9 @@ async def request_email_change(
 async def confirm_email_change(
     db: AsyncSession, token: str, email_sender: EmailSender
 ) -> None:
+    """Valide le jeton de changement d'e-mail (existence, usage unique, expiration), bascule
+    `user.email` vers `pending_email`, puis notifie l'ancienne adresse du changement effectué.
+    """
     result = await db.execute(
         select(EmailToken).where(
             EmailToken.token_hash == hash_token(token),
@@ -187,6 +201,9 @@ async def change_password(
     compromised_checker: CompromisedPasswordChecker,
     keep_session: Session,
 ) -> None:
+    """Change le mot de passe après vérification de l'ancien, du format et d'une éventuelle
+    fuite connue ; révoque toutes les autres sessions (rotation) en gardant `keep_session`.
+    """
     if not verify_password(current_password, user.password_hash):
         raise InvalidCredentialsError
     if not is_password_long_enough(new_password):
@@ -210,6 +227,7 @@ async def change_password(
 
 
 async def list_sessions(db: AsyncSession, user: User) -> list[Session]:
+    """Liste les sessions actives de l'utilisateur, les plus récentes d'abord."""
     result = await db.execute(
         select(Session).where(Session.user_id == user.id).order_by(Session.created_at.desc())
     )
@@ -217,6 +235,9 @@ async def list_sessions(db: AsyncSession, user: User) -> list[Session]:
 
 
 async def revoke_session(db: AsyncSession, user: User, session_id: uuid.UUID) -> None:
+    """Révoque une session de l'utilisateur ; lève `SessionNotFoundError` si l'identifiant
+    n'existe pas ou appartient à un autre compte (accès croisé).
+    """
     result = await db.execute(
         select(Session).where(Session.id == session_id, Session.user_id == user.id)
     )
@@ -267,6 +288,10 @@ async def _storage_keys_to_purge(db: AsyncSession, user: User) -> list[str]:
 async def delete_account(
     db: AsyncSession, user: User, password: str, storage: StorageBackend
 ) -> None:
+    """Supprime définitivement le compte après vérification du mot de passe : purge d'abord
+    les objets du stockage (avatar, photos, exports), puis la ligne `users` et tout ce qui en
+    dépend par cascade.
+    """
     if not verify_password(password, user.password_hash):
         raise InvalidCredentialsError
 

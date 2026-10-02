@@ -29,6 +29,8 @@ class ImageInput(BaseModel):
 
 
 class ExtractionUsage(BaseModel):
+    """Jetons consommés par un appel — alimente `pbm_api.ai.service.record_usage`."""
+
     provider: AiProvider
     model: str
     input_tokens: int
@@ -36,6 +38,9 @@ class ExtractionUsage(BaseModel):
 
 
 class AIProvider(ABC):
+    """Base abstraite commune aux fournisseurs — porte `extract` (contrat public) et délègue
+    l'aller-retour réseau à `_call`, implémenté par chaque sous-classe."""
+
     PROVIDER: ClassVar[AiProvider]
     DEFAULT_MODEL: ClassVar[str]
     ECONOMY_MODEL: ClassVar[str | None] = None
@@ -46,6 +51,7 @@ class AIProvider(ABC):
         self._owns_client = http_client is None
 
     async def aclose(self) -> None:
+        """Ferme le client HTTP interne, seulement s'il n'a pas été fourni par l'appelant."""
         if self._owns_client:
             await self._client.aclose()
 
@@ -57,6 +63,8 @@ class AIProvider(ABC):
         *,
         model: str | None = None,
     ) -> tuple[T, ExtractionUsage]:
+        """Extrait `schema` depuis `images` ; retente une fois en expliquant l'erreur de
+        validation au modèle avant de lever `InvalidExtractionResponseError`."""
         chosen_model = model or self.DEFAULT_MODEL
         text, usage = await self._call(images, schema, prompt, chosen_model, retry_hint=None)
         try:

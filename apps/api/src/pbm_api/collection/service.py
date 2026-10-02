@@ -49,6 +49,10 @@ _VALUE_CHANGE_WINDOW_DAYS = (7, 30)
 
 @dataclass(frozen=True)
 class CollectionFilters:
+    """Critères de filtrage de la liste de collection : tous les champs sauf `value_min`,
+    `value_max` et `duplicates_only` sont appliqués en base (bon marché) ; ces trois-là le sont
+    ensuite en mémoire, car ils dépendent de la valeur calculée ou du doublon détecté après coup."""
+
     q: str | None = None
     set_ids: frozenset[uuid.UUID] = field(default_factory=frozenset)
     series: frozenset[str] = field(default_factory=frozenset)
@@ -67,6 +71,8 @@ class CollectionFilters:
 
 @dataclass(frozen=True)
 class CollectionRow:
+    """Un exemplaire joint à sa carte et à son set, avant calcul de valeur et tri."""
+
     item: CollectionItem
     card_id: uuid.UUID
     set_id: uuid.UUID
@@ -84,6 +90,9 @@ class CollectionRow:
 
 @dataclass(frozen=True)
 class CollectionPage:
+    """Page triée/paginée de `list_collection`, avec les valeurs par exemplaire et les agrégats
+    de l'ensemble filtré entier (pas seulement de la page)."""
+
     rows: list[CollectionRow]
     values_eur: dict[uuid.UUID, Decimal | None]
     values_30d_eur: dict[uuid.UUID, Decimal | None]
@@ -98,6 +107,8 @@ class CollectionPage:
 
 @dataclass(frozen=True)
 class CollectionFacetsResult:
+    """Valeurs distinctes des filtres disponibles pour la collection de l'utilisateur."""
+
     sets: list[tuple[uuid.UUID, str, str]]
     series: list[str]
     rarities: list[str]
@@ -238,6 +249,10 @@ async def list_collection(
     limit: int,
     as_of: date | None = None,
 ) -> CollectionPage:
+    """Liste paginée de la collection de `user`, filtrée et triée, avec les agrégats de valeur
+    de l'ensemble filtré entier (pas seulement de la page). Toute requête est bornée à
+    `user.id` ; `cursor` reprend après le dernier exemplaire vu, `limit` est plafonné à
+    `MAX_LIMIT`."""
     as_of = as_of or datetime.now(UTC).date()
 
     # Colonnes explicites plutôt que les entités `Card`/`Set` complètes : `Card` porte plusieurs
@@ -363,6 +378,8 @@ async def list_collection(
 
 
 async def get_facets(session: AsyncSession, user: User) -> CollectionFacetsResult:
+    """Valeurs distinctes disponibles pour filtrer la collection de `user` (sets, séries,
+    raretés, types, langues, variantes, états), calculées sur ses seuls exemplaires."""
     stmt = (
         select(
             Set.id,
@@ -416,6 +433,8 @@ async def get_facets(session: AsyncSession, user: User) -> CollectionFacetsResul
 
 
 async def get_owned_item(session: AsyncSession, user: User, item_id: uuid.UUID) -> CollectionItem:
+    """Exemplaire `item_id` appartenant à `user` ; lève `CollectionItemNotFoundError` s'il
+    n'existe pas ou appartient à un autre utilisateur (jamais de distinction visible)."""
     item = await session.get(CollectionItem, item_id)
     if item is None or item.user_id != user.id:
         raise CollectionItemNotFoundError
@@ -425,6 +444,8 @@ async def get_owned_item(session: AsyncSession, user: User, item_id: uuid.UUID) 
 async def create_manual_items(
     session: AsyncSession, user: User, data: CreateCollectionItemRequest
 ) -> list[CollectionItem]:
+    """Ajoute `data.quantity` exemplaires de la carte `data.card_id` à la collection de `user` ;
+    lève `CardNotFoundError` si la carte n'existe pas au catalogue."""
     card = await session.get(Card, data.card_id)
     if card is None:
         raise CardNotFoundError
@@ -452,6 +473,9 @@ async def create_manual_items(
 async def update_item(
     session: AsyncSession, user: User, item_id: uuid.UUID, data: UpdateCollectionItemRequest
 ) -> CollectionItem:
+    """Met à jour partiellement l'exemplaire `item_id` de `user` (seuls les champs envoyés sont
+    modifiés) ; signale aux decks concernés si l'exemplaire vient d'être marqué contrefait,
+    puisqu'il sort alors du décompte de possession."""
     item = await get_owned_item(session, user, item_id)
     was_counterfeit = item.counterfeit_suspected
     card_id = item.card_id
@@ -470,6 +494,9 @@ async def update_item(
 
 
 async def delete_item(session: AsyncSession, user: User, item_id: uuid.UUID) -> None:
+    """Supprime l'exemplaire `item_id` de `user` et signale aux decks concernés la perte d'un
+    exemplaire possédé (aucune si l'exemplaire était déjà marqué contrefait, il ne comptait
+    plus)."""
     item = await get_owned_item(session, user, item_id)
     card_id = item.card_id
     # Un exemplaire déjà signalé contrefaçon ne comptait pas dans la possession : le supprimer ne

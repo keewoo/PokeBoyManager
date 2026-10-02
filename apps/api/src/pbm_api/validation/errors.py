@@ -1,3 +1,6 @@
+"""Erreurs métier de l'écran de validation, levées par `pbm_api.validation.service`."""
+
+
 class DetectionNotFoundError(Exception):
     """Aucune détection avec cet id pour un envoi de cet utilisateur (jamais un 403 : pas de
     fuite d'existence)."""

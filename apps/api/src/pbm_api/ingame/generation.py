@@ -15,6 +15,8 @@ MAX_RELATED_CARDS = 8
 
 
 class InGameStudyExtraction(BaseModel):
+    """Extraction structurée demandée au modèle : rôle, forces, limites et jouabilité."""
+
     role: str = Field(min_length=1, max_length=400)
     strengths: str = Field(min_length=1, max_length=400)
     weaknesses: str = Field(min_length=1, max_length=400)
@@ -23,6 +25,7 @@ class InGameStudyExtraction(BaseModel):
 
 
 def render_study_text(extraction: InGameStudyExtraction) -> str:
+    """Rend l'extraction structurée en texte lisible, stocké tel quel dans `CardInsight`."""
     lines = [
         f"Rôle : {extraction.role}",
         f"Forces : {extraction.strengths}",
@@ -45,6 +48,11 @@ def build_prompt(
     abilities: list | None,
     tournament_decks: list[dict] | None,
 ) -> str:
+    """Construit le prompt d'étude en jeu depuis les seules données déterministes du catalogue
+    et les decks de tournoi déjà vérifiés — le prompt interdit explicitement au modèle
+    d'affirmer un tournoi ou un placement absent de ces données.
+    """
+
     def _yes_no(value: bool | None) -> str:
         if value is None:
             return "inconnu"

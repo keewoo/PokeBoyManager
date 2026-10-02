@@ -10,8 +10,12 @@ import secrets
 
 
 def generate_opaque_token() -> str:
+    """Génère un jeton aléatoire cryptographiquement sûr (32 octets), non prévisible —
+    valable pour un cookie de session ou un lien d'e-mail à usage unique."""
     return secrets.token_urlsafe(32)
 
 
 def hash_token(token: str) -> str:
+    """Hash du jeton pour stockage en base : une fuite de la base ne permet pas de
+    reconstituer le jeton en clair ni de l'utiliser directement."""
     return hashlib.sha256(token.encode("utf-8")).hexdigest()

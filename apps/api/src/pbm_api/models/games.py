@@ -94,6 +94,10 @@ class Game(Base, TimestampMixin):
     expires_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, index=True
     )
+    # Horloges de la partie (lot j-timer) : forme JSON de `pbm_game.horloges.EtatHorloges`,
+    # calculée depuis des horodatages. C'est une donnée de la partie (survit au F5), jamais un
+    # minuteur en mémoire. Nullable : les parties d'avant le lot n'en ont pas.
+    horloges: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 
 class GamePlayer(Base, TimestampMixin):

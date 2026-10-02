@@ -2,10 +2,14 @@
 
 
 class PasswordTooShortError(Exception):
+    """Mot de passe plus court que la politique en vigueur — traduite en 400."""
+
     pass
 
 
 class PasswordCompromisedError(Exception):
+    """Mot de passe trouvé dans une fuite connue (HIBP) — traduite en 400."""
+
     pass
 
 
@@ -14,18 +18,27 @@ class InvalidCredentialsError(Exception):
 
 
 class RateLimitedError(Exception):
+    """Débit dépassé — réservée à cet usage, le limiteur en place renvoie un booléen que
+    le routeur traduit lui-même en 429 sans passer par cette exception."""
+
     pass
 
 
 class InvalidTokenError(Exception):
+    """Jeton d'e-mail (vérification ou réinitialisation) inconnu — traduite en 400."""
+
     pass
 
 
 class TokenExpiredError(Exception):
+    """Jeton d'e-mail trouvé mais au-delà de sa durée de vie — traduite en 400."""
+
     pass
 
 
 class TokenAlreadyUsedError(Exception):
+    """Jeton d'e-mail déjà consommé — un jeton ne sert qu'une fois ; traduite en 400."""
+
     pass
 
 

@@ -9,6 +9,7 @@ On ne les approxime pas ici.
 """
 
 import uuid
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -16,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.auth.dependencies import require_game_access
 from pbm_api.db import get_session
+from pbm_api.games import horloges as _adapt_horloges
 from pbm_api.games.errors import (
     ActionRefusee,
     ConflitNumero,
@@ -26,6 +28,7 @@ from pbm_api.games.projection import projeter_resultat, vue_autoritaire
 from pbm_api.games.schemas import ActionIn, GameDetailOut, GamePlayerOut, GameSummaryOut
 from pbm_api.games.service import (
     _game_pour_participant,
+    abandonner_partie,
     appliquer_action,
     parties_du_joueur,
     reprendre_partie,
@@ -100,7 +103,9 @@ async def get_game_state(
     except PartieIntrouvable as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, GAME_NOT_FOUND_MESSAGE) from exc
     etat, rng = await reprendre_partie(db, game)
-    return vue_autoritaire(etat, rng, user_id=current_user.id, graine_hex=game.graine)
+    vue = vue_autoritaire(etat, rng, user_id=current_user.id, graine_hex=game.graine)
+    vue["horloges"] = _adapt_horloges.restant_json(game.horloges, datetime.now(UTC).timestamp())
+    return vue
 
 
 @router.post("/{game_id}/actions")
@@ -143,6 +148,33 @@ async def play_action(
 
     # `appliquer_action` a commité ; on relit la partie pour sa graine (secret serveur, jamais
     # renvoyé — seuls les jetons opaques en dérivent) et pour re-vérifier la participation.
+    game = await _game_pour_participant(db, game_id, current_user.id)
+    HUB.publier(game_id, resultat, graine_hex=game.graine)
+    return projeter_resultat(resultat, user_id=current_user.id, graine_hex=game.graine)
+
+
+@router.post("/{game_id}/abandon")
+async def abandon_game(
+    game_id: uuid.UUID,
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_game_access),
+) -> dict:
+    """Abandonner explicitement la partie (R-14.3) : forfait du joueur courant, l'adversaire gagne.
+
+    Chemin dédié de l'« abandon explicite » du lot ``j-deconnexion-abandon`` — plus simple que
+    :func:`play_action` (aucun ``numero_attendu`` à fournir : abandonner est toujours légal à l'état
+    courant). La **confirmation** est à la charge de l'écran (on peut annuler avant de valider) ; le
+    serveur, lui, applique le forfait sitôt reçu. 404 si l'utilisateur ne participe pas (pas de
+    fuite d'existence), 409 si la partie n'est plus en cours. Le résultat est diffusé sur le canal
+    temps réel (`HUB`) : l'adversaire voit la partie se clore avec le motif « abandon ».
+    """
+    try:
+        resultat = await abandonner_partie(db, game_id, current_user.id)
+    except PartieIntrouvable as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, GAME_NOT_FOUND_MESSAGE) from exc
+    except PartieNonActive as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
+
     game = await _game_pour_participant(db, game_id, current_user.id)
     HUB.publier(game_id, resultat, graine_hex=game.graine)
     return projeter_resultat(resultat, user_id=current_user.id, graine_hex=game.graine)

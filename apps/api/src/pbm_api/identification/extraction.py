@@ -67,6 +67,8 @@ async def extract_card(
     model: str | None = None,
     visual_hints: list[str] | None = None,
 ) -> tuple[CardExtraction, ExtractionUsage]:
+    """Appel IA unique d'extraction pour un recadrage de carte : le prompt est enrichi des
+    candidats visuels s'il y en a, jamais un second aller-retour (principe cadre)."""
     prompt = _prompt_with_visual_hints(visual_hints or [])
     return await provider.extract([image], CardExtraction, prompt, model=model)
 

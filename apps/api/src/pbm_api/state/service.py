@@ -30,6 +30,9 @@ DISCLAIMER = (
 
 @dataclass(frozen=True)
 class StateEstimationRunSummary:
+    """Bilan d'un passage de `run_state_estimation_for_upload` : nombre de détections évaluées
+    et, parmi elles, combien ont levé un signal de contrefaçon."""
+
     assessed_count: int
     counterfeit_flagged_count: int
 
@@ -168,6 +171,10 @@ async def _estimate_one(db: AsyncSession, storage: StorageBackend, detection: De
 async def run_state_estimation_for_upload(
     db: AsyncSession, storage: StorageBackend, upload: Upload
 ) -> StateEstimationRunSummary:
+    """Estime l'état (centrage + coins/bords/surface/contrefaçon) de chaque détection de
+    l'upload pas encore évaluée (`condition_assessment` nul), écrit le résultat sur la ligne
+    et committe — ne refait ni mesure OpenCV ni appel IA au-delà de ce qui est déjà stocké.
+    Renvoie un bilan à zéro, sans requête supplémentaire, si rien n'est à évaluer."""
     # Même ordre de verrouillage ASCENDANT par id que `confirm_all`
     # (`pbm_api.validation.service`) : ces deux transactions écrivent les mêmes lignes `detections`
     # en gardant leurs verrous jusqu'au commit final. L'ordre commun par id supprime l'interblocage

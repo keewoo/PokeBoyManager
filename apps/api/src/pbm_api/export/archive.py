@@ -43,6 +43,9 @@ CSV_FIELDS = [
 
 @dataclass
 class ExportCollectionRow:
+    """Un exemplaire de la collection, déjà joint à sa carte et son extension, prêt à écrire
+    dans `collection.json`/`collection.csv` — sans dépendance à SQLAlchemy."""
+
     item_id: uuid.UUID
     card_name: str
     set_name: str

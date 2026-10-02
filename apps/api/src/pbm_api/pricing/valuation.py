@@ -41,6 +41,8 @@ OUTLIER_TREND_MULTIPLE = Decimal("3")
 
 
 def condition_multiplier(grade: str | None) -> Decimal:
+    """Décote appliquée à la référence de prix pour un état donné ; `near_mint` par défaut si
+    `grade` est absent ou non reconnu (hypothèse conservatrice documentée)."""
     default = CONDITION_MULTIPLIERS[DEFAULT_CONDITION]
     return CONDITION_MULTIPLIERS.get(grade or DEFAULT_CONDITION, default)
 

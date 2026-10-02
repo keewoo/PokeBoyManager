@@ -63,6 +63,7 @@ def normalize(text: str | None) -> str:
 
 
 def is_energy(supertype: str | None) -> bool:
+    """Vrai si le supertype (FR ou EN) désigne une carte Énergie, quelle qu'elle soit."""
     return normalize(supertype) in _ENERGY_SUPERTYPES
 
 
@@ -80,4 +81,5 @@ def is_basic_energy(supertype: str | None, name: str | None, energy_type: str | 
 
 
 def is_special_energy(supertype: str | None, name: str | None, energy_type: str | None) -> bool:
+    """Vrai pour une Énergie qui n'est pas « de base » : elle suit la règle des 4 exemplaires."""
     return is_energy(supertype) and not is_basic_energy(supertype, name, energy_type)

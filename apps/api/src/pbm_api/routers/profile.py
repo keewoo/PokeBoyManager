@@ -52,6 +52,7 @@ _storage = build_storage()
 
 
 def get_storage() -> StorageBackend:
+    """Dépendance FastAPI : backend de stockage de l'avatar, remplaçable par un double en test."""
     return _storage
 
 
@@ -103,6 +104,7 @@ def _to_session_response(session_row: Session, current_session_id: uuid.UUID) ->
 
 @router.get("", response_model=ProfileResponse)
 async def get_profile(current_user: User = Depends(get_current_user)) -> ProfileResponse:
+    """Renvoie le profil de l'utilisateur courant (identité, avatar, accès au jeu)."""
     return _to_profile_response(current_user)
 
 
@@ -113,6 +115,8 @@ async def update_profile(
     current_user: User = Depends(get_current_user),
     _csrf: None = Depends(require_csrf),
 ) -> ProfileResponse:
+    """Met à jour pseudo/prénom/nom/date de naissance de l'utilisateur courant ; lève 409 si
+    le pseudo est déjà pris, 400 si la date de naissance est invalide."""
     try:
         user = await service.update_identity(
             db,
@@ -137,6 +141,8 @@ async def upload_avatar(
     storage: StorageBackend = Depends(get_storage),
     _csrf: None = Depends(require_csrf),
 ) -> ProfileResponse:
+    """Remplace la photo de profil de l'utilisateur courant ; lève 400 si le format d'image
+    n'est pas reconnu ou si le fichier dépasse 5 Mo."""
     data = await file.read()
     try:
         user = await service.set_avatar(db, current_user, storage, data)
@@ -152,6 +158,8 @@ async def get_avatar(
     current_user: User = Depends(get_current_user),
     storage: StorageBackend = Depends(get_storage),
 ) -> Response:
+    """Sert la photo de profil de l'utilisateur courant ; lève 404 si aucun avatar n'est
+    enregistré."""
     try:
         data = await service.get_avatar_bytes(current_user, storage)
     except AvatarNotFoundError:
@@ -167,6 +175,9 @@ async def change_email(
     email_sender: EmailSender = Depends(get_email_sender),
     _csrf: None = Depends(require_csrf),
 ) -> MessageResponse:
+    """Envoie un e-mail de confirmation vers la nouvelle adresse ; message générique, ne révèle
+    jamais si l'adresse est déjà utilisée par un autre compte. Le changement n'est effectif
+    qu'après confirmation du jeton (`confirm_email_change`)."""
     await service.request_email_change(db, current_user, payload.email, email_sender)
     return MessageResponse(message=GENERIC_EMAIL_CHANGE_MESSAGE)
 
@@ -177,6 +188,8 @@ async def confirm_email_change(
     db: AsyncSession = Depends(get_session),
     email_sender: EmailSender = Depends(get_email_sender),
 ) -> MessageResponse:
+    """Valide le jeton reçu sur la nouvelle adresse et applique le changement d'e-mail ; lève
+    400 si le jeton est invalide, expiré ou déjà utilisé."""
     try:
         await service.confirm_email_change(db, payload.token, email_sender)
     except InvalidTokenError:
@@ -197,6 +210,8 @@ async def change_password(
     compromised_checker: CompromisedPasswordChecker = Depends(get_compromised_checker),
     _csrf: None = Depends(require_csrf),
 ) -> MessageResponse:
+    """Change le mot de passe de l'utilisateur courant après vérification de l'ancien ; lève
+    401 si l'ancien mot de passe est incorrect, 400 si le nouveau est trop court ou compromis."""
     session_row, _ = current_session
     try:
         await service.change_password(
@@ -224,6 +239,7 @@ async def list_sessions(
     current_user: User = Depends(get_current_user),
     current_session: tuple[Session, str] = Depends(get_current_session),
 ) -> list[SessionResponse]:
+    """Liste les sessions actives de l'utilisateur courant, en indiquant laquelle est en cours."""
     session_row, _ = current_session
     sessions = await service.list_sessions(db, current_user)
     return [_to_session_response(s, session_row.id) for s in sessions]
@@ -236,6 +252,8 @@ async def revoke_session(
     current_user: User = Depends(get_current_user),
     _csrf: None = Depends(require_csrf),
 ) -> None:
+    """Révoque une session de l'utilisateur courant ; lève 404 si elle est introuvable ou
+    appartient à un autre utilisateur."""
     try:
         await service.revoke_session(db, current_user, session_id)
     except SessionNotFoundError:
@@ -251,6 +269,9 @@ async def delete_account(
     storage: StorageBackend = Depends(get_storage),
     _csrf: None = Depends(require_csrf),
 ) -> None:
+    """Supprime définitivement le compte de l'utilisateur courant (données et avatar) après
+    vérification du mot de passe, puis efface les cookies de session/CSRF. Lève 401 si le
+    mot de passe est incorrect."""
     try:
         await service.delete_account(db, current_user, payload.password, storage)
     except InvalidCredentialsError:

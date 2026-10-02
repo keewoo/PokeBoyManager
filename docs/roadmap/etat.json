@@ -8345,7 +8345,7 @@
       }
     },
     "j-timer": {
-      "statut": "a_faire",
+      "statut": "integre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
@@ -8397,8 +8397,21 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-10-02T19:20+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": "branche roadmap/j-timer fusionnee dans main (verifie par git merge-base)"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": {
+        "quand": "2026-10-02T19:20+0200",
+        "raisons": [
+          "branche roadmap/j-timer fusionnee dans main (verifie par git merge-base)"
+        ]
+      }
     },
     "j-file-attente": {
       "statut": "integre",
@@ -8539,7 +8552,7 @@
       }
     },
     "j-lancement-partie": {
-      "statut": "a_faire",
+      "statut": "integre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
@@ -8591,8 +8604,21 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-10-02T17:17+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": "branche roadmap/j-lancement-partie fusionnee dans main (verifie par git merge-base)"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": {
+        "quand": "2026-10-02T17:17+0200",
+        "raisons": [
+          "branche roadmap/j-lancement-partie fusionnee dans main (verifie par git merge-base)"
+        ]
+      }
     },
     "j-initialisation": {
       "statut": "a_faire",
@@ -8651,7 +8677,7 @@
       "compte_rendu": {}
     },
     "j-deconnexion-abandon": {
-      "statut": "a_faire",
+      "statut": "integre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
@@ -8703,8 +8729,21 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-10-02T20:10+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": "branche roadmap/j-deconnexion-abandon fusionnee dans main (verifie par git merge-base)"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": {
+        "quand": "2026-10-02T20:10+0200",
+        "raisons": [
+          "branche roadmap/j-deconnexion-abandon fusionnee dans main (verifie par git merge-base)"
+        ]
+      }
     },
     "j-replay": {
       "statut": "a_faire",

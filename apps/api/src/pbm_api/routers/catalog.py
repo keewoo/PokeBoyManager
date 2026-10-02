@@ -18,6 +18,9 @@ router = APIRouter(prefix="/catalog", tags=["catalog"])
 
 
 class CardSearchResult(BaseModel):
+    """Résultat de recherche catalogue : identité de la carte, de son set, et score de
+    correspondance avec la requête."""
+
     card_id: uuid.UUID
     set_id: uuid.UUID
     number: str
@@ -30,6 +33,7 @@ class CardSearchResult(BaseModel):
 
     @classmethod
     def from_candidate(cls, candidate: CardCandidate) -> "CardSearchResult":
+        """Construit le résultat exposé par l'API à partir d'un candidat interne de recherche."""
         return cls(
             card_id=candidate.card_id,
             set_id=candidate.set_id,
@@ -76,6 +80,8 @@ async def search_catalog(
     set: str | None = Query(None, max_length=255),  # noqa: A002 — nom du paramètre imposé par la mission
     lang: str | None = Query(None, min_length=2, max_length=8),
 ) -> list[CardSearchResult]:
+    """Recherche publique dans le catalogue par numéro (+ total) ou par nom (avec repli sur
+    plusieurs découpages nom/indice d'extension) ; filtrable par set et par langue."""
     parsed = parse_query(q)
 
     if parsed.number is not None:

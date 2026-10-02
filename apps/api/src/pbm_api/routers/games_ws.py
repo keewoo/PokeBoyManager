@@ -32,7 +32,11 @@ from pbm_api.auth.dependencies import require_game_access
 from pbm_api.config import settings
 from pbm_api.db import async_session_factory, get_session
 from pbm_api.games.errors import PartieIntrouvable
-from pbm_api.games.service import _game_pour_participant
+from pbm_api.games.service import (
+    _game_pour_participant,
+    marquer_deconnexion,
+    marquer_reconnexion,
+)
 from pbm_api.games.temps_reel import HUB, Canal, piloter_canal, resynchroniser
 from pbm_api.models import Session, User
 from pbm_api.security.tokens import hash_token
@@ -176,6 +180,8 @@ async def ws_game(websocket: WebSocket, game_id: uuid.UUID) -> None:
     except (TypeError, ValueError):
         depuis = 0
 
+    async with async_session_factory() as db_rec:
+        await marquer_reconnexion(db_rec, game_id)
     abonne = HUB.souscrire(game_id, user.id)
     canal: Canal = _CanalWebSocket(websocket)
     try:
@@ -190,6 +196,8 @@ async def ws_game(websocket: WebSocket, game_id: uuid.UUID) -> None:
     except WebSocketDisconnect:
         pass
     finally:
+        async with async_session_factory() as db_dec:
+            await marquer_deconnexion(db_dec, game_id, user.id)
         HUB.desouscrire(game_id, abonne)
         if websocket.application_state == WebSocketState.CONNECTED:
             await websocket.close()

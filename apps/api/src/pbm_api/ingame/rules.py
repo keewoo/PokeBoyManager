@@ -74,17 +74,22 @@ _LABEL_NON_DETERMINE = "Récompenses non déterminées (marqueur de règle incon
 
 
 class PrizeRule(BaseModel):
+    """Règle des Prix d'une carte : s'applique-t-elle, combien de Prix, et son libellé lisible."""
+
     applies: bool
     prizes_taken: int | None
     label: str
 
 
 class Legalities(BaseModel):
+    """Légalités Standard/Étendu d'une carte, `None` si non déterminées."""
+
     standard: bool | None
     expanded: bool | None
 
 
 def legalities_of(*, legal_standard: bool | None, legal_expanded: bool | None) -> Legalities:
+    """Légalités d'une carte, lues telles quelles depuis le catalogue (`Card.legal_*`)."""
     return Legalities(standard=legal_standard, expanded=legal_expanded)
 
 

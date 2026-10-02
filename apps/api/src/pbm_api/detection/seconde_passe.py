@@ -25,12 +25,15 @@ SEUIL_CONFIANCE_MOYENNE = 0.55
 
 @dataclass(frozen=True)
 class VerdictSecondePasse:
+    """Verdict sur la nécessité d'une seconde passe IA pour UN envoi, avec ses deux mesures."""
+
     needed: bool
     reason: str | None  # "troncature" | "confiance" | "troncature+confiance"
     truncated_max: float
     mean_confidence: float | None  # `None` si aucune détection n'a de candidat
 
     def as_dict(self) -> dict:
+        """Forme sérialisable du verdict, pour journalisation ou réponse API."""
         return {
             "needed": self.needed,
             "reason": self.reason,

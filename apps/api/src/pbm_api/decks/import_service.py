@@ -49,6 +49,8 @@ STATUS_SECTION = "section"
 
 @dataclass
 class CandidateOut:
+    """Une carte du catalogue proposée pour une ligne importée, et son score de rapprochement."""
+
     card_id: uuid.UUID
     name: str
     set_code: str
@@ -59,6 +61,8 @@ class CandidateOut:
 
 @dataclass
 class ImportLine:
+    """Le résultat du rapprochement d'une ligne collée : carte retenue, alternatives, possession."""
+
     line_no: int
     raw: str
     status: str
@@ -75,6 +79,9 @@ class ImportLine:
 
 @dataclass
 class ImportResult:
+    """Le bilan d'un import : le deck créé (sauf `dry_run`), les lignes et les décomptes
+    par statut."""
+
     deck_id: uuid.UUID | None
     lines: list[ImportLine]
     matched: int = 0
@@ -176,6 +183,8 @@ async def import_deck(
     deck_format: str = "standard",
     dry_run: bool = False,
 ) -> ImportResult:
+    """Analyse la liste collée ligne par ligne, rapproche chaque carte au catalogue et crée le
+    deck (sauf `dry_run`) — ne touche jamais la collection (voir docstring du module)."""
     parsed = parse_deck_list(text)
     result = ImportResult(deck_id=None, lines=[])
 

@@ -33,6 +33,9 @@ class UndecodableImageError(Exception):
 
 
 def image_url_for_language(base_image_url: str, language: str) -> str:
+    """Déduit l'URL de l'image officielle dans `language` à partir de celle de la langue
+    primaire, en substituant le segment de langue — lève si l'URL ne suit pas le format TCGdex
+    attendu."""
     match = _LANG_SEGMENT_RE.match(base_image_url)
     if match is None:
         raise ValueError(f"URL d'image officielle inattendue : {base_image_url}")
@@ -56,6 +59,8 @@ async def upsert_visual_index_entry(
     image_bytes: bytes,
     source_image_key: str | None = None,
 ) -> CardVisualIndex:
+    """Calcule les empreintes de l'image officielle et écrit (ou met à jour) la ligne
+    `card_visual_index` de cette carte pour cette langue."""
     full_phash, illustration_phash = compute_visual_hashes(image_bytes)
 
     result = await session.execute(

@@ -26,6 +26,8 @@ def _to_signed64(value: int) -> int:
 
 
 def compute_phash(crop_bgr: np.ndarray) -> int:
+    """Empreinte perceptuelle (aHash 64 bits) d'un recadrage BGR redressé — stable aux petites
+    variations de prise de vue, comparable ensuite par `hamming_distance`."""
     gray = cv2.cvtColor(crop_bgr, cv2.COLOR_BGR2GRAY)
     small = cv2.resize(gray, (_HASH_SIZE, _HASH_SIZE), interpolation=cv2.INTER_AREA)
     mean = float(small.mean())
@@ -37,4 +39,6 @@ def compute_phash(crop_bgr: np.ndarray) -> int:
 
 
 def hamming_distance(a: int, b: int) -> int:
+    """Nombre de bits différents entre deux empreintes 64 bits — plus il est faible, plus les
+    deux recadrages se ressemblent."""
     return bin((a & _UNSIGNED_64_MASK) ^ (b & _UNSIGNED_64_MASK)).count("1")

@@ -44,6 +44,7 @@ def order_corners(points: np.ndarray) -> np.ndarray:
 
 
 def quad_center(quad: np.ndarray) -> tuple[float, float]:
+    """Centre (x, y) d'un quadrilatère, pour le classement en ordre de lecture."""
     pts = quad.reshape(4, 2)
     return float(pts[:, 0].mean()), float(pts[:, 1].mean())
 

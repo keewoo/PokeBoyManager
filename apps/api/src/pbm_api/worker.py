@@ -30,6 +30,7 @@ from pbm_api.detection.seconde_passe import evaluer as evaluer_seconde_passe
 from pbm_api.detection.service import run_detection_for_upload
 from pbm_api.email import get_email_sender
 from pbm_api.export.service import run_export
+from pbm_api.games.service import expirer_parties, purger
 from pbm_api.identification.service import run_identification_for_upload
 from pbm_api.imports.errors import (
     ImportFileEmptyError,
@@ -72,6 +73,7 @@ JOB_TYPE = "import_catalogue"
 PRICE_JOB_TYPE = "daily_prices"
 EXCHANGE_RATE_JOB_TYPE = "daily_exchange_rates"
 TOURNAMENT_PRESENCE_JOB_TYPE = "weekly_tournament_presence"
+GAMES_MAINTENANCE_JOB_TYPE = "games_maintenance"
 
 # Traitements lourds (balayent tout le catalogue / dépendent d'un débit réseau soutenu) : jamais
 # sur la machine qui sert. Les jobs COURTS gardés en PROD (`detect_cards`, `export_user_data`) ne
@@ -154,6 +156,7 @@ async def import_catalogue_task(
     set_ids: list[str] | None = None,
     mode: str = "full",
 ) -> dict:
+    """Import déclenché du catalogue (TCGdex + Pokémon TCG API) — refuse si lourd est interdit."""
     if not settings.heavy_jobs_allowed:
         return await _refuse_heavy_job(
             JOB_TYPE, {"mode": mode, "languages": languages, "set_ids": set_ids}
@@ -584,6 +587,40 @@ async def weekly_tournament_presence_task(ctx: dict) -> dict:
     return await _run_weekly_tournament_presence()
 
 
+async def games_maintenance_task(ctx: dict) -> dict:
+    """Balayage périodique des parties (lot `j-deconnexion-abandon`) : clôture des fantômes + purge.
+
+    Traitement **léger** (quelques requêtes SQL + la reconstruction des rares parties réellement
+    inactives), donc planifié **partout**, y compris sur la machine qui sert — contrairement aux
+    relevés qui balaient tout le catalogue (il n'est PAS dans `HEAVY_JOB_TYPES` et ne passe pas par
+    `_refuse_heavy_job`). C'est ce cron qui fait tenir le critère « aucune partie ne reste en cours
+    plus longtemps que le plafond configuré » : sans lui, les fonctions de clôture existent mais
+    rien ne les déclenche pour une partie dont les deux joueurs sont partis sans canal ouvert.
+
+    `expirer_parties` clôt chaque partie fantôme avec un motif **journalisé** (jamais un nettoyage
+    muet) ; `purger` supprime ensuite les parties mortes anciennes et les instantanés superflus. Le
+    résultat est journalisé (compte de clôtures, métrique de purge) : un balayage qui n'a rien fait
+    le **dit**.
+    """
+    async with async_session_factory() as session:
+        closes = await expirer_parties(session)
+    async with async_session_factory() as session:
+        metrique = await purger(session)
+    rapport = {"parties_closes": closes, **metrique}
+    logger.info("maintenance des parties : %s", rapport)
+    return rapport
+
+
+def _light_cron_jobs() -> list:
+    """Crons **légers** posés sur **tous** les nœuds (y compris la PROD qui sert) : ils ne balaient
+    pas le catalogue et ne dépendent d'aucun débit réseau. Le balayage des parties tourne toutes les
+    dix minutes — assez fin pour qu'une partie fantôme ne traîne pas, assez rare pour être invisible
+    sur la charge (quelques requêtes SQL)."""
+    return [
+        cron(games_maintenance_task, minute={0, 10, 20, 30, 40, 50}),
+    ]
+
+
 def _heavy_cron_jobs() -> list:
     """Les crons des traitements lourds — posés UNIQUEMENT sur un nœud qui a le droit de les
     exécuter (`settings.heavy_jobs_allowed`). En PROD, cette liste est vide : le worker ne planifie
@@ -605,6 +642,8 @@ def _heavy_cron_jobs() -> list:
 
 
 class WorkerSettings:
+    """Configuration arq du worker : fonctions enregistrées, crons, connexion Redis, délais."""
+
     # Toutes les fonctions restent enregistrées, même les lourdes : si un job lourd est malgré tout
     # enfilé vers un worker de PROD, il est pris en charge et REFUSÉ proprement
     # (`_refuse_heavy_job`) plutôt que de finir en « function not found ».
@@ -616,8 +655,11 @@ class WorkerSettings:
         import_csv_task,
         export_user_data_task,
         weekly_tournament_presence_task,
+        games_maintenance_task,
     ]
-    cron_jobs = _heavy_cron_jobs()
+    # Les crons légers (balayage des parties) tournent partout ; les lourds (relevés catalogue) ne
+    # sont posés que sur un nœud qui a le droit de les exécuter (vide en PROD).
+    cron_jobs = _light_cron_jobs() + _heavy_cron_jobs()
     redis_settings = RedisSettings.from_dsn(settings.redis_url)
     queue_name = f"{settings.redis_prefix}queue"
     # Reprise des jobs bloqués au démarrage (mission point 6) : un worker qui redémarre nettoie

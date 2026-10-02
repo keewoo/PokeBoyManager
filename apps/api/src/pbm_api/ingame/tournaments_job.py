@@ -69,6 +69,11 @@ async def _upsert_presence(
 async def refresh_tournament_presence(
     session: AsyncSession, client: LimitlessTcgClient
 ) -> dict[str, Any]:
+    """Relève la présence en tournoi de toutes les cartes légales (Standard ou Étendu) et
+    upserte `CardTournamentPresence` carte par carte — une carte non rapprochée est enregistrée
+    `unavailable`, jamais une exception qui interromprait le relevé. Lève `LimitlessBlockedError`
+    à la fin si le site a bloqué, pour que le relevé reparte proprement en échec côté worker.
+    """
     sets = await client.list_sets()
 
     rows = (

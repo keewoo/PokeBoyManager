@@ -10,6 +10,8 @@ _WEBP_MARKER = b"WEBP"
 
 
 def detect_media_type(data: bytes) -> str:
+    """Devine `image/png`, `image/jpeg` ou `image/webp` depuis les octets, ou lève
+    `UnsupportedImageFormatError`."""
     if data.startswith(_PNG_MAGIC):
         return "image/png"
     if data.startswith(_JPEG_MAGIC):

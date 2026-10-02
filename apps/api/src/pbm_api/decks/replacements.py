@@ -57,6 +57,8 @@ class Candidate:
 
 @dataclass(frozen=True)
 class Suggestion:
+    """Une carte possédée proposée en remplacement, avec la raison de son classement."""
+
     candidate: Candidate
     reason: str
 

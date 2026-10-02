@@ -75,6 +75,9 @@ def _import_defaults(row: ParsedImportRow) -> dict:
 
 @dataclass(frozen=True)
 class ImportSummary:
+    """Bilan d'un import exécuté : lignes exploitées, lignes ignorées (avec motifs tronqués à
+    20) et nombre de détections créées."""
+
     rows_parsed: int
     rows_ignored: int
     ignored_reasons: list[str]
@@ -84,6 +87,9 @@ class ImportSummary:
 async def create_import(
     db: AsyncSession, user: User, storage: StorageBackend, filename: str, data: bytes
 ) -> tuple[Upload, Job]:
+    """Dépose le CSV sur le stockage et crée l'`Upload`/`Job` (file `queued`) qui déclenchera
+    `run_import_for_upload`. Lève `ImportFileTooLargeError` au-delà de
+    `settings.import_csv_max_size_bytes`, avant toute écriture."""
     if len(data) > settings.import_csv_max_size_bytes:
         raise ImportFileTooLargeError
 
@@ -116,6 +122,8 @@ async def create_import(
 
 
 async def get_owned_import(db: AsyncSession, user: User, upload_id: uuid.UUID) -> Upload:
+    """Récupère l'envoi `upload_id` de `user` (filtré par `user_id`) en vérifiant qu'il s'agit
+    bien d'un import CSV — lève `UploadNotFoundError` sinon, jamais un id du mauvais type."""
     upload = await get_owned_upload(db, user, upload_id)
     if upload.content_type != IMPORT_CONTENT_TYPE:
         # Un `upload_id` de photo présenté à une route d'import (ou l'inverse) : jamais traité
@@ -127,6 +135,9 @@ async def get_owned_import(db: AsyncSession, user: User, upload_id: uuid.UUID) -
 async def run_import_for_upload(
     db: AsyncSession, storage: StorageBackend, upload: Upload
 ) -> ImportSummary:
+    """Exécute l'import : lit le CSV déposé, rapproche chaque ligne au catalogue (même moteur
+    que l'identification photo) et crée une `Detection` `pending` par ligne exploitable. Reprise
+    idempotente : si des détections existent déjà pour cet `upload`, ne les recrée jamais."""
     existing = (
         await db.execute(
             select(func.count()).select_from(Detection).where(Detection.upload_id == upload.id)

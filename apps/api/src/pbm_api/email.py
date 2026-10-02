@@ -16,7 +16,10 @@ logger = logging.getLogger(__name__)
 
 
 class EmailSender:
+    """Interface d'envoi — permet de substituer un émetteur de test aux implémentations réelles."""
+
     async def send(self, to: str, subject: str, body: str) -> None:
+        """Envoie un e-mail texte. À implémenter par chaque sous-classe."""
         raise NotImplementedError
 
 
@@ -28,13 +31,17 @@ class DisabledEmailSender(EmailSender):
     silencieux : le mode « e-mail désactivé » est un choix de configuration explicite, tracé."""
 
     async def send(self, to: str, subject: str, body: str) -> None:
+        """N'envoie rien : journalise en WARNING pour que l'absence d'envoi reste visible."""
         logger.warning(
             "E-mail non envoyé (SMTP désactivé : SMTP_HOST vide) — to=%s subject=%r", to, subject
         )
 
 
 class SmtpEmailSender(EmailSender):
+    """Envoi réel par SMTP (D5 provisoire) — Mailpit en développement, serveur SMTP en ligne."""
+
     async def send(self, to: str, subject: str, body: str) -> None:
+        """Envoie via SMTP, hors boucle asyncio (`smtplib` est bloquant)."""
         await asyncio.to_thread(self._send_sync, to, subject, body)
 
     def _send_sync(self, to: str, subject: str, body: str) -> None:
@@ -56,6 +63,7 @@ _disabled_sender = DisabledEmailSender()
 
 
 def get_email_sender() -> EmailSender:
+    """Choisit l'émetteur selon la configuration : désactivé si `SMTP_HOST` est vide, SMTP sinon."""
     # `SMTP_HOST` vide = envois désactivés proprement (lot `pbm-deploy`) : aucune connexion SMTP,
     # aucun échec d'inscription/reset sur un hôte vide.
     if not settings.smtp_host:

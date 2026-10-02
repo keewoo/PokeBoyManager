@@ -14,6 +14,9 @@ from pbm_api.models.collection import DetectionStatus
 
 
 class ConfirmDetectionRequest(BaseModel):
+    """Choix de l'utilisateur pour confirmer une détection : carte retenue, langue, variante,
+    nombre d'exemplaires, et état/prix/date d'acquisition optionnels."""
+
     card_id: uuid.UUID
     language: str = Field("fr", min_length=2, max_length=8)
     variant: PriceVariant = PriceVariant.normal
@@ -28,17 +31,23 @@ class ConfirmDetectionRequest(BaseModel):
 
 
 class ConfirmDetectionResponse(BaseModel):
+    """Détection confirmée : son nouveau statut et les exemplaires créés dans la collection."""
+
     detection_id: uuid.UUID
     status: DetectionStatus
     collection_item_ids: list[uuid.UUID]
 
 
 class RejectDetectionResponse(BaseModel):
+    """Détection rejetée : son nouveau statut, aucun exemplaire créé."""
+
     detection_id: uuid.UUID
     status: DetectionStatus
 
 
 class ConfirmAllResponse(BaseModel):
+    """Bilan de « Tout ajouter » : détections confirmées, et celles laissées `pending`."""
+
     upload_id: uuid.UUID
     # Détections confirmées avec leur candidat présélectionné (score > `PRESELECTION_THRESHOLD`),
     # langue "fr", variante normale, un exemplaire, aucun prix — corrigeables ensuite depuis la

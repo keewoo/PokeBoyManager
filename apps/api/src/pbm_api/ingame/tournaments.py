@@ -50,12 +50,16 @@ _DECK_ROW_PATTERN = re.compile(
 
 
 class LimitlessSet(BaseModel):
+    """Une extension de l'index Limitless, avec son code propre à 2-4 lettres."""
+
     code: str
     name: str
     release_date: date | None
 
 
 class TournamentDeck(BaseModel):
+    """Un deck relevé en tournoi pour une carte, avec son classement."""
+
     deck_name: str
     tournament_name: str
     tournament_url: str | None
@@ -85,6 +89,7 @@ def normalize_card_number(number: str) -> str:
 
 
 def parse_sets_index(html_text: str) -> list[LimitlessSet]:
+    """Extrait les extensions de la page `/cards` de Limitless, avec leur date de sortie."""
     sets: list[LimitlessSet] = []
     for match in _SET_ROW_PATTERN.finditer(html_text):
         date_str = match.group("date").strip()
@@ -105,6 +110,8 @@ def parse_sets_index(html_text: str) -> list[LimitlessSet]:
 
 
 def parse_card_title(html_text: str) -> str | None:
+    """Nom anglais de la carte affiché en titre de sa page Limitless, pour la vérification
+    croisée contre `expected_en_name` — `None` si le titre est introuvable."""
     match = _TITLE_PATTERN.search(html_text)
     if match is None:
         return None
@@ -113,6 +120,8 @@ def parse_card_title(html_text: str) -> str | None:
 
 
 def parse_decklists(html_text: str) -> list[TournamentDeck]:
+    """Decks de tournoi listés sur la page carte Limitless — liste vide si la section est
+    absente (carte jamais vue en tournoi)."""
     section_match = _TOURNAMENT_SECTION_PATTERN.search(html_text)
     if section_match is None:
         return []
@@ -156,6 +165,7 @@ class LimitlessTcgClient:
         self._owns_client = http_client is None
 
     async def aclose(self) -> None:
+        """Ferme le client HTTP interne, sauf s'il a été injecté (appelant propriétaire)."""
         if self._owns_client:
             await self._client.aclose()
 
@@ -164,12 +174,20 @@ class LimitlessTcgClient:
             raise LimitlessBlockedError(f"HTTP {response.status_code} sur {response.request.url}")
 
     async def list_sets(self) -> list[LimitlessSet]:
+        """Index des extensions connues de Limitless, pour le rapprochement par date de sortie.
+
+        Lève `LimitlessBlockedError` si le site répond 403/429.
+        """
         response = await self._client.get(f"{LIMITLESS_BASE_URL}/cards")
         self._raise_if_blocked(response)
         response.raise_for_status()
         return parse_sets_index(response.text)
 
     async def fetch_card_page(self, set_code: str, number: str) -> str | None:
+        """Page HTML d'une carte, ou `None` si elle n'existe pas (404) sur Limitless.
+
+        Lève `LimitlessBlockedError` si le site répond 403/429.
+        """
         response = await self._client.get(f"{LIMITLESS_BASE_URL}/cards/{set_code}/{number}")
         if response.status_code == 404:
             return None

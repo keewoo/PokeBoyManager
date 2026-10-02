@@ -49,6 +49,11 @@ class ParsedQuery:
 
 
 def parse_query(q: str) -> ParsedQuery:
+    """Devine si `q` désigne un numéro de carte ou un nom, sans norme publiée par TCGdex.
+
+    Reconnaît un numéro simple (`25`), avec total (`236/217`), ou un préfixe promo/galerie
+    (`XY121`, `TG05`, `SV107`) ; toute autre forme est traitée comme un nom — une dégradation
+    raisonnable, pas une panne, faute de format officiel à valider contre."""
     q = q.strip()
     if not q:
         return ParsedQuery(None, None, None)
@@ -62,6 +67,9 @@ def parse_query(q: str) -> ParsedQuery:
 
 @dataclass(frozen=True)
 class CardCandidate:
+    """Une carte candidate rendue par `match_candidates`, avec son score et le nom qui a matché
+    (utile quand `matched_name` diffère de `name`, ex. un nom anglais trouvé pour une carte FR)."""
+
     card_id: uuid.UUID
     set_id: uuid.UUID
     number: str
