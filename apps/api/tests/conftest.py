@@ -76,6 +76,22 @@ async def _clean_rate_limit_state():
     await _flush()
 
 
+@pytest_asyncio.fixture(autouse=True)
+async def _clean_matchmaking_state():
+    """La file et la présence du jeu vivent dans Redis (non transactionnel) : on purge les clés
+    `mm:*` autour de chaque test pour qu'une file d'un test ne fuie pas dans le suivant."""
+    redis = get_redis()
+    pattern = f"{settings.redis_prefix}mm:*"
+
+    async def _flush() -> None:
+        async for key in redis.scan_iter(pattern):
+            await redis.delete(key)
+
+    await _flush()
+    yield
+    await _flush()
+
+
 @pytest_asyncio.fixture
 async def api_client(db_session):
     """Client HTTP contre l'app réelle, base de données de test, e-mails/HIBP simulés.
