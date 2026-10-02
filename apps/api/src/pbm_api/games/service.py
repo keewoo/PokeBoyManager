@@ -41,7 +41,7 @@ from pbm_game.journal import (
     partie_neuve,
     reprendre,
 )
-from pbm_game.journal.modele import Entree, Instantane
+from pbm_game.journal.modele import AUTEUR_SYSTEME, Entree, Instantane
 from pbm_game.rng import GRAINE_MIN_OCTETS, Rng, engagement
 from pbm_game.state.modele import EtatPartie
 from pbm_game.state.serialisation import vers_json as etat_vers_json
@@ -49,6 +49,8 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
+from pbm_api.config import settings
+from pbm_api.games import horloges as _adapt_horloges
 from pbm_api.games.construction import (
     construire_etat_initial,
     joueur_id_de,
@@ -169,6 +171,9 @@ class ResultatAction:
     #: client (lot `j-autorite-vues`) en dérive l'**époque** des jetons de cartes cachées : le
     #: nombre de mélanges du deck d'un joueur. Donnée interne — jamais renvoyée telle quelle.
     rng_compteurs: dict[str, int]
+    #: Temps restant affichable (vérité serveur au moment du coup), ou None si la partie n'a
+    #: pas d'horloges (créée avant j-timer). Le client en fait une estimation recalée (j-timer).
+    horloges: dict | None = None
 
 
 # --- Création ----------------------------------------------------------------
@@ -220,6 +225,9 @@ async def creer_partie(
         current_empreinte=empreinte0,
         last_action_at=maintenant,
         expires_at=maintenant + DELAI_INACTIVITE,
+        horloges=_adapt_horloges.etat_initial_json(
+            _adapt_horloges.config_horloges(settings), etat_initial, maintenant.timestamp()
+        ),
     )
     db.add(game)
     await db.flush()
@@ -452,6 +460,7 @@ async def appliquer_action(
                 etat=etat_vers_json(etat),
                 rejoue=True,
                 rng_compteurs=rng.compteurs(),
+                horloges=_adapt_horloges.restant_json(game.horloges, maintenant.timestamp()),
             )
         raise ConflitNumero(
             numero_attendu,
@@ -511,6 +520,13 @@ async def appliquer_action(
         game.vainqueur_user_id = uuid.UUID(etat2.vainqueur) if etat2.vainqueur else None
         game.raison_fin = etat2.raison_fin
 
+    # Horloges (lot j-timer) : mises à jour selon la transition d'état observée, dans la même
+    # transaction que le coup — donc reprises après un F5 (dans la partie, pas en mémoire).
+    if game.horloges is not None:
+        game.horloges = _adapt_horloges.transition_json(
+            game.horloges, etat_courant, etat2, maintenant.timestamp()
+        )
+
     # Compaction périodique : un instantané borne la queue à rejouer à la reprise.
     if intervalle_instantane > 0 and game.current_numero % intervalle_instantane == 0:
         db.add(
@@ -536,6 +552,7 @@ async def appliquer_action(
         etat=etat_vers_json(etat2),
         rejoue=False,
         rng_compteurs=rng.compteurs(),
+        horloges=_adapt_horloges.restant_json(game.horloges, maintenant.timestamp()),
     )
 
 
@@ -612,3 +629,124 @@ async def purger(
         metrique["parties_purgees"],
     )
     return metrique
+
+
+# --- Horloges : expiration et pause de déconnexion (lot j-timer) -------------
+
+
+async def _game_sous_verrou(db: AsyncSession, game_id: uuid.UUID) -> Game | None:
+    """Charge une partie sous verrou de ligne, par identifiant (chemin **système**, sans joueur)."""
+    return (
+        await db.execute(select(Game).where(Game.id == game_id).with_for_update())
+    ).scalar_one_or_none()
+
+
+async def expirer_horloge(
+    db: AsyncSession, game_id: uuid.UUID, maintenant: datetime | None = None
+) -> ResultatAction | None:
+    """Applique l'action par défaut si une horloge a expiré ; renvoie le résultat, ou None.
+
+    Pilotée par le serveur (appelée au gré des synchronisations et des battements de cœur), sous
+    verrou de ligne comme un coup de joueur. Une pause de déconnexion dont la grâce est passée fait
+    **reprendre** les horloges (sans coup). Sinon, une expiration journalise l'action par défaut :
+    de tour, réponse par défaut d'une demande, ou défaite au temps) : **jamais un blocage** (critère
+    d'acceptation). Renvoie ``None`` si rien n'a expiré, ou si la partie n'est pas en cours / sans
+    horloges.
+    """
+    maintenant = maintenant or _maintenant()
+    ts = maintenant.timestamp()
+    game = await _game_sous_verrou(db, game_id)
+    if game is None or game.status != GAME_STATUS_EN_COURS or game.horloges is None:
+        return None
+    if _adapt_horloges.pause_a_expire(game.horloges, ts):
+        game.horloges = _adapt_horloges.reprendre_json(game.horloges, ts)
+        await db.commit()
+        return None
+    decision = _adapt_horloges.action_par_defaut(game.horloges, ts)
+    if decision is None:
+        return None
+    type_action, params = decision
+
+    etat_courant, rng = await _reconstruire(db, game)
+    action = Action(type=type_action, auteur=AUTEUR_SYSTEME, params=params)
+    etat2, evenements = appliquer(etat_courant, action, rng)
+    empr = empreinte(etat2)
+    entree = Entree(
+        numero=game.current_numero,
+        auteur=AUTEUR_SYSTEME,
+        action=action,
+        evenements=evenements,
+        horodatage=maintenant.isoformat(),
+        empreinte=empr,
+    )
+    brut = entree_vers_json(entree)
+    db.add(
+        GameEvent(
+            game_id=game.id,
+            numero=brut["numero"],
+            auteur=brut["auteur"],
+            action=brut["action"],
+            evenements=brut["evenements"],
+            horodatage=brut["horodatage"],
+            empreinte=brut["empreinte"],
+        )
+    )
+    game.current_numero += 1
+    game.current_empreinte = empr
+    game.last_action_at = maintenant
+    game.expires_at = maintenant + DELAI_INACTIVITE
+    if etat2.terminee:
+        game.status = GAME_STATUS_TERMINEE
+        game.vainqueur_user_id = uuid.UUID(etat2.vainqueur) if etat2.vainqueur else None
+        game.raison_fin = etat2.raison_fin
+    game.horloges = _adapt_horloges.transition_json(game.horloges, etat_courant, etat2, ts)
+    await db.commit()
+
+    logger.info(
+        "expiration d'horloge appliquée — partie %s, coup système « %s » au numéro %d.",
+        game_id,
+        type_action,
+        entree.numero,
+    )
+    return ResultatAction(
+        numero=entree.numero,
+        evenements=[dict(e) for e in brut["evenements"]],
+        empreinte=empr,
+        terminee=etat2.terminee,
+        vainqueur_user_id=game.vainqueur_user_id,
+        raison_fin=etat2.raison_fin,
+        etat=etat_vers_json(etat2),
+        rejoue=False,
+        rng_compteurs=rng.compteurs(),
+        horloges=_adapt_horloges.restant_json(game.horloges, ts),
+    )
+
+
+async def marquer_deconnexion(
+    db: AsyncSession, game_id: uuid.UUID, user_id: uuid.UUID, maintenant: datetime | None = None
+) -> None:
+    """Gèle les horloges d'une partie à la déconnexion d'un joueur (pause de grâce, DJ4).
+
+    Idempotente côté horloges (une pause déjà posée ne bouge pas) ; sans effet si la partie n'est
+    pas en cours ou n'a pas d'horloges.
+    """
+    maintenant = maintenant or _maintenant()
+    game = await _game_sous_verrou(db, game_id)
+    if game is None or game.status != GAME_STATUS_EN_COURS or game.horloges is None:
+        return
+    game.horloges = _adapt_horloges.pause_json(
+        game.horloges, joueur_id_de(user_id), maintenant.timestamp()
+    )
+    await db.commit()
+
+
+async def marquer_reconnexion(
+    db: AsyncSession, game_id: uuid.UUID, maintenant: datetime | None = None
+) -> None:
+    """Lève la pause à la reconnexion : les horloges reprennent là où elles s'étaient gelées."""
+    maintenant = maintenant or _maintenant()
+    game = await _game_sous_verrou(db, game_id)
+    if game is None or game.status != GAME_STATUS_EN_COURS or game.horloges is None:
+        return
+    game.horloges = _adapt_horloges.reprendre_json(game.horloges, maintenant.timestamp())
+    await db.commit()

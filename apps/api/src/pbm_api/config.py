@@ -45,6 +45,15 @@ class Settings(BaseSettings):
     api_public_url: str = "http://localhost:8000"
 
     session_cookie_name: str = "pbm_session"
+
+    # Horloges d'une partie (lot j-timer, décision DJ4) — en SECONDES, réglables par
+    # l'environnement : les changer ne demande pas de redéployer le moteur. Une partie fige sa
+    # config à sa création (les parties en vol ne bougent pas).
+    horloge_par_tour_s: float = 90.0
+    horloge_par_joueur_s: float = 1500.0
+    horloge_par_decision_s: float = 30.0
+    horloge_tolerance_reseau_s: float = 10.0
+    horloge_pause_deconnexion_s: float = 120.0
     csrf_cookie_name: str = "pbm_csrf"
     session_ttl_days: int = 30
     email_token_ttl_minutes: int = 60

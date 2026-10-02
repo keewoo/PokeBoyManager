@@ -9,6 +9,7 @@ On ne les approxime pas ici.
 """
 
 import uuid
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -16,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.auth.dependencies import require_game_access
 from pbm_api.db import get_session
+from pbm_api.games import horloges as _adapt_horloges
 from pbm_api.games.errors import (
     ActionRefusee,
     ConflitNumero,
@@ -100,7 +102,9 @@ async def get_game_state(
     except PartieIntrouvable as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, GAME_NOT_FOUND_MESSAGE) from exc
     etat, rng = await reprendre_partie(db, game)
-    return vue_autoritaire(etat, rng, user_id=current_user.id, graine_hex=game.graine)
+    vue = vue_autoritaire(etat, rng, user_id=current_user.id, graine_hex=game.graine)
+    vue["horloges"] = _adapt_horloges.restant_json(game.horloges, datetime.now(UTC).timestamp())
+    return vue
 
 
 @router.post("/{game_id}/actions")
