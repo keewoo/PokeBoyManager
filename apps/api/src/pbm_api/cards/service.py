@@ -83,6 +83,9 @@ async def _best_owned_item(
 async def get_card_detail(
     session: AsyncSession, card_id: uuid.UUID, user: User, as_of: date | None = None
 ) -> CardDetailResponse:
+    """Assemble la fiche d'une carte pour l'utilisateur courant : prix du jour par variante,
+    classement par rareté et, si l'utilisateur possède un exemplaire, son rang dans sa
+    collection. Lève `CardNotFoundError` si `card_id` n'existe pas au catalogue."""
     card, set_row = await _get_card_and_set(session, card_id)
     as_of = as_of or date.today()
 
@@ -142,6 +145,8 @@ async def get_price_history(
     range_key: PriceHistoryRange,
     as_of: date | None = None,
 ) -> PriceHistoryResponse:
+    """Historique de prix d'une carte pour une variante et une période (`range_key`), servi à
+    l'onglet Valeur. Lève `CardNotFoundError` si la carte n'existe pas au catalogue."""
     card = await session.get(Card, card_id)
     if card is None:
         raise CardNotFoundError
@@ -178,6 +183,9 @@ async def _purchase_price_eur(
 async def list_my_items(
     session: AsyncSession, user: User, card_id: uuid.UUID
 ) -> list[MyCardItemOut]:
+    """Liste les exemplaires que l'utilisateur possède d'une carte, triés du plus récent au
+    plus ancien acquis, avec leur valeur et leur prix d'achat convertis en EUR. Lève
+    `CardNotFoundError` si la carte n'existe pas au catalogue."""
     card = await session.get(Card, card_id)
     if card is None:
         raise CardNotFoundError
@@ -222,6 +230,9 @@ FEATURED_CARDS_LIMIT = 9
 
 @dataclass(frozen=True)
 class FeaturedCard:
+    """Carte retenue pour la démonstration de l'accueil visiteur (identifiant, nom, numéro et
+    nom de l'extension)."""
+
     card_id: uuid.UUID
     name: str
     number: str

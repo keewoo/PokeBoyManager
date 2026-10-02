@@ -11,6 +11,9 @@ from pbm_api.pricing.valuation import CONDITION_MULTIPLIERS
 
 
 class ConditionGrade(StrEnum):
+    """Les sept paliers d'état, du meilleur au pire, alignés sur les clés de
+    `CONDITION_MULTIPLIERS` (décote de valeur) pour ne jamais faire dériver deux échelles."""
+
     mint = "mint"
     near_mint = "near_mint"
     excellent = "excellent"
@@ -58,6 +61,8 @@ def worst_grade(grades: list[ConditionGrade | None]) -> ConditionGrade | None:
 
 
 def score_10(grade: ConditionGrade | None) -> float | None:
+    """Note sur 10 dérivée directement du multiplicateur de valeur du palier (`None` si le
+    palier lui-même est `None`) — jamais une seconde échelle calculée indépendamment."""
     if grade is None:
         return None
     return round(float(CONDITION_MULTIPLIERS[grade.value]) * 10, 1)

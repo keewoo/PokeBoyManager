@@ -1,3 +1,6 @@
+"""Modèle de la liste de souhaits : cartes du catalogue visées par l'utilisateur, avec prix
+cible facultatif."""
+
 import uuid
 from decimal import Decimal
 

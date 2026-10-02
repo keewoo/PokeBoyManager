@@ -1,3 +1,6 @@
+"""Modèle des taux de change quotidiens utilisés pour convertir les prix vers la devise
+préférée de l'utilisateur."""
+
 import uuid
 from datetime import date, datetime
 from decimal import Decimal

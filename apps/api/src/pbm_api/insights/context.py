@@ -28,6 +28,8 @@ _USER_AGENT = "PokeBoyManager/dev (private app in development, no public URL yet
 
 
 class ContextPage(BaseModel):
+    """Un extrait de page wiki retenu comme contexte, avec son URL canonique source."""
+
     title: str
     source_url: str
     text: str
@@ -45,6 +47,8 @@ class MediaWikiClient:
         self._owns_client = http_client is None
 
     async def aclose(self) -> None:
+        """Ferme le client HTTP, sauf s'il a été injecté par l'appelant (qui en reste alors
+        responsable)."""
         if self._owns_client:
             await self._client.aclose()
 

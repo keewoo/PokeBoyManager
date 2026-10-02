@@ -22,6 +22,12 @@ SPECIAL_ENERGY_TYPES = ("Spécial", "Special")
 
 @dataclass
 class CompletenessStats:
+    """Photographie chiffrée de la complétude du catalogue, prise à l'instant de l'appel.
+
+    Chaque champ est un compte réel en base (jamais une estimation) : extensions, cartes,
+    champs optionnels remplis, et les trous (`gaps`, `sets_without_ptcg`) qui restent à combler.
+    """
+
     sets_total: int
     cards_total: int
     names_by_lang: dict[str, int]
@@ -42,6 +48,8 @@ class CompletenessStats:
     gaps: list[tuple[str, str, int, int]]  # code, name, cartes importées, total officiel TCGdex
 
     def pct(self, n: int) -> float:
+        """Pourcentage de `n` sur `cards_total` ; `0.0` si le catalogue est vide (pas de division
+        par zéro)."""
         return (100 * n / self.cards_total) if self.cards_total else 0.0
 
     @staticmethod
@@ -52,6 +60,11 @@ class CompletenessStats:
 
 
 async def compute_completeness_stats(session: AsyncSession) -> CompletenessStats:
+    """Recalcule `CompletenessStats` par une série de comptages SQL sur la base de `session`.
+
+    Ne lit aucun cache ni rapport d'import : chaque chiffre vient d'une requête sur l'état réel
+    des tables (`Set`, `Card`, `CardName`, `CardPriceDaily`), pour ne jamais confondre « importé »
+    et « complet »."""
     sets_total = (await session.execute(select(func.count(Set.id)))).scalar_one()
     cards_total = (await session.execute(select(func.count(Card.id)))).scalar_one()
 

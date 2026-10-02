@@ -23,6 +23,8 @@ from pbm_api.wishlist.schemas import CreateWishlistItemRequest, UpdateWishlistIt
 
 @dataclass(frozen=True)
 class WishlistRow:
+    """Un vœu joint aux repères de sa carte/son set et à son prix courant, prêts pour la réponse."""
+
     item: WishlistItem
     card_name: str
     card_number: str
@@ -43,6 +45,8 @@ async def _card_and_set(session: AsyncSession, card_id: uuid.UUID) -> tuple[Card
 async def create_item(
     session: AsyncSession, user: User, data: CreateWishlistItemRequest
 ) -> WishlistItem:
+    """Ajoute un vœu pour l'utilisateur ; lève `CardNotFoundError` si la carte n'existe pas et
+    `WishlistItemAlreadyExistsError` si elle y figure déjà. Effet de bord : insertion + commit."""
     card_and_set = await _card_and_set(session, data.card_id)
     if card_and_set is None:
         raise CardNotFoundError
@@ -68,6 +72,8 @@ async def create_item(
 
 
 async def get_owned_item(session: AsyncSession, user: User, item_id: uuid.UUID) -> WishlistItem:
+    """Récupère un vœu appartenant à l'utilisateur ; lève `WishlistItemNotFoundError` si absent ou
+    possédé par un autre (même id introuvable qu'inexistant, pas de fuite d'existence)."""
     item = await session.get(WishlistItem, item_id)
     if item is None or item.user_id != user.id:
         raise WishlistItemNotFoundError
@@ -77,6 +83,8 @@ async def get_owned_item(session: AsyncSession, user: User, item_id: uuid.UUID) 
 async def update_item(
     session: AsyncSession, user: User, item_id: uuid.UUID, data: UpdateWishlistItemRequest
 ) -> WishlistItem:
+    """Corrige seulement les champs renseignés (`exclude_unset`) d'un vœu de l'utilisateur ; lève
+    `WishlistItemNotFoundError` via `get_owned_item`. Effet de bord : commit."""
     item = await get_owned_item(session, user, item_id)
     for field_name, value in data.model_dump(exclude_unset=True).items():
         setattr(item, field_name, value)
@@ -86,12 +94,16 @@ async def update_item(
 
 
 async def delete_item(session: AsyncSession, user: User, item_id: uuid.UUID) -> None:
+    """Supprime un vœu de l'utilisateur ; lève `WishlistItemNotFoundError` via `get_owned_item`.
+    Effet de bord : suppression + commit."""
     item = await get_owned_item(session, user, item_id)
     await session.delete(item)
     await session.commit()
 
 
 async def list_rows(session: AsyncSession, user: User) -> list[WishlistRow]:
+    """Liste tous les vœux de l'utilisateur, du plus récent au plus ancien, avec le prix courant
+    de chaque carte joint (toujours filtré par `user_id`, jamais les vœux d'un autre)."""
     result = await session.execute(
         select(WishlistItem, Card, Set)
         .join(Card, Card.id == WishlistItem.card_id)

@@ -16,6 +16,10 @@ from pbm_api.detection.geometry import CARD_HEIGHT_PX, CARD_WIDTH_PX
 
 @dataclass(frozen=True)
 class SyntheticCrop:
+    """Un recadrage fabriqué pour les tests de `pbm_api.state.centering` : l'image (BGR) et les
+    marges exactes (px) utilisées pour la dessiner, à comparer à ce que `measure_centering`
+    retrouve."""
+
     id: str
     image: np.ndarray  # BGR, comme cv2.imdecode
     left_px: int

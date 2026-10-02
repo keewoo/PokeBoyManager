@@ -1,3 +1,6 @@
+"""Modèles de l'identification visuelle : cache par empreinte perceptuelle, index visuel du
+catalogue, et journal des corrections humaines."""
+
 import uuid
 
 from sqlalchemy import BigInteger, ForeignKey, Index, String, UniqueConstraint

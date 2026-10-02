@@ -1,3 +1,5 @@
+"""Modèle de suivi mensuel de la consommation IA par utilisateur et fournisseur."""
+
 import uuid
 from datetime import date
 from decimal import Decimal

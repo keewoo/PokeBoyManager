@@ -1,3 +1,6 @@
+"""Schémas Pydantic des réponses de la fiche carte (`pbm_api.cards.service`) : détail,
+historique de prix, exemplaires possédés, et carte vedette de l'accueil visiteur."""
+
 import uuid
 from datetime import date
 from decimal import Decimal
@@ -8,6 +11,8 @@ from pbm_api.models.catalog import PriceVariant
 
 
 class CardSetOut(BaseModel):
+    """Extension à laquelle appartient la carte, telle qu'affichée dans l'en-tête de fiche."""
+
     id: uuid.UUID
     name: str
     code: str
@@ -18,17 +23,26 @@ class CardSetOut(BaseModel):
 
 
 class CardRankingOut(BaseModel):
+    """Position de la carte dans le classement par rareté et son centile de valeur
+    (`pbm_api.ranking.service.card_value_rank`)."""
+
     rarity_rank: int | None
     rarity_group_size: int | None
     value_percentile: float | None
 
 
 class OwnedCollectionRankOut(BaseModel):
+    """Rang de l'exemplaire le plus valorisé de l'utilisateur parmi les cartes de sa collection
+    dont le prix est connu."""
+
     position: int | None
     total_priced: int
 
 
 class CardDetailResponse(BaseModel):
+    """Fiche complète d'une carte : catalogue, prix par variante, classement et, si
+    l'utilisateur en possède un exemplaire, son rang dans sa collection."""
+
     id: uuid.UUID
     name: str
     number: str
@@ -48,17 +62,24 @@ class CardDetailResponse(BaseModel):
 
 
 class PriceHistoryPoint(BaseModel):
+    """Un point de l'historique de prix : le prix de référence en EUR pour un jour donné."""
+
     day: date
     price_eur: Decimal
 
 
 class PriceHistoryResponse(BaseModel):
+    """Historique de prix d'une carte pour une variante et une période donnée, servi à
+    l'onglet Valeur de la fiche."""
+
     card_id: uuid.UUID
     variant: PriceVariant
     points: list[PriceHistoryPoint]
 
 
 class MyCardItemOut(BaseModel):
+    """Un exemplaire possédé de la carte, pour l'onglet « Mes exemplaires » de la fiche."""
+
     id: uuid.UUID
     language: str
     variant: PriceVariant

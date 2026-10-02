@@ -1,3 +1,5 @@
+"""Modèles du compte utilisateur : identité, session, jetons e-mail et clés IA chiffrées."""
+
 import enum
 import uuid
 from datetime import date, datetime
@@ -10,6 +12,8 @@ from pbm_api.models.base import Base, TimestampMixin
 
 
 class AiProvider(enum.StrEnum):
+    """Fournisseur d'IA pris en charge pour la reconnaissance de cartes."""
+
     anthropic = "anthropic"
     gemini = "gemini"
     openai = "openai"
@@ -79,6 +83,8 @@ class Session(Base):
 
 
 class EmailTokenKind(enum.StrEnum):
+    """Usage d'un jeton à usage unique envoyé par e-mail."""
+
     verify_email = "verify_email"
     reset_password = "reset_password"
     change_email = "change_email"
