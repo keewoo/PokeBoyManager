@@ -232,11 +232,20 @@ body {
      d'adresse mobile. Plafonnée à 80vh pour ne pas occuper tout un grand écran. */
   height: min(80vh, calc(100dvh - 12rem));
 }
-.pbm-arena {
+.pbm-arena-box {
+  /* Conteneur de requête SÉPARÉ de l'arène : un élément ne peut pas interroger sa PROPRE
+     taille — porté sur `.pbm-arena`, `cqh`/`cqw` se résolvaient sur l'ancêtre conteneur le
+     plus proche, donc sur le viewport faute d'ancêtre, et la police était calibrée pour la
+     hauteur de l'ÉCRAN (ex. 390px) alors que l'arène n'en fait qu'une fraction : le contenu
+     débordait et `overflow-hidden` écrêtait tout un camp. En posant `container-type` sur ce
+     parent (dont la hauteur est celle réellement disponible, `flex-1` borné par
+     `.pbm-plateau`), l'arène obtient un `cqh` fidèle : la police suit la hauteur de l'arène. */
   container-type: size;
-  /* 1em = la plus petite contrainte du conteneur : largeur/120 (grille de 120 em héritée de
-     la maquette du jeu) ou hauteur/64. Bornée pour rester nette sur grand écran (13px) et
-     jamais nulle sur très petit (1px). */
+}
+.pbm-arena {
+  /* 1em = la plus petite contrainte du conteneur `.pbm-arena-box` : largeur/120 (grille de
+     120 em héritée de la maquette du jeu) ou hauteur/64. Bornée pour rester nette sur grand
+     écran (13px) et jamais nulle sur très petit (1px). */
   font-size: clamp(1px, min(100cqw / 120, 100cqh / 64), 13px);
 }
 .pbm-rotate-hint {

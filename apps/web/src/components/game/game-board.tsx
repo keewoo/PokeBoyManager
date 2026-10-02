@@ -198,7 +198,10 @@ export function GameBoard({ vue, etatConnexion }: GameBoardProps) {
         Tourne ton téléphone en paysage pour mieux voir le plateau.
       </div>
 
-      <div className="pbm-arena relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-[radial-gradient(70%_80%_at_50%_50%,#0E2A1E,#06120B)] text-[#EAF3EE] shadow-[0_20px_50px_-30px_rgba(0,0,0,0.9)]">
+      {/* Conteneur de requête : il reçoit la hauteur disponible (`flex-1`) et la donne à
+          l'arène via `cqh` — l'arène ne peut pas interroger sa propre taille. */}
+      <div className="pbm-arena-box flex min-h-0 flex-1">
+        <div className="pbm-arena relative flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-2xl bg-[radial-gradient(70%_80%_at_50%_50%,#0E2A1E,#06120B)] text-[#EAF3EE] shadow-[0_20px_50px_-30px_rgba(0,0,0,0.9)]">
         {etatConnexion && (
           <div className="absolute left-1/2 top-2 z-10 -translate-x-1/2">
             <StatutConnexion etat={etatConnexion} />
@@ -258,6 +261,7 @@ export function GameBoard({ vue, etatConnexion }: GameBoardProps) {
 
           {/* Mon banc */}
           {banc(moi, "Mon banc", "w-[6.5625em]", onZoom)}
+          </div>
         </div>
       </div>
 

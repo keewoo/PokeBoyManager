@@ -57,6 +57,18 @@ jamais la main adverse ni l'ordre d'une pioche (zones cachées réduites à un c
 - L'AC « texte d'une carte zoomée lisible sans pincer » est satisfaite par la **taille** du zoom (grande
   police indépendante du conteneur) ; le contenu riche (attaques, coûts) suivra avec `j-rendu-carte`.
 
+## Correctif de recette (CI e2e)
+
+Premier passage e2e rouge sur `plateau-responsive.spec.ts` (390 px paysage) : « Mon actif »
+hors viewport (`toBeInViewport` → *ratio 0*) alors que `assertNoScroll` passait — tout un camp
+écrêté par l'`overflow-hidden` de l'arène. **Cause racine** : `.pbm-arena` portait à la fois
+`container-type: size` **et** un `font-size` en `100cqh/100cqw`. Un élément ne peut pas interroger
+sa propre taille ; `cqh`/`cqw` se résolvaient sur le viewport (faute d'ancêtre conteneur), si bien
+que la police était calibrée pour la hauteur de l'**écran** (390 px) et non de l'arène (~115 px) —
+le contenu débordait de ~3×. **Correctif** : `container-type: size` déplacé sur un parent
+`.pbm-arena-box` (hauteur réelle via `flex-1` borné par `.pbm-plateau`) ; l'arène ne garde que le
+`font-size`, dont le `cqh` reflète désormais sa hauteur réelle. Aucune valeur magique.
+
 ## Reste à faire (lots aval, déjà débloqués)
 
 - `j-plateau-etat-visuel` — lecture d'un coup d'œil : dégâts, énergies, états, récompenses.
