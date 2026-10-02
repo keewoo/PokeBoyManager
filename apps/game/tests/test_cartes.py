@@ -15,6 +15,7 @@ import pytest
 from pbm_game.cartes import (
     AttaqueDef,
     definition_depuis_dict,
+    definition_vers_dict,
 )
 from pbm_game.cas.constructeur import GRAINE_DEFAUT, construire
 from pbm_game.combat.fin import resoudre_kos
@@ -297,3 +298,49 @@ def test_ko_pile_evolution_defausse_tout():
     alice = etat2.joueurs[0]
     assert alice.actif is None
     assert len(alice.defausse) == 5  # 3 cartes de la pile + 2 énergies (R-13.2)
+
+
+# --- Sérialisation service → action : round-trip de la fiche catalogue ---------------------
+
+
+def test_definition_vers_dict_round_trip_complet():
+    """``definition_depuis_dict(definition_vers_dict(d)) == d`` sur une fiche riche.
+
+    C'est le contrat du chemin service → action : le service projette la fiche catalogue en
+    ``dict`` (porté dans les ``params``, transporté par le journal) ; le rejeu la relit sans
+    catalogue. Une fiche avec faiblesse, résistance et attaques (dégâts secs **et** effet) doit
+    revenir identique — sinon le rejeu divergerait de la partie d'origine.
+    """
+    riche = definition_depuis_dict(
+        {
+            "ref": "r-tortank",
+            "nom": "Tortank",
+            "stade": "stade2",
+            "pv": 150,
+            "type": "eau",
+            "marqueur": "ordinaire",
+            "evolue_depuis": "Carabaffe",
+            "cout_retraite": 3,
+            "faiblesse": {"type": "plante", "facteur": 2},
+            "resistance": {"type": "feu", "reduction": 30},
+            "attaques": [
+                {"nom": "Pistolet à O", "cout": {"types": {"eau": 1}, "incolore": 0}, "degats": 20},
+                {
+                    "nom": "Hydrocanon",
+                    "cout": {"types": {"eau": 3}, "incolore": 2},
+                    "degats": 60,
+                    "effet": "Défausse 2 énergies.",
+                },
+            ],
+        }
+    )
+    assert definition_depuis_dict(definition_vers_dict(riche)) == riche
+
+
+def test_definition_vers_dict_round_trip_base_minimale():
+    """Round-trip d'une base nue : les clés optionnelles (faiblesse/résistance) restent absentes."""
+    base = definition_depuis_dict(DEF_CARAPUCE)
+    projete = definition_vers_dict(base)
+    assert "faiblesse" not in projete and "resistance" not in projete
+    assert base.evolue_depuis is None and projete["evolue_depuis"] is None
+    assert definition_depuis_dict(projete) == base

@@ -106,6 +106,24 @@ ACTION_REPONDRE_DEMANDE = "repondre_demande"
 #: (lot ``j-timer``) quand l'horloge d'une demande tombe à zéro. Applique la **réponse par défaut**
 #: (premier choix valide, ou abandon de l'effet facultatif) et la journalise. Aucun ``params``.
 ACTION_EXPIRER_DEMANDE = "expirer_demande"
+#: **Mise en place initiale** (R-4.1/R-4.4/R-4.6) — action **système**, tout ce qui est
+#: **déterministe à partir de la graine** : mélange des deux decks, pioche de sept cartes, et la
+#: boucle de **mulligan** (main sans Pokémon de base révélée, remélangée, repiochée) jusqu'à ce que
+#: les deux joueurs aient une main valide. Elle compte aussi les cartes bonus dues à l'adversaire
+#: (R-4.5). ``params`` : ``definitions`` — un mapping ``ref → fiche catalogue`` que le **service**
+#: fournit depuis le catalogue (le moteur ne devine aucun stade : D9, c'est ainsi qu'il sait si une
+#: carte est un Pokémon **de base**). Aucun choix de joueur ici ; le placement vient après. Ajoutée
+#: par ``j-initialisation``. Auteur : :data:`AUTEUR_SYSTEME`.
+ACTION_MISE_EN_PLACE_INITIALE = "mise_en_place_initiale"
+#: **Placer l'Actif et le banc face cachée** (R-4.2) — coup de **chaque** joueur à la mise en
+#: place : il choisit, parmi sa main, le Pokémon de base posé comme Actif (obligatoire) et au plus
+#: cinq Pokémon de base posés au banc. Le choix reste **face caché** (invisible de l'adversaire)
+#: tant que les deux n'ont pas placé. Quand le **second** joueur place, la même transition résout
+#: la **révélation simultanée** : Actif/banc deviennent publics, six récompenses sont posées face
+#: cachée (R-4.3), les cartes bonus sont piochées (R-4.5), et la partie commence. ``params`` :
+#: ``actif`` (instance_id), ``banc`` (liste d'instance_id), ``definitions`` (fiches catalogue des
+#: cartes choisies, D9). Ajoutée par ``j-initialisation``.
+ACTION_PLACER_MISE_EN_PLACE = "placer_mise_en_place"
 #: **Fin de tour forcée** — action **système** déclenchée à l'expiration de l'horloge par
 #: tour (lot ``j-timer``, DJ4). Termine le tour du joueur actif (entrée en Checkup), sans
 #: déclarer d'attaque. Aucun ``params``. Peut aussi être un passage volontaire du joueur actif.
@@ -185,6 +203,31 @@ EVT_POKEMON_POSE = "pokemon_pose"
 #: ``j-cartes-pokemon``) : porte le joueur, l'identité (base) du Pokémon, la ref de la carte
 #: d'évolution, son nom et les états spéciaux retirés par l'évolution (R-7.2).
 EVT_EVOLUTION = "evolution"
+#: La main d'ouverture d'un joueur est **révélée** (R-4.4) : elle n'a aucun Pokémon de base, donc
+#: elle est montrée à l'adversaire avant d'être remélangée. Produit par ``mise_en_place_initiale``
+#: (lot ``j-initialisation``) : porte le joueur et le **contenu révélé** (``instance_id`` + ``ref``
+#: de chaque carte) — c'est le seul moment où une main est publique, et le journal en garde la
+#: trace (l'exigence « le contenu révélé est journalisé »).
+EVT_MAIN_REVELEE = "main_revelee"
+#: Un **mulligan** a eu lieu (R-4.4/R-4.6). Produit par ``mise_en_place_initiale`` : porte le
+#: joueur, son numéro de mulligan (1, 2, 3…), si le mulligan est **simultané** (les deux joueurs
+#: sans base, R-4.6 — alors aucune carte bonus) et, le cas échéant, l'adversaire à qui une carte
+#: bonus est due (R-4.5).
+EVT_MULLIGAN = "mulligan"
+#: La mise en place initiale (système) est **résolue** : les deux mains valides sont en place, le
+#: placement peut commencer. Produit par ``mise_en_place_initiale`` : porte, par joueur, le nombre
+#: de mulligans pris et le nombre de cartes bonus dues (R-4.5). Résumé public de la phase.
+EVT_MISE_EN_PLACE_PRETE = "mise_en_place_prete"
+#: Un joueur a **placé** son Actif et son banc face cachée (R-4.2). Produit par
+#: ``placer_mise_en_place`` : porte **seulement** le joueur — **jamais** le contenu placé, qui
+#: reste secret jusqu'à la révélation (non-fuite). Public : l'adversaire sait que l'autre est prêt.
+EVT_PLACEMENT_CACHE = "placement_cache"
+#: La mise en place est **révélée simultanément** (R-4.2/R-4.3) : les placements des deux joueurs
+#: deviennent publics **en même temps**, six récompenses sont posées face cachée par joueur et les
+#: cartes bonus sont piochées. Produit par ``placer_mise_en_place`` quand le second joueur place :
+#: porte, par joueur, l'Actif et le banc révélés (identités), le nombre de récompenses et de cartes
+#: bonus piochées. Un **seul** événement pour les deux : aucun joueur n'est révélé avant l'autre.
+EVT_MISE_EN_PLACE_REVELEE = "mise_en_place_revelee"
 #: Un tour se **termine** (R-5.8) sur expiration de l'horloge par tour ou passage volontaire.
 #: Produit par la transition ``fin_tour`` (lot ``j-timer``) : porte le joueur et la phase quittée.
 EVT_FIN_TOUR = "fin_tour"

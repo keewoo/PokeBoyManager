@@ -34,6 +34,7 @@ from .modele import (
     AttaqueDef,
     DefinitionCarte,
     definition_depuis_dict,
+    definition_vers_dict,
 )
 
 __all__ = [
@@ -45,6 +46,7 @@ __all__ = [
     "AttaqueDef",
     "DefinitionCarte",
     "definition_depuis_dict",
+    "definition_vers_dict",
     "EffetEnergie",
     "DefinitionEnergie",
     "definition_energie_depuis_dict",

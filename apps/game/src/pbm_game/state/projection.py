@@ -105,7 +105,41 @@ def vue(etat: EtatPartie, joueur: str) -> dict:
     }
     if etat.resolution is not None:
         vue_etat["demande"] = _demande_vue(etat.resolution.demande, pour=joueur)
+    if etat.mise_en_place is not None:
+        vue_etat["mise_en_place"] = _mise_en_place_vue(etat, pour=joueur)
     return vue_etat
+
+
+def _mise_en_place_vue(etat: EtatPartie, *, pour: str) -> dict:
+    """La mise en place (R-4) telle que ``pour`` a le droit de la voir — **sans fuite**.
+
+    Ce qui est **public** : que la partie est en mise en place, le nombre de mulligans pris par
+    chaque joueur et le nombre de cartes bonus qui lui sont dues (R-4.4/R-4.5 — un mulligan révèle
+    la main, donc son existence n'est pas un secret), et **si** chaque joueur a déjà placé son Actif
+    et son banc (un drapeau, pour que l'écran montre « l'adversaire est prêt » sans montrer *quoi*).
+
+    Ce qui est **caché** : le **contenu** du placement (quel Pokémon est Actif, lesquels au banc).
+    On ne l'expose qu'à son **propre** propriétaire (``cest_soi``) — jamais à l'adversaire, même
+    quand ce dernier a déjà validé. C'est la non-fuite que le lot garantit : aucun ``instance_id``
+    du placement adverse ne survit dans la structure produite (vérifiable en la parcourant).
+    """
+    mep = etat.mise_en_place
+    joueurs_vus: list[dict] = []
+    for index, joueur in enumerate(etat.joueurs):
+        placement = mep.placements[index]
+        cest_soi = joueur.id == pour
+        vu: dict = {
+            "id": joueur.id,
+            "mulligans": mep.mulligans[index],
+            "bonus": mep.bonus[index],
+            "a_place": placement is not None,
+        }
+        # Le contenu du placement n'est montré qu'à soi (anti-fuite) : l'adversaire n'a que le
+        # drapeau ``a_place``. Montrer son propre placement sert la reprise après un F5.
+        if cest_soi and placement is not None:
+            vu["placement"] = {"actif": placement.actif, "banc": list(placement.banc)}
+        joueurs_vus.append(vu)
+    return {"joueurs": joueurs_vus}
 
 
 def _demande_vue(demande, *, pour: str) -> dict:

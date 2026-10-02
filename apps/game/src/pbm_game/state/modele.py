@@ -32,15 +32,20 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    # Importé **seulement** pour l'annotation de ``EtatPartie.resolution`` : jamais au runtime, pour
-    # que ``state.modele`` reste une feuille sans dépendance au paquet ``demandes`` (pas de cycle).
+    # Importés **seulement** pour l'annotation de champs : jamais au runtime, pour que
+    # ``state.modele`` reste une feuille sans dépendance aux paquets ``demandes`` / mise en place
+    # (pas de cycle).
     from ..demandes.moteur import ResolutionEnCours
+    from ..mise_en_place.modele import MiseEnPlace
 
 # Version du schéma d'état : toute évolution incompatible de la forme sérialisée
 # l'incrémente. ``depuis_json`` refuse une version inconnue (jamais de repli silencieux).
 # v3 (lot ``j-effets-choix``) : ajout de ``EtatPartie.resolution`` — la demande de décision en
 # cours et la pile d'effets suspendue, pour qu'une partie se mette en pause en attendant un joueur.
-SCHEMA_VERSION = 3
+# v4 (lot ``j-initialisation``) : ajout de ``EtatPartie.mise_en_place`` — l'état transitoire de la
+# mise en place (R-4), présent avant le premier tour (mulligans, cartes bonus, placement face
+# caché), ``None`` dès la révélation simultanée (la partie a alors commencé).
+SCHEMA_VERSION = 4
 
 # --- États spéciaux (R-11.1) -------------------------------------------------
 ENDORMI = "endormi"
@@ -184,6 +189,14 @@ class EtatPartie:
     attente de code : elle est sérialisée avec l'état, donc une partie interrompue au milieu d'une
     demande **reprend exactement à cette demande**. Annotée en chaîne (``from __future__``) pour ne
     pas importer le paquet ``demandes`` ici — ``state.modele`` reste une feuille sans dépendance.
+
+    ``mise_en_place`` : l'état transitoire de la **mise en place** (R-4, lot ``j-initialisation``),
+    ou ``None`` quand la partie a commencé. Quand elle n'est pas ``None``, la partie est **avant son
+    premier tour** : elle porte le compte des mulligans (R-4.4), les cartes bonus dues (R-4.5) et le
+    placement **face caché** de chaque joueur (R-4.2) — qui ne passe dans l'Actif/banc **publics**
+    qu'à la révélation simultanée. Tant qu'elle existe, seules les actions de placement et l'abandon
+    sont permises (garde de :func:`pbm_game.journal.transitions.appliquer`). Annotée en chaîne, même
+    motif que ``resolution`` : ``state.modele`` reste une feuille.
     """
 
     joueurs: tuple[Joueur, Joueur]
@@ -195,6 +208,7 @@ class EtatPartie:
     vainqueur: str | None = None
     raison_fin: str | None = None
     resolution: ResolutionEnCours | None = None
+    mise_en_place: MiseEnPlace | None = None
 
 
 def orientation(pokemon: PokemonEnJeu) -> str:

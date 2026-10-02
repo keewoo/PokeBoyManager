@@ -189,6 +189,12 @@ def vers_json(etat: EtatPartie) -> dict:
     }
     if etat.resolution is not None:
         donnees["resolution"] = etat.resolution.en_json()
+    if etat.mise_en_place is not None:
+        # Import local : ``state`` reste une feuille (seul le paquet ``mise_en_place`` connaît la
+        # forme) ; un état sans mise en place produit exactement le JSON d'avant ce lot.
+        from ..mise_en_place.modele import mise_en_place_vers_json
+
+        donnees["mise_en_place"] = mise_en_place_vers_json(etat.mise_en_place)
     return donnees
 
 
@@ -228,6 +234,13 @@ def depuis_json(donnees: object) -> EtatPartie:
         from ..demandes.moteur import ResolutionEnCours
 
         resolution = ResolutionEnCours.depuis_json(resolution_brute)
+    mise_en_place_brute = donnees.get("mise_en_place")
+    mise_en_place = None
+    if mise_en_place_brute is not None:
+        # Import local : ``state`` reste une feuille ; seul ce paquet connaît la forme.
+        from ..mise_en_place.modele import mise_en_place_depuis_json
+
+        mise_en_place = mise_en_place_depuis_json(mise_en_place_brute)
     return EtatPartie(
         schema_version=version,
         joueurs=(_joueur_depuis(joueurs_bruts[0]), _joueur_depuis(joueurs_bruts[1])),
@@ -238,4 +251,5 @@ def depuis_json(donnees: object) -> EtatPartie:
         vainqueur=vainqueur,
         raison_fin=raison_fin,
         resolution=resolution,
+        mise_en_place=mise_en_place,
     )
