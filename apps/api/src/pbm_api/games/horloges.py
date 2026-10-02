@@ -122,6 +122,17 @@ def pause_a_expire(horloges_json: dict, maintenant_ts: float) -> bool:
     return pause_expiree(EtatHorloges.depuis_json(horloges_json), maintenant_ts)
 
 
+def joueur_en_pause(horloges_json: dict | None) -> str | None:
+    """L'identifiant du joueur dont la déconnexion a gelé les horloges, ou ``None`` si aucune pause.
+
+    Sert la **désertion** (lot ``j-deconnexion-abandon``) : quand une pause dépasse sa grâce, c'est
+    ce joueur-là — celui qui s'est déconnecté et n'est pas revenu — qui déserte et perd par forfait.
+    """
+    if horloges_json is None:
+        return None
+    return EtatHorloges.depuis_json(horloges_json).pause_joueur
+
+
 def action_par_defaut(horloges_json: dict, maintenant_ts: float) -> tuple[str, dict] | None:
     """L'action par défaut à journaliser à une expiration : ``(type, params)``, ou ``None``.
 
@@ -158,5 +169,6 @@ __all__ = [
     "pause_json",
     "reprendre_json",
     "pause_a_expire",
+    "joueur_en_pause",
     "action_par_defaut",
 ]

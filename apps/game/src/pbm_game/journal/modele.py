@@ -114,6 +114,19 @@ ACTION_FIN_TOUR = "fin_tour"
 #: épuisé (lot ``j-timer``, DJ4 « sinon défaite au temps »). ``params["joueur"]`` nomme le
 #: perdant ; l'adversaire gagne, raison :data:`RAISON_TEMPS_ECOULE`.
 ACTION_DEFAITE_TEMPS = "defaite_temps"
+#: **Désertion** — action **système** (lot ``j-deconnexion-abandon``) déclenchée quand un joueur
+#: déconnecté ne revient pas avant la fin de son délai de grâce (``pause_deconnexion_s``). C'est un
+#: **forfait** : ``params["joueur"]`` nomme le déserteur, l'adversaire gagne, raison
+#: :data:`RAISON_DESERTION`. Distincte de l'abandon volontaire (R-14.3) — mêmes effets de fin, mais
+#: un motif propre, pour que l'historique dise *pourquoi* la partie s'est close.
+ACTION_DESERTER = "deserter"
+#: **Expiration pour inactivité** — action **système** (lot ``j-deconnexion-abandon``) du balayage
+#: périodique des parties fantômes : une partie sans aucune activité au-delà du plafond configuré
+#: est close d'office. Personne n'a joué, donc **aucun vainqueur** (``vainqueur=None``), raison
+#: :data:`RAISON_INACTIVITE` — à distinguer d'une fin méritée. Aucun ``params``. C'est le filet qui
+#: garantit qu'« aucune partie ne reste en cours plus longtemps que le plafond », chaque clôture
+#: portant son motif dans le journal (jamais un nettoyage muet, risque nommé du lot).
+ACTION_EXPIRER_INACTIVITE = "expirer_inactivite"
 
 # --- Types d'événement (ce que PRODUIT le moteur) ----------------------------
 EVT_PIOCHE_MELANGEE = "pioche_melangee"
@@ -195,6 +208,14 @@ RAISON_DERNIERE_RECOMPENSE = "derniere_recompense"
 #: Raison de fin pour une **défaite au temps** (R-14.6) : le budget total d'un joueur est
 #: épuisé (DJ4). Posée par ``j-timer`` via la transition système ``defaite_temps``.
 RAISON_TEMPS_ECOULE = "temps_ecoule"
+#: Raison de fin pour une **désertion** (R-14.6) : un joueur déconnecté n'est pas revenu avant la
+#: fin du délai de grâce → forfait. Posée par ``j-deconnexion-abandon`` via la transition système
+#: ``deserter``. L'adversaire gagne, comme pour l'abandon, mais le motif distingue les deux.
+RAISON_DESERTION = "desertion"
+#: Raison de clôture pour **inactivité** : une partie fantôme (plus personne ne joue) close d'office
+#: par le balayage périodique. Il n'y a **pas** de vainqueur — ce n'est pas une fin méritée mais un
+#: ménage. Posée par ``j-deconnexion-abandon`` via la transition système ``expirer_inactivite``.
+RAISON_INACTIVITE = "inactivite"
 
 
 @dataclass(frozen=True)

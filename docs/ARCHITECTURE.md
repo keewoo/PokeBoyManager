@@ -955,6 +955,38 @@ diffusion live passe par un bus **en mémoire du process** (`games/temps_reel.py
 rattrapé par une resync). Protocole, messages et garanties : `docs/jeu/TEMPS-REEL.md`. Sécurité du
 canal (anti-CSWSH) : `docs/SECURITE.md`. Bandeau « connexion dégradée » : `docs/UI-UX.md`.
 
+## Déconnexion, abandon, désertion, inactivité (lot `j-deconnexion-abandon`)
+
+Une partie ne reste **jamais** suspendue. Le serveur distingue trois cas, aux conséquences
+différentes, et toute clôture automatique est un **coup journalisé** (« tout est rejouable »,
+jamais un nettoyage muet) dont le motif part dans l'historique (`raison_fin` de `GameSummaryOut`) :
+
+- **Coupure passagère.** À la fermeture du canal, `marquer_deconnexion` **gèle** les horloges
+  (pause de grâce `horloge_pause_deconnexion_s`, lot `j-timer`) ; à la reconnexion,
+  `marquer_reconnexion` les reprend. Le temps gelé n'est **pas** débité (critère : la reprise dans
+  le délai ne coûte rien au-delà de la pause). L'état de pause (`en_pause`, `pause_joueur`,
+  `pause_restant_s`) est renvoyé dans les charges temps réel pour l'affichage honnête des deux côtés
+  (« l'adversaire s'est déconnecté, 1 min 47 »).
+- **Abandon volontaire.** Route dédiée **`POST /games/{id}/abandon`** (forfait du joueur courant,
+  l'adversaire gagne, raison `abandon`, R-14.3) — plus simple que `POST /games/{id}/actions` (aucun
+  `numero_attendu` à fournir : abandonner est toujours légal). La **confirmation** est à la charge de
+  l'écran. Bornée au participant (404 sinon), 409 si la partie n'est plus en cours.
+- **Désertion.** Quand la pause de déconnexion **dépasse sa grâce**, `expirer_horloge` clôt la partie
+  par **forfait** du joueur qui ne revient pas (coup système `deserter`, raison `desertion`,
+  l'adversaire gagne). C'est l'affinement de `j-timer`, qui se contentait de reprendre les horloges :
+  la partie se clôt dès la fin du délai annoncé, sans attendre que le budget du déserteur s'épuise.
+
+**Balayage des parties fantômes.** `expirer_parties` clôt les parties sans activité au-delà du
+**plafond configuré** (`JEU_INACTIVITE_PLAFOND_H`, chaque coup repoussant l'échéance `expires_at`) :
+plus personne ne joue → coup système `expirer_inactivite`, statut `expiree`, raison `inactivite`,
+**aucun vainqueur**. `purger` supprime ensuite les parties mortes anciennes (`JEU_PURGE_ANCIENNETE_J`)
+et les instantanés superflus. Les deux tournent dans un **cron léger** du worker arq
+(`games_maintenance_task`, toutes les 10 min, posé sur **tous** les nœuds y compris la PROD — ce
+n'est pas un traitement lourd), ce qui fait tenir le critère « aucune partie ne reste en cours plus
+longtemps que le plafond ». Les clôtures forcées vivent dans le moteur pur
+(`pbm_game.fin_forcee` : `deserter`, `expirer_inactivite`), au même titre que les expirations
+d'horloge — elles sont rejouables et testables sans base.
+
 ## Inviter quelqu'un à jouer — invitations et salon d'attente (lot `j-invitations`)
 
 Entre deux frères ou deux amis, on n'« cherche pas un adversaire » (la file d'attente anonyme,

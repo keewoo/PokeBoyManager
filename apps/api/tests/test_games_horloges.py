@@ -201,8 +201,13 @@ async def test_pause_puis_reprise_de_deconnexion(db_session):
     assert not h2.en_pause
 
 
-async def test_pause_dont_la_grace_est_depassee_est_reprise_par_l_expiration(db_session):
-    """Une pause qui dépasse sa grâce est reprise par le balayage d'expiration (sans coup)."""
+async def test_pause_dont_la_grace_est_depassee_declenche_la_desertion(db_session):
+    """Une pause dépassée devient une **désertion** (affinement du lot `j-deconnexion-abandon`).
+
+    `j-timer` se contentait de reprendre les horloges ; ce lot clôt la partie par forfait du joueur
+    qui ne revient pas, pour qu'« une partie ne reste jamais suspendue ». Le coup système `deserter`
+    est journalisé (son motif part dans l'historique), l'adversaire gagne.
+    """
     game, user_a, _ = await _partie(db_session)
     now = datetime.now(UTC)
     await marquer_deconnexion(db_session, game.id, user_a.id, maintenant=now)
@@ -210,10 +215,18 @@ async def test_pause_dont_la_grace_est_depassee_est_reprise_par_l_expiration(db_
     res = await expirer_horloge(
         db_session, game.id, maintenant=now + timedelta(seconds=200)
     )
-    assert res is None  # grâce dépassée → on reprend les horloges, aucun coup n'est joué
+    assert res is not None and res.terminee  # grâce dépassée → forfait, jamais un blocage
+    assert res.raison_fin == "desertion"
     await db_session.refresh(game)
-    assert not EtatHorloges.depuis_json(game.horloges).en_pause
-    assert game.status == "en_cours"
+    assert game.status == "terminee"
+    assert game.raison_fin == "desertion"
+    # Le déserteur (user_a) perd ; l'adversaire gagne.
+    assert game.vainqueur_user_id is not None and game.vainqueur_user_id != user_a.id
+    # Le forfait est **journalisé** (jamais une clôture muette).
+    events = (
+        await db_session.execute(select(GameEvent).where(GameEvent.game_id == game.id))
+    ).scalars().all()
+    assert any(e.action["type"] == "deserter" and e.auteur == "systeme" for e in events)
 
 
 # --- Mapping des causes d'expiration vers l'action par défaut (adaptateur) ---
