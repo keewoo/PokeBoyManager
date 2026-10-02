@@ -60,6 +60,12 @@ export type GameBoardProps = {
    */
   agisseur?: string | null;
   /**
+   * Identité (instance de la carte de base) du Pokémon **désigné par la ligne de journal survolée**
+   * (lot `j-plateau-journal`) : le plateau le met en évidence par le même halo que l'agisseur, pour
+   * relier le fil des coups à l'endroit concerné. `null`/absent quand aucune ligne n'est survolée.
+   */
+  surligne?: string | null;
+  /**
    * Joue un coup — fourni par le conteneur de partie (lot `j-plateau-interactions`). Absent, le
    * plateau reste en **lecture seule** (aucune barre d'actions, aucune cible saisissable). Doit
    * rejeter sur un refus (`ApiError` 422) dont le message porte la raison du moteur : le plateau
@@ -182,6 +188,7 @@ function caseActif(
   largeur: string,
   onZoom: ZoomFn,
   agisseur?: string | null,
+  surligne?: string | null,
   inter?: Interaction,
 ): React.ReactNode {
   const dessus = joueur.actif ? carteDessus(joueur.actif) : null;
@@ -195,7 +202,7 @@ function caseActif(
         carte={dessus}
         pokemon={joueur.actif}
         etiquette={etiquette}
-        miseEnEvidence={estAgisseur(joueur.actif, agisseur)}
+        miseEnEvidence={estEnEvidence(joueur.actif, agisseur, surligne)}
         illumine={!!refCible}
         onActiver={refCible && inter ? () => inter.activerRef(refCible) : undefined}
         onPeek={(c) => onZoom(c, joueur.actif ?? undefined)}
@@ -209,6 +216,15 @@ function estAgisseur(pokemon: VuePokemon, agisseur?: string | null): boolean {
   return !!agisseur && pokemon.cartes[0]?.instance_id === agisseur;
 }
 
+/**
+ * Vrai si ce Pokémon doit porter le halo : soit il **vient d'agir** (`agisseur`), soit il est
+ * **désigné par la ligne de journal survolée** (`surligne`). Les deux se comparent sur l'instance de
+ * sa carte de base — le même repère relie « ce qui vient d'arriver » et « ce que dit le journal ».
+ */
+function estEnEvidence(pokemon: VuePokemon, agisseur?: string | null, surligne?: string | null): boolean {
+  return estAgisseur(pokemon, agisseur) || estAgisseur(pokemon, surligne);
+}
+
 /** Le banc d'un joueur : cinq cases fixes, Pokémon ou vides. */
 function banc(
   joueur: VueJoueur,
@@ -216,6 +232,7 @@ function banc(
   largeur: string,
   onZoom: ZoomFn,
   agisseur?: string | null,
+  surligne?: string | null,
   inter?: Interaction,
 ): React.ReactNode {
   return (
@@ -232,7 +249,7 @@ function banc(
               carte={dessus}
               pokemon={p}
               etiquette={`${etiquette} ${i + 1}`}
-              miseEnEvidence={estAgisseur(p, agisseur)}
+              miseEnEvidence={estEnEvidence(p, agisseur, surligne)}
               illumine={!!refCible}
               onActiver={refCible && inter ? () => inter.activerRef(refCible) : undefined}
               onPeek={(c) => onZoom(c, p)}
@@ -244,7 +261,7 @@ function banc(
   );
 }
 
-export function GameBoard({ vue, etatConnexion, agisseur, onJouer }: GameBoardProps) {
+export function GameBoard({ vue, etatConnexion, agisseur, surligne, onJouer }: GameBoardProps) {
   const { moi, adversaire } = separerCamps(vue);
   const monTour = estMonTour(vue);
   const [zoom, setZoom] = useState<Agrandie | null>(null);
@@ -332,9 +349,9 @@ export function GameBoard({ vue, etatConnexion, agisseur, onJouer }: GameBoardPr
           {/* Rang adverse */}
           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-[1em]">
             <span className="justify-self-start">
-              <Holder lab="banc adverse">{banc(adversaire, "banc adverse", "w-[4.6875em]", onZoom, agisseur, inter)}</Holder>
+              <Holder lab="banc adverse">{banc(adversaire, "banc adverse", "w-[4.6875em]", onZoom, agisseur, surligne, inter)}</Holder>
             </span>
-            {caseActif(adversaire, "Actif adverse", "w-[6.875em]", onZoom, agisseur, inter)}
+            {caseActif(adversaire, "Actif adverse", "w-[6.875em]", onZoom, agisseur, surligne, inter)}
             <span className="flex justify-self-end gap-[0.6em]">
               <Holder lab="pioche">
                 <ZoneCachee titre="pioche" nombre={adversaire.pioche_nombre} />
@@ -375,7 +392,7 @@ export function GameBoard({ vue, etatConnexion, agisseur, onJouer }: GameBoardPr
                 <Recompenses restantes={moi.recompenses_nombre} pour="Toi" />
               </Holder>
             </span>
-            {caseActif(moi, "Mon actif", "w-[9.0625em]", onZoom, agisseur, inter)}
+            {caseActif(moi, "Mon actif", "w-[9.0625em]", onZoom, agisseur, surligne, inter)}
             <span className="flex justify-self-end gap-[0.6em]">
               <Holder lab="pioche">
                 <ZoneCachee titre="pioche" nombre={moi.pioche_nombre} />
@@ -387,7 +404,7 @@ export function GameBoard({ vue, etatConnexion, agisseur, onJouer }: GameBoardPr
           </div>
 
           {/* Mon banc */}
-          {banc(moi, "Mon banc", "w-[6.5625em]", onZoom, agisseur, inter)}
+          {banc(moi, "Mon banc", "w-[6.5625em]", onZoom, agisseur, surligne, inter)}
           </div>
         </div>
       </div>
