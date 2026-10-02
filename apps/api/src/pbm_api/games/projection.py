@@ -23,6 +23,7 @@ from pbm_game.sortie import Jetonneur, enrichir_indicateurs, projeter, secret_je
 from pbm_game.state.modele import EtatPartie
 from pbm_game.state.serialisation import depuis_json
 
+from pbm_api.games.actions import actions_pour
 from pbm_api.games.construction import joueur_id_de
 from pbm_api.games.indicateurs import CatalogueAffichage
 from pbm_api.games.service import ResultatAction
@@ -65,6 +66,11 @@ def vue_autoritaire(
         types=catalogue.types,
         registre=catalogue.registre,
     )
+    # Actions légales du destinataire + commandes refusées motivées (lot j-plateau-interactions) :
+    # l'écran illumine les cibles et grise les refus sans réécrire aucune règle.
+    actions = actions_pour(etat, joueur_id)
+    sortie["vue"]["actions_legales"] = actions["legales"]
+    sortie["vue"]["actions_refusees"] = actions["refusees"]
     return sortie
 
 
@@ -93,4 +99,9 @@ def projeter_resultat(
         types=catalogue.types,
         registre=catalogue.registre,
     )
+    # Actions légales du destinataire + commandes refusées motivées (lot j-plateau-interactions) :
+    # l'écran illumine les cibles et grise les refus sans réécrire aucune règle.
+    actions = actions_pour(etat, joueur_id)
+    sortie["vue"]["actions_legales"] = actions["legales"]
+    sortie["vue"]["actions_refusees"] = actions["refusees"]
     return sortie

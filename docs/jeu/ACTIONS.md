@@ -115,3 +115,25 @@ de test ; par défaut c'est `FAMILLES_DEFAUT`, la vérité.
 - `j-machine-tour` — déroulé d'un tour : phases, contraintes du tour, fin de tour ;
 - `j-plateau-interactions` — l'interface qui affiche la liste, les cibles, l'annulation et
   la confirmation, et montre la raison d'un refus.
+
+## Servir les actions au client (lot `j-plateau-interactions`)
+
+La vue autoritaire (`GET /games/{id}/state` et le canal temps réel) porte, pour son destinataire,
+deux listes issues du moteur — l'adaptateur `pbm_api.games.actions.actions_pour` les sérialise, **sans
+réécrire aucune règle** :
+
+- `vue.actions_legales` :
+  `[{type, params, etiquette, cibles: [{genre, reference, etiquette}], irreversible}]` — les coups
+  jouables (source : `pbm_game.actions.actions_legales`). L'écran illumine `cibles` et soumet
+  `type`/`params` tels quels.
+- `vue.actions_refusees` : `[{type, params, etiquette, regle, message, irreversible}]` — les commandes
+  de la palette d'interface non jouables dans l'état courant, avec le motif du moteur
+  (`pbm_game.actions.valider`). L'écran les grise en montrant `regle` + `message` ; jamais un refus muet.
+
+`irreversible` est une **politique d'affichage** dérivée de l'état côté serveur (jamais une règle
+rejouée par le client) : l'écran demande confirmation d'un coup qui ne s'annule pas — abandonner
+(R-14.3), terminer le tour (R-5.1 / R-5.7), et plus tard attaquer / défausser.
+
+L'enveloppe de réponse (`/state` et un coup joué) porte aussi `numero` : le prochain numéro d'action
+attendu, clé d'**idempotence** quand le client soumet un coup (`POST /games/{id}/actions`, champ
+`numero_attendu`) — renvoyer deux fois le même coup au même numéro ne le joue qu'une fois.

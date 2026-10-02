@@ -109,6 +109,9 @@ async def get_game_state(
         etat, rng, user_id=current_user.id, graine_hex=game.graine, catalogue=catalogue
     )
     vue["horloges"] = _adapt_horloges.restant_json(game.horloges, datetime.now(UTC).timestamp())
+    # Numéro d'action courant (prochain attendu) : clé d'idempotence côté client pour soumettre
+    # un coup (lot ``j-plateau-interactions``).
+    vue["numero"] = game.current_numero
     return vue
 
 
@@ -155,9 +158,13 @@ async def play_action(
     game = await _game_pour_participant(db, game_id, current_user.id)
     catalogue = await catalogue_pour_resultat(db, resultat)
     HUB.publier(game_id, resultat, graine_hex=game.graine, catalogue=catalogue)
-    return projeter_resultat(
+    reponse = projeter_resultat(
         resultat, user_id=current_user.id, graine_hex=game.graine, catalogue=catalogue
     )
+    # Le prochain numéro d'action attendu, pour que le client enchaîne un coup suivant sans aller
+    # relire l'état (lot ``j-plateau-interactions``).
+    reponse["numero"] = game.current_numero
+    return reponse
 
 
 @router.post("/{game_id}/abandon")
@@ -185,6 +192,10 @@ async def abandon_game(
     game = await _game_pour_participant(db, game_id, current_user.id)
     catalogue = await catalogue_pour_resultat(db, resultat)
     HUB.publier(game_id, resultat, graine_hex=game.graine, catalogue=catalogue)
-    return projeter_resultat(
+    reponse = projeter_resultat(
         resultat, user_id=current_user.id, graine_hex=game.graine, catalogue=catalogue
     )
+    # Le prochain numéro d'action attendu, pour que le client enchaîne un coup suivant sans aller
+    # relire l'état (lot ``j-plateau-interactions``).
+    reponse["numero"] = game.current_numero
+    return reponse

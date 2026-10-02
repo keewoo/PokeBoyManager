@@ -1,12 +1,24 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
+import { FormNotice } from "@/components/auth/form-notice";
+import { ActionBar } from "@/components/game/action-bar";
 import { BoardCard, EmptySlot } from "@/components/game/board-card";
 import { CardZoom } from "@/components/game/card-zoom";
 import { StatutConnexion } from "@/components/game/connection-status";
 import { ZoneCachee, ZonePublique } from "@/components/game/zone-consultation";
+import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
+import {
+  REPOS,
+  type Evenement,
+  type Selection,
+  type Soumission,
+  cibleParReference,
+  ciblesIlluminees,
+  reduire,
+} from "@/lib/game/interactions";
 import type { EtatConnexion } from "@/lib/game/realtime";
 import {
   BANC_MAX,
@@ -16,7 +28,9 @@ import {
   estMonTour,
   nombreEnMain,
   separerCamps,
+  type VueActionLegale,
   type VueCarte,
+  type VueCible,
   type VueJoueur,
   type VuePartie,
   type VuePokemon,
@@ -33,7 +47,8 @@ import {
  *
  * L'interface ne décide de rien : tout vient de la vue projetée par le serveur (`VuePartie`). Les
  * zones cachées (pioche, récompenses, main adverse) n'affichent qu'un **compteur** — leur contenu
- * n'existe pas côté client.
+ * n'existe pas côté client. Les coups jouables aussi viennent du serveur (`actions_legales`) : l'écran
+ * illumine leurs cibles et les soumet, sans réécrire aucune règle (lot `j-plateau-interactions`).
  */
 export type GameBoardProps = {
   vue: VuePartie;
@@ -44,6 +59,13 @@ export type GameBoardProps = {
    * halo. Dérivé des événements du dernier coup ; `null`/absent quand rien n'a encore agi.
    */
   agisseur?: string | null;
+  /**
+   * Joue un coup — fourni par le conteneur de partie (lot `j-plateau-interactions`). Absent, le
+   * plateau reste en **lecture seule** (aucune barre d'actions, aucune cible saisissable). Doit
+   * rejeter sur un refus (`ApiError` 422) dont le message porte la raison du moteur : le plateau
+   * l'affiche telle quelle.
+   */
+  onJouer?: (action: VueActionLegale, cible: VueCible | null) => Promise<void>;
 };
 
 /** Ouvre le zoom sur une carte (avec son Pokémon porteur s'il y en a un), ou le ferme avec `null`. */
@@ -51,6 +73,22 @@ type ZoomFn = (carte: VueCarte | null, pokemon?: VuePokemon) => void;
 
 /** Ce que le zoom doit montrer : la carte, et le Pokémon porteur s'il y en a un (énergies, dégâts). */
 type Agrandie = { carte: VueCarte; pokemon?: VuePokemon };
+
+/**
+ * Le lien entre une carte du plateau et l'interaction en cours : savoir si une référence est une
+ * cible illuminée, et la choisir (tap, clavier, dépôt). Absent en lecture seule. Wiring porté par le
+ * lot `j-plateau-interactions` ; la légalité des cibles reste au serveur.
+ */
+type Interaction = {
+  illumineRef: (reference: string) => boolean;
+  activerRef: (reference: string) => void;
+};
+
+/** La référence (instance_id) de la carte d'un Pokémon qui est actuellement une cible illuminée, ou `undefined`. */
+function refCiblePokemon(pokemon: VuePokemon, inter?: Interaction): string | undefined {
+  if (!inter) return undefined;
+  return pokemon.cartes.find((c) => inter.illumineRef(c.instance_id))?.instance_id;
+}
 
 /** Les six pastilles de récompenses : pleines pour celles restant à prendre, vides pour les prises. */
 function Recompenses({ restantes, pour }: { restantes: number; pour: string }) {
@@ -144,11 +182,13 @@ function caseActif(
   largeur: string,
   onZoom: ZoomFn,
   agisseur?: string | null,
+  inter?: Interaction,
 ): React.ReactNode {
   const dessus = joueur.actif ? carteDessus(joueur.actif) : null;
   if (!joueur.actif || !dessus) {
     return <EmptySlot etiquette={etiquette} className={largeur} />;
   }
+  const refCible = refCiblePokemon(joueur.actif, inter);
   return (
     <span className={largeur}>
       <BoardCard
@@ -156,6 +196,8 @@ function caseActif(
         pokemon={joueur.actif}
         etiquette={etiquette}
         miseEnEvidence={estAgisseur(joueur.actif, agisseur)}
+        illumine={!!refCible}
+        onActiver={refCible && inter ? () => inter.activerRef(refCible) : undefined}
         onPeek={(c) => onZoom(c, joueur.actif ?? undefined)}
       />
     </span>
@@ -174,30 +216,35 @@ function banc(
   largeur: string,
   onZoom: ZoomFn,
   agisseur?: string | null,
+  inter?: Interaction,
 ): React.ReactNode {
   return (
     <div className="flex justify-center gap-[0.5em]">
       {bancAvecVides(joueur, BANC_MAX).map((p, i) => {
         const dessus = p ? carteDessus(p) : null;
-        return p && dessus ? (
+        if (!p || !dessus) {
+          return <EmptySlot key={i} etiquette="banc" className={largeur} />;
+        }
+        const refCible = refCiblePokemon(p, inter);
+        return (
           <span key={i} className={largeur}>
             <BoardCard
               carte={dessus}
               pokemon={p}
               etiquette={`${etiquette} ${i + 1}`}
               miseEnEvidence={estAgisseur(p, agisseur)}
+              illumine={!!refCible}
+              onActiver={refCible && inter ? () => inter.activerRef(refCible) : undefined}
               onPeek={(c) => onZoom(c, p)}
             />
           </span>
-        ) : (
-          <EmptySlot key={i} etiquette="banc" className={largeur} />
         );
       })}
     </div>
   );
 }
 
-export function GameBoard({ vue, etatConnexion, agisseur }: GameBoardProps) {
+export function GameBoard({ vue, etatConnexion, agisseur, onJouer }: GameBoardProps) {
   const { moi, adversaire } = separerCamps(vue);
   const monTour = estMonTour(vue);
   const [zoom, setZoom] = useState<Agrandie | null>(null);
@@ -205,6 +252,62 @@ export function GameBoard({ vue, etatConnexion, agisseur }: GameBoardProps) {
     (carte, pokemon) => setZoom(carte ? { carte, pokemon } : null),
     [],
   );
+
+  const legales = vue.actions_legales ?? [];
+  const refusees = vue.actions_refusees ?? [];
+
+  // Interaction : la sélection vit dans un état (pour le rendu) **et** une ref (pour décider sans
+  // attendre un re-rendu — c'est ce qui bloque un double-envoi sur deux clics synchrones).
+  const [selection, setSelection] = useState<Selection>(REPOS);
+  const selectionRef = useRef<Selection>(REPOS);
+  const [verrou, setVerrou] = useState(false);
+  const verrouRef = useRef(false);
+  const [refus, setRefus] = useState<string | null>(null);
+
+  const soumettre = useCallback(
+    async (s: Soumission) => {
+      if (!onJouer || verrouRef.current) return; // un coup déjà en vol : on ignore (anti double-envoi)
+      verrouRef.current = true;
+      setVerrou(true);
+      setRefus(null);
+      try {
+        await onJouer(s.action, s.cible);
+      } catch (e) {
+        // Le serveur fait autorité : on affiche SA raison (message du moteur), jamais un texte inventé.
+        setRefus(
+          e instanceof ApiError ? e.message : "Coup impossible. Réessaie dans un instant.",
+        );
+      } finally {
+        verrouRef.current = false;
+        setVerrou(false);
+      }
+    },
+    [onJouer],
+  );
+
+  const traiter = useCallback(
+    (evt: Evenement) => {
+      const r = reduire(selectionRef.current, evt);
+      selectionRef.current = r.selection;
+      setSelection(r.selection);
+      if (r.soumission) void soumettre(r.soumission);
+    },
+    [soumettre],
+  );
+
+  // Pont entre une carte du plateau et la machine à états : illumination + choix d'une cible.
+  const illumination = ciblesIlluminees(selection);
+  const inter: Interaction | undefined = onJouer
+    ? {
+        illumineRef: (reference) => illumination.has(reference),
+        activerRef: (reference) => {
+          const cible = cibleParReference(selectionRef.current, reference);
+          if (cible) traiter({ t: "choisir-cible", cible });
+        },
+      }
+    : undefined;
+
+  const stadeRefCible = inter && vue.stade ? vue.stade.instance_id : undefined;
 
   return (
     <section data-testid="plateau" className="pbm-plateau relative flex w-full flex-col gap-2">
@@ -229,9 +332,9 @@ export function GameBoard({ vue, etatConnexion, agisseur }: GameBoardProps) {
           {/* Rang adverse */}
           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-[1em]">
             <span className="justify-self-start">
-              <Holder lab="banc adverse">{banc(adversaire, "banc adverse", "w-[4.6875em]", onZoom, agisseur)}</Holder>
+              <Holder lab="banc adverse">{banc(adversaire, "banc adverse", "w-[4.6875em]", onZoom, agisseur, inter)}</Holder>
             </span>
-            {caseActif(adversaire, "Actif adverse", "w-[6.875em]", onZoom, agisseur)}
+            {caseActif(adversaire, "Actif adverse", "w-[6.875em]", onZoom, agisseur, inter)}
             <span className="flex justify-self-end gap-[0.6em]">
               <Holder lab="pioche">
                 <ZoneCachee titre="pioche" nombre={adversaire.pioche_nombre} />
@@ -247,7 +350,17 @@ export function GameBoard({ vue, etatConnexion, agisseur }: GameBoardProps) {
             <span className="h-px flex-1 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.35),transparent)]" />
             {vue.stade ? (
               <span className="w-[4.6875em]">
-                <BoardCard carte={vue.stade} etiquette="Stade" onPeek={(c) => onZoom(c)} />
+                <BoardCard
+                  carte={vue.stade}
+                  etiquette="Stade"
+                  illumine={!!(stadeRefCible && inter?.illumineRef(stadeRefCible))}
+                  onActiver={
+                    stadeRefCible && inter?.illumineRef(stadeRefCible)
+                      ? () => inter.activerRef(stadeRefCible)
+                      : undefined
+                  }
+                  onPeek={(c) => onZoom(c)}
+                />
               </span>
             ) : (
               <span className="normal-case">Stade (aucun)</span>
@@ -262,7 +375,7 @@ export function GameBoard({ vue, etatConnexion, agisseur }: GameBoardProps) {
                 <Recompenses restantes={moi.recompenses_nombre} pour="Toi" />
               </Holder>
             </span>
-            {caseActif(moi, "Mon actif", "w-[9.0625em]", onZoom, agisseur)}
+            {caseActif(moi, "Mon actif", "w-[9.0625em]", onZoom, agisseur, inter)}
             <span className="flex justify-self-end gap-[0.6em]">
               <Holder lab="pioche">
                 <ZoneCachee titre="pioche" nombre={moi.pioche_nombre} />
@@ -274,13 +387,33 @@ export function GameBoard({ vue, etatConnexion, agisseur }: GameBoardProps) {
           </div>
 
           {/* Mon banc */}
-          {banc(moi, "Mon banc", "w-[6.5625em]", onZoom, agisseur)}
+          {banc(moi, "Mon banc", "w-[6.5625em]", onZoom, agisseur, inter)}
           </div>
         </div>
       </div>
 
+      {/* Barre d'actions + raison d'un refus : seulement quand le plateau est jouable (onJouer). */}
+      {onJouer && (
+        <div className="flex flex-col gap-1">
+          {refus && (
+            <div data-testid="refus-coup">
+              <FormNotice variant="error">{refus}</FormNotice>
+            </div>
+          )}
+          <ActionBar
+            legales={legales}
+            refusees={refusees}
+            selection={selection}
+            verrou={verrou}
+            onChoisir={(action) => traiter({ t: "choisir-action", action })}
+            onConfirmer={() => traiter({ t: "confirmer" })}
+            onAnnuler={() => traiter({ t: "annuler" })}
+          />
+        </div>
+      )}
+
       {/* Ma main : hors de l'arène, toujours accessible (critère « la main reste accessible »). */}
-      <Main moi={moi} onZoom={onZoom} />
+      <Main moi={moi} onZoom={onZoom} inter={inter} />
 
       <CardZoom carte={zoom?.carte ?? null} pokemon={zoom?.pokemon} onClose={() => setZoom(null)} />
     </section>
@@ -290,9 +423,10 @@ export function GameBoard({ vue, etatConnexion, agisseur }: GameBoardProps) {
 /**
  * La main du joueur, en éventail compact. Les cartes se chevauchent (`-ml`) pour tenir en largeur
  * sur un téléphone sans jamais provoquer de défilement horizontal de la page ; la carte survolée se
- * relève. Seules **mes** identités y figurent — la main adverse n'est qu'un compteur (`VsBar`).
+ * relève. Seules **mes** identités y figurent — la main adverse n'est qu'un compteur (`VsBar`). Une
+ * carte de main qui est cible d'un coup est illuminée et jouable (lot `j-plateau-interactions`).
  */
-function Main({ moi, onZoom }: { moi: VueJoueur; onZoom: ZoomFn }) {
+function Main({ moi, onZoom, inter }: { moi: VueJoueur; onZoom: ZoomFn; inter?: Interaction }) {
   const main = moi.main ?? [];
   return (
     <div
@@ -303,15 +437,24 @@ function Main({ moi, onZoom }: { moi: VueJoueur; onZoom: ZoomFn }) {
       {main.length === 0 ? (
         <span className="pb-4 text-sm italic text-muted-foreground">Main vide.</span>
       ) : (
-        main.map((c, i) => (
-          <div
-            key={c.instance_id}
-            className="h-[4.25rem] w-[3rem] shrink-0 origin-bottom transition-transform hover:z-10 hover:-translate-y-2 hover:scale-110"
-            style={{ marginLeft: i === 0 ? 0 : "-0.75rem" }}
-          >
-            <BoardCard carte={c} etiquette="Main" onPeek={(peeked) => onZoom(peeked)} />
-          </div>
-        ))
+        main.map((c, i) => {
+          const illumine = !!inter?.illumineRef(c.instance_id);
+          return (
+            <div
+              key={c.instance_id}
+              className="h-[4.25rem] w-[3rem] shrink-0 origin-bottom transition-transform hover:z-10 hover:-translate-y-2 hover:scale-110"
+              style={{ marginLeft: i === 0 ? 0 : "-0.75rem" }}
+            >
+              <BoardCard
+                carte={c}
+                etiquette="Main"
+                illumine={illumine}
+                onActiver={illumine && inter ? () => inter.activerRef(c.instance_id) : undefined}
+                onPeek={(peeked) => onZoom(peeked)}
+              />
+            </div>
+          );
+        })
       )}
     </div>
   );

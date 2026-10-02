@@ -464,3 +464,28 @@ un repère **neutre** nommé, jamais une couleur inventée (D9).
 Tests : `lib/game/indicateurs.test.ts` (données pures), `components/game/board-indicators.test.tsx`
 (rendu, daltonisme, halo, absence d'invention). Le calcul des PV (Outil, plancher à 0) est prouvé
 côté moteur et API — voir `docs/ARCHITECTURE.md` § « Indicateurs d'affichage de la vue ».
+
+## Jouer un coup — cibles, annulation, confirmation (lot `j-plateau-interactions`)
+
+C'est là que le joueur sent si le jeu est bien fait. L'écran ne connaît **aucune règle** : il
+affiche et soumet les coups que le serveur déclare (`actions_legales`), illumine leurs cibles, et
+grise les commandes refusées en montrant la **raison du moteur** (règle `R-x.y`), jamais un message
+générique.
+
+- **Barre d'actions** (`apps/web/src/components/game/action-bar.tsx`) : un bouton par coup jouable ;
+  les coups refusés de la palette sont grisés, leur raison au survol (`title`/`aria-label`).
+- **Deux modes, une seule machine à états** (`apps/web/src/lib/game/interactions.ts`, pure et
+  testée) : *tap-tap* (toucher le coup puis la cible) et *glisser-déposer* (glisser le coup sur une
+  cible illuminée). Les cibles valides s'illuminent (anneau émeraude) sur `BoardCard`, qui devient
+  cliquable, focusable au clavier et zone de dépôt.
+- **Annulation / confirmation** : un coup se prépare puis s'**annule** tant qu'il n'est pas validé ;
+  un coup **irréversible** (abandon, fin de tour, attaque — drapeau `irreversible` venu du serveur)
+  demande un « oui » explicite avant de partir.
+- **Pas de double-envoi** : un verrou d'écran (synchrone, via une ref) bloque un second clic pendant
+  qu'un coup est en vol, doublé de l'**idempotence serveur** (`numero_attendu`).
+- Le conteneur (`apps/web/src/app/jeu/parties/[id]/partie-view.tsx`) tient le `numero` d'action
+  courant et le fournit à chaque coup ; un refus (422) remonte le message du moteur, affiché tel quel.
+
+Au palier 4, le moteur ne déclare encore que « passer à la phase suivante / terminer le tour » et
+« abandonner » (sans cible) : la mécanique de ciblage est livrée et testée, prête pour les familles de
+coups à cibles (attacher, attaquer…) des lots de cartes, sans réécriture côté écran.

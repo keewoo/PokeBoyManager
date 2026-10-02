@@ -74,6 +74,43 @@ export type VueTour = {
   retraite_faite: boolean;
 };
 
+/**
+ * Une **cible valide** d'un coup, calculée par le serveur (`pbm_game.actions.Cible`), jamais par
+ * l'écran. `genre` dit COMMENT l'afficher (un Pokémon en jeu, une carte de main, un joueur) ;
+ * `reference` identifie la cible de façon stable (un `instance_id` ou un identifiant de joueur) ;
+ * `etiquette` est son libellé lisible. L'écran illumine ces références, il n'en invente aucune.
+ */
+export type VueCible = { genre: string; reference: string; etiquette: string };
+
+/**
+ * Un **coup jouable**, tel que le serveur le déclare (`pbm_game.actions.ActionLegale`). `type` et
+ * `params` sont l'action **exacte** à renvoyer si le joueur le choisit ; `etiquette` son libellé ;
+ * `cibles` les cibles à illuminer ; `irreversible` dit à l'écran de demander une confirmation (le
+ * coup ne s'annule pas une fois validé — abandon, fin de tour, attaque…). L'écran n'ajoute aucune
+ * règle : il affiche et soumet ce que porte cet objet.
+ */
+export type VueActionLegale = {
+  type: string;
+  params: Record<string, unknown>;
+  etiquette: string;
+  cibles: VueCible[];
+  irreversible: boolean;
+};
+
+/**
+ * Une **commande refusée** : un coup de la palette qui n'est pas jouable dans l'état courant, avec
+ * la règle `R-x.y` et le message que le **moteur** produit. L'écran la grise en montrant cette
+ * raison — jamais un message générique, jamais une raison inventée (« le joueur lit la raison »).
+ */
+export type VueActionRefusee = {
+  type: string;
+  params: Record<string, unknown>;
+  etiquette: string;
+  regle: string;
+  message: string;
+  irreversible: boolean;
+};
+
 /** La vue complète d'une partie pour un joueur donné (`pour`). */
 export type VuePartie = {
   schema_version: number;
@@ -85,11 +122,23 @@ export type VuePartie = {
   terminee: boolean;
   vainqueur: string | null;
   raison_fin: string | null;
+  /**
+   * Les coups jouables du destinataire et les commandes refusées motivées (lot
+   * `j-plateau-interactions`). Absents d'une vue produite avant ce lot : l'écran les traite
+   * alors comme vides (plateau en lecture seule), jamais comme une erreur.
+   */
+  actions_legales?: VueActionLegale[];
+  actions_refusees?: VueActionRefusee[];
   demande?: unknown;
 };
 
 /** Enveloppe renvoyée par `GET /games/{id}/state` : la vue + les événements (vides sur cette route). */
-export type EtatPartieReponse = { vue: VuePartie; evenements: unknown[] };
+/**
+ * Enveloppe renvoyée par `GET /games/{id}/state` et par un coup joué : la vue, les événements,
+ * et `numero` — le prochain numéro d'action attendu, clé d'idempotence quand le client soumet un
+ * coup (lot `j-plateau-interactions`). `numero` est absent d'une réponse produite avant ce lot.
+ */
+export type EtatPartieReponse = { vue: VuePartie; evenements: unknown[]; numero?: number };
 
 export const BANC_MAX = 5;
 export const RECOMPENSES_MAX = 6;
