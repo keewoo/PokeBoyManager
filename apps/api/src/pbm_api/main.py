@@ -12,6 +12,7 @@ from pbm_api.routers.dashboard import router as dashboard_router
 from pbm_api.routers.decks import router as decks_router
 from pbm_api.routers.detections import router as detections_router
 from pbm_api.routers.export import router as export_router
+from pbm_api.routers.games import router as games_router
 from pbm_api.routers.health import router as health_router
 from pbm_api.routers.images import router as images_router
 from pbm_api.routers.imports import router as imports_router
@@ -59,3 +60,4 @@ app.include_router(in_game_study_router)
 app.include_router(cards_router)
 app.include_router(wishlist_router)
 app.include_router(imports_router)
+app.include_router(games_router)

@@ -27,6 +27,16 @@ from pbm_api.models.decks import (
     DeckCard,
     DeckEvent,
 )
+from pbm_api.models.games import (
+    GAME_STATUS_EN_COURS,
+    GAME_STATUS_EXPIREE,
+    GAME_STATUS_TERMINEE,
+    GAME_STATUTS,
+    Game,
+    GameEvent,
+    GamePlayer,
+    GameSnapshot,
+)
 from pbm_api.models.identification import (
     CardVisualIndex,
     IdentificationCache,
@@ -66,6 +76,14 @@ __all__ = [
     "DECK_EVENT_CARD_INCOMPLETE",
     "DECK_EVENT_REASON_REMOVED",
     "DECK_EVENT_REASON_COUNTERFEIT",
+    "Game",
+    "GamePlayer",
+    "GameEvent",
+    "GameSnapshot",
+    "GAME_STATUS_EN_COURS",
+    "GAME_STATUS_TERMINEE",
+    "GAME_STATUS_EXPIREE",
+    "GAME_STATUTS",
     "CollectionItem",
     "IdentificationCache",
     "IdentificationCorrection",
