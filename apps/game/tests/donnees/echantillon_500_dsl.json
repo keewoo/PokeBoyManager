@@ -1,0 +1,6307 @@
+{
+ "version": 1,
+ "n": 500,
+ "couvertes": 474,
+ "taux_couverture": 0.948,
+ "seuil": 0.8,
+ "histogramme_primitives": {
+  "annuler": 19,
+  "attacher": 43,
+  "changer_actif": 13,
+  "chercher": 25,
+  "choisir": 44,
+  "defausser": 98,
+  "deplacer": 17,
+  "empecher": 34,
+  "infliger_degats": 242,
+  "melanger": 61,
+  "pile_ou_face": 103,
+  "piocher": 36,
+  "poser_compteurs": 25,
+  "poser_etat": 69,
+  "regarder": 10,
+  "retirer_etat": 3,
+  "reveler": 11,
+  "soigner": 36
+ },
+ "cartes": [
+  {
+   "id": "sm5-108",
+   "name": "Chaglam",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "A4a-005",
+   "name": "Héliatronc",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh5-116",
+   "name": "Chaffreux",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "piocher",
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh1-127",
+   "name": "Miaouss de Galar",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm10-66",
+   "name": "Nostenfer",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "poser_compteurs",
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ecard2-132",
+   "name": "Cube psy 01",
+   "supertype": "Dresseur",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "defausser",
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm8-215",
+   "name": "Caratroc GX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "poser_compteurs",
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "bw9-89",
+   "name": "Évoli",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv04-063",
+   "name": "Zéblitz",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "choisir",
+    "defausser",
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "bw6-127",
+   "name": "Crocorible",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "empecher",
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ex14-20",
+   "name": "Groret",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv02-274",
+   "name": "Baojian-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "infliger_degats",
+    "melanger"
+   ],
+   "controles": [
+    "repeter",
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh5-156",
+   "name": "Corvaillus V",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "empecher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm1-113",
+   "name": "Gouroutan",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "piocher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh4.5sv-SV073",
+   "name": "Krakos",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "empecher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv08-224",
+   "name": "Pondralugon-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh9-052",
+   "name": "Pachirisu",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "xy1-85",
+   "name": "Exagide",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [],
+   "controles": [],
+   "couvert": false,
+   "extrait": "Une seule fois pendant votre tour (avant votre attaque), vous pouvez échanger ce Pokémon avec un Exagide dans votre main. (Les cartes attachées à ce Pokémon, les marqueurs de dégâts, les États Spéciau"
+  },
+  {
+   "id": "sm3.5-78",
+   "name": "Mewtwo GX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv10.5w-082",
+   "name": "Récupération d'Énergie",
+   "supertype": "Dresseur",
+   "trainer_type": "Objet",
+   "primitives": [
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "xy3-37",
+   "name": "Lippoutou",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "empecher",
+    "infliger_degats",
+    "soigner"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sm8-108",
+   "name": "Mandrillon",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "defausser",
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "xy2-108",
+   "name": "M-Dracaufeu EX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ex12-21",
+   "name": "Magmar",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "choisir",
+    "infliger_degats",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "ex4-59",
+   "name": "Galekid de Team Magma",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "choisir",
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm3-47",
+   "name": "Togedemaru",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv02-068",
+   "name": "Lixy",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "changer_actif",
+    "choisir"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "A2b-085",
+   "name": "Terraiste de Paldea-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv05-006",
+   "name": "Balignon",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh2-15",
+   "name": "Desséliande",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "empecher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "B2a-126",
+   "name": "Entei",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "piocher"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "pop1-7",
+   "name": "Maskadra",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "neo3-54",
+   "name": "Lippouti",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "choisir",
+    "melanger",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "me03-086",
+   "name": "Énergie Grass Croissante",
+   "supertype": "Énergie",
+   "trainer_type": null,
+   "primitives": [],
+   "controles": [],
+   "couvert": false,
+   "extrait": "Tant que cette carte est attachée à un Pokémon, elle fournit une Énergie {G}.\nLe Pokémon {G} auquel cette carte est attachée a +20 PV."
+  },
+  {
+   "id": "sv05-147",
+   "name": "Guide d'Exploration",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "defausser",
+    "regarder"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "hgss1-107",
+   "name": "Donphan",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "dp1-118",
+   "name": "Potion",
+   "supertype": "Dresseur",
+   "trainer_type": "Objet",
+   "primitives": [
+    "soigner"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh7-136",
+   "name": "Furaiglon",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "changer_actif"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm11-224",
+   "name": "Ptéra GX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "xy10-118",
+   "name": "M-Alakazam EX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv04.5-154",
+   "name": "Kirlia",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv07-107",
+   "name": "Pondralugon",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "empecher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "bwp-BW94",
+   "name": "Évoli",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "P-A-048",
+   "name": "Manaphy",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "choisir"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ecard2-100",
+   "name": "Phanpy",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "poser_compteurs"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "col1-83",
+   "name": "Nouvelle théorie du Prof. Chen",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "melanger",
+    "piocher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "exu-D",
+   "name": "Zarbi",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "choisir",
+    "melanger",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh4.5-18",
+   "name": "Pyrobut V",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "empecher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "bwp-BW100",
+   "name": "N",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "piocher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv04-021",
+   "name": "Flamoutan",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh9-012",
+   "name": "Ceribou",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ex8-84",
+   "name": "Baie Ballon",
+   "supertype": "Dresseur",
+   "trainer_type": "Outil",
+   "primitives": [
+    "attacher",
+    "defausser"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "neo1-3",
+   "name": "Joliflor",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "me01-146",
+   "name": "Marshadow",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh7-40",
+   "name": "Givrali V",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "chercher",
+    "defausser",
+    "melanger"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm3-96",
+   "name": "Rubombelle",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "melanger"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "g1-33",
+   "name": "Fantominus",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "pile_ou_face",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "g1-4",
+   "name": "Chrysacier",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "ex3-19",
+   "name": "Drattak",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "neo1-14",
+   "name": "Roigada",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face",
+    "poser_etat"
+   ],
+   "controles": [
+    "repeter",
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh7-19",
+   "name": "Entei",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv06-115",
+   "name": "Venipatte",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv01-136",
+   "name": "Grondogue",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv04.5-176",
+   "name": "Selutin",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh4-67",
+   "name": "Polichombr",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "poser_compteurs"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm5-137",
+   "name": "Énergie Unitaire GrassFireWater",
+   "supertype": "Énergie",
+   "trainer_type": null,
+   "primitives": [],
+   "controles": [],
+   "couvert": false,
+   "extrait": "Cette carte fournit de l’Énergie Colorless. \n\nLorsque cette carte est attachée à un Pokémon, elle fournit de l’Énergie Grass, Fire ou Water mais ne fournit qu’une Énergie à la fois."
+  },
+  {
+   "id": "sv08.5-160",
+   "name": "Ogerpon Masque de la Pierre-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "dpp-DP35",
+   "name": "Porygon-Z",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "choisir",
+    "deplacer",
+    "infliger_degats",
+    "melanger"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv04-261",
+   "name": "Garde-de-Fer-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "deplacer",
+    "empecher",
+    "poser_compteurs"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "smp-SM99",
+   "name": "Mimiqui",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "piocher"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "ex5-47",
+   "name": "Phogleur",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh9-072",
+   "name": "Kapoera",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "piocher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "smp-SM77",
+   "name": "Mewtwo",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "A3-222",
+   "name": "Ectoplasma",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "empecher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv04.5-055",
+   "name": "Fantominus",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "piocher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "A2a-028",
+   "name": "Élecsprint",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh4-20",
+   "name": "Astronelle V",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "dp3-106",
+   "name": "Sancoki Mer Orient",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "choisir",
+    "melanger"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv04-045",
+   "name": "Sorbouboul",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "empecher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "me05-091",
+   "name": "Sinistrail",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "me03-025",
+   "name": "Volcanion",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sm6-48",
+   "name": "Dimoclès",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "poser_compteurs"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv03-176",
+   "name": "Manglouton",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "xy8-107",
+   "name": "Xerneas",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "soigner"
+   ],
+   "controles": [
+    "repeter",
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv01-109",
+   "name": "Courrousinge",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "me02-025",
+   "name": "Mammochon",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "30th-083",
+   "name": "Lucario",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "dp6-116",
+   "name": "Medhyena",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "empecher",
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "me05-033",
+   "name": "Polichombr",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "bw4-75",
+   "name": "Archéomire",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "A1-252",
+   "name": "Noadkoko-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "xy3-99",
+   "name": "Peignoir Scintillant",
+   "supertype": "Dresseur",
+   "trainer_type": "Outil",
+   "primitives": [
+    "retirer_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh4-12",
+   "name": "Tengalice",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "piocher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm3-79",
+   "name": "Quartermac",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "annuler",
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh7-76",
+   "name": "Pitrouille",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "xy6-98",
+   "name": "Fulguris EX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "hgss1-96",
+   "name": "Poké Gear3.0",
+   "supertype": "Dresseur",
+   "trainer_type": "Objet",
+   "primitives": [
+    "choisir",
+    "melanger",
+    "regarder",
+    "reveler"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv04-040",
+   "name": "Palkia",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "me04-015",
+   "name": "Méga-Némélios-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "poser_compteurs"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "mep-033",
+   "name": "Méga-Lucario-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm3-68",
+   "name": "Séléroc",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh3-65",
+   "name": "Galvagon",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "empecher",
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv03.5-094",
+   "name": "Ectoplasma",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "poser_compteurs"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "hgss4-80",
+   "name": "Tentacool",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "empecher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "xy1-70",
+   "name": "Escroco",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv06.5-068",
+   "name": "Skelénox",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "B1a-058",
+   "name": "Porygon-Z",
+   "supertype": "Pokemon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh2-145",
+   "name": "Déflaisan",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm11-121",
+   "name": "Aéroptéryx",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "changer_actif",
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "A3b-080",
+   "name": "Oratoria-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "soigner"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "xy3-85",
+   "name": "Miradar",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "choisir",
+    "defausser",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sm8-101",
+   "name": "Funécire",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "poser_compteurs"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "bw5-46",
+   "name": "Lampéroie",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh5-158",
+   "name": "Aldo",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "melanger",
+    "piocher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "me03-043",
+   "name": "Golgopathe",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "xy3-96",
+   "name": "Entretien",
+   "supertype": "Dresseur",
+   "trainer_type": "Objet",
+   "primitives": [
+    "melanger",
+    "piocher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "xy3-21",
+   "name": "Polarhume",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh6-230",
+   "name": "Lanterne Accueillante",
+   "supertype": "Dresseur",
+   "trainer_type": "Objet",
+   "primitives": [
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm12-97",
+   "name": "Mimiqui",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "pile_ou_face",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv04-087",
+   "name": "Mordudor",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "chercher",
+    "melanger"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv10-133",
+   "name": "Baggaïd de Rosemary",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm7.5-6",
+   "name": "Braségali",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "defausser",
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv10.5b-134",
+   "name": "Brutapode",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh10-122",
+   "name": "Teddiursa",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv04.5-096",
+   "name": "Granivol",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "ex14-14",
+   "name": "Tortank",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv10-078",
+   "name": "Zeraora",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv10.5b-011",
+   "name": "Gaulet",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "bw8-56",
+   "name": "Smogo",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "me05-024",
+   "name": "Élecsprint",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "A4a-022",
+   "name": "Milobellus",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv06-216",
+   "name": "Ursaking Lune Vermeille-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "empecher"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sm6-8",
+   "name": "Prismillon",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "me02.5-129",
+   "name": "Grahyèna",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "changer_actif",
+    "choisir"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ex11-38",
+   "name": "Métamorph",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "choisir",
+    "melanger"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm7.5-73",
+   "name": "Drattak GX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "dp6-74",
+   "name": "Tauros",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "repeter",
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv03-039",
+   "name": "Aflamanoir",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "ex11-89",
+   "name": "Double boule",
+   "supertype": "Dresseur",
+   "trainer_type": "Objet",
+   "primitives": [
+    "chercher",
+    "melanger",
+    "pile_ou_face",
+    "reveler"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh10tg-TG05",
+   "name": "Gardevoir",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "B1a-067",
+   "name": "Quick-Grow Extract",
+   "supertype": "Trainer",
+   "trainer_type": "Item",
+   "primitives": [
+    "choisir"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "me01-136",
+   "name": "Caratroc",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "soigner"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "ex16-66",
+   "name": "Tylton",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "pop4-14",
+   "name": "Carapuce",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv07-104",
+   "name": "Melmetal",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "annuler",
+    "defausser",
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv07-025",
+   "name": "Boumata",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "empecher",
+    "infliger_degats",
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "A4-018",
+   "name": "Yanma",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "changer_actif"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv04-054",
+   "name": "Délestin",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "deplacer",
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter",
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "bw8-109",
+   "name": "Skitty",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh7-155",
+   "name": "Badge Ruban",
+   "supertype": "Dresseur",
+   "trainer_type": "Outil",
+   "primitives": [],
+   "controles": [
+    "si"
+   ],
+   "couvert": false,
+   "extrait": "Si le Pokémon-V auquel cette carte est attachée a \" Nymphali \" dans son nom et est mis K.O. par les dégâts d'une attaque d'un Pokémon de votre adversaire, ce dernier récupère une carte Récompense de m"
+  },
+  {
+   "id": "B1-225",
+   "name": "Copieuse",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "melanger",
+    "piocher"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "smp-SM176",
+   "name": "Évoli GX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv09-015",
+   "name": "Viridium",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ex3-13",
+   "name": "Colhomard",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "bw7-146",
+   "name": "Kyurem Blanc EX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "defausser",
+    "pile_ou_face",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "dp7-87",
+   "name": "La requête de Vivianne",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "choisir",
+    "defausser",
+    "reveler"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "dp4-98",
+   "name": "Le dessin de Felicity",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "defausser",
+    "piocher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm8-184",
+   "name": "Mélange d’Herbes",
+   "supertype": "Dresseur",
+   "trainer_type": "Objet",
+   "primitives": [
+    "retirer_etat",
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv08.5-040",
+   "name": "Nymphali",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "bw4-64",
+   "name": "Lucario",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "poser_compteurs"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "tk-ex-m-8",
+   "name": "Le réseau de Cileo",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "A3b-073",
+   "name": "Givrali",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "bw2-37",
+   "name": "Rhinolove",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm1-28",
+   "name": "Psykokwak",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "A1a-011",
+   "name": "Galopa",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swshp-SWSH067",
+   "name": "Donphan",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "svp-023",
+   "name": "Smoliv",
+   "supertype": "Pokemon",
+   "trainer_type": null,
+   "primitives": [
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv02-270",
+   "name": "Saguaro",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "choisir",
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "dp4-39",
+   "name": "Granbull",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "xy9-3",
+   "name": "Méganium",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sma-SV59",
+   "name": "Mewtwo-GX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh6-192",
+   "name": "Apia",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "piocher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "A2-203",
+   "name": "Coudlangue-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "dp6-77",
+   "name": "Zarbi R",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "deplacer",
+    "piocher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ex2-45",
+   "name": "Lombre",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "xy9-7",
+   "name": "Chlorobule",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "xy9-82",
+   "name": "Mélodelfe",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh3-68",
+   "name": "Grodoudou",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face",
+    "poser_etat"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv01-009",
+   "name": "Pérégrain",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [],
+   "controles": [],
+   "couvert": false,
+   "extrait": "Ce Pokémon peut évoluer pendant votre premier tour ou pendant le tour où vous le jouez."
+  },
+  {
+   "id": "swsh12-147",
+   "name": "Aéroptéryx",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "melanger"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "xy0-24",
+   "name": "Sucroquin",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv02-226",
+   "name": "Famignol",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "poser_compteurs"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh6-167",
+   "name": "Galopa de Galar V",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "poser_compteurs"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sm12-188",
+   "name": "Bardane",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh6-203",
+   "name": "Sylveroy Cavalier du Froid VMAX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh10.5-033",
+   "name": "Xatu",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh6-147",
+   "name": "Cimetière Ancien",
+   "supertype": "Dresseur",
+   "trainer_type": "Stade",
+   "primitives": [
+    "poser_compteurs"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "dp4-21",
+   "name": "Lokhlass",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "choisir",
+    "melanger",
+    "reveler"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ecard2-H29",
+   "name": "Noctali",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "choisir",
+    "empecher",
+    "melanger"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "A1a-008",
+   "name": "Lampignon",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm8-31",
+   "name": "Apitrini",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "chercher",
+    "melanger"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh7-30",
+   "name": "Aquali VMAX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "defausser",
+    "infliger_degats"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "ecard1-27",
+   "name": "Airmure",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "annuler",
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv05-036",
+   "name": "Grillepattes",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "pl3-85",
+   "name": "Etourvol",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "bw1-70",
+   "name": "Zorua",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "annuler",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sm4-76",
+   "name": "Écaïd",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "changer_actif"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "pl2-103",
+   "name": "Alakazam 4 Niv. X",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "deplacer"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh2-32",
+   "name": "Mélancolux",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv03-195",
+   "name": "Sbire de la Team Star",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "deplacer"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv01-220",
+   "name": "Scalpereur",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "30th-012",
+   "name": "Ho-Oh",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "dp1-116",
+   "name": "Point d'échange",
+   "supertype": "Dresseur",
+   "trainer_type": "Objet",
+   "primitives": [
+    "changer_actif"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "xy6-62",
+   "name": "Trioxhydre EX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [],
+   "controles": [],
+   "couvert": false,
+   "extrait": "S'il y a une carte Stade en jeu, le Coût de Retraite de chacun de vos Pokémon Dragon en jeu est diminué de ColorlessColorless. ||| Les dégâts de cette attaque ne sont affectés par aucun effet en actio"
+  },
+  {
+   "id": "ex14-55",
+   "name": "Nénupiot",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "empecher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh9-151",
+   "name": "Énergie Double Turbo",
+   "supertype": "Énergie",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv06-170",
+   "name": "Pomdramour",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv06-088",
+   "name": "Florges",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "changer_actif",
+    "pile_ou_face",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swshp-SWSH243",
+   "name": "Mackogneur",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "empecher",
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ex12-18",
+   "name": "Serpang",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "infliger_degats",
+    "melanger"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv08.5-173",
+   "name": "Art Secret de Jeannine",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "attacher",
+    "chercher",
+    "choisir",
+    "melanger",
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm11-145",
+   "name": "Dedenne",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "piocher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "A1-219",
+   "name": "Erika",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh8-210",
+   "name": "Skitty",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "annuler",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "B1-151",
+   "name": "Méga-Absol-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "choisir",
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv07-153",
+   "name": "Méditikka",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "B1a-055",
+   "name": "Ditto",
+   "supertype": "Pokemon",
+   "trainer_type": null,
+   "primitives": [
+    "choisir",
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ex8-5",
+   "name": "Kaorine",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "melanger",
+    "piocher",
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "pl3-70",
+   "name": "Milobellus",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh2-48",
+   "name": "Darumacho de Galar",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv02-137",
+   "name": "Séviper",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sm5-134",
+   "name": "Fossile Inconnu",
+   "supertype": "Dresseur",
+   "trainer_type": "Objet",
+   "primitives": [
+    "defausser",
+    "empecher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "bw7-10",
+   "name": "Shaymin",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "chercher",
+    "infliger_degats",
+    "melanger",
+    "pile_ou_face",
+    "soigner"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "svp-100",
+   "name": "Tag-Tag-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "pile_ou_face",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "ex4-31",
+   "name": "Phogleur de Team Aqua",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh1-196",
+   "name": "Zamazenta V",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ex14-64",
+   "name": "Carapuce",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "smp-SM197",
+   "name": "Amphinobi GX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "xy5-94",
+   "name": "M-Galeking EX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "A4-080",
+   "name": "Togekiss",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh6-158",
+   "name": "Énergie Chance",
+   "supertype": "Énergie",
+   "trainer_type": null,
+   "primitives": [
+    "piocher"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "xyp-XY164",
+   "name": "Volcanion",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "changer_actif",
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv08.5-011",
+   "name": "Pomdorochi-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "infliger_degats",
+    "soigner"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "B2-031",
+   "name": "Galarian Mr. Rime",
+   "supertype": "Pokemon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm11-161",
+   "name": "Excelangue",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "piocher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "A3-155",
+   "name": "Lilie",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh8-270",
+   "name": "Mentali VMAX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "me01-112",
+   "name": "Chelours",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh1-73",
+   "name": "Voltoutou",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "changer_actif"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ecard2-4",
+   "name": "Azumarill",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh7-10",
+   "name": "Fragilady",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "pile_ou_face",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "ex10-14",
+   "name": "Roigada",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "choisir",
+    "defausser",
+    "infliger_degats",
+    "melanger",
+    "reveler"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "B1a-018",
+   "name": "Wartortle",
+   "supertype": "Pokemon",
+   "trainer_type": null,
+   "primitives": [
+    "annuler"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "me05-103",
+   "name": "Méga-Minotaupe-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm6-132",
+   "name": "Palkia GX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "deplacer",
+    "infliger_degats",
+    "melanger"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv06-025",
+   "name": "Ogerpon Masque Turquoise-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "infliger_degats",
+    "piocher"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "smp-SM220",
+   "name": "Phione",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "B1-185",
+   "name": "Capumain",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "annuler",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "dp3-65",
+   "name": "Floravol",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv04.5-138",
+   "name": "Pachirisu",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "neo2-73",
+   "name": "Vaporisateur hyper rétrograde",
+   "supertype": "Dresseur",
+   "trainer_type": null,
+   "primitives": [
+    "choisir"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh12.5gg-GG63",
+   "name": "Nacchara",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "chercher",
+    "melanger",
+    "reveler"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "A4a-078",
+   "name": "Cotovol-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [],
+   "controles": [],
+   "couvert": false,
+   "extrait": "Vous pouvez échanger ce Pokémon contre un de vos Pokémon de Banc."
+  },
+  {
+   "id": "tk-hs-r-4",
+   "name": "Miaouss",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "piocher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "pl1-40",
+   "name": "Coatox G",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "ex15-43",
+   "name": "Draby δ",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv08.5-032",
+   "name": "Épine-de-Fer-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "deplacer"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "me03-014",
+   "name": "Flambusard",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "xy6-92",
+   "name": "Courrier du Dresseur",
+   "supertype": "Dresseur",
+   "trainer_type": "Objet",
+   "primitives": [
+    "melanger",
+    "regarder"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh8-18",
+   "name": "Larvibule",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "annuler",
+    "attacher",
+    "defausser",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "g1-16",
+   "name": "Magmar",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "tk-xy-sy-23",
+   "name": "Attrape-Pokémon",
+   "supertype": "Dresseur",
+   "trainer_type": "Objet",
+   "primitives": [
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "B2a-127",
+   "name": "Suicune",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "piocher"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh6-171",
+   "name": "Sylveroy Cavalier d'Effroi V",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "choisir",
+    "empecher",
+    "poser_compteurs"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "me02-057",
+   "name": "Cornèbre",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh9-143",
+   "name": "Saltimbanque",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "defausser",
+    "melanger",
+    "regarder"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sma-SV88",
+   "name": "Colline Clapotis",
+   "supertype": "Dresseur",
+   "trainer_type": "Stade",
+   "primitives": [
+    "melanger"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm1-140",
+   "name": "Mentali GX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "poser_compteurs",
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "2018sm-fr-10",
+   "name": "Psykokwak",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm6-128",
+   "name": "Clem",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv07-032",
+   "name": "Lokhlass-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "infliger_degats",
+    "melanger",
+    "regarder"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv04-240",
+   "name": "Plan du Professeur Turum",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "col1-30",
+   "name": "Roucarnage",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "bw4-69",
+   "name": "Farfuret",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "empecher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swshp-SWSH085",
+   "name": "Fulgudog V",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "chercher",
+    "infliger_degats",
+    "melanger"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "ex13-100",
+   "name": "Mew ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "melanger"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh3-57",
+   "name": "Pharamp",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "svp-157",
+   "name": "Électhor",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "poser_compteurs"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "dp7-17",
+   "name": "Noctunoir",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "me02.5-171",
+   "name": "Motisma Hélice",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "annuler",
+    "melanger"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ex3-54",
+   "name": "Écrapince",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "me04-100",
+   "name": "Méga-Amphinobi-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "defausser",
+    "infliger_degats",
+    "poser_compteurs"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "bw5-23",
+   "name": "Ramoloss",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "annuler",
+    "pile_ou_face"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "A1-220",
+   "name": "Ondine",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "attacher",
+    "choisir",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv07-036",
+   "name": "Luminéon",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [],
+   "controles": [],
+   "couvert": false,
+   "extrait": "Vous pouvez piocher des cartes jusqu'à en avoir 6 en main."
+  },
+  {
+   "id": "svp-181",
+   "name": "Darumacho de N",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "xy7-80",
+   "name": "Lien Spirituel Jungko",
+   "supertype": "Dresseur",
+   "trainer_type": "Outil",
+   "primitives": [],
+   "controles": [
+    "si"
+   ],
+   "couvert": false,
+   "extrait": "Votre tour ne se termine pas si le Pokémon auquel cette carte est attachée devient M-Jungko-EX."
+  },
+  {
+   "id": "xy10-6",
+   "name": "Lianaja",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "pile_ou_face",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "xy11-5",
+   "name": "Cotovol",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "dp7-31",
+   "name": "Apireine",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face",
+    "poser_etat"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "me02.5-192",
+   "name": "Détermination de Lilie",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "melanger",
+    "piocher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm10-210",
+   "name": "Jeannine",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "melanger",
+    "regarder"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "A4-211",
+   "name": "Lugia-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "hgss2-4",
+   "name": "Métalosse",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "choisir",
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ex3-60",
+   "name": "Magicarpe",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "chercher",
+    "melanger"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv06-131",
+   "name": "Nigirigon",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "melanger"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sm7.5-68",
+   "name": "Altaria GX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "poser_etat",
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv02-244",
+   "name": "Terraiste de Paldea-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "empecher",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv08.5-121",
+   "name": "Plan du Professeur Turum",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh11-173",
+   "name": "Goupelin V",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv09-099",
+   "name": "Pandarbare",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "choisir",
+    "empecher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "A1-175",
+   "name": "Grotadmorv",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sm11-220",
+   "name": "Raichu et Raichu d’Alola GX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "changer_actif",
+    "infliger_degats",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "xy4-115",
+   "name": "Sepiatroce EX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "infliger_degats",
+    "pile_ou_face",
+    "poser_etat"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "neo2-16",
+   "name": "Qulbutoké",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sm8-191",
+   "name": "Mont Tonnerre ◇",
+   "supertype": "Dresseur",
+   "trainer_type": "Stade",
+   "primitives": [],
+   "controles": [],
+   "couvert": false,
+   "extrait": "Les attaques des Pokémon Lightning (les vôtres et ceux de votre adversaire) coûtent Lightning de moins.\n\nChaque fois qu’un joueur joue une carte Objet ou une carte Supporter de sa main, évitez tous le"
+  },
+  {
+   "id": "bw5-60",
+   "name": "Noctali",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh9-124",
+   "name": "Chinchidou",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "chercher",
+    "melanger"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv10-089",
+   "name": "Astronelle de la Team Rocket",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "deplacer",
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "xy6-60",
+   "name": "Rayquaza EX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh12.5-129",
+   "name": "Échange d'Énergie",
+   "supertype": "Dresseur",
+   "trainer_type": "Objet",
+   "primitives": [
+    "deplacer"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "B2a-057",
+   "name": "Courrousinge",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swshp-SWSH223",
+   "name": "Mewtwo V",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "deplacer"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "dp5-62",
+   "name": "Evoli",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "chercher",
+    "melanger",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "A1-280",
+   "name": "Dracaufeu-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "P-A-058",
+   "name": "Pachirisu",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "dp5-58",
+   "name": "Korillon",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sma-SV69",
+   "name": "Noctali-GX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "bw8-103",
+   "name": "Togetic",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "piocher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm9-73",
+   "name": "Kicklee",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "2019sm-fr-39",
+   "name": "Kangourex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face",
+    "piocher"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh6-198",
+   "name": "Narcisse",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "choisir",
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "B2-119",
+   "name": "Doublade",
+   "supertype": "Pokemon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "B2-091",
+   "name": "Passimian",
+   "supertype": "Pokemon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "dp1-16",
+   "name": "Étouraptor",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "annuler",
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sm2-77",
+   "name": "Météno",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [],
+   "controles": [],
+   "couvert": false,
+   "extrait": "Les dégâts de cette attaque ne sont pas affectés par la Faiblesse, la Résistance ou tout autre effet en action sur le Pokémon Actif de votre adversaire. ||| Ce Pokémon est K.O."
+  },
+  {
+   "id": "xyp-XY127",
+   "name": "Sulfura",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv09-069",
+   "name": "Mimiqui-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "choisir",
+    "poser_compteurs",
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "xy10-104",
+   "name": "Attrape Méga",
+   "supertype": "Dresseur",
+   "trainer_type": "Objet",
+   "primitives": [],
+   "controles": [],
+   "couvert": false,
+   "extrait": "Échangez l'un des Pokémon Méga-Évolution du Banc de votre adversaire avec son Pokémon Actif."
+  },
+  {
+   "id": "dpp-DP28",
+   "name": "Mewtwo",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "xy9-67",
+   "name": "Simularbre",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [],
+   "controles": [],
+   "couvert": false,
+   "extrait": "Si l'un des Pokémon de votre adversaire a utilisé une attaque pendant son dernier tour, utilisez-la en tant que cette attaque."
+  },
+  {
+   "id": "sm9-174",
+   "name": "Hospitalité d’Erika",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "piocher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "pl2-89",
+   "name": "La recherche d'Amelle",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ex4-5",
+   "name": "Sharpedo de Team Aqua",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "empecher",
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh10.5-031",
+   "name": "Mewtwo VSTAR",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh5-157",
+   "name": "Mastouffe V",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "ex16-20",
+   "name": "Amonistar",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter",
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "xy11-65",
+   "name": "Yveltal",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "defausser",
+    "empecher",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "ex9-4",
+   "name": "Gardevoir",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [],
+   "controles": [],
+   "couvert": false,
+   "extrait": "Une seule fois lors de votre tour (avant votre attaque), vous pouvez retirer 2 marqueurs de dégât à 1 de vos Pokémon. Vous ne pouvez pas utiliser plus d'1 Poké-Power Danse Guérisseuse par tour. Ce pou"
+  },
+  {
+   "id": "cel25-12",
+   "name": "Xerneas",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "chercher",
+    "melanger"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh8-128",
+   "name": "Fantyrm",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "empecher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "xy3-105",
+   "name": "Scarhino EX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "hgss3-76",
+   "name": "Ruines d’Alph",
+   "supertype": "Dresseur",
+   "trainer_type": "Stade",
+   "primitives": [
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ex13-73",
+   "name": "Mystherbe δ",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [],
+   "controles": [],
+   "couvert": false,
+   "extrait": "Retirez à Mystherbe 2 marqueurs de dégât."
+  },
+  {
+   "id": "bw10-38",
+   "name": "Créfadet",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "changer_actif",
+    "deplacer"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "svp-019",
+   "name": "Glaivodo",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sm3-123",
+   "name": "Chrys",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "defausser",
+    "piocher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "hgss1-22",
+   "name": "Granbull",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "poser_compteurs"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "dp7-9",
+   "name": "Regigigas",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "me02.5-126",
+   "name": "Cornèbre de la Team Rocket",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "chercher",
+    "choisir",
+    "melanger",
+    "reveler"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "xy5-75",
+   "name": "Rhinoféros",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "bw2-50",
+   "name": "Nodulithe",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm12-184",
+   "name": "Silvallié GX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "piocher",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv03-149",
+   "name": "Scalproie",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ex9-49",
+   "name": "Barpau",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "annuler",
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "bw3-91",
+   "name": "Évoluroc",
+   "supertype": "Dresseur",
+   "trainer_type": "Outil",
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "me02.5-270",
+   "name": "Méga-Baggaïd-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "poser_compteurs"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "pl1-84",
+   "name": "Tarinor",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [],
+   "controles": [],
+   "couvert": false,
+   "extrait": "Échangez le Pokémon Défenseur avec 1 des Pokémon de Banc de votre adversaire."
+  },
+  {
+   "id": "sv10-051",
+   "name": "Artikodin de la Team Rocket",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv05-047",
+   "name": "Taupikeau",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "chercher",
+    "infliger_degats",
+    "melanger",
+    "reveler"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "bw6-12",
+   "name": "Rosélia",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face",
+    "retirer_etat",
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh10.5-041",
+   "name": "Rattata d'Alola",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "annuler",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "neo1-20",
+   "name": "Mélo",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "melanger",
+    "piocher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "pl3-79",
+   "name": "Relicanth",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "choisir",
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv07-018",
+   "name": "Terracruel",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "xy12-107",
+   "name": "Vaillance de Pierre",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "choisir",
+    "defausser",
+    "melanger"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "mep-016",
+   "name": "Libégon",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv09-112",
+   "name": "Draby",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "A2-054",
+   "name": "Voltorbe",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "dp7-61",
+   "name": "Écayon",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "choisir",
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sm3-28",
+   "name": "Feunard d’Alola",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "neo3-60",
+   "name": "Baie ballon",
+   "supertype": "Dresseur",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "base5-51",
+   "name": "Rattatac obscur",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "annuler",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sm2-73",
+   "name": "Rocabot",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "annuler",
+    "empecher",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "base1-30",
+   "name": "Herbizarre",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "dp2-101",
+   "name": "Blizzi",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face",
+    "regarder"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh6-55",
+   "name": "Fantominus",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "pile_ou_face",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "xy10-91",
+   "name": "Lien Spirituel Altaria",
+   "supertype": "Dresseur",
+   "trainer_type": "Outil",
+   "primitives": [],
+   "controles": [
+    "si"
+   ],
+   "couvert": false,
+   "extrait": "Votre tour ne se termine pas si le Pokémon auquel cette carte est attachée devient M-Altaria-EX."
+  },
+  {
+   "id": "sm11-58",
+   "name": "Magnéti",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "A4-102",
+   "name": "Kapoera",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "me01-143",
+   "name": "Galvaran",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "ex4-40",
+   "name": "Osselait",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sm5-116",
+   "name": "Silvallié GX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "defausser",
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sm6-104",
+   "name": "Lovis le Teigneux",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "chercher",
+    "defausser",
+    "melanger"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "dp1-45",
+   "name": "Ceriflor",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv01-045",
+   "name": "Léviator-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv06.5-049",
+   "name": "Persian",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv01-060",
+   "name": "Balbalèze",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "poser_compteurs"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv04-097",
+   "name": "Shaofouine",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "B2-036",
+   "name": "Mega Swampert ex",
+   "supertype": "Pokemon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh1-186",
+   "name": "Énergie Boréale",
+   "supertype": "Énergie",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh5-132",
+   "name": "Mustar Style Mille Poings",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "defausser",
+    "piocher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "smp-SM48",
+   "name": "Zygarde",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "me03-076",
+   "name": "Juge",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [],
+   "controles": [],
+   "couvert": false,
+   "extrait": "Chaque joueur mélange sa main avec son deck et pioche 4 cartes."
+  },
+  {
+   "id": "sm8-33",
+   "name": "Shaymin",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh9tg-TG17",
+   "name": "Mimiqui VMAX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "infliger_degats",
+    "poser_compteurs"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm8-78",
+   "name": "Pharamp",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv05-135",
+   "name": "Déflaisan",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "empecher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "neo1-96",
+   "name": "Professeur Orme",
+   "supertype": "Dresseur",
+   "trainer_type": null,
+   "primitives": [
+    "melanger",
+    "piocher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "me05-050",
+   "name": "Vaututrice",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv02-114",
+   "name": "Cradopaud",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ex8-87",
+   "name": "Mademoiselle Sortie",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "choisir",
+    "melanger",
+    "reveler"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm5-87",
+   "name": "Archéodong",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "hgss3-5",
+   "name": "Demolosse",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "infliger_degats"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "dp3-107",
+   "name": "Sancoki Mer Occident",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv02-077",
+   "name": "Têtampoule",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "pile_ou_face",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sm2-163",
+   "name": "Nettoyage de Terrain",
+   "supertype": "Dresseur",
+   "trainer_type": "Objet",
+   "primitives": [
+    "choisir",
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ex9-86",
+   "name": "Énergie Obscurité",
+   "supertype": "Énergie",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh6-60",
+   "name": "Kirlia",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "chercher",
+    "melanger"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh11-021",
+   "name": "Limagma",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "B1a-020",
+   "name": "Mega Blastoise ex",
+   "supertype": "Pokemon",
+   "trainer_type": null,
+   "primitives": [],
+   "controles": [],
+   "couvert": false,
+   "extrait": "If this Pokémon has at least 3 extra {W} Energy attached, this attack also does 50 damage to 2 of your opponent's Benched Pokémon."
+  },
+  {
+   "id": "sv05-014",
+   "name": "Doudouvet",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "xy4-79",
+   "name": "Rapasdepic",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "annuler",
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh12.5-133",
+   "name": "Nabil",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "piocher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh2-63",
+   "name": "Galvaran",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm9-28",
+   "name": "Stari",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "pile_ou_face",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "pl1-54",
+   "name": "Grahyèna",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ex16-33",
+   "name": "Machopeur",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "neo2-2",
+   "name": "Foretress",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "choisir",
+    "infliger_degats",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sm115-61",
+   "name": "Arène d’Azuria d’Ondine",
+   "supertype": "Dresseur",
+   "trainer_type": "Stade",
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh10-049",
+   "name": "M. Glaquette de Galar V",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "chercher",
+    "infliger_degats",
+    "melanger",
+    "reveler"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "A1-037",
+   "name": "Goupix",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "empecher",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "pl2-21",
+   "name": "Tritosor Mer Orient Niv. 40",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "changer_actif",
+    "chercher",
+    "deplacer",
+    "melanger"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "svp-068",
+   "name": "Garde-de-Fer-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "deplacer",
+    "empecher",
+    "poser_compteurs"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "xy8-160",
+   "name": "M-Mewtwo EX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "me02.5-226",
+   "name": "Psykokwak",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [],
+   "controles": [],
+   "couvert": false,
+   "extrait": "Les Pokémon en jeu (les vôtres et ceux de votre adversaire) perdent tout talent qui demande au Pokémon l'utilisant de se mettre K.O."
+  },
+  {
+   "id": "smp-SM05",
+   "name": "Ronflex GX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "annuler",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv05-025",
+   "name": "Vert-de-Fer-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "deplacer",
+    "empecher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv01-134",
+   "name": "Scalpereur",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "hgss4-102",
+   "name": "Palkia & Dialga LÉGENDE",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "choisir",
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ex9-89",
+   "name": "Énergies multiples",
+   "supertype": "Énergie",
+   "trainer_type": null,
+   "primitives": [
+    "attacher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "dp2-66",
+   "name": "Zarbi M",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "ecard2-55",
+   "name": "Nidorino",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv09-090",
+   "name": "Craparoi",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "bw7-57",
+   "name": "Zéblitz",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "chercher",
+    "infliger_degats",
+    "melanger",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "pl3-2",
+   "name": "Brasegali FB",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh3.5-5",
+   "name": "Blancoton V",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "melanger"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "tk-xy-su-14",
+   "name": "Suicune",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "tk-xy-n-27",
+   "name": "Potion",
+   "supertype": "Dresseur",
+   "trainer_type": "Objet",
+   "primitives": [
+    "infliger_degats",
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ecard2-63",
+   "name": "Débugant",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "annuler",
+    "defausser",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "xyp-XY115",
+   "name": "Shaymin",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face",
+    "soigner"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv07-079",
+   "name": "Charmina",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "ex9-19",
+   "name": "Rhinoféros",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [],
+   "controles": [],
+   "couvert": false,
+   "extrait": "Les dégâts de cette attaque ne sont pas affectés par la Résistance."
+  },
+  {
+   "id": "dp7-27",
+   "name": "Étouraptor",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "empecher",
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh10-129",
+   "name": "Pijako",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "empecher",
+    "piocher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "pl3-6",
+   "name": "Maganon",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "choisir",
+    "deplacer",
+    "infliger_degats",
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "xy4-41",
+   "name": "Funécire",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv05-109",
+   "name": "Rugit-Lune",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh1-182",
+   "name": "Baie Sitrus",
+   "supertype": "Dresseur",
+   "trainer_type": "Outil",
+   "primitives": [
+    "defausser",
+    "soigner"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "pl2-73",
+   "name": "Nidorina Niv. 29",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv07-088",
+   "name": "Hexadron",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "chercher",
+    "infliger_degats",
+    "melanger"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh1-87",
+   "name": "Munna",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ex6-33",
+   "name": "Noeufnoeuf",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "ecard1-93",
+   "name": "Abra",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "pile_ou_face",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sm4-8",
+   "name": "Escargaume",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "xy2-96",
+   "name": "Cendre Sacrée",
+   "supertype": "Dresseur",
+   "trainer_type": "Objet",
+   "primitives": [
+    "defausser",
+    "melanger"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ex6-54",
+   "name": "Bulbizarre",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "pile_ou_face",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "A4-112",
+   "name": "Noctali-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [],
+   "controles": [
+    "si"
+   ],
+   "couvert": false,
+   "extrait": "Une fois pendant votre tour, si ce Pokémon est sur le Poste Actif, vous pouvez envoyer un des Pokémon de Banc de votre adversaire ayant subi des dégâts sur le Poste Actif."
+  },
+  {
+   "id": "sv10-069",
+   "name": "Élekable-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv01-168",
+   "name": "Maillet Écrasant",
+   "supertype": "Dresseur",
+   "trainer_type": "Objet",
+   "primitives": [
+    "defausser",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv05-108",
+   "name": "Farigiraf-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "P-A-043",
+   "name": "Ceriflor",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "soigner"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "swsh4-125",
+   "name": "Limonde de Galar",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "empecher",
+    "poser_compteurs"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh12.5gg-GG65",
+   "name": "Roy",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "attacher",
+    "chercher",
+    "defausser",
+    "melanger"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ex11-67",
+   "name": "Soporifik",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "choisir"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv10.5b-036",
+   "name": "Mushana",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "melanger",
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "xy7-34",
+   "name": "Gringolem",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "annuler",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "swsh10.5-072",
+   "name": "Mewtwo V",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "deplacer"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ex2-50",
+   "name": "Bekipan",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "A3b-021",
+   "name": "Mamanbo",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv10-095",
+   "name": "Ymphect de la Team Rocket",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "chercher",
+    "melanger"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "me05-012",
+   "name": "Carmadura",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "xyp-XY202",
+   "name": "Pikachu",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "chercher",
+    "defausser",
+    "melanger"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm9-122",
+   "name": "Roucool",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv10.5b-168",
+   "name": "Minotaupe-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "col1-79",
+   "name": "Questionnaire d'interview",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "choisir",
+    "melanger",
+    "regarder",
+    "reveler"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "svp-125",
+   "name": "Carmadura-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "attacher",
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter",
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "me02.5-212",
+   "name": "Arrache-Outil",
+   "supertype": "Dresseur",
+   "trainer_type": "Objet",
+   "primitives": [
+    "choisir",
+    "defausser"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm7-182",
+   "name": "Pinceau Arc-en-Ciel",
+   "supertype": "Dresseur",
+   "trainer_type": "Objet",
+   "primitives": [
+    "chercher",
+    "choisir",
+    "melanger"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "dp1-87",
+   "name": "Magnéti",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats",
+    "pile_ou_face",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sm9-175",
+   "name": "Vesper",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "piocher",
+    "poser_etat"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv03.5-159",
+   "name": "Stickers Énergie",
+   "supertype": "Dresseur",
+   "trainer_type": "Objet",
+   "primitives": [
+    "attacher",
+    "defausser",
+    "pile_ou_face"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sv06.5-094",
+   "name": "Cassiopée",
+   "supertype": "Dresseur",
+   "trainer_type": "Supporter",
+   "primitives": [
+    "chercher",
+    "melanger"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "bw2-10",
+   "name": "Doudouvet",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm5-168",
+   "name": "Trèfle Manquant",
+   "supertype": "Dresseur",
+   "trainer_type": "Objet",
+   "primitives": [
+    "regarder"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "ex5-3",
+   "name": "Nostenfer",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "choisir",
+    "defausser",
+    "pile_ou_face",
+    "poser_etat",
+    "regarder"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "A1-168",
+   "name": "Nidoqueen",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [
+    "repeter"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "ex13-52",
+   "name": "Hypocéan δ",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "poser_etat"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "xy9-52",
+   "name": "Mentali EX",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [],
+   "controles": [],
+   "couvert": false,
+   "extrait": "Faites dés-évoluer chacun des Pokémon évolués de votre adversaire et mettez sa carte Évolution de plus haut Niveau dans la main de votre adversaire. ||| Les dégâts de cette attaque ne sont affectés pa"
+  },
+  {
+   "id": "ex15-88",
+   "name": "Énergie Multicolore δ",
+   "supertype": "Énergie",
+   "trainer_type": null,
+   "primitives": [],
+   "controles": [],
+   "couvert": false,
+   "extrait": "Énergie Multicolore δ fournit de l'Énergie Incolore. Lorsqu'elle est attachée à un Pokémon possédant le symbole δ, elle fournit tous les types d'Énergie mais seulement 1 Énergie à la fois. (Elle n'a p"
+  },
+  {
+   "id": "dp7-1",
+   "name": "Noctunoir",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "infliger_degats",
+    "poser_compteurs"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sv06-199",
+   "name": "Ogerpon Masque de la Pierre-ex",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "30th-113",
+   "name": "Miaouss",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "piocher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "base3-14",
+   "name": "Raichu",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "choisir",
+    "infliger_degats"
+   ],
+   "controles": [
+    "si"
+   ],
+   "couvert": true
+  },
+  {
+   "id": "sm11-143",
+   "name": "Doudouvet",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "piocher"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "B1a-051",
+   "name": "Steelix",
+   "supertype": "Pokemon",
+   "trainer_type": null,
+   "primitives": [],
+   "controles": [],
+   "couvert": false,
+   "extrait": "During your opponent's next turn, this Pokémon has no Weakness."
+  },
+  {
+   "id": "swsh4-137",
+   "name": "Brouhabam",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm10-122",
+   "name": "Triopikeur d’Alola",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [],
+   "controles": [],
+   "couvert": false,
+   "extrait": "Vos Pokémon Metal subissent 10 dégâts de moins provenant des attaques de votre adversaire (après application de la Faiblesse et de la Résistance)."
+  },
+  {
+   "id": "hgss2-91",
+   "name": "Entei & Raikou LÉGENDE (bas)",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "defausser",
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  },
+  {
+   "id": "sm8-79",
+   "name": "Raikou",
+   "supertype": "Pokémon",
+   "trainer_type": null,
+   "primitives": [
+    "infliger_degats"
+   ],
+   "controles": [],
+   "couvert": true
+  }
+ ]
+}

@@ -14,6 +14,10 @@ dev = [
     # pyyaml : uniquement pour TESTER la table de cas (docs/jeu/cas-de-regles.yaml).
     # Ce n'est pas une dépendance du moteur lui-même.
     "pyyaml>=6.0.2",
+    # jsonschema : uniquement pour TESTER que le schéma publié du langage d'effets
+    # (effets/dsl/schema.json) accepte/refuse comme le validateur Python. Pas une
+    # dépendance du moteur (le validateur d'exécution est pur et sans dépendance).
+    "jsonschema>=4.21.0",
 ]
 
 [build-system]

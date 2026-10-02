@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pokeboy.lol/schemas/effets-dsl-v1.json",
+  "title": "Langage d'effets PokeBoyManager — v1",
+  "description": "Schema formel d'un script d'effet. La porte de refus a l'execution est charger_programme (Python pur, sans dependance) ; ce document est la specification publiee, verifiee en CI contre des scripts d'exemple. Les deux disent la meme chose : un test garde qu'ils ne divergent pas.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "effets"],
+  "properties": {
+    "version": {"type": "integer", "minimum": 1, "maximum": 1},
+    "effets": {"type": "array", "items": {"$ref": "#/$defs/instruction"}},
+    "cout": {"type": "array", "items": {"$ref": "#/$defs/instruction"}}
+  },
+  "$defs": {
+    "selecteur": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["zone"],
+      "properties": {
+        "zone": {"enum": ["actif", "banc", "en_jeu", "main", "pioche", "defausse", "recompenses", "zone_perdue", "stade"]},
+        "proprietaire": {"enum": ["moi", "adversaire", "les_deux"]},
+        "categorie": {"enum": ["pokemon", "energie", "dresseur", "outil"]},
+        "stade": {"enum": ["base", "stade1", "stade2"]},
+        "nombre": {"type": "integer", "minimum": 1},
+        "position": {"enum": ["dessus", "dessous", "au_choix"]}
+      }
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {"enum": ["resultat_pile", "zone_non_vide", "a_etat", "a_degats"]},
+        "cible": {"$ref": "#/$defs/selecteur"},
+        "etat": {"enum": ["endormi", "brule", "confus", "paralyse", "empoisonne"]},
+        "attendu": {"enum": ["face", "pile"]},
+        "minimum": {"type": "integer", "minimum": 1}
+      }
+    },
+    "instruction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["op"],
+      "properties": {
+        "op": {
+          "enum": [
+            "piocher", "chercher", "defausser", "attacher", "deplacer", "soigner",
+            "poser_compteurs", "infliger_degats", "melanger", "reveler", "regarder",
+            "choisir", "pile_ou_face", "changer_actif", "poser_etat", "retirer_etat",
+            "empecher", "annuler", "repeter", "si"
+          ]
+        },
+        "cible": {"$ref": "#/$defs/selecteur"},
+        "source": {"$ref": "#/$defs/selecteur"},
+        "nombre": {"type": "integer", "minimum": 1},
+        "etat": {"enum": ["endormi", "brule", "confus", "paralyse", "empoisonne"]},
+        "verrou": {"enum": ["pas_de_supporter", "ne_peut_attaquer", "talents_sans_effet", "pas_de_retraite"]},
+        "portee": {"enum": ["ce_tour", "prochain_tour", "tant_que_actif", "tant_que_stade", "tant_que_en_jeu"]},
+        "condition": {"$ref": "#/$defs/condition"},
+        "alors": {"type": "array", "items": {"$ref": "#/$defs/instruction"}},
+        "sinon": {"type": "array", "items": {"$ref": "#/$defs/instruction"}},
+        "regle": {"type": "string"}
+      }
+    }
+  }
+}
