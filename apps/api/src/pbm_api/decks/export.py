@@ -96,6 +96,7 @@ def render_text(
     legal: bool,
     cards: list[ExportCard],
 ) -> str:
+    """Rend le deck en texte groupé par type — ré-importable tel quel par `parsing.parse_line`."""
     legal_word = "légal" if legal else "incomplet ou illégal"
     lines = [
         f"# {deck_name}",
@@ -126,6 +127,8 @@ def render_pdf(
     cards: list[ExportCard],
     image_loader: Callable[[uuid.UUID], bytes | None] | None = None,
 ) -> bytes:
+    """Rend le deck en PDF : grille de vignettes (ou cadre nommé si l'image manque), puis la liste
+    texte. `image_loader` est le seul accès réseau/stockage, injecté pour rester testable."""
     from fpdf import FPDF
 
     pdf = FPDF(orientation="P", unit="mm", format="A4")

@@ -21,6 +21,8 @@ CARD_W, CARD_H = 180, 252  # ratio 63:88 à l'échelle d'un canevas de quelques 
 
 @dataclass(frozen=True)
 class SyntheticPhoto:
+    """Une photo synthétique générée, avec la vérité terrain attendue pour la mesurer en CI."""
+
     id: str
     category: str
     image: np.ndarray  # BGR, comme `cv2.imdecode`
@@ -31,6 +33,8 @@ class SyntheticPhoto:
 def noisy_background(
     rng: np.random.Generator, size: tuple[int, int], base_color: tuple[int, int, int]
 ) -> np.ndarray:
+    """Fond uni bruité (graine déterministe) — évite un aplat parfait qu'aucune vraie photo
+    n'aurait, ce qui fausserait la détection de contours."""
     height, width = size
     canvas = np.full((height, width, 3), base_color, dtype=np.uint8)
     noise = rng.normal(0, 6, (height, width, 3))
@@ -39,6 +43,7 @@ def noisy_background(
 
 
 def card_quad(center: tuple[float, float], angle_deg: float, scale: float = 1.0) -> np.ndarray:
+    """Quadrilatère d'une carte au ratio 63:88, positionné/tourné/mis à l'échelle."""
     box = cv2.boxPoints(((center[0], center[1]), (CARD_W * scale, CARD_H * scale), angle_deg))
     return box.astype(np.float32)
 
@@ -52,6 +57,8 @@ def draw_card(
     border_thickness: int = 4,
     glare: bool = False,
 ) -> None:
+    """Dessine une carte synthétique dans le canevas ; `glare` ajoute un reflet de pochette
+    (cas piège listé dans la mission « risques & pièges »)."""
     pts = quad.astype(np.int32)
     cv2.fillConvexPoly(canvas, pts, fill)
     cv2.polylines(canvas, [pts], isClosed=True, color=border, thickness=border_thickness)
@@ -78,6 +85,7 @@ def draw_card(
 
 
 def make_single_card(seed: int, index: int) -> SyntheticPhoto:
+    """Photo synthétique : une seule carte, légèrement tournée et décentrée."""
     rng = np.random.default_rng(seed)
     canvas = noisy_background(rng, (500, 400), (150, 170, 150))
     angle = float(rng.uniform(-15, 15))
@@ -91,6 +99,7 @@ def make_single_card(seed: int, index: int) -> SyntheticPhoto:
 
 
 def make_binder_grid(seed: int, index: int, *, glare: bool) -> SyntheticPhoto:
+    """Photo synthétique : classeur 3×3 (9 cartes), avec ou sans reflets de pochette alternés."""
     rng = np.random.default_rng(seed)
     canvas = noisy_background(rng, (1000, 800), (235, 235, 235))
     quads: list[np.ndarray] = []
@@ -117,6 +126,7 @@ def make_binder_grid(seed: int, index: int, *, glare: bool) -> SyntheticPhoto:
 
 
 def make_table_scatter(seed: int, index: int, count: int) -> SyntheticPhoto:
+    """Photo synthétique : `count` cartes posées en vrac sur une table, angles variés."""
     rng = np.random.default_rng(seed)
     canvas = noisy_background(rng, (700, 900), (90, 120, 150))  # bois/table sombre
     quads: list[np.ndarray] = []

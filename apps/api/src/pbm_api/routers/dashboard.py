@@ -25,6 +25,8 @@ async def get_dashboard(
     session: Annotated[AsyncSession, Depends(get_session)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> DashboardResponse:
+    """Agrège l'accueil connecté de l'utilisateur courant : valeur totale et son historique
+    sur 90 jours, meilleures variations à 30 jours, cinq derniers ajouts à la collection."""
     data = await service.get_dashboard(session, current_user)
     return DashboardResponse(
         items_total=data.items_total,

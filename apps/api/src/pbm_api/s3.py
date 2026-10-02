@@ -13,6 +13,14 @@ from pbm_api.config import settings
 
 
 class ObjectStorage:
+    """Stockage objet des images (originaux de photos, crops, avatars, exports).
+
+    Chaque méthode publique est `async` mais délègue l'appel boto3 bloquant à un thread
+    (`asyncio.to_thread`) : la boucle asyncio de FastAPI ne doit jamais être bloquée par une
+    I/O réseau. Les identifiants viennent de `settings` par défaut ; on peut les surcharger
+    au constructeur (tests, scripts hors API).
+    """
+
     def __init__(
         self,
         endpoint_url: str | None = None,
@@ -44,6 +52,8 @@ class ObjectStorage:
             self._client.create_bucket(Bucket=self.bucket)
 
     async def ensure_bucket(self) -> None:
+        """Crée le bucket s'il n'existe pas (idempotent) : à appeler au démarrage avant
+        tout dépôt, car SeaweedFS/Object Storage ne crée pas le bucket à la volée."""
         await asyncio.to_thread(self._ensure_bucket_sync)
 
     def _get_sync(self, key: str) -> bytes | None:
@@ -56,6 +66,8 @@ class ObjectStorage:
             raise
 
     async def get(self, key: str) -> bytes | None:
+        """Télécharge l'objet entier en mémoire, ou `None` s'il n'existe pas (NoSuchKey/404).
+        Toute autre erreur S3 est relevée telle quelle."""
         return await asyncio.to_thread(self._get_sync, key)
 
     def _head_sync(self, key: str) -> int | None:
@@ -79,6 +91,8 @@ class ObjectStorage:
         self._client.put_object(Bucket=self.bucket, Key=key, Body=data, ContentType=content_type)
 
     async def put(self, key: str, data: bytes, content_type: str) -> None:
+        """Écrit (ou remplace) l'objet sous `key` avec son `content_type` : dépôt côté serveur,
+        par opposition au dépôt direct navigateur de `presign_put`."""
         await asyncio.to_thread(self._put_sync, key, data, content_type)
 
     def _presign_put_sync(self, key: str, content_type: str, expires_in: int) -> str:
@@ -96,4 +110,5 @@ class ObjectStorage:
         self._client.delete_object(Bucket=self.bucket, Key=key)
 
     async def delete(self, key: str) -> None:
+        """Supprime l'objet (idempotent côté S3 : supprimer une clé absente ne lève pas)."""
         await asyncio.to_thread(self._delete_sync, key)

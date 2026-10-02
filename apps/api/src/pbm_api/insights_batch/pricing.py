@@ -23,6 +23,8 @@ class UnknownModelPricingError(Exception):
 
 
 def batch_cost_usd(model: str, *, input_tokens: int, output_tokens: int) -> Decimal:
+    """Coût USD d'un appel (ou d'un lot agrégé) selon les tokens réellement facturés — lève
+    `UnknownModelPricingError` plutôt que d'estimer un coût à zéro pour un modèle non tarifé."""
     if model not in BATCH_PRICING_USD_PER_MTOK:
         raise UnknownModelPricingError(
             f"aucun tarif connu pour {model!r} — ajouter une entrée à "

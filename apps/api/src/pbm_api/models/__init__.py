@@ -1,3 +1,6 @@
+"""Point d'entrée du package des modèles SQLAlchemy : réexporte les tables et énumérations
+de chaque module pour que le reste de l'API fasse `from pbm_api.models import X`."""
+
 from pbm_api.models.ai_usage import AiUsageMonthly
 from pbm_api.models.base import Base
 from pbm_api.models.catalog import (

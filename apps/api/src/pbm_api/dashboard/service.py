@@ -30,12 +30,16 @@ _VALUE_CHANGE_WINDOW_DAYS = 30
 
 @dataclass(frozen=True)
 class ValuePoint:
+    """Un point de la courbe de valeur (voir `_history_dates` pour l'espacement des dates)."""
+
     as_of: date
     total_value_eur: Decimal
 
 
 @dataclass(frozen=True)
 class MoverCard:
+    """Une carte de la collection, avec sa variation de valeur sur 30 jours."""
+
     item_id: uuid.UUID
     card_id: uuid.UUID
     card_name: str
@@ -48,6 +52,8 @@ class MoverCard:
 
 @dataclass(frozen=True)
 class RecentAddition:
+    """Un exemplaire récemment ajouté à la collection."""
+
     item_id: uuid.UUID
     card_id: uuid.UUID
     card_name: str
@@ -57,6 +63,8 @@ class RecentAddition:
 
 @dataclass(frozen=True)
 class DashboardData:
+    """Données agrégées de l'accueil connecté, avant mise en forme HTTP par `dashboard.schemas`."""
+
     items_total: int
     items_priced: int
     items_missing_price: int
@@ -97,6 +105,8 @@ def _history_dates(as_of: date) -> tuple[date, ...]:
 async def get_dashboard(
     session: AsyncSession, user: User, as_of: date | None = None
 ) -> DashboardData:
+    """Agrège la collection de `user` : totaux, courbe de valeur, meilleures variations et
+    derniers ajouts, filtrés par `user_id`. `as_of` par défaut la date du jour (UTC)."""
     as_of = as_of or datetime.now(UTC).date()
 
     stmt = (

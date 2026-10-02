@@ -19,6 +19,8 @@ from pbm_api.storage import StorageBackend
 
 @dataclass(frozen=True)
 class DetectionRunSummary:
+    """Résumé d'une détection persistée pour un envoi, renvoyé à l'appelant (worker ou API)."""
+
     detections_count: int
     method: str
 

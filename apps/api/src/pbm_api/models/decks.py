@@ -1,3 +1,6 @@
+"""Modèles des decks construits à partir de la collection : deck, cartes qui le composent,
+et journal des événements qui en altèrent la légalité (carte vendue, contrefaçon signalée)."""
+
 import uuid
 from datetime import datetime
 

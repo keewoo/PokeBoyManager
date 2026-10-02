@@ -156,6 +156,7 @@ async def import_catalogue_task(
     set_ids: list[str] | None = None,
     mode: str = "full",
 ) -> dict:
+    """Import déclenché du catalogue (TCGdex + Pokémon TCG API) — refuse si lourd est interdit."""
     if not settings.heavy_jobs_allowed:
         return await _refuse_heavy_job(
             JOB_TYPE, {"mode": mode, "languages": languages, "set_ids": set_ids}
@@ -641,6 +642,8 @@ def _heavy_cron_jobs() -> list:
 
 
 class WorkerSettings:
+    """Configuration arq du worker : fonctions enregistrées, crons, connexion Redis, délais."""
+
     # Toutes les fonctions restent enregistrées, même les lourdes : si un job lourd est malgré tout
     # enfilé vers un worker de PROD, il est pris en charge et REFUSÉ proprement
     # (`_refuse_heavy_job`) plutôt que de finir en « function not found ».

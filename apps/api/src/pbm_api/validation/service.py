@@ -37,6 +37,8 @@ CONFIRM_ALL_VARIANT = PriceVariant.normal
 
 @dataclass(frozen=True)
 class ConfirmAllResult:
+    """Bilan de `confirm_all` : détections confirmées, et celles laissées `pending`."""
+
     confirmed: list[uuid.UUID]
     skipped: list[uuid.UUID]
 
@@ -71,6 +73,11 @@ async def _get_owned_detection(
 async def confirm_detection(
     db: AsyncSession, user: User, detection_id: uuid.UUID, data: ConfirmDetectionRequest
 ) -> tuple[Detection, list[CollectionItem]]:
+    """Confirme une détection `pending` de `user` : crée `data.quantity` exemplaires dans la
+    collection, passe la détection à `validated` et journalise le choix dans
+    `IdentificationCorrection`. Lève `DetectionNotFoundError` (détection d'un autre utilisateur ou
+    inexistante), `DetectionAlreadyProcessedError` (déjà traitée) ou `CardNotFoundError`
+    (`card_id` absent du catalogue)."""
     detection = await _get_owned_detection(db, user, detection_id)
     if detection.status != DetectionStatus.pending:
         raise DetectionAlreadyProcessedError
@@ -119,6 +126,9 @@ async def confirm_detection(
 
 
 async def reject_detection(db: AsyncSession, user: User, detection_id: uuid.UUID) -> Detection:
+    """Rejette une détection `pending` de `user` : passe à `rejected`, journalise dans
+    `IdentificationCorrection` (`chosen_card_id=None`), n'ajoute rien à la collection. Lève
+    `DetectionNotFoundError` ou `DetectionAlreadyProcessedError`."""
     detection = await _get_owned_detection(db, user, detection_id)
     if detection.status != DetectionStatus.pending:
         raise DetectionAlreadyProcessedError
@@ -142,6 +152,11 @@ async def reject_detection(db: AsyncSession, user: User, detection_id: uuid.UUID
 async def confirm_all(
     db: AsyncSession, user: User, upload_id: uuid.UUID
 ) -> ConfirmAllResult:
+    """Confirme en lot les détections `pending` d'un envoi dont le premier candidat est
+    présélectionné (défauts `CONFIRM_ALL_LANGUAGE`/`CONFIRM_ALL_VARIANT`, un exemplaire, aucun
+    prix) ; les autres restent `pending` (`skipped`), jamais ajoutées sans candidat qui se
+    démarque. Verrouille les lignes `detections` en ordre d'id ascendant pour éviter
+    l'interblocage avec le worker d'état."""
     upload = await get_owned_upload(db, user, upload_id)
     # Verrou pris d'emblée, en ordre d'id ASCENDANT (ORDER BY + FOR UPDATE) : `confirm_all` et le
     # passage d'état du worker (`pbm_api.state.service.run_state_estimation_for_upload`) écrivent

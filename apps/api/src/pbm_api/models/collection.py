@@ -1,3 +1,6 @@
+"""Modèles du parcours d'identification et de la collection : photo envoyée, détection par
+carte, exemplaire possédé par l'utilisateur."""
+
 import enum
 import uuid
 from datetime import date
@@ -13,6 +16,8 @@ from pbm_api.models.catalog import PRICE_VARIANT_ENUM, PriceVariant
 
 
 class UploadStatus(enum.StrEnum):
+    """État de traitement d'une photo envoyée par l'utilisateur."""
+
     pending = "pending"
     processing = "processing"
     processed = "processed"
@@ -40,6 +45,8 @@ class Upload(Base, TimestampMixin):
 
 
 class DetectionStatus(enum.StrEnum):
+    """État de validation d'une carte détectée sur une photo."""
+
     pending = "pending"
     validated = "validated"
     rejected = "rejected"

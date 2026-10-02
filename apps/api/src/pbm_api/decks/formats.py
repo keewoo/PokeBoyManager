@@ -27,10 +27,12 @@ _LABELS = {STANDARD: "Standard", EXPANDED: "Étendu", UNLIMITED: "Illimité"}
 
 
 def label(fmt: str) -> str:
+    """Libellé affichable (français) d'un format ; renvoie le code brut si inconnu."""
     return _LABELS.get(fmt, fmt)
 
 
 def is_valid(fmt: str | None) -> bool:
+    """Vrai si `fmt` est l'un des trois formats reconnus (Standard, Étendu, Illimité)."""
     return fmt in FORMATS
 
 

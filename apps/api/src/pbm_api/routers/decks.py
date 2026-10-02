@@ -82,6 +82,7 @@ _storage = build_storage()
 
 
 def get_storage() -> StorageBackend:
+    """Dépendance FastAPI : backend de stockage des vignettes, remplaçable par un double en test."""
     return _storage
 
 
@@ -165,6 +166,8 @@ async def create_deck(
     current_user: Annotated[User, Depends(get_current_user)],
     _csrf: Annotated[None, Depends(require_csrf)],
 ) -> DeckDetail:
+    """Crée un deck vide (ou avec des cartes initiales) pour l'utilisateur courant ; lève 404
+    si une carte de la requête est absente du catalogue."""
     try:
         deck = await service.create_deck(session, current_user, payload)
     except CardNotFoundError:
@@ -178,6 +181,7 @@ async def list_decks(
     session: Annotated[AsyncSession, Depends(get_session)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> DeckListResponse:
+    """Liste les decks de l'utilisateur courant, avec leur légalité recalculée à la lecture."""
     decks = await service.list_decks(session, current_user)
     return DeckListResponse(
         decks=[
@@ -203,6 +207,8 @@ async def deck_card_facets(
     session: Annotated[AsyncSession, Depends(get_session)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> DeckCardSearchFacets:
+    """Renvoie les valeurs filtrables (sets, raretés, types, PV, cartes possédées/dupliquées)
+    pour peupler les filtres du constructeur de deck, propres à l'utilisateur courant."""
     facets = await card_search.get_facets(session, current_user)
     return DeckCardSearchFacets(
         sets=[DeckCardFacetSet(set_id=s, name=n, code=c) for s, n, c in facets.sets],
@@ -341,6 +347,8 @@ async def get_deck(
     session: Annotated[AsyncSession, Depends(get_session)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> DeckDetail:
+    """Renvoie le détail d'un deck (cartes, légalité recalculée) ; un deck d'un autre
+    utilisateur renvoie 404 (jamais 403, pas de fuite d'existence)."""
     try:
         deck, loaded, report = await service.deck_detail(session, current_user, deck_id)
     except DeckNotFoundError:
@@ -356,6 +364,7 @@ async def update_deck(
     current_user: Annotated[User, Depends(get_current_user)],
     _csrf: Annotated[None, Depends(require_csrf)],
 ) -> DeckDetail:
+    """Renomme un deck et/ou change son format ; un deck d'un autre utilisateur renvoie 404."""
     try:
         await service.update_deck(
             session, current_user, deck_id, name=payload.name, deck_format=payload.format
@@ -373,6 +382,8 @@ async def delete_deck(
     current_user: Annotated[User, Depends(get_current_user)],
     _csrf: Annotated[None, Depends(require_csrf)],
 ) -> None:
+    """Supprime un deck de l'utilisateur courant ; lève 404 s'il est introuvable ou appartient
+    à un autre utilisateur."""
     try:
         await service.delete_deck(session, current_user, deck_id)
     except DeckNotFoundError:
@@ -386,6 +397,8 @@ async def duplicate_deck(
     current_user: Annotated[User, Depends(get_current_user)],
     _csrf: Annotated[None, Depends(require_csrf)],
 ) -> DeckDetail:
+    """Duplique un deck de l'utilisateur courant en un nouveau deck indépendant ; lève 404 si
+    le deck source est introuvable ou appartient à un autre utilisateur."""
     try:
         copy = await service.duplicate_deck(session, current_user, deck_id)
     except DeckNotFoundError:
@@ -471,6 +484,8 @@ async def set_deck_card(
     current_user: Annotated[User, Depends(get_current_user)],
     _csrf: Annotated[None, Depends(require_csrf)],
 ) -> DeckDetail:
+    """Fixe la quantité d'une carte dans le deck (l'ajoute si absente) ; lève 404 si le deck
+    ou la carte au catalogue est introuvable."""
     try:
         await service.set_deck_card(session, current_user, deck_id, card_id, payload.quantity)
     except DeckNotFoundError:
@@ -489,6 +504,8 @@ async def remove_deck_card(
     current_user: Annotated[User, Depends(get_current_user)],
     _csrf: Annotated[None, Depends(require_csrf)],
 ) -> DeckDetail:
+    """Retire une carte du deck ; lève 404 si le deck est introuvable ou si la carte n'y est
+    pas présente."""
     try:
         await service.remove_deck_card(session, current_user, deck_id, card_id)
     except DeckNotFoundError:

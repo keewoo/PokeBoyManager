@@ -18,6 +18,9 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class LabeledCard:
+    """Carte de catalogue simulée (pas de ligne `Card`/`Set` réelle) : juste les champs lus par
+    `assess_counterfeit` — rareté, variantes déclarées, total de série de l'extension."""
+
     set_code: str
     set_name: str
     total_cards: int | None
@@ -29,6 +32,10 @@ class LabeledCard:
 
 @dataclass(frozen=True)
 class SyntheticCounterfeitCase:
+    """Un cas étiqueté du jeu de 60 : entrées simulées de `assess_counterfeit` (signal IA,
+    variante perçue, total imprimé) associées à la carte catalogue et à l'étiquette attendue
+    (`is_counterfeit`) pour mesurer la précision de la fonction."""
+
     id: str
     is_counterfeit: bool
     card: LabeledCard

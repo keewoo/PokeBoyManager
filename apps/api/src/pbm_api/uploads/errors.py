@@ -1,3 +1,8 @@
+"""Erreurs métier de l'envoi et de la reconnaissance de photos, portées jusqu'à l'API par les
+routes qui les traduisent en codes HTTP (dont 413 pour un fichier trop gros).
+"""
+
+
 class TooManyFilesError(Exception):
     """Plus de `upload_max_files_per_batch` fichiers dans un même envoi (mission point 2)."""
 

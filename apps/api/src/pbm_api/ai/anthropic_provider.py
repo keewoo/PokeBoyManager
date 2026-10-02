@@ -22,6 +22,9 @@ _MAX_TOKENS = 4096
 
 
 class AnthropicProvider(AIProvider):
+    """Fournisseur Anthropic concret — modèle par défaut et modèle économique (`ECONOMY_MODEL`)
+    déclarés en `ClassVar`."""
+
     PROVIDER: ClassVar[AiProviderEnum] = AiProviderEnum.anthropic
     DEFAULT_MODEL: ClassVar[str] = "claude-sonnet-5"
     ECONOMY_MODEL: ClassVar[str | None] = "claude-haiku-4-5"

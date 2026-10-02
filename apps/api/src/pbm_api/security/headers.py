@@ -24,9 +24,15 @@ _CSP = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Ajoute les en-têtes défensifs à toute réponse : pare le MIME-sniffing, le clickjacking
+    (frame-ancestors/X-Frame-Options), la fuite de référent, l'accès caméra/micro/géoloc et
+    le repli en clair après la première visite HTTPS (HSTS)."""
+
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
+        """Pose les en-têtes sur la réponse sortante ; omet la CSP sur `/docs`/`/redoc`/
+        `/openapi.json`, seules pages à charger des scripts depuis un CDN."""
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"

@@ -39,6 +39,8 @@ _ADVISORY_LOCK_NAMESPACE = 785_431
 
 @dataclass
 class InsightsResult:
+    """Anecdotes résolues pour une carte, avec l'état qui explique une liste vide."""
+
     card_insight: CardInsight
     status: str  # "ready" | "no_context" | "no_ai_key"
 
@@ -99,6 +101,9 @@ async def get_or_create_card_insight(
     bulbapedia_client: MediaWikiClient,
     provider_factory: ProviderFactory = create_provider,
 ) -> InsightsResult:
+    """Renvoie les anecdotes en cache si elles sont fraîches, sinon les génère sous verrou
+    consultatif avec la clé IA par défaut de `current_user` — lève `NoAiKeyConfiguredError`
+    si l'utilisateur n'en a aucune et qu'aucun résultat n'existe déjà pour cette carte."""
     cached = _fresh(await _existing_insight(db, card.id))
     if cached is not None:
         return InsightsResult(card_insight=cached, status=_status_of(cached))

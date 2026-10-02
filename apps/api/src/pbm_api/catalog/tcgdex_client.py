@@ -33,6 +33,8 @@ class TcgdexClient:
         self._owns_client = http_client is None
 
     async def aclose(self) -> None:
+        """Ferme le client HTTP interne, sauf s'il a été fourni par l'appelant (qui en reste
+        propriétaire et le fermera lui-même)."""
         if self._owns_client:
             await self._client.aclose()
 

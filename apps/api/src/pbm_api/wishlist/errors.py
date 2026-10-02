@@ -1,3 +1,6 @@
+"""Exceptions de la liste de souhaits, traduites en 404/409 par les routeurs."""
+
+
 class WishlistItemNotFoundError(Exception):
     """Aucun vœu avec cet id pour cet utilisateur (jamais un 403 : pas de fuite d'existence,
     même règle que `pbm_api.collection.errors.CollectionItemNotFoundError`)."""

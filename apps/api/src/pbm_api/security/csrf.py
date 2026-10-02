@@ -15,6 +15,8 @@ CSRF_HEADER_NAME = "X-CSRF-Token"
 
 
 def compute_csrf_token(session_token: str) -> str:
+    """Calcule le HMAC-SHA256 du jeton de session avec la clé secrète serveur — c'est cette
+    valeur que le front doit relire du cookie CSRF et renvoyer dans `X-CSRF-Token`."""
     return hmac.new(
         settings.secret_key.encode("utf-8"),
         session_token.encode("utf-8"),
@@ -23,6 +25,9 @@ def compute_csrf_token(session_token: str) -> str:
 
 
 def verify_csrf_token(session_token: str, submitted_token: str | None) -> bool:
+    """Compare en temps constant le jeton soumis au HMAC attendu ; False si absent ou
+    incorrect. Pare le CSRF classique (en-tête non forgeable sans lire le cookie non
+    HttpOnly) — c'est l'appelant (`require_csrf`) qui lève 403 sur un résultat négatif."""
     if not submitted_token:
         return False
     expected = compute_csrf_token(session_token)

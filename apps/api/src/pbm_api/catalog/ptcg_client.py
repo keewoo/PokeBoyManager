@@ -17,6 +17,13 @@ class PtcgUnavailableError(RuntimeError):
 
 
 class PtcgClient:
+    """Client HTTP minimal pour le rapprochement avec Pokémon TCG API, avec réessais.
+
+    Une panne réseau ou un 5xx intermittent est absorbé jusqu'à `max_attempts` (backoff
+    linéaire) ; au-delà, lève `PtcgUnavailableError` plutôt que de renvoyer un résultat partiel
+    silencieux — à l'appelant de décider de dégrader (pas de rapprochement) ou d'arrêter.
+    """
+
     def __init__(
         self,
         http_client: httpx.AsyncClient | None = None,
@@ -31,6 +38,8 @@ class PtcgClient:
         self._backoff_seconds = backoff_seconds
 
     async def aclose(self) -> None:
+        """Ferme le client HTTP interne, sauf s'il a été fourni par l'appelant (qui en reste
+        propriétaire et le fermera lui-même)."""
         if self._owns_client:
             await self._client.aclose()
 
@@ -51,10 +60,14 @@ class PtcgClient:
         ) from last_error
 
     async def list_sets(self) -> list[dict]:
+        """Toutes les extensions connues de Pokémon TCG API, en un seul appel (`pageSize=250`,
+        au-delà du nombre d'extensions existantes)."""
         data = await self._get("/sets", params={"pageSize": 250})
         return data["data"]
 
     async def list_cards_in_set(self, ptcg_set_id: str) -> list[dict]:
+        """Cartes de l'extension `ptcg_set_id` (identifiant Pokémon TCG API, pas celui de
+        TCGdex — voir `reconciliation.resolve_ptcg_set_id`)."""
         data = await self._get(
             "/cards", params={"q": f"set.id:{ptcg_set_id}", "pageSize": 250}
         )

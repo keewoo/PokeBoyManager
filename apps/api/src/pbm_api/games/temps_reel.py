@@ -253,9 +253,13 @@ class Canal(Protocol):
     déconnexion.
     """
 
-    async def recevoir(self) -> dict | None: ...
+    async def recevoir(self) -> dict | None:
+        """Attend le prochain message du client ; `None` quand la connexion se ferme."""
+        ...
 
-    async def envoyer(self, message: dict) -> None: ...
+    async def envoyer(self, message: dict) -> None:
+        """Émet un message vers le client (effet de bord réseau)."""
+        ...
 
 
 async def _resync_payload(

@@ -21,6 +21,9 @@ class CompromisedPasswordChecker:
         self._timeout = timeout
 
     async def is_compromised(self, password: str) -> bool:
+        """Interroge HIBP par préfixe de hash (k-anonymat) ; True si le mot de passe figure
+        dans une fuite connue. Panne du service tiers = False journalisé (`hibp_unreachable`),
+        jamais un blocage de l'inscription/réinitialisation sur une dépendance externe."""
         digest = hashlib.sha1(password.encode("utf-8")).hexdigest().upper()  # noqa: S324 — HIBP impose SHA-1
         prefix, suffix = digest[:5], digest[5:]
 
@@ -45,4 +48,5 @@ _default_checker = CompromisedPasswordChecker()
 
 
 def get_compromised_checker() -> CompromisedPasswordChecker:
+    """Dépendance FastAPI : instance partagée, substituable par un double dans les tests."""
     return _default_checker

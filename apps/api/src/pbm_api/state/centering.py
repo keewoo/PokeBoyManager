@@ -46,6 +46,9 @@ _CENTERING_THRESHOLDS: list[tuple[float, ConditionGrade]] = [
 
 @dataclass(frozen=True)
 class AxisCentering:
+    """Centrage mesuré sur un seul axe (horizontal ou vertical) : marges en pixels, étiquette
+    lisible (côté le plus marqué en premier) et le palier d'état qui en découle."""
+
     near_px: int
     far_px: int
     ratio_label: str  # ex: "58/42" (côté le plus marqué en premier)
@@ -54,6 +57,9 @@ class AxisCentering:
 
 @dataclass(frozen=True)
 class CenteringResult:
+    """Résultat complet de `measure_centering` : marges des quatre côtés, centrage par axe
+    (`None` si non mesurable) et le palier retenu (le plus sévère des deux axes)."""
+
     left_px: int
     right_px: int
     top_px: int
@@ -130,6 +136,9 @@ def _axis_centering(near_px: int, far_px: int) -> AxisCentering | None:
 
 
 def measure_centering(crop_bgr: np.ndarray) -> CenteringResult | None:
+    """Mesure le centrage d'un recadrage redressé (630×880 px, BGR) par contraste de couleur
+    entre la bordure et le cadre intérieur — `None` si aucun cadre net ne s'en distingue
+    (full art, gold, photo trop peu contrastée), jamais une mesure inventée."""
     bbox = _inner_bbox(crop_bgr)
     if bbox is None:
         return None

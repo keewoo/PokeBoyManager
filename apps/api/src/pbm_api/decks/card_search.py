@@ -63,6 +63,8 @@ _card_value_rank = table("card_value_rank", column("card_id"), column("reference
 
 
 class DeckCardSort(StrEnum):
+    """Les tris disponibles dans le constructeur — chacun a sa colonne et son sens par défaut."""
+
     value_desc = "value_desc"
     value_asc = "value_asc"
     name_asc = "name_asc"
@@ -82,6 +84,8 @@ _ASCENDING = {
 
 @dataclass(frozen=True)
 class DeckCardSearchFilters:
+    """Les filtres d'une recherche de cartes dans le constructeur (tous facultatifs)."""
+
     q: str | None = None
     set_ids: frozenset[uuid.UUID] = field(default_factory=frozenset)
     rarities: frozenset[str] = field(default_factory=frozenset)
@@ -95,6 +99,8 @@ class DeckCardSearchFilters:
 
 @dataclass(frozen=True)
 class DeckCardResult:
+    """Une carte du catalogue, annotée pour l'utilisateur courant (possession, présence au deck)."""
+
     card_id: uuid.UUID
     set_id: uuid.UUID
     number: str
@@ -117,12 +123,16 @@ class DeckCardResult:
 
 @dataclass(frozen=True)
 class DeckCardSearchPage:
+    """Une page de résultats de recherche, et le curseur *keyset* vers la page suivante."""
+
     results: list[DeckCardResult]
     next_cursor: str | None
 
 
 @dataclass(frozen=True)
 class DeckCardFacets:
+    """Les valeurs de filtre disponibles (échelle du catalogue) et deux compteurs utilisateur."""
+
     sets: list[tuple[uuid.UUID, str, str]]
     rarities: list[str]
     card_types: list[str]
@@ -299,6 +309,8 @@ async def search_deck_cards(
     cursor: str | None,
     limit: int,
 ) -> DeckCardSearchPage:
+    """Recherche paginée (keyset) dans le catalogue, filtrée et triée en SQL — jamais un
+    chargement du catalogue entier (cible 150 ms au 95e centile, voir docstring du module)."""
     if deck_id is not None:
         await owned_deck_or_raise(session, user, deck_id)
 

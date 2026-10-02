@@ -30,6 +30,8 @@ _EMAIL_ADAPTER = TypeAdapter(EmailStr)
 
 
 class CreateUserError(Exception):
+    """Entrée invalide ou compte déjà existant — jamais un échec silencieux de la commande."""
+
     pass
 
 
@@ -186,6 +188,10 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Point d'entrée CLI (`python -m pbm_api.admin`) : dispatch vers la sous-commande choisie.
+
+    Retourne le code de sortie du processus (0 = succès, 1 = erreur affichée sur stderr).
+    """
     args = _build_parser().parse_args(argv)
 
     if args.command == "set-game-access":

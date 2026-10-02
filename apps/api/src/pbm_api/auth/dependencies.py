@@ -20,6 +20,10 @@ from pbm_api.security.tokens import hash_token
 async def get_current_session(
     request: Request, db: AsyncSession = Depends(get_session)
 ) -> tuple[Session, str]:
+    """Résout la session active depuis le cookie — jamais depuis un identifiant du client.
+
+    Lève 401 si le cookie est absent, ou si la session est inconnue ou expirée en base.
+    """
     raw_token = request.cookies.get(settings.session_cookie_name)
     if not raw_token:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Non authentifié")
@@ -35,6 +39,10 @@ async def get_current_session(
 async def get_current_user(
     request: Request, db: AsyncSession = Depends(get_session)
 ) -> User:
+    """Dépendance à poser sur toute route utilisateur : fournit le `user_id` qui isole ses
+    données, dérivé uniquement de la session — jamais d'une entrée du client. Lève 401 si
+    la session est absente/invalide ou si l'utilisateur qu'elle désigne n'existe plus.
+    """
     session_row, _ = await get_current_session(request, db)
     user = await db.get(User, session_row.user_id)
     if user is None:

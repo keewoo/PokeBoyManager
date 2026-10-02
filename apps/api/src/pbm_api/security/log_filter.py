@@ -27,12 +27,16 @@ _KEY_MASK = "***CLE_IA_MASQUEE***"
 
 
 def redact(text: str) -> str:
+    """Remplace toute clé IA reconnaissable (Anthropic, OpenAI, Google) par un masque —
+    pare la fuite d'une clé d'utilisateur dans les journaux d'erreur ou d'accès."""
     for pattern in _KEY_PATTERNS:
         text = pattern.sub(_KEY_MASK, text)
     return text
 
 
 def install_api_key_redaction() -> None:
+    """Chaîne `redact` à la fabrique de `LogRecord` courante — effet de bord global et
+    permanent sur `logging`, à appeler une fois au démarrage (`main.py`)."""
     _install_redaction(redact)
 
 
@@ -52,10 +56,14 @@ _TOKEN_MASK = "***JETON_MASQUE***"
 
 
 def redact_secret_urls(text: str) -> str:
+    """Masque la valeur du paramètre `token` dans une URL — pare la fuite d'un jeton
+    d'export ou d'envoi d'upload journalisé en clair par `uvicorn.access`."""
     return _TOKEN_QUERY_PATTERN.sub(_TOKEN_MASK, text)
 
 
 def install_secret_url_redaction() -> None:
+    """Chaîne `redact_secret_urls` à la fabrique de `LogRecord` courante — effet de bord
+    global et permanent sur `logging`, à appeler une fois au démarrage (`main.py`)."""
     _install_redaction(redact_secret_urls)
 
 

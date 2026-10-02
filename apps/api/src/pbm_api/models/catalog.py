@@ -1,3 +1,6 @@
+"""Modèles du catalogue partagé de cartes : extensions, cartes, prix, anecdotes et présence
+en tournoi — alimentés par l'import TCGdex et le relevé périodique, jamais par l'utilisateur."""
+
 import enum
 import uuid
 from datetime import date, datetime
@@ -161,11 +164,15 @@ class CardName(Base):
 
 
 class PriceSource(enum.StrEnum):
+    """Marché source d'un relevé de prix."""
+
     cardmarket = "cardmarket"
     tcgplayer = "tcgplayer"
 
 
 class PriceVariant(enum.StrEnum):
+    """Variante physique d'une carte (holo, reverse...) pour laquelle un prix est relevé."""
+
     normal = "normal"
     holo = "holo"
     reverse_holo = "reverse_holo"
@@ -244,6 +251,8 @@ class CardInsight(Base):
 
 
 class TournamentPresenceStatus(enum.StrEnum):
+    """Résultat du rapprochement d'une carte avec Limitless TCG lors du relevé périodique."""
+
     # Carte rapprochée sans ambiguïté sur Limitless TCG — `decks` peut être vide (carte
     # légitimement absente des tournois relevés, une information réelle en soi).
     checked = "checked"

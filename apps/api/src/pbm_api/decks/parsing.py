@@ -186,6 +186,8 @@ def _is_name_suffix(token: str) -> bool:
 
 
 def parse_line(line_no: int, raw: str) -> ParsedLine:
+    """Analyse une ligne brute : blanc, commentaire, en-tête de section, ou carte (quantité,
+    nom, extension, numéro) — jamais rejetée en silence (voir docstring du module)."""
     stripped = raw.strip()
     if not stripped:
         return ParsedLine(line_no=line_no, raw=raw, kind="blank")

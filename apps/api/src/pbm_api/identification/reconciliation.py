@@ -56,6 +56,9 @@ _TIER_CONFIDENCE_FIELDS: dict[str, tuple[str, ...]] = {
 
 @dataclass(frozen=True)
 class ReconciliationResult:
+    """Résultat d'un rapprochement catalogue : `tier` est le palier ayant trouvé des candidats
+    (ou `"aucun_indice"`), `candidates` leur liste classée (vide si aucun)."""
+
     tier: str
     candidates: list[IdentificationCandidate]
 

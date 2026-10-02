@@ -21,6 +21,9 @@ _MAX_TOKENS = 4096
 
 
 class OpenAiProvider(AIProvider):
+    """Fournisseur OpenAI concret — sortie structurée en mode strict, vision par data URI
+    base64 (`_data_uri`)."""
+
     PROVIDER: ClassVar[AiProviderEnum] = AiProviderEnum.openai
     DEFAULT_MODEL: ClassVar[str] = "gpt-4o"
 

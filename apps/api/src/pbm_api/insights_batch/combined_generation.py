@@ -24,6 +24,9 @@ PROMPT_VERSION = "v1"
 
 
 class CombinedCardInsightExtraction(BaseModel):
+    """Schéma de la réponse unique attendue par carte — anecdotes FR/EN et étude en jeu dans le
+    même appel, validé en sortie via `COMBINED_JSON_SCHEMA` (sortie contrainte Anthropic)."""
+
     anecdotes_fr: list[AnecdoteItem] = Field(max_length=MAX_ANECDOTES)
     anecdotes_en: list[AnecdoteItem] = Field(max_length=MAX_ANECDOTES)
     game_study: InGameStudyExtraction
@@ -50,6 +53,8 @@ def build_combined_prompt(
     abilities: list | None,
     tournament_decks: list[dict] | None,
 ) -> str:
+    """Assemble le prompt unique envoyé au modèle — anecdotes bilingues contraintes aux
+    `context_pages` fournies, étude en jeu contrainte aux données déterministes du catalogue."""
     lines = [
         f'Tu rédiges la fiche de la carte Pokémon "{card_name}" (extension "{set_name}") en '
         "une seule réponse structurée, avec trois parties : des anecdotes en français, les "

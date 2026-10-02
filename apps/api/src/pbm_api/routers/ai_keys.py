@@ -42,6 +42,7 @@ async def list_ai_keys(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> list[AiKeyResponse]:
+    """Liste les clés IA enregistrées par l'utilisateur courant, masquées (jamais en clair)."""
     credentials = await service.list_keys(db, current_user)
     return [_to_key_response(c) for c in credentials]
 
@@ -54,6 +55,7 @@ async def upsert_ai_key(
     current_user: User = Depends(get_current_user),
     _csrf: None = Depends(require_csrf),
 ) -> AiKeyResponse:
+    """Crée ou remplace la clé du fournisseur pour l'utilisateur courant (chiffrée en base)."""
     credential = await service.upsert_key(db, current_user, provider, payload.api_key)
     return _to_key_response(credential)
 
@@ -65,6 +67,7 @@ async def delete_ai_key(
     current_user: User = Depends(get_current_user),
     _csrf: None = Depends(require_csrf),
 ) -> None:
+    """Supprime la clé du fournisseur ; lève 404 si l'utilisateur n'en avait pas enregistré."""
     try:
         await service.delete_key(db, current_user, provider)
     except ProviderKeyNotFoundError:
@@ -80,6 +83,7 @@ async def test_ai_key(
     tester: ProviderKeyTester = Depends(get_provider_key_tester),
     _csrf: None = Depends(require_csrf),
 ) -> AiKeyTestResponse:
+    """Vérifie une clé auprès du fournisseur par un appel réseau réel ; lève 404 si absente."""
     try:
         valid, message = await service.test_key(db, current_user, provider, payload.api_key, tester)
     except ProviderKeyNotFoundError:
@@ -89,6 +93,7 @@ async def test_ai_key(
 
 @router.get("/ai-settings", response_model=AiSettingsResponse)
 async def get_ai_settings(current_user: User = Depends(get_current_user)) -> AiSettingsResponse:
+    """Renvoie le fournisseur et le modèle IA par défaut de l'utilisateur courant."""
     return AiSettingsResponse(
         default_provider=current_user.ai_default_provider,
         default_model=current_user.ai_default_model,
@@ -102,6 +107,7 @@ async def update_ai_settings(
     current_user: User = Depends(get_current_user),
     _csrf: None = Depends(require_csrf),
 ) -> AiSettingsResponse:
+    """Met à jour fournisseur/modèle par défaut ; lève 400 si le fournisseur n'a pas de clé."""
     fields_set = payload.model_fields_set
     try:
         user = await service.update_settings(
@@ -126,6 +132,7 @@ async def get_ai_usage(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> list[AiUsageEntry]:
+    """Renvoie la consommation IA de l'utilisateur courant par fournisseur et par période."""
     rows = await service.list_usage(db, current_user)
     return [
         AiUsageEntry(

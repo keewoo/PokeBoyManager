@@ -27,6 +27,7 @@ def _provider_error_message(response: httpx.Response) -> str | None:
 
 
 def raise_for_status(response: httpx.Response) -> None:
+    """Lève l'erreur normalisée correspondant au code de `response`, ou ne fait rien si succès."""
     if response.status_code < 400:
         return
     detail = response.text[:500]
