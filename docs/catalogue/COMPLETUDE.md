@@ -1,23 +1,44 @@
 # Rapport de complétude du catalogue
 
-Généré le 2026-09-19T21:43:02.834849+00:00 — mission `v2-catalogue-complet` point 4.
+Généré le 2026-10-02T12:02:09.316331+00:00 — mission `v2-catalogue-complet` point 4.
 
 ## Vue d'ensemble
 
-- Extensions : **202**
-- Cartes : **22169**
-- Noms FR : **22169** (100.0 %)
-- Noms EN : **22067** (99.5 %)
-- Cartes avec image officielle : **18342** (82.7 %)
-- Cartes avec `ptcg_id` (rapprochement Pokémon TCG API) : **19003** (85.7 %)
-- Cartes avec faiblesses ou résistances : **22103** (99.7 %)
-- Cartes avec coût de retraite : **18749** (84.6 %)
-- Cartes avec variantes connues : **22169** (100.0 %)
-- Cartes avec au moins un prix relevé : **19446** (87.7 %)
+- Extensions : **203**
+- Cartes : **22653**
+- Noms FR : **22173** (97.9 %)
+- Noms EN : **22551** (99.5 %)
+- Cartes avec image officielle : **18750** (82.8 %)
+- Cartes avec `ptcg_id` (rapprochement Pokémon TCG API) : **19065** (84.2 %)
+- Cartes avec faiblesses ou résistances : **22534** (99.5 %)
+- Cartes avec coût de retraite : **19182** (84.7 %)
+- Cartes avec variantes connues : **22653** (100.0 %)
+- Cartes avec au moins un prix relevé : **19676** (86.9 %)
+
+## Texte d'effet des Dresseurs et des Énergies spéciales
+
+Les Dresseurs (Objet, Supporter, Stade, Outil, Machine Technique) et les Énergies spéciales sont les seules cartes dont l'effet vit dans le champ `effect` (les Pokémon ont `attacks`/`abilities`, les Énergies de base n'ont pas d'effet). C'est le texte dont part le chantier des effets du jeu (lot `cat-textes-effets`).
+
+- Dresseurs : **2904**, dont **2851** avec un texte d'effet (98.2 %)
+- Énergies spéciales : **185**, dont **178** avec un texte d'effet (96.2 %)
+
+Détail des Dresseurs par sous-type (un Dresseur sans texte chez TCGdex reste vide et se compte comme tel, jamais un effet inventé) :
+
+| Sous-type | Total | Avec effet |
+|---|---|---|
+| Supporter | 1297 | 1279 |
+| Objet | 885 | 862 |
+| Outil | 342 | 336 |
+| Stade | 236 | 234 |
+| (sans sous-type) | 124 | 121 |
+| Stadium | 7 | 6 |
+| Item | 6 | 6 |
+| Machine Technique | 4 | 4 |
+| Tool | 3 | 3 |
 
 ## Extensions non rapprochées avec Pokémon TCG API
 
-49 extension(s) sans une seule carte avec `ptcg_id` (absente de Pokémon TCG API, ou rapprochement raté — voir `catalog/reconciliation.py`) :
+50 extension(s) sans une seule carte avec `ptcg_id` (absente de Pokémon TCG API, ou rapprochement raté — voir `catalog/reconciliation.py`) :
 
 - `tk-bw-e` — BW Kit du dresseur (Minitaupe)
 - `tk-bw-z` — BW Kit du dresseur (Zoroark)
@@ -57,6 +78,7 @@ Généré le 2026-09-19T21:43:02.834849+00:00 — mission `v2-catalogue-complet`
 - `tk-sm-l` — SM Kit du dresseur (Lougarox)
 - `tk-sm-r` — SM Kit du dresseur (Raichu d'Alola)
 - `A4` — Sagesse Entre Ciel et Mer
+- `sp` — Sample
 - `A4a` — Source Secrète
 - `wp` — W Promotional
 - `tk-xy-n` — XY Kit du dresseur (Bruyverne)
@@ -71,23 +93,15 @@ Généré le 2026-09-19T21:43:02.834849+00:00 — mission `v2-catalogue-complet`
 
 ## Trous restants (cartes manquantes par rapport au total officiel TCGdex)
 
-13 extension(s) dont l'import n'a pas ramené toutes les cartes officielles :
+5 extension(s) dont l'import n'a pas ramené toutes les cartes officielles :
 
 | Extension | Importées | Officiel (TCGdex) |
 |---|---|---|
 | `jumbo` Cartes Jumbo | 0 | 160 |
-| `exu` EX Forces Cachées Collection Zarbi | 27 | 28 |
-| `B1a` Embrasement Écarlate | 0 | 69 |
-| `B2` Parade Onirique | 0 | 155 |
-| `dpp` Promo DP | 42 | 56 |
-| `np` Promo Nintendo | 21 | 40 |
-| `swshp` Promo SWSH | 301 | 307 |
 | `rc` Radiant Collection | 0 | 25 |
 | `tk-sm-l` SM Kit du dresseur (Lougarox) | 18 | 30 |
-| `tk-sm-r` SM Kit du dresseur (Raichu d'Alola) | 19 | 30 |
-| `svp` SVP Black Star Promos | 220 | 225 |
+| `sp` Sample | 0 | 10 |
 | `wp` W Promotional | 0 | 7 |
-| `basep` Wizards Black Star Promos | 26 | 53 |
 
 ## Explication des trous confirmés
 
