@@ -8,8 +8,10 @@ résultat. On suit donc **à la lettre** l'ordre strict du corpus (``docs/jeu/RE
 * :mod:`~pbm_game.combat.modele` — les descripteurs : :class:`CoutAttaque`, :class:`Faiblesse`,
   :class:`Resistance`, :class:`Modificateur` (point d'accroche nommé d'une étape), et le
   :class:`ResultatDegats` avec sa trace et son **détail lisible** (R-10.9) ;
-* :mod:`~pbm_game.combat.cout` — :func:`cout_satisfait` : l'Actif porte-t-il de quoi payer
-  l'attaque (colorés, incolores, énergies multi-unités) ? (R-9.1, R-9.2) ;
+* :mod:`~pbm_game.combat.cout` — :func:`cout_satisfait` (l'Actif porte-t-il de quoi payer
+  l'attaque ? R-9.1/R-9.2) et :func:`payer_cout` (lot ``j-cartes-energies``) : trouver une
+  **combinaison valide** d'énergies et l'**expliquer** (:class:`PaiementCout`, journalisé par
+  :data:`~pbm_game.combat.cout.EVT_COUT_PAYE`) ;
 * :mod:`~pbm_game.combat.resolution` — :func:`resoudre_degats` (l'ordre strict R-10.1),
   :func:`poser_degats` / :func:`poser_compteurs` (en **compteurs**, jamais en PV — R-10.4) et
   :func:`evenement_degats` (le détail porté par le journal) ;
@@ -23,16 +25,22 @@ résultat. On suit donc **à la lettre** l'ordre strict du corpus (``docs/jeu/RE
   marqueur inconnu = panne), :func:`resoudre_kos` (le résolveur de K.O. **partagé** Checkup/attaque
   qui tranche les trois conditions de victoire, le K.O. simultané et l'égalité — R-13.5/R-14) et
   :func:`terminer` (fige la partie : vainqueur + raison + journal clos, R-14.6).
-
-**Périmètre au palier 6 (ce lot).** Le moteur ne connaît **pas encore** les données de carte
-(type d'une énergie, coût imprimé, faiblesse d'un Pokémon, attaques) : elles arrivent avec
-``j-cartes-pokemon`` (que ce lot débloque). Ce lot livre donc le **calcul** et ses crochets ;
-il reçoit des **descripteurs** déjà extraits du catalogue et ne devine rien (D9).
 """
 
 from __future__ import annotations
 
-from .cout import cout_satisfait, pool_energies
+from .cout import (
+    EVT_COUT_PAYE,
+    GENRE_SYMBOLE_COLORE,
+    GENRE_SYMBOLE_INCOLORE,
+    SYMBOLE_INCOLORE,
+    Affectation,
+    EnergieAttachee,
+    PaiementCout,
+    cout_satisfait,
+    payer_cout,
+    pool_energies,
+)
 from .fin import (
     MARQUEUR_RECOMPENSES,
     VOIE_ADVERSAIRE_SANS_POKEMON,
@@ -81,9 +89,17 @@ __all__ = [
     "modificateur_fixe",
     "EtapeCalcul",
     "ResultatDegats",
-    # coût
+    # coût (R-9.2) — vérification et paiement expliqué
     "cout_satisfait",
     "pool_energies",
+    "payer_cout",
+    "PaiementCout",
+    "EnergieAttachee",
+    "Affectation",
+    "EVT_COUT_PAYE",
+    "SYMBOLE_INCOLORE",
+    "GENRE_SYMBOLE_COLORE",
+    "GENRE_SYMBOLE_INCOLORE",
     # résolution
     "resoudre_degats",
     "poser_degats",
