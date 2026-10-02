@@ -42,6 +42,18 @@ from pbm_api.models.identification import (
     IdentificationCache,
     IdentificationCorrection,
 )
+from pbm_api.models.invitations import (
+    INVITATION_MODE_LIEN,
+    INVITATION_MODE_PSEUDO,
+    INVITATION_MODES,
+    INVITATION_STATUT_ACCEPTEE,
+    INVITATION_STATUT_ANNULEE,
+    INVITATION_STATUT_ENVOYEE,
+    INVITATION_STATUT_EXPIREE,
+    INVITATION_STATUT_REFUSEE,
+    INVITATION_STATUTS,
+    GameInvitation,
+)
 from pbm_api.models.jobs import DataExport, Job, JobStatus
 from pbm_api.models.pricing import ExchangeRateDaily
 from pbm_api.models.users import AiCredential, AiProvider, EmailToken, EmailTokenKind, Session, User
@@ -84,6 +96,16 @@ __all__ = [
     "GAME_STATUS_TERMINEE",
     "GAME_STATUS_EXPIREE",
     "GAME_STATUTS",
+    "GameInvitation",
+    "INVITATION_MODE_PSEUDO",
+    "INVITATION_MODE_LIEN",
+    "INVITATION_MODES",
+    "INVITATION_STATUT_ENVOYEE",
+    "INVITATION_STATUT_ACCEPTEE",
+    "INVITATION_STATUT_REFUSEE",
+    "INVITATION_STATUT_ANNULEE",
+    "INVITATION_STATUT_EXPIREE",
+    "INVITATION_STATUTS",
     "CollectionItem",
     "IdentificationCache",
     "IdentificationCorrection",

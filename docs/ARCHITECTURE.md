@@ -954,3 +954,70 @@ diffusion live passe par un bus **en mémoire du process** (`games/temps_reel.py
 **garantie de non-perte** ne tient pas au bus mais au journal numéroté (un message perdu est
 rattrapé par une resync). Protocole, messages et garanties : `docs/jeu/TEMPS-REEL.md`. Sécurité du
 canal (anti-CSWSH) : `docs/SECURITE.md`. Bandeau « connexion dégradée » : `docs/UI-UX.md`.
+
+## Inviter quelqu'un à jouer — invitations et salon d'attente (lot `j-invitations`)
+
+Entre deux frères ou deux amis, on n'« cherche pas un adversaire » (la file d'attente anonyme,
+`j-file-attente`) : on invite quelqu'un de précis. Ce lot modélise l'**invitation** et le **salon
+d'attente à deux** qui précède le lancement d'une partie.
+
+**Table `game_invitations`** (`apps/api/src/pbm_api/models/invitations.py`). Deux modes dans une
+même table :
+
+- `pseudo` — on vise un compte invité connu. `invitee_user_id` est renseigné dès la création.
+- `lien` — on fabrique un lien à usage unique à partager. `token_hash` porte l'empreinte SHA-256 du
+  jeton (le jeton en clair n'est renvoyé qu'une fois, à la création, et n'est jamais stocké ni
+  journalisé — même règle que les sessions et jetons d'e-mail). `invitee_user_id` est nul jusqu'à ce
+  qu'un joueur suive le lien et l'accepte.
+
+Chaque camp annonce un deck (`inviter_deck_id` / `invitee_deck_id`, en `SET NULL`), validé par
+`pbm_api.games.entry.verifier_deck` (D9 : un deck dont une carte n'est pas scriptée est refusé en la
+nommant). Le **choix et le contrôle définitifs du deck, le tirage au sort et le « prêt à jouer »**
+sont le lot aval `j-lancement-partie` — ici on ne fait qu'**annoncer**.
+
+**Cycle de vie** (`statut`), strict et à sens unique vers une issue finale :
+
+```
+envoyee ──accepter──▶ acceptee      (le salon d'attente à deux est ouvert)
+   │
+   ├────refuser────▶ refusee        (par le destinataire d'une invitation par pseudo)
+   ├────annuler────▶ annulee        (par l'émetteur)
+   └──échéance passée──▶ expiree     (transition paresseuse, jamais un silence)
+```
+
+L'**usage unique** d'un lien en découle : accepter fait quitter le statut « envoyee », et seul ce
+statut autorise une acceptation — un second usage est donc refusé (409). L'**expiration** est une
+transition paresseuse appliquée à la lecture et avant toute action (pas besoin d'un balayage de
+fond pour qu'elle soit vraie).
+
+**Routes** (`/invitations`, `apps/api/src/pbm_api/routers/invitations.py`), toutes gardées par
+`require_game_access` (D11 → 404 pour un compte non invité ; écritures sous jeton CSRF) :
+
+| Route | Rôle |
+|---|---|
+| `POST /invitations/pseudo` | inviter un compte par pseudo (+ rappel e-mail) |
+| `POST /invitations/lien` | fabriquer un lien ; renvoie le jeton **une seule fois** |
+| `GET /invitations/recues` | invitations en attente reçues — la **notification dans l'application** |
+| `GET /invitations/envoyees` | invitations émises (suivi, annulation) |
+| `POST /invitations/lien/accepter` | rejoindre par lien (jeton dans le **corps**, jamais l'URL) |
+| `POST /invitations/{id}/accepter` | accepter une invitation par pseudo |
+| `POST /invitations/{id}/refuser` · `/annuler` | refuser (destinataire) / annuler (émetteur) |
+| `GET /invitations/{id}/salon` | le salon d'attente — **vue symétrique** |
+
+⚠️ La route statique `/invitations/lien/accepter` est déclarée **avant** la dynamique
+`/invitations/{invitation_id}/accepter` : sans cet ordre, FastAPI capterait « lien » comme un
+`invitation_id` et répondrait 422.
+
+**Un lien n'ouvre aucun accès (D11).** Suivre un lien suppose un compte invité déjà connecté (la
+garde `require_game_access` refuse en 404 sinon) : le lien **rejoint** une invitation, il ne crée
+jamais de compte ni de droit. Le service ne touche jamais `User.game_access` (vérifié par un test
+dédié).
+
+**Salon d'attente à deux.** `salon()` reconstruit une vue **symétrique** depuis l'invitation :
+identique pour l'émetteur et l'invité (émetteur + invité, pseudos, decks annoncés). C'est le socle
+des lots aval `j-lancement-partie` et `j-salon-partie`. Un tiers étranger à l'invitation reçoit 404.
+
+**Notification.** La source fiable est la liste `GET /invitations/recues` (dans l'application). Une
+invitation par pseudo envoie en plus un **rappel e-mail** via l'`EmailSender` injecté (proprement
+désactivé si `SMTP_HOST` est vide). La notification **PWA** est prévue pour le lot
+`j-notifications-jeu` — relais nommé, pas approximé.
