@@ -46,6 +46,10 @@ cachée devient un simple entier : aucun `instance_id` ni `ref` caché ne survit
 structure produite — garanti par un test qui parcourt la vue à la recherche de ces
 identifiants sur des centaines d'états aléatoires.
 
+> Le lot `j-autorite-vues` fait de `vue` le **point de sortie unique** (`pbm_game.sortie.projeter`),
+> y ajoute des **jetons opaques** pour désigner une carte cachée sans la révéler, projette les
+> **événements** par destinataire, et câble l'API dessus. Détail : `AUTORITE-VUES.md`.
+
 ## Sérialisation (`serialisation.py`)
 
 `vers_json` / `depuis_json` : round-trip **exact** (`depuis_json(vers_json(e)) == e`) et

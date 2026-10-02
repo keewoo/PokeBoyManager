@@ -51,6 +51,12 @@ K.O. qui en découlent hors attaque (R-12.4) — récompenses (R-13) et promotio
 vide = défaite. `resoudre_checkup` est la phase de bout en bout ; la transition système
 `checkup` la journalise. Les K.O. s'appuient sur les primitives partagées de `pbm_game.combat.ko`
 (le code de K.O. ne vit pas que dans la résolution d'attaque).
+
+Lot ``j-autorite-vues`` : ``pbm_game.sortie``, le **point de sortie unique** vers un client —
+``projeter(etat, evenements, pour, jetonneur)`` compose la projection d'état (``vue``), les
+**jetons opaques** des cartes cachées (``Jetonneur`` : non corrélables d'un mélange à l'autre) et
+la **projection des événements** par destinataire (un type non projeté est refusé, jamais diffusé
+brut). Rien de brut ne part vers un client en dehors de cette porte — ni l'API, ni le temps réel.
 """
 
 from __future__ import annotations

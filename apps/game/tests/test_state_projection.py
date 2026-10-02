@@ -35,8 +35,8 @@ def _cartes_interdites_pour(etat: EtatPartie, demandeur: str) -> set[str]:
 
 
 def test_vue_ne_laisse_fuir_aucune_carte_cachee():
-    """Sur 300 états aléatoires, aucune carte cachée n'apparaît dans la vue d'un joueur."""
-    for seed in range(300):
+    """Sur 1 000 états aléatoires, aucune carte cachée n'apparaît dans la vue d'un joueur."""
+    for seed in range(1000):
         etat = fabrique_etat(seed)
         for demandeur in ("alice", "bob"):
             texte = json.dumps(vue(etat, demandeur))

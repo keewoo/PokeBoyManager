@@ -11,7 +11,22 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+
+class ActionIn(BaseModel):
+    """Un coup soumis par un joueur (lot `j-autorite-vues`).
+
+    `type` et `params` décrivent le coup ; `numero_attendu` est le numéro d'action que le client
+    croit être le prochain — c'est la clé d'**idempotence** (un renvoi réseau du même coup au même
+    numéro est sans effet) et de détection de conflit. L'auteur du coup n'est **jamais** dans le
+    corps : le serveur l'impose depuis la session (`str(user_id)`) — un client ne peut pas agir sous
+    une autre identité.
+    """
+
+    type: str
+    params: dict = Field(default_factory=dict)
+    numero_attendu: int
 
 
 class GamePlayerOut(BaseModel):
