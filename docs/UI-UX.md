@@ -398,3 +398,41 @@ L'entrée « Jouer » (navigation `app-shell.tsx` + salon) n'apparaît qu'aux co
 (D11, lu via `GET /me`) ; sans ce droit, `SalonView` rend une page inexistante (`notFound()`) — le
 jeu n'existe pas à l'écran, et l'API répond déjà 404 partout. Tout vient du serveur, aucune règle
 n'est rejouée côté écran. Tests : `salon-view.test.tsx`, `app-shell-jeu.test.tsx`.
+
+## Plateau de jeu (lot `j-plateau-layout`)
+
+`apps/web/src/app/jeu/parties/[id]/` — la table de jeu, à `/jeu/parties/{id}` (route vers laquelle
+pointent « Reprendre » / « Rejoindre » du salon). `page.tsx` attend `params` (Next 15) et passe
+l'identifiant à `partie-view.tsx` (`PartieView`), composant client qui, dans l'ordre : **gate l'accès**
+(droit au jeu D11 via `GET /me`, et participation à la partie — un 404 serveur devient `notFound()`,
+jamais une porte vers un 404) ; **charge la vue autoritaire** (`GET /games/{id}/state`) ; **branche le
+canal temps réel** (`CanalPartie`, lot `j-temps-reel`) dont chaque resynchronisation porte la vue
+complète, qui prime. Rien n'est reconstruit côté écran — la reprise après F5 et le redessin après
+rotation tiennent à cela.
+
+Le plateau lui-même est `components/game/game-board.tsx` (`GameBoard`), alimenté par la **vue projetée**
+(types et aides pures dans `lib/game/plateau.ts`, miroir de `pbm_game.sortie.projeter`). Il dispose les
+neuf zones de chaque camp (actif, banc de cinq, main, pioche, défausse, six récompenses, Stade partagé),
+l'adversaire en haut, soi en bas, les deux actifs dominants.
+
+- **Mise à l'échelle** : l'arène (`.pbm-arena`, `globals.css`) est un conteneur `container-type: size`
+  dont `font-size` suit la plus petite de ses deux dimensions (`min(100cqw/120, 100cqh/64)`). Toutes les
+  tailles de cartes sont en `em` (grille de 120 em héritée de la maquette du jeu) : sur un téléphone en
+  paysage les cartes rétrécissent au lieu de déborder. La hauteur du plateau est bornée à l'écran
+  (`min(80vh, calc(100dvh - 9.5rem))`) pour que l'arène **et** la main tiennent sans défilement.
+- **Zoom** (`card-zoom.tsx` + `BoardCard taille="zoom"`) : au survol, au focus ou au maintien long d'une
+  carte, une surcouche non modale l'agrandit à une taille lisible sans pincer — sans quitter la partie.
+- **Consultation des zones** (`zone-consultation.tsx`) : `ZonePublique` (défausse, zone perdue) s'ouvre en
+  panneau listant les cartes ; `ZoneCachee` (pioche, récompenses, main adverse) n'affiche qu'un **compteur**
+  — leur contenu n'existe pas côté client (le serveur fait autorité, anti-triche).
+- **Limites de périmètre** : les cartes sont des **repères de disposition** (référence + pastilles
+  minimales). L'image réelle (photo ou image officielle) et le détail jouable (attaques, coûts) sont le lot
+  aval `j-rendu-carte` ; le rendu fin des dégâts/énergies/états est `j-plateau-etat-visuel` ; jouer un coup
+  est `j-plateau-interactions`. `BoardCard` est le point d'extension unique — on n'y fabrique aucun contenu
+  qu'on n'a pas (D9).
+
+Tests : `plateau.test.ts` (aides pures), `board-card.test.tsx` + `zone-consultation.test.tsx`
+(zoom, consultation), `game-board.test.tsx` (disposition, zones cachées en compteur, main adverse en
+nombre seulement), `partie-view.test.tsx` (gating). Le critère « sans défilement sur 390 px en paysage »
+et le redessin après rotation sont vérifiés en navigateur réel par `e2e/plateau-responsive.spec.ts` (la
+CI fait foi — e2e navigateur impossible en local sur chimera).
