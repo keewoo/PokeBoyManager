@@ -350,7 +350,14 @@ déploiement), `PLATFORM_ANTHROPIC_API_KEY`/`INSIGHTS_BUDGET_EUR`/`INSIGHTS_BATC
 `INSIGHTS_BATCH_CHUNK_SIZE` (insights par lots, lot `v4-insights-batch` — clé PLATEFORME
 distincte de toute clé d'utilisateur et plafond de dépense cumulé, vides/nuls par défaut : sans
 eux, `scripts/run_insights_batch.py` refuse de dépenser quoi que ce soit ; à fournir par JF hors
-dépôt, D4).
+dépôt, D4), `HORLOGE_PAR_TOUR_S`/`HORLOGE_PAR_JOUEUR_S`/`HORLOGE_PAR_DECISION_S`/
+`HORLOGE_TOLERANCE_RESEAU_S`/`HORLOGE_PAUSE_DECONNEXION_S` (horloges d'une partie, lot `j-timer`,
+DJ4 — en secondes), `JEU_INACTIVITE_PLAFOND_H`/`JEU_PURGE_ANCIENNETE_J` (lot
+`j-deconnexion-abandon` — le **plafond** au-delà duquel une partie sans activité est close d'office
+par le cron léger `games_maintenance_task` du worker, et l'ancienneté au-delà de laquelle une partie
+morte est purgée ; défauts 72 h / 30 j, les changer ne demande pas de redéployer le moteur). Ce cron
+de maintenance des parties est **léger** et tourne sur tous les nœuds, y compris la PROD (il n'est
+pas sous la garde `HEAVY_JOBS_ENABLED`).
 Chaque lot pointe sa propre base/bucket/préfixe — ne jamais réutiliser ceux d'un autre lot sur
 l'infra partagée (`pbm-shared`). `apps/web` lit `NEXT_PUBLIC_API_URL` (défaut
 `http://localhost:8000`) et `NEXT_PUBLIC_SESSION_COOKIE_NAME` (défaut `pbm_session`, doit

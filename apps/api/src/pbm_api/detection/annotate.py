@@ -9,6 +9,8 @@ _TEXT_COLOR = (0, 0, 255)
 
 
 def draw_control_image(image: np.ndarray, quads: list[np.ndarray]) -> bytes:
+    """Dessine les contours détectés et leur numéro d'ordre de lecture sur une copie de
+    l'image, puis encode le résultat en JPEG."""
     annotated = image.copy()
     for index, quad in enumerate(quads, start=1):
         pts = quad.reshape(-1, 1, 2).astype(np.int32)
@@ -27,6 +29,7 @@ def draw_control_image(image: np.ndarray, quads: list[np.ndarray]) -> bytes:
 
 
 def encode_jpeg(image: np.ndarray, *, quality: int = 92) -> bytes:
+    """Encode une image OpenCV en JPEG ; lève si l'encodage échoue."""
     ok, buffer = cv2.imencode(".jpg", image, [cv2.IMWRITE_JPEG_QUALITY, quality])
     if not ok:
         raise RuntimeError("échec de l'encodage JPEG de l'image")

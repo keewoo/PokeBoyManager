@@ -27,7 +27,12 @@ UNREACHABLE_MESSAGE = "Fournisseur injoignable — réessayez plus tard."
 
 
 class ProviderKeyTester:
+    """Teste une clé API fournisseur par un aller-retour minimal (liste de modèles), sans appel
+    de complétion facturé."""
+
     def build_request(self, provider: AiProvider, api_key: str) -> tuple[str, dict[str, str]]:
+        """URL et en-têtes d'authentification pour `provider` — la clé toujours en en-tête,
+        jamais en paramètre d'URL."""
         url = _ENDPOINTS[provider]
         if provider is AiProvider.anthropic:
             headers = {"x-api-key": api_key, "anthropic-version": "2023-06-01"}
@@ -38,6 +43,8 @@ class ProviderKeyTester:
         return url, headers
 
     async def test(self, provider: AiProvider, api_key: str) -> tuple[bool, str]:
+        """Teste `api_key` contre `provider` ; renvoie `(valide, message)`, ne lève jamais —
+        réseau, clé refusée et erreur inattendue sont tous normalisés en message."""
         url, headers = self.build_request(provider, api_key)
         try:
             async with httpx.AsyncClient(timeout=_TIMEOUT_SECONDS) as client:
@@ -56,4 +63,5 @@ class ProviderKeyTester:
 
 
 def get_provider_key_tester() -> ProviderKeyTester:
+    """Dépendance FastAPI fournissant un `ProviderKeyTester` — remplacée par un double en test."""
     return ProviderKeyTester()

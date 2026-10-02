@@ -1,3 +1,5 @@
+"""Modèles de la file de travaux asynchrones (arq) et des exports RGPD qui en dérivent."""
+
 import enum
 import uuid
 from datetime import datetime
@@ -11,6 +13,8 @@ from pbm_api.models.base import Base, TimestampMixin
 
 
 class JobStatus(enum.StrEnum):
+    """État d'avancement d'un travail asynchrone (file arq) ou d'un export RGPD."""
+
     queued = "queued"
     running = "running"
     succeeded = "succeeded"

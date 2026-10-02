@@ -14,12 +14,16 @@ from pbm_api.config import settings
 
 
 def generate_upload_token(upload_id: uuid.UUID, expires_in: int = 900) -> str:
+    """Signe un jeton à durée limitée (15 min par défaut) liant l'envoi à cet `upload_id`
+    précis — quiconque le détient peut envoyer le fichier, sans cookie de session."""
     expires_at = int(time.time()) + expires_in
     signature = _sign(upload_id, expires_at)
     return f"{expires_at}.{signature}"
 
 
 def verify_upload_token(upload_id: uuid.UUID, token: str) -> bool:
+    """Vérifie l'expiration puis la signature HMAC en temps constant ; False si le jeton est
+    malformé, expiré ou signé pour un autre `upload_id` — l'appelant lève 403 sur refus."""
     try:
         expires_at_raw, signature = token.split(".", 1)
         expires_at = int(expires_at_raw)

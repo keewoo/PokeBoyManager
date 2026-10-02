@@ -17,6 +17,7 @@ from pbm_api.security.crypto import decrypt_api_key, encrypt_api_key, mask_api_k
 
 
 async def list_keys(db: AsyncSession, user: User) -> list[AiCredential]:
+    """Toutes les clés IA enregistrées par `user`, tous fournisseurs confondus."""
     result = await db.execute(select(AiCredential).where(AiCredential.user_id == user.id))
     return list(result.scalars().all())
 
@@ -35,6 +36,7 @@ async def _get_credential(
 async def upsert_key(
     db: AsyncSession, user: User, provider: AiProvider, api_key: str
 ) -> AiCredential:
+    """Chiffre et enregistre (ou remplace) la clé de `user` pour `provider`."""
     encrypted_key, nonce = encrypt_api_key(api_key, user.id)
     key_mask = mask_api_key(api_key)
 
@@ -51,6 +53,7 @@ async def upsert_key(
 
 
 async def delete_key(db: AsyncSession, user: User, provider: AiProvider) -> None:
+    """Supprime la clé de `user` pour `provider` ; lève `ProviderKeyNotFoundError` si absente."""
     credential = await _get_credential(db, user, provider)
     if credential is None:
         raise ProviderKeyNotFoundError
@@ -85,6 +88,9 @@ async def update_settings(
     default_model: str | None,
     model_set: bool,
 ) -> User:
+    """Met à jour fournisseur/modèle par défaut de `user` (`*_set` distingue champ absent de
+    `None` explicite) ; lève `DefaultProviderWithoutKeyError` si le fournisseur choisi n'a pas
+    de clé enregistrée."""
     if provider_set:
         if default_provider is not None:
             credential = await _get_credential(db, user, default_provider)
@@ -146,6 +152,7 @@ async def record_usage(db: AsyncSession, user: User, usage: ExtractionUsage) -> 
 
 
 async def list_usage(db: AsyncSession, user: User) -> list[AiUsageMonthly]:
+    """Usage mensuel de `user`, tous fournisseurs confondus, période la plus récente d'abord."""
     result = await db.execute(
         select(AiUsageMonthly)
         .where(AiUsageMonthly.user_id == user.id)

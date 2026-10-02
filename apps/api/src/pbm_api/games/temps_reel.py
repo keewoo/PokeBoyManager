@@ -31,6 +31,7 @@ import asyncio
 import logging
 import uuid
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from typing import Protocol
 
 from pbm_game.journal import appliquer, empreinte, reprendre
@@ -39,6 +40,7 @@ from pbm_game.sortie import Jetonneur, projeter, secret_jetons
 from pbm_game.state.modele import EtatPartie
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from pbm_api.games import horloges as _adapt_horloges
 from pbm_api.games.construction import joueur_id_de
 from pbm_api.games.projection import projeter_resultat
 from pbm_api.games.service import (
@@ -46,6 +48,7 @@ from pbm_api.games.service import (
     ResultatAction,
     _dernier_instantane,
     _entrees_queue,
+    expirer_horloge,
 )
 from pbm_api.models.games import Game
 
@@ -132,6 +135,9 @@ async def resynchroniser(
         "depuis": depuis,
         "vue": vue,
         "evenements": file,
+        "horloges": _adapt_horloges.restant_json(
+            game.horloges, datetime.now(UTC).timestamp()
+        ),
         "statut": game.status,
         "termine": game.status != GAME_STATUS_EN_COURS,
         "vainqueur_user_id": (
@@ -216,6 +222,7 @@ class Hub:
                     str(resultat.vainqueur_user_id) if resultat.vainqueur_user_id else None
                 ),
                 "raison_fin": resultat.raison_fin,
+                "horloges": resultat.horloges,
             }
             try:
                 abonne.file.put_nowait(message)
@@ -246,9 +253,13 @@ class Canal(Protocol):
     déconnexion.
     """
 
-    async def recevoir(self) -> dict | None: ...
+    async def recevoir(self) -> dict | None:
+        """Attend le prochain message du client ; `None` quand la connexion se ferme."""
+        ...
 
-    async def envoyer(self, message: dict) -> None: ...
+    async def envoyer(self, message: dict) -> None:
+        """Émet un message vers le client (effet de bord réseau)."""
+        ...
 
 
 async def _resync_payload(
@@ -323,6 +334,14 @@ async def piloter_canal(
                     transmis = max(transmis, rattrapage["numero"] - 1)
 
             if not termines:
+                # Expiration d'horloge (lots j-timer / j-deconnexion-abandon) : un silence est
+                # l'occasion de vérifier qu'aucune horloge n'a expiré. Si oui, le coup est
+                # journalisé et diffusé — action par défaut (fin de tour, défaite au temps), ou
+                # **désertion** si un joueur déconnecté a dépassé sa grâce (forfait).
+                async with fabrique_session() as db_exp:
+                    resultat_exp = await expirer_horloge(db_exp, game_id)
+                if resultat_exp is not None:
+                    HUB.publier(game_id, resultat_exp, graine_hex=graine_hex)
                 # Silence : battement de cœur, porteur du numéro courant (détection de coupure +
                 # rattrapage d'une dernière diffusion manquée côté client).
                 numero = await _numero_courant(fabrique_session, game_id)

@@ -50,6 +50,7 @@ _storage = build_storage()
 
 
 def get_storage() -> StorageBackend:
+    """Dépendance FastAPI : backend de stockage des photos, remplaçable par un double en test."""
     return _storage
 
 
@@ -117,6 +118,9 @@ async def list_collection(
     cursor: str | None = None,
     limit: Annotated[int, Query(ge=1, le=service.MAX_LIMIT)] = service.DEFAULT_LIMIT,
 ) -> CollectionListResponse:
+    """Liste paginée (curseur) de la collection de l'utilisateur courant, filtrable et triable,
+    avec agrégats de valeur (total, variation 7j/30j) — jamais la collection d'un autre
+    utilisateur, le filtrage par `user_id` de session est posé dans `service.list_collection`."""
     filters = CollectionFilters(
         q=q,
         set_ids=frozenset(set_id or []),
@@ -154,6 +158,8 @@ async def get_collection_facets(
     session: Annotated[AsyncSession, Depends(get_session)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> CollectionFacets:
+    """Renvoie les valeurs filtrables (sets, séries, raretés, etc.) présentes dans la
+    collection de l'utilisateur courant, pour peupler les filtres de la grille."""
     facets = await service.get_facets(session, current_user)
     return CollectionFacets(
         sets=[
@@ -176,6 +182,8 @@ async def create_collection_item(
     current_user: Annotated[User, Depends(get_current_user)],
     _csrf: Annotated[None, Depends(require_csrf)],
 ) -> CreateCollectionItemResponse:
+    """Ajoute manuellement un ou plusieurs exemplaires à la collection de l'utilisateur
+    courant ; lève 404 si la carte visée n'existe pas au catalogue."""
     try:
         items = await service.create_manual_items(session, current_user, payload)
     except CardNotFoundError:
@@ -238,6 +246,8 @@ async def update_collection_item(
     current_user: Annotated[User, Depends(get_current_user)],
     _csrf: Annotated[None, Depends(require_csrf)],
 ) -> CollectionListItem:
+    """Met à jour un exemplaire de la collection de l'utilisateur courant (jamais celui d'un
+    autre) ; lève 404 si l'exemplaire est introuvable ou n'appartient pas à l'utilisateur."""
     try:
         item = await service.update_item(session, current_user, item_id, payload)
     except CollectionItemNotFoundError:
@@ -253,6 +263,8 @@ async def delete_collection_item(
     current_user: Annotated[User, Depends(get_current_user)],
     _csrf: Annotated[None, Depends(require_csrf)],
 ) -> None:
+    """Supprime un exemplaire de la collection de l'utilisateur courant ; lève 404 s'il est
+    introuvable ou n'appartient pas à l'utilisateur."""
     try:
         await service.delete_item(session, current_user, item_id)
     except CollectionItemNotFoundError:
@@ -279,6 +291,8 @@ async def get_collection_item_photo(
 
 
 class CollectionItemRanking(BaseModel):
+    """Position d'un exemplaire dans sa rareté (valeur et rang) et dans la collection entière."""
+
     rarity_rank: int | None
     rarity_group_size: int | None
     value_percentile: float | None
@@ -287,6 +301,8 @@ class CollectionItemRanking(BaseModel):
 
 
 class CollectionItemDetail(BaseModel):
+    """Détail d'un exemplaire de collection, valeur courante et classement inclus."""
+
     id: uuid.UUID
     card_id: uuid.UUID
     set_id: uuid.UUID
@@ -306,6 +322,8 @@ async def get_collection_item(
     session: Annotated[AsyncSession, Depends(get_session)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> CollectionItemDetail:
+    """Renvoie le détail et le classement (rareté, collection) d'un exemplaire possédé par
+    l'utilisateur courant ; lève 404 si introuvable ou appartenant à un autre utilisateur."""
     try:
         item = await service.get_owned_item(session, current_user, item_id)
     except CollectionItemNotFoundError:

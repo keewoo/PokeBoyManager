@@ -124,6 +124,27 @@ ACTION_MISE_EN_PLACE_INITIALE = "mise_en_place_initiale"
 #: ``actif`` (instance_id), ``banc`` (liste d'instance_id), ``definitions`` (fiches catalogue des
 #: cartes choisies, D9). Ajoutée par ``j-initialisation``.
 ACTION_PLACER_MISE_EN_PLACE = "placer_mise_en_place"
+#: **Fin de tour forcée** — action **système** déclenchée à l'expiration de l'horloge par
+#: tour (lot ``j-timer``, DJ4). Termine le tour du joueur actif (entrée en Checkup), sans
+#: déclarer d'attaque. Aucun ``params``. Peut aussi être un passage volontaire du joueur actif.
+ACTION_FIN_TOUR = "fin_tour"
+#: **Défaite au temps** — action **système** déclenchée quand le budget total d'un joueur est
+#: épuisé (lot ``j-timer``, DJ4 « sinon défaite au temps »). ``params["joueur"]`` nomme le
+#: perdant ; l'adversaire gagne, raison :data:`RAISON_TEMPS_ECOULE`.
+ACTION_DEFAITE_TEMPS = "defaite_temps"
+#: **Désertion** — action **système** (lot ``j-deconnexion-abandon``) déclenchée quand un joueur
+#: déconnecté ne revient pas avant la fin de son délai de grâce (``pause_deconnexion_s``). C'est un
+#: **forfait** : ``params["joueur"]`` nomme le déserteur, l'adversaire gagne, raison
+#: :data:`RAISON_DESERTION`. Distincte de l'abandon volontaire (R-14.3) — mêmes effets de fin, mais
+#: un motif propre, pour que l'historique dise *pourquoi* la partie s'est close.
+ACTION_DESERTER = "deserter"
+#: **Expiration pour inactivité** — action **système** (lot ``j-deconnexion-abandon``) du balayage
+#: périodique des parties fantômes : une partie sans aucune activité au-delà du plafond configuré
+#: est close d'office. Personne n'a joué, donc **aucun vainqueur** (``vainqueur=None``), raison
+#: :data:`RAISON_INACTIVITE` — à distinguer d'une fin méritée. Aucun ``params``. C'est le filet qui
+#: garantit qu'« aucune partie ne reste en cours plus longtemps que le plafond », chaque clôture
+#: portant son motif dans le journal (jamais un nettoyage muet, risque nommé du lot).
+ACTION_EXPIRER_INACTIVITE = "expirer_inactivite"
 
 # --- Types d'événement (ce que PRODUIT le moteur) ----------------------------
 EVT_PIOCHE_MELANGEE = "pioche_melangee"
@@ -207,6 +228,9 @@ EVT_PLACEMENT_CACHE = "placement_cache"
 #: porte, par joueur, l'Actif et le banc révélés (identités), le nombre de récompenses et de cartes
 #: bonus piochées. Un **seul** événement pour les deux : aucun joueur n'est révélé avant l'autre.
 EVT_MISE_EN_PLACE_REVELEE = "mise_en_place_revelee"
+#: Un tour se **termine** (R-5.8) sur expiration de l'horloge par tour ou passage volontaire.
+#: Produit par la transition ``fin_tour`` (lot ``j-timer``) : porte le joueur et la phase quittée.
+EVT_FIN_TOUR = "fin_tour"
 
 #: Raison de fin pour un abandon (R-14.3), portée par ``EtatPartie.raison_fin`` et par
 #: l'événement :data:`EVT_PARTIE_TERMINEE`.
@@ -224,6 +248,17 @@ RAISON_PLUS_DE_POKEMON = "plus_de_pokemon"
 #: ``j-ko-recompenses``. Ce n'est pas un K.O. de l'adversaire : c'est la victoire par les
 #: récompenses, distincte de :data:`RAISON_PLUS_DE_POKEMON`.
 RAISON_DERNIERE_RECOMPENSE = "derniere_recompense"
+#: Raison de fin pour une **défaite au temps** (R-14.6) : le budget total d'un joueur est
+#: épuisé (DJ4). Posée par ``j-timer`` via la transition système ``defaite_temps``.
+RAISON_TEMPS_ECOULE = "temps_ecoule"
+#: Raison de fin pour une **désertion** (R-14.6) : un joueur déconnecté n'est pas revenu avant la
+#: fin du délai de grâce → forfait. Posée par ``j-deconnexion-abandon`` via la transition système
+#: ``deserter``. L'adversaire gagne, comme pour l'abandon, mais le motif distingue les deux.
+RAISON_DESERTION = "desertion"
+#: Raison de clôture pour **inactivité** : une partie fantôme (plus personne ne joue) close d'office
+#: par le balayage périodique. Il n'y a **pas** de vainqueur — ce n'est pas une fin méritée mais un
+#: ménage. Posée par ``j-deconnexion-abandon`` via la transition système ``expirer_inactivite``.
+RAISON_INACTIVITE = "inactivite"
 
 
 @dataclass(frozen=True)

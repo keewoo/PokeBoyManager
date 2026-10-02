@@ -22,6 +22,8 @@ from pbm_api.pricing.valuation import item_value
 
 @dataclass(frozen=True)
 class CardValueRank:
+    """Une ligne de la vue matérialisée `card_value_rank` pour une carte."""
+
     card_id: uuid.UUID
     set_id: uuid.UUID
     reference_price_eur: Decimal | None
@@ -64,6 +66,8 @@ async def card_value_rank(
 
 @dataclass(frozen=True)
 class CollectionRank:
+    """Position d'un exemplaire par valeur dans la collection de son propriétaire."""
+
     position: int | None
     total_priced: int
     total_items: int

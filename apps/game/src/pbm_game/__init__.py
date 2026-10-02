@@ -91,6 +91,16 @@ from . import checkup as _checkup  # noqa: F401,E402  (import pour effet d'enreg
 # ``appliquer`` les reconnaisse, et pour poser la garde « demande en cours » dès le chargement.
 from . import demandes as _demandes  # noqa: F401,E402  (import pour effet d'enregistrement)
 
+# ``fin_forcee`` (lot ``j-deconnexion-abandon``) enregistre les clôtures forcées ``deserter`` /
+# ``expirer_inactivite`` dans le ``REGISTRE`` du journal à son import. Même motif : on l'importe ici
+# pour que ``appliquer`` les reconnaisse dès que ``pbm_game`` est chargé.
+from . import fin_forcee as _fin_forcee  # noqa: F401,E402  (import pour effet d'enregistrement)
+
+# ``horloges`` (lot ``j-timer``) enregistre ses transitions d'expiration ``fin_tour`` /
+# ``defaite_temps`` dans le ``REGISTRE`` du journal à son import. On l'importe ici pour que
+# ``appliquer`` les reconnaisse (motif banc/cartes/demandes).
+from . import horloges as _horloges  # noqa: F401,E402  (import pour effet d'enregistrement)
+
 # ``mise_en_place`` (lot ``j-initialisation``) enregistre ses transitions ``mise_en_place_initiale``
 # et ``placer_mise_en_place`` (R-4) dans le ``REGISTRE`` du journal à son import. On l'importe ici,
 # après le noyau des transitions, pour que ``appliquer`` les reconnaisse dès que ``pbm_game`` est

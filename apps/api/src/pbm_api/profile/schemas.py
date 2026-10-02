@@ -1,3 +1,6 @@
+"""Schémas Pydantic des requêtes/réponses de la page profil (validation d'entrée, forme de
+sortie).
+"""
 import re
 from datetime import date, datetime
 
@@ -7,6 +10,8 @@ PSEUDO_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
 
 
 class UpdateProfileRequest(BaseModel):
+    """Requête de mise à jour d'identité : pseudo, nom, prénom, date de naissance."""
+
     pseudo: str = Field(min_length=3, max_length=32)
     first_name: str | None = Field(default=None, max_length=100)
     last_name: str = Field(min_length=1, max_length=100)
@@ -21,6 +26,8 @@ class UpdateProfileRequest(BaseModel):
 
 
 class ProfileResponse(BaseModel):
+    """Profil complet renvoyé au front : identité, état de l'e-mail, accès au jeu."""
+
     id: str
     email: str
     email_verified: bool
@@ -39,27 +46,39 @@ class ProfileResponse(BaseModel):
 
 
 class ChangeEmailRequest(BaseModel):
+    """Requête de changement d'adresse e-mail (déclenche un e-mail de confirmation)."""
+
     email: EmailStr
 
 
 class ConfirmEmailChangeRequest(BaseModel):
+    """Jeton reçu par e-mail pour confirmer le changement d'adresse."""
+
     token: str
 
 
 class ChangePasswordRequest(BaseModel):
+    """Requête de changement de mot de passe : exige l'ancien pour vérification."""
+
     current_password: str
     new_password: str
 
 
 class DeleteAccountRequest(BaseModel):
+    """Requête de suppression de compte : le mot de passe reconfirme l'intention."""
+
     password: str
 
 
 class MessageResponse(BaseModel):
+    """Réponse générique à message unique (confirmation sans autre donnée)."""
+
     message: str
 
 
 class SessionResponse(BaseModel):
+    """Session active exposée au front, pour que l'utilisateur révoque les autres."""
+
     id: str
     user_agent: str | None
     ip_address: str | None

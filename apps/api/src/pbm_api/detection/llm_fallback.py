@@ -20,6 +20,9 @@ PROMPT = (
 
 
 class NormalizedBox(BaseModel):
+    """Boîte englobante d'une carte, en fractions (0.0 à 1.0) de la largeur/hauteur de la
+    photo — indépendante de la résolution réelle de l'image envoyée au LLM."""
+
     x_min: float = Field(ge=0.0, le=1.0)
     y_min: float = Field(ge=0.0, le=1.0)
     x_max: float = Field(ge=0.0, le=1.0)
@@ -27,12 +30,16 @@ class NormalizedBox(BaseModel):
 
 
 class BoundingBoxesResult(BaseModel):
+    """Schéma de sortie structurée demandé au LLM vision : une boîte par carte trouvée."""
+
     boxes: list[NormalizedBox]
 
 
 async def detect_boxes_with_llm(
     provider: AIProvider, image: ImageInput, *, model: str | None = None
 ) -> tuple[list[NormalizedBox], ExtractionUsage]:
+    """Demande au LLM vision de localiser chaque carte de la photo (un seul appel, en ordre
+    de lecture) ; ne les identifie pas. Effet de bord : appel IA facturé (`usage`)."""
     result, usage = await provider.extract(
         [image], BoundingBoxesResult, PROMPT, model=model
     )

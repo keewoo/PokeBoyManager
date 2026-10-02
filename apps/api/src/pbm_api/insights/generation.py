@@ -12,15 +12,21 @@ MAX_ANECDOTES = 5
 
 
 class AnecdoteItem(BaseModel):
+    """Une anecdote telle qu'extraite du modèle — `source_url` est vérifiée après coup."""
+
     text: str = Field(min_length=1, max_length=500)
     source_url: str
 
 
 class AnecdotesExtraction(BaseModel):
+    """Schéma de sortie structurée attendu de l'appel IA : au plus `MAX_ANECDOTES` anecdotes."""
+
     anecdotes: list[AnecdoteItem] = Field(max_length=MAX_ANECDOTES)
 
 
 def build_prompt(*, card_name: str, set_name: str, pages: list[ContextPage]) -> str:
+    """Construit le prompt listant les pages de contexte et leurs URLs, pour contraindre le
+    modèle à ne sourcer qu'à partir de ces extraits (interdiction explicite d'inventer)."""
     sources = "\n\n".join(
         f"Source [{page.source_url}] — {page.title} :\n{page.text}" for page in pages
     )

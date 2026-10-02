@@ -26,6 +26,9 @@ class BatchApiError(Exception):
 
 @dataclass
 class BatchStatus:
+    """État d'un lot Anthropic tel que renvoyé par `create_batch`/`get_batch` — `results_url`
+    n'est renseigné qu'une fois `processing_status == "ended"`."""
+
     batch_id: str
     processing_status: str  # "in_progress" | "canceling" | "ended"
     request_counts: dict[str, int]
@@ -34,6 +37,9 @@ class BatchStatus:
 
 @dataclass
 class BatchResultItem:
+    """Une ligne du `.jsonl` de résultats — `text`/`error` sont mutuellement exclusifs selon
+    `result_type` (seul "succeeded" porte un texte, les autres portent une erreur)."""
+
     custom_id: str
     result_type: str  # "succeeded" | "errored" | "canceled" | "expired"
     text: str | None
@@ -45,6 +51,8 @@ class BatchResultItem:
 def build_batch_request(
     *, custom_id: str, model: str, max_tokens: int, prompt: str, json_schema: dict[str, Any]
 ) -> dict[str, Any]:
+    """Construit une entrée de la liste `requests` attendue par `create_batch` — un appel
+    message par carte, sortie contrainte au schéma JSON strict fourni."""
     return {
         "custom_id": custom_id,
         "params": {
@@ -57,6 +65,9 @@ def build_batch_request(
 
 
 class AnthropicBatchClient:
+    """Client HTTP fin de la Message Batches API — aucune logique de reprise ni de coût, ça
+    reste dans `runner`/`ledger`/`pricing` ; ici, seulement soumettre, interroger, lire."""
+
     def __init__(self, api_key: str, *, http_client: httpx.AsyncClient | None = None) -> None:
         self._headers = {
             "x-api-key": api_key,
@@ -67,10 +78,14 @@ class AnthropicBatchClient:
         self._owns_client = http_client is None
 
     async def aclose(self) -> None:
+        """Ferme le client HTTP interne — ignoré si `http_client` a été injecté (son cycle de
+        vie appartient alors à l'appelant, jamais fermé deux fois)."""
         if self._owns_client:
             await self._client.aclose()
 
     async def create_batch(self, requests: list[dict[str, Any]]) -> BatchStatus:
+        """Soumet un nouveau lot — lève `BatchApiError` sur panne réseau ou réponse en échec,
+        jamais avalée (le lot d'appel s'arrête plutôt que de repartir sur un état incertain)."""
         try:
             response = await self._client.post(
                 _URL, json={"requests": requests}, headers=self._headers
@@ -84,6 +99,8 @@ class AnthropicBatchClient:
         return _status_from_json(response.json())
 
     async def get_batch(self, batch_id: str) -> BatchStatus:
+        """Interroge l'état d'un lot déjà soumis — utilisé pour la reprise (`in_flight_batch`)
+        et le sondage périodique jusqu'à `processing_status == "ended"`."""
         try:
             response = await self._client.get(f"{_URL}/{batch_id}", headers=self._headers)
         except httpx.HTTPError as exc:

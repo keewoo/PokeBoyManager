@@ -43,6 +43,7 @@ class CropQuality:
     reason: str | None = None  # "jointure" | "hors-cadre" | None
 
     def as_dict(self) -> dict:
+        """Forme sérialisable du verdict, pour stockage dans `Detection.bbox`."""
         return {
             "seam": self.seam,
             "score": round(self.score, 3),

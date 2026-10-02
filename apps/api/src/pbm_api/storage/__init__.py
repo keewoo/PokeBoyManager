@@ -17,6 +17,7 @@ StorageBackend = ObjectStorage | LocalObjectStorage
 
 
 def build_storage() -> StorageBackend:
+    """Choisit le backend de stockage selon `STORAGE_BACKEND` (variable d'environnement)."""
     if settings.storage_backend == "local":
         return LocalObjectStorage()
     return ObjectStorage()

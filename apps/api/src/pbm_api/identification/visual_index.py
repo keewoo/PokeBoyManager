@@ -54,6 +54,9 @@ def _popcount64(values: np.ndarray) -> np.ndarray:
 
 @dataclass(frozen=True)
 class VisualMatch:
+    """Une carte candidate retrouvée dans l'index visuel, avec son score combiné et les deux
+    distances de Hamming qui le composent."""
+
     card_id: uuid.UUID
     language: str
     score: float
@@ -99,6 +102,8 @@ class VisualIndex:
 
     @classmethod
     async def load(cls, session: AsyncSession) -> "VisualIndex":
+        """Charge tout `card_visual_index` en mémoire — un appel par envoi photo, jamais par
+        carte (voir la docstring de la classe)."""
         result = await session.execute(
             select(
                 CardVisualIndex.card_id,
@@ -167,6 +172,8 @@ class VisualResolution:
 
 
 def resolve(matches: list[VisualMatch]) -> VisualResolution:
+    """Décide si le meilleur candidat visuel est assez sûr pour identifier la carte sans IA, ou
+    si le groupe reste ambigu (sous le seuil, ou un concurrent d'une autre carte trop proche)."""
     if not matches:
         return VisualResolution(confident_match=None, candidates=[])
 

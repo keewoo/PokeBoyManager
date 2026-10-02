@@ -51,6 +51,9 @@ _TOTAL_CARDS = _EXTRA_CARDS_COUNT + len(DEMO_CARDS)
 
 @dataclass(frozen=True)
 class LabeledCatalogCard:
+    """Carte de catalogue connue (démo ou synthétique) servant de vérité terrain pour mesurer le
+    taux de rapprochement."""
+
     set_code: str
     set_name: str
     total_cards: int | None
@@ -61,6 +64,9 @@ class LabeledCatalogCard:
 
 @dataclass(frozen=True)
 class SyntheticIdentificationCase:
+    """Un cas de test : la carte connue attendue, associée à une extraction bruitée simulant ce
+    qu'une lecture IA imparfaite produirait pour elle."""
+
     id: str
     card: LabeledCatalogCard
     extraction: CardExtraction

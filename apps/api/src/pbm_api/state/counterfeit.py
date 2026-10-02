@@ -38,6 +38,9 @@ _VARIANT_CATALOG_KEYS = {
 
 @dataclass(frozen=True)
 class CounterfeitAssessment:
+    """Verdict de `assess_counterfeit` : `suspected` à `True` si au moins un indice (IA ou
+    déterministe) a été retenu, `reasons` donnant leur libellé pour l'utilisateur."""
+
     suspected: bool
     reasons: list[str] = field(default_factory=list)
 

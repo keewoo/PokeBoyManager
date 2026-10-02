@@ -24,6 +24,8 @@ HAMMING_THRESHOLD = 6
 
 
 async def find_cached(session: AsyncSession, phash: int) -> IdentificationCache | None:
+    """Entrée de cache la plus proche de `phash` en deçà de `HAMMING_THRESHOLD`, ou `None` si
+    aucune empreinte déjà identifiée n'est assez proche — dans ce cas l'IA doit être rappelée."""
     # `bit_count` n'a de variante Postgres que pour `bytea`/`bit` (depuis PG14), pas pour un
     # entier — le XOR (bigint) est calculé d'abord, casté en `bit(64)` ensuite.
     distance = func.bit_count(cast(IdentificationCache.phash.op("#")(phash), BIT(64)))
@@ -46,6 +48,8 @@ async def store_cache(
     *,
     method: str,
 ) -> IdentificationCache:
+    """Enregistre le résultat d'une identification sous son empreinte, pour que la prochaine
+    carte identique (phash proche) le retrouve sans rappeler l'IA."""
     row = IdentificationCache(
         phash=phash,
         extraction=extraction.model_dump(mode="json"),

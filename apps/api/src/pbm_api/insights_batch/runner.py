@@ -73,6 +73,8 @@ _ESTIMATED_OUTPUT_TOKENS = 800
 
 
 def source_marker(model: str) -> str:
+    """Marqueur écrit dans `CardInsight.source_model`/`game_study_source_model` — encode le
+    modèle ET `PROMPT_VERSION` pour que l'import reste idempotent à version de prompt égale."""
     return f"anthropic:{model}:batch:{PROMPT_VERSION}"
 
 
@@ -82,12 +84,18 @@ def _now_naive() -> datetime:
 
 @dataclass
 class CardApplyOutcome:
+    """Issue de l'application d'un résultat Anthropic à une carte — voir le commentaire de
+    `status` pour les valeurs possibles."""
+
     card_id: uuid.UUID
     status: str  # "ready" | "no_context" | "provider_error" | "invalid_schema"
 
 
 @dataclass
 class RunReport:
+    """Résultat d'un appel à `run_once` — voir sa docstring pour le sens de `status` et des
+    autres champs (budget, coûts, issues par carte)."""
+
     status: str  # voir docstring de run_once
     cards_selected: int = 0
     cards_applied: int = 0
@@ -146,6 +154,9 @@ async def _tournament_decks(db: AsyncSession, card_id: uuid.UUID) -> list[dict] 
 
 @dataclass
 class PreparedCard:
+    """Carte prête à soumettre — requête Anthropic déjà construite, URLs autorisées et coût
+    d'entrée estimé pour trier les cartes sous le budget restant avant tout appel réseau."""
+
     card_id: uuid.UUID
     custom_id: str
     request: dict

@@ -1,3 +1,6 @@
+"""Inscription, vérification d'e-mail, connexion/déconnexion et réinitialisation de mot de
+passe. Les messages d'erreur restent génériques (ne révèlent jamais si un compte existe) et
+le rate limiting est posé par IP et/ou e-mail pour freiner le bombardement et les abus."""
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -94,6 +97,10 @@ async def register(
     email_sender: EmailSender = Depends(get_email_sender),
     limiter: RateLimiter = Depends(get_login_rate_limiter),
 ) -> MessageResponse:
+    """Crée le compte et envoie l'e-mail de vérification ; message générique (429 si limité par
+    IP) pour ne jamais révéler qu'une adresse est déjà utilisée. Lève 400 sur CGU non acceptées,
+    date de naissance invalide, mineur sans consentement parental, mot de passe trop court ou
+    compromis (vérifié auprès de `compromised_checker`)."""
     # Par IP seulement (mission `v5-securite` point 2) : l'e-mail change à chaque appel d'un
     # abus réel, une limite par e-mail ne freinerait rien. `register_user` fait un hachage de
     # mot de passe coûteux et un appel réseau HIBP avant même de savoir si le compte existe
@@ -131,6 +138,8 @@ async def register(
 async def verify_email(
     payload: VerifyEmailRequest, db: AsyncSession = Depends(get_session)
 ) -> MessageResponse:
+    """Valide le jeton envoyé par e-mail et marque le compte vérifié ; lève 400 si le jeton
+    est invalide, expiré ou déjà consommé."""
     try:
         await service.verify_email(db, payload.token)
     except InvalidTokenError:
@@ -150,6 +159,9 @@ async def login(
     db: AsyncSession = Depends(get_session),
     limiter: RateLimiter = Depends(get_login_rate_limiter),
 ) -> UserResponse:
+    """Vérifie les identifiants, crée une session et pose les cookies de session/CSRF.
+    Limité par e-mail ET par IP (429 si l'un des deux dépasse le seuil) ; les compteurs sont
+    remis à zéro après un succès. Lève 401 sur identifiants invalides."""
     normalized_email = service.normalize_email(payload.email)
     ip_address = _client_ip(request)
 
@@ -189,6 +201,7 @@ async def logout(
     current_session: tuple[Session, str] = Depends(get_current_session),
     _csrf: None = Depends(require_csrf),
 ) -> None:
+    """Invalide la session courante en base et efface les cookies de session/CSRF."""
     session_row, _ = current_session
     await service.logout(db, session_row)
     _clear_auth_cookies(response)
@@ -202,6 +215,8 @@ async def forgot_password(
     email_sender: EmailSender = Depends(get_email_sender),
     limiter: RateLimiter = Depends(get_login_rate_limiter),
 ) -> MessageResponse:
+    """Envoie un e-mail de réinitialisation si le compte existe, message générique sinon
+    (ne révèle jamais l'existence du compte) ; limité par e-mail et par IP (429 si dépassé)."""
     normalized_email = service.normalize_email(payload.email)
     ip_address = _client_ip(request)
 
@@ -220,6 +235,8 @@ async def reset_password(
     db: AsyncSession = Depends(get_session),
     compromised_checker: CompromisedPasswordChecker = Depends(get_compromised_checker),
 ) -> MessageResponse:
+    """Change le mot de passe à partir du jeton reçu par e-mail ; lève 400 si le jeton est
+    invalide/expiré/déjà utilisé, ou si le nouveau mot de passe est trop court ou compromis."""
     try:
         await service.reset_password(db, payload.token, payload.password, compromised_checker)
     except PasswordTooShortError:

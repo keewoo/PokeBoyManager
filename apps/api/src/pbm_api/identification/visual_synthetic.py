@@ -59,6 +59,8 @@ def _draw_card(canvas: np.ndarray, base_color: tuple[int, int, int], shape_seed:
 
 
 def render_official_image(base_color: tuple[int, int, int], shape_seed: int) -> np.ndarray:
+    """Image officielle procédurale basse définition (format TCGdex "low") pour une carte
+    synthétique donnée par sa couleur et son motif."""
     canvas = np.zeros((OFFICIAL_H, OFFICIAL_W, 3), dtype=np.uint8)
     _draw_card(canvas, base_color, shape_seed)
     return canvas
@@ -85,6 +87,9 @@ def render_user_crop(
 
 @dataclass(frozen=True)
 class VisualSyntheticCard:
+    """Carte du jeu synthétique de comparaison visuelle — motif et, le cas échéant, l'identifiant
+    de la carte avec laquelle elle est délibérément confondable."""
+
     id: str
     set_code: str
     number: str

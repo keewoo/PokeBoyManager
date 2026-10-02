@@ -1,3 +1,5 @@
+"""Schémas Pydantic des requêtes/réponses de la liste de souhaits."""
+
 import uuid
 from decimal import Decimal
 
@@ -5,6 +7,8 @@ from pydantic import BaseModel, Field
 
 
 class CreateWishlistItemRequest(BaseModel):
+    """Ajout d'une carte du catalogue aux vœux, avec un prix cible et une note facultatifs."""
+
     card_id: uuid.UUID
     target_price_eur: Decimal | None = Field(default=None, ge=0)
     note: str | None = Field(default=None, max_length=280)
@@ -20,6 +24,8 @@ class UpdateWishlistItemRequest(BaseModel):
 
 
 class WishlistItemResponse(BaseModel):
+    """Un vœu, avec les repères de la carte visée et son prix courant comparé à la cible."""
+
     id: uuid.UUID
     card_id: uuid.UUID
     set_id: uuid.UUID
@@ -40,4 +46,6 @@ class WishlistItemResponse(BaseModel):
 
 
 class WishlistListResponse(BaseModel):
+    """La liste de souhaits complète de l'utilisateur courant."""
+
     items: list[WishlistItemResponse]

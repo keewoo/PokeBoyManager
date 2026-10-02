@@ -10,6 +10,7 @@
 // `maintenant`) : elle se teste intégralement en mémoire, sans vrai socket ni vrai réseau.
 
 import { getApiBaseUrl } from "@/lib/config";
+import { type HorlogesServeur } from "@/lib/game/horloges";
 
 /** État de la connexion temps réel, tel qu'affiché au joueur. */
 export type EtatConnexion = "connexion" | "direct" | "degrade" | "ferme";
@@ -27,6 +28,8 @@ export type Resync = {
   termine: boolean;
   vainqueur_user_id: string | null;
   raison_fin: string | null;
+  /** Temps restant « vérité serveur » (lot j-timer) ; le client en fait une estimation recalée. */
+  horloges?: HorlogesServeur | null;
 };
 
 /** Transport WebSocket minimal (le `WebSocket` du navigateur le satisfait). */

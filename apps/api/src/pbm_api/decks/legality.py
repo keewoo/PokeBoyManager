@@ -71,6 +71,8 @@ class DeckCardFact:
 
 @dataclass
 class LegalityIssue:
+    """Un constat de légalité — bloquant (rend le deck illégal) ou simple avertissement."""
+
     code: str
     message: str
     severity: str = BLOCKING
@@ -81,6 +83,8 @@ class LegalityIssue:
 
 @dataclass
 class CardLegality:
+    """Le détail de légalité d'une carte du deck : possession, format, nature (énergie/base)."""
+
     card_id: uuid.UUID
     name: str
     quantity: int
@@ -96,6 +100,8 @@ class CardLegality:
 
 @dataclass
 class DeckLegality:
+    """Le verdict de légalité d'un deck, recalculé à la lecture : légal ou non, et le détail."""
+
     legal: bool
     card_count: int
     size_ok: bool
@@ -119,6 +125,8 @@ def unsupported_card_ids(facts: list[DeckCardFact]) -> set[uuid.UUID]:
 def evaluate(
     facts: list[DeckCardFact], deck_format: str = formats.DEFAULT_FORMAT
 ) -> DeckLegality:
+    """Juge la légalité d'un deck à partir des faits fournis : taille, 4 exemplaires par nom,
+    possession, Pokémon de base, format — fonction pure, source unique côté serveur et écran."""
     if not formats.is_valid(deck_format):
         deck_format = formats.DEFAULT_FORMAT
     card_count = sum(f.quantity for f in facts)

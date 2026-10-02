@@ -125,4 +125,5 @@ def has_unclaimed_regions(image: np.ndarray, quads: list[np.ndarray]) -> bool:
 
 
 def warp_all(image: np.ndarray, quads: list[np.ndarray]) -> list[np.ndarray]:
+    """Redresse chaque quadrilatère détecté vers un recadrage 630×880 px."""
     return [warp_card(image, quad) for quad in quads]

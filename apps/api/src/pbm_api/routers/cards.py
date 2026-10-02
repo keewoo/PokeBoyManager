@@ -44,6 +44,7 @@ CARD_NOT_FOUND_MESSAGE = "carte introuvable"
 async def get_featured_cards(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> list[FeaturedCardOut]:
+    """Renvoie une sélection de cartes mises en avant sur l'accueil visiteur ; route publique."""
     cards = await list_featured_cards(session)
     return [
         FeaturedCardOut(id=c.card_id, name=c.name, number=c.number, set_name=c.set_name)
@@ -57,6 +58,8 @@ async def get_card(
     session: Annotated[AsyncSession, Depends(get_session)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> CardDetailResponse:
+    """Renvoie la fiche d'une carte (catalogue, prix, classement) scopée à l'utilisateur
+    courant ; lève 404 si la carte est inconnue."""
     try:
         return await get_card_detail(session, card_id, current_user)
     except CardNotFoundError:
@@ -71,6 +74,8 @@ async def get_card_price_history(
     variant: Annotated[PriceVariant, Query()] = PriceVariant.normal,
     range: Annotated[PriceHistoryRange, Query()] = "30",  # noqa: A002 — nom imposé par la mission
 ) -> PriceHistoryResponse:
+    """Renvoie la courbe de valeur d'une variante de carte sur la période demandée ; lève 404
+    si la carte est inconnue."""
     try:
         return await get_price_history(session, card_id, variant, range)
     except CardNotFoundError:
@@ -83,6 +88,8 @@ async def get_card_my_items(
     session: Annotated[AsyncSession, Depends(get_session)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> list[MyCardItemOut]:
+    """Renvoie les exemplaires de cette carte possédés par l'utilisateur courant (onglet « Mes
+    exemplaires ») ; lève 404 si la carte est inconnue."""
     try:
         return await list_my_items(session, current_user, card_id)
     except CardNotFoundError:

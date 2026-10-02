@@ -6,6 +6,10 @@ from pbm_api.config import settings
 
 
 class RateLimiter:
+    """Limite un nombre de tentatives par fenêtre glissante (compteur Redis + expiration) —
+    pare le bourrage d'identifiants, l'abus d'inscription et le bombardement d'e-mails de
+    tiers. L'appelant lève 429 quand `hit` renvoie False."""
+
     def __init__(self, redis: Redis, max_attempts: int, window_seconds: int) -> None:
         self._redis = redis
         self._max_attempts = max_attempts
@@ -23,6 +27,8 @@ class RateLimiter:
         return count <= self._max_attempts
 
     async def reset(self, scope: str, identifier: str) -> None:
+        """Efface le compteur — appelé après un succès légitime (ex: connexion réussie) pour
+        ne pas pénaliser l'utilisateur sur les tentatives ratées qui l'ont précédé."""
         await self._redis.delete(self._key(scope, identifier))
 
 
@@ -34,6 +40,8 @@ def get_redis() -> Redis:
 
 
 def get_login_rate_limiter() -> RateLimiter:
+    """Dépendance FastAPI : limiteur configuré pour connexion/inscription/mot de passe oublié
+    (`settings.login_rate_limit_*`)."""
     return RateLimiter(
         get_redis(),
         max_attempts=settings.login_rate_limit_max_attempts,

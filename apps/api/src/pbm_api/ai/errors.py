@@ -1,3 +1,7 @@
+"""Erreurs du coffre de clés IA et des appels normalisés aux fournisseurs (Anthropic, Gemini,
+OpenAI)."""
+
+
 class ProviderKeyNotFoundError(Exception):
     """Aucune clé enregistrée pour ce fournisseur, pour cet utilisateur."""
 
@@ -21,31 +25,43 @@ class AIProviderError(Exception):
 
 
 class InvalidApiKeyError(AIProviderError):
+    """Clé rejetée par le fournisseur (401/403 Anthropic/OpenAI, ou `PERMISSION_DENIED` Gemini)."""
+
     def __init__(self, detail: str | None = None) -> None:
         super().__init__("Clé invalide ou révoquée par le fournisseur.", detail=detail)
 
 
 class QuotaExceededError(AIProviderError):
+    """Quota ou débit dépassé chez le fournisseur (429, ou `RESOURCE_EXHAUSTED` Gemini)."""
+
     def __init__(self, detail: str | None = None) -> None:
         super().__init__("Quota dépassé chez le fournisseur.", detail=detail)
 
 
 class ProviderOverloadedError(AIProviderError):
+    """Fournisseur en panne ou saturé (5xx, ou `UNAVAILABLE` Gemini) — à réessayer plus tard."""
+
     def __init__(self, detail: str | None = None) -> None:
         super().__init__("Fournisseur surchargé — réessayez plus tard.", detail=detail)
 
 
 class ProviderUnreachableError(AIProviderError):
+    """Échec réseau avant toute réponse HTTP du fournisseur (coupure, DNS, délai dépassé)."""
+
     def __init__(self, detail: str | None = None) -> None:
         super().__init__("Fournisseur injoignable — réessayez plus tard.", detail=detail)
 
 
 class ContentRefusedError(AIProviderError):
+    """Le fournisseur a refusé de produire une sortie (filtre de sécurité, contenu bloqué)."""
+
     def __init__(self, detail: str | None = None) -> None:
         super().__init__("Contenu refusé par le fournisseur.", detail=detail)
 
 
 class InvalidExtractionResponseError(AIProviderError):
+    """Sortie toujours invalide contre le schéma après la tentative de correction d'`extract`."""
+
     def __init__(self, detail: str | None = None) -> None:
         super().__init__(
             "Le fournisseur n'a pas renvoyé de réponse exploitable après une nouvelle "

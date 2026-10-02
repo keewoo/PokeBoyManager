@@ -1,3 +1,5 @@
+"""Point d'entrée FastAPI : construit l'app, pose les middlewares et monte tous les routeurs."""
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 

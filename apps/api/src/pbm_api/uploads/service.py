@@ -79,6 +79,9 @@ def _validate_file(file: UploadFileRequest) -> None:
 async def create_uploads(
     db: AsyncSession, user: User, storage: StorageBackend, files: list[UploadFileRequest]
 ) -> list[tuple[Upload, UploadTarget]]:
+    """Enregistre un lot de fichiers annoncés et fabrique leur cible de dépôt ; lève
+    `TooManyFilesError` au-delà de `upload_max_files_per_batch` et `InvalidFileError` pour un
+    type ou une taille déclarés non acceptés — avant tout dépôt réel d'octets."""
     if len(files) > settings.upload_max_files_per_batch:
         raise TooManyFilesError(
             f"{len(files)} fichiers, maximum {settings.upload_max_files_per_batch} par envoi"
@@ -169,6 +172,12 @@ async def complete_upload(
     arq_pool: ArqRedis,
     upload_id: uuid.UUID,
 ) -> tuple[Upload, Job | None]:
+    """Valide et normalise les octets bruts déjà déposés dans le stockage, puis mets en file la
+    reconnaissance si l'utilisateur a une clé IA. Lève `UploadAlreadyProcessedError` si l'envoi
+    n'est plus `pending`, `UploadRawMissingError` si les octets ne sont pas encore dans le
+    stockage, `UploadTooLargeError` (413) si l'objet déposé dépasse `upload_max_size_bytes`, et
+    `UnsupportedImageError` si le contenu réel n'est pas une image dans un format accepté. Écrit
+    dans le stockage l'image normalisée à la place de l'original."""
     upload = await get_owned_upload(db, user, upload_id)
     if upload.status != UploadStatus.pending:
         raise UploadAlreadyProcessedError
@@ -256,6 +265,8 @@ async def get_latest_recognition_job(db: AsyncSession, upload_id: uuid.UUID) -> 
 async def get_upload_detail(
     db: AsyncSession, user: User, upload_id: uuid.UUID
 ) -> tuple[Upload, Job | None, list[Detection]]:
+    """État complet d'un envoi pour l'écran de validation : l'envoi, son dernier job de
+    reconnaissance et ses détections triées."""
     upload = await get_owned_upload(db, user, upload_id)
     job = await get_latest_recognition_job(db, upload_id)
     detections = await list_detections(db, user, upload_id)
@@ -264,6 +275,8 @@ async def get_upload_detail(
 
 @dataclass(frozen=True)
 class PendingUploadSummary:
+    """Un envoi avec son nombre de détections encore `pending` sur son total."""
+
     upload_id: uuid.UUID
     created_at: datetime
     pending_count: int
@@ -336,6 +349,9 @@ async def get_detection_crop(
     upload_id: uuid.UUID,
     detection_id: uuid.UUID,
 ) -> bytes:
+    """Octets du recadrage d'une détection. Lève `DetectionNotFoundError` si la détection
+    n'existe pas (pour cet envoi de cet utilisateur) ou n'a pas de recadrage, et
+    `DetectionCropMissingError` si l'objet a depuis disparu du stockage."""
     await get_owned_upload(db, user, upload_id)
     result = await db.execute(
         select(Detection).where(Detection.id == detection_id, Detection.upload_id == upload_id)

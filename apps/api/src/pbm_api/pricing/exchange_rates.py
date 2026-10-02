@@ -35,6 +35,8 @@ class EcbClient:
         self._owns_client = http_client is None
 
     async def aclose(self) -> None:
+        """Ferme le client HTTP interne (réseau) — seulement s'il n'a pas été fourni par
+        l'appelant, qui reste alors responsable de sa propre fermeture."""
         if self._owns_client:
             await self._client.aclose()
 
@@ -94,8 +96,10 @@ async def get_rate_to_eur(
 
 
 def convert_from_eur(amount_eur: Decimal, rate_to_eur: Decimal) -> Decimal:
+    """Convertit un montant EUR vers la devise de `rate_to_eur` (unités de devise pour 1 EUR)."""
     return amount_eur * rate_to_eur
 
 
 def convert_to_eur(amount: Decimal, rate_to_eur: Decimal) -> Decimal:
+    """Convertit un montant exprimé dans la devise de `rate_to_eur` vers l'EUR."""
     return amount / rate_to_eur

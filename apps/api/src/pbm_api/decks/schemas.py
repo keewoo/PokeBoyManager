@@ -1,3 +1,7 @@
+"""Schémas Pydantic de l'API decks : requêtes de création/édition, légalité, import/export,
+recherche de cartes, statistiques et assistant IA (voir les missions `v7-decks-*` citées par
+section)."""
+
 import uuid
 from datetime import datetime
 from decimal import Decimal
@@ -10,11 +14,15 @@ DeckFormat = Literal["standard", "expanded", "unlimited"]
 
 
 class DeckCardInput(BaseModel):
+    """Une carte et sa quantité souhaitée dans un deck en création."""
+
     card_id: uuid.UUID
     quantity: int = Field(ge=1, le=60)
 
 
 class CreateDeckRequest(BaseModel):
+    """Création d'un deck : nom, format visé et composition initiale (facultative)."""
+
     name: str = Field(min_length=1, max_length=120)
     format: DeckFormat = "standard"
     cards: list[DeckCardInput] = Field(default_factory=list)
@@ -46,10 +54,14 @@ class UpdateDeckRequest(BaseModel):
 
 
 class SetDeckCardRequest(BaseModel):
+    """Pose la quantité d'une carte dans un deck (crée la ligne si elle n'existe pas encore)."""
+
     quantity: int = Field(ge=1, le=60)
 
 
 class LegalityIssueOut(BaseModel):
+    """Un manquement à la légalité (règle des 60/4, format, possession), bloquant ou non."""
+
     code: str
     message: str
     severity: str  # "bloquant" | "avertissement"
@@ -59,6 +71,8 @@ class LegalityIssueOut(BaseModel):
 
 
 class DeckLegalityOut(BaseModel):
+    """Verdict de légalité d'un deck : légal ou non, et la liste des manquements relevés."""
+
     legal: bool
     card_count: int
     size_ok: bool
@@ -68,6 +82,8 @@ class DeckLegalityOut(BaseModel):
 
 
 class DeckCardOut(BaseModel):
+    """Une carte d'un deck, enrichie de ce que possède l'utilisateur (manquant, hors format…)."""
+
     card_id: uuid.UUID
     card_name: str
     card_number: str
@@ -89,6 +105,8 @@ class DeckCardOut(BaseModel):
 
 
 class DeckSummary(BaseModel):
+    """Un deck dans une liste : identité, format et légalité, sans le détail des cartes."""
+
     id: uuid.UUID
     name: str
     format: DeckFormat
@@ -99,6 +117,8 @@ class DeckSummary(BaseModel):
 
 
 class DeckDetail(BaseModel):
+    """Un deck complet : ses cartes et le verdict de légalité recalculé à la lecture."""
+
     id: uuid.UUID
     name: str
     format: DeckFormat
@@ -109,6 +129,8 @@ class DeckDetail(BaseModel):
 
 
 class DeckListResponse(BaseModel):
+    """Les decks de l'utilisateur courant."""
+
     decks: list[DeckSummary]
 
 
@@ -136,6 +158,8 @@ class ImportDeckRequest(BaseModel):
 
 
 class ImportCandidateOut(BaseModel):
+    """Une carte du catalogue proposée pour une ligne importée, et son score de correspondance."""
+
     card_id: uuid.UUID
     name: str
     set_code: str
@@ -145,6 +169,8 @@ class ImportCandidateOut(BaseModel):
 
 
 class ImportLineOut(BaseModel):
+    """Le résultat de l'analyse d'une ligne de la liste collée : carte trouvée, ambiguë ou non."""
+
     line_no: int
     raw: str
     # "matched" | "ambiguous" | "not_found" | "section"
@@ -161,6 +187,8 @@ class ImportLineOut(BaseModel):
 
 
 class ImportReportOut(BaseModel):
+    """Bilan global d'un import : décompte par statut, lignes détaillées et avertissements."""
+
     matched: int
     ambiguous: int
     not_found: int
@@ -205,11 +233,15 @@ class DeckCardSearchItem(BaseModel):
 
 
 class DeckCardSearchResponse(BaseModel):
+    """Une page de résultats de recherche de cartes, avec le curseur de la page suivante."""
+
     items: list[DeckCardSearchItem]
     next_cursor: str | None
 
 
 class DeckCardFacetSet(BaseModel):
+    """Une extension référencée par les filtres de recherche (pour peupler le sélecteur)."""
+
     set_id: uuid.UUID
     name: str
     code: str
@@ -265,11 +297,15 @@ class DeckReplacementItem(BaseModel):
 
 
 class DeckReplacementsResponse(BaseModel):
+    """Les remplacements proposés pour une carte donnée, classés par pertinence."""
+
     card_id: uuid.UUID
     replacements: list[DeckReplacementItem]
 
 
 class DeckHistoryResponse(BaseModel):
+    """L'historique des alertes (lues ou non) d'un deck donné."""
+
     deck_id: uuid.UUID
     events: list[DeckAlertOut]
 

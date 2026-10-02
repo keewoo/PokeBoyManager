@@ -31,6 +31,7 @@ PROVIDER_ERROR_MESSAGE = "La génération de l'étude en jeu a échoué : {}"
 
 
 def get_ai_provider_factory() -> ProviderFactory:
+    """Dépendance FastAPI : fabrique de fournisseur IA, remplaçable par un double en test."""
     return create_provider
 
 
@@ -48,6 +49,9 @@ async def get_in_game_study(
     current_user: User = Depends(get_current_user),
     provider_factory: ProviderFactory = Depends(get_ai_provider_factory),
 ) -> InGameStudyResponse:
+    """Renvoie légalités, règle des Prix, présence en tournoi et synthèse IA d'une carte ;
+    génère la synthèse (avec la clé IA de l'utilisateur) à la première consultation, puis la
+    met en cache partagé. Lève 404 si la carte est inconnue, 502 si le fournisseur IA échoue."""
     card = await _get_card_or_404(db, card_id)
     try:
         result = await get_or_create_in_game_study(
