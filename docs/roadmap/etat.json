@@ -9009,7 +9009,7 @@
       }
     },
     "j-plateau-interactions": {
-      "statut": "a_faire",
+      "statut": "integre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
@@ -9061,8 +9061,21 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-10-03T01:29+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": "branche roadmap/j-plateau-interactions fusionnee dans main (verifie par git merge-base)"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": {
+        "quand": "2026-10-03T01:29+0200",
+        "raisons": [
+          "branche roadmap/j-plateau-interactions fusionnee dans main (verifie par git merge-base)"
+        ]
+      }
     },
     "j-plateau-etat-visuel": {
       "statut": "integre",
