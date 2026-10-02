@@ -77,4 +77,16 @@ from . import cartes as _cartes  # noqa: F401,E402  (import pour effet d'enregis
 # reconnaisse dès que ``pbm_game`` est chargé.
 from . import checkup as _checkup  # noqa: F401,E402  (import pour effet d'enregistrement)
 
+# ``demandes`` (lot ``j-effets-choix``) enregistre ses transitions ``repondre_demande`` /
+# ``expirer_demande`` dans le ``REGISTRE`` du journal à son import. On l'importe ici pour que
+# ``appliquer`` les reconnaisse, et pour poser la garde « demande en cours » dès le chargement.
+from . import demandes as _demandes  # noqa: F401,E402  (import pour effet d'enregistrement)
+
+# Le résolveur DSL **sachant se suspendre** se branche dans le registre des résolveurs de décision
+# (``demandes.moteur.REGISTRE_EFFETS``). On le fait ici — et pas dans le paquet ``demandes`` — pour
+# que ``demandes`` ne dépende pas du DSL (le couplage va du moteur vers ses effets, pas l'inverse).
+from .effets.dsl import interprete as _interprete  # noqa: E402
+
+_demandes.enregistrer(_interprete.TYPE_EFFET_DSL, _interprete.resolveur_dsl_demandes)
+
 __all__: list[str] = []

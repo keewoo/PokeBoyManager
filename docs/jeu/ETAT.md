@@ -20,7 +20,7 @@ perdue au premier raccourci.
 | `PokemonEnJeu` | pile d'évolutions (`cartes`, bas→haut), `energies`, `outil` (≤ 1, R-3.7), `compteurs_degats` (en **compteurs**, jamais en PV — R-10.4), `etats_speciaux` (R-11) |
 | `Joueur` | `id`, `pioche`, `main`, `actif`, `banc` (≤ 5), `defausse`, `recompenses` (6, face cachée), `zone_perdue` |
 | `Tour` | `joueur_actif`, `numero`, `phase`, drapeaux `energie_posee` / `supporter_joue` / `retraite_faite` (R-5.4/5/6), et `entres_en_jeu_ce_tour` — identités des Pokémon entrés en jeu ce tour (R-7.3). Déroulé et contraintes : `docs/jeu/MACHINE-TOUR.md` |
-| `EtatPartie` | `joueurs` (2), `tour`, `schema_version`, `stade` (unique, partagé — R-3.5) + `stade_proprietaire`, `terminee` / `vainqueur` / `raison_fin` (R-14.6) |
+| `EtatPartie` | `joueurs` (2), `tour`, `schema_version`, `stade` (unique, partagé — R-3.5) + `stade_proprietaire`, `terminee` / `vainqueur` / `raison_fin` (R-14.6), et `resolution` — une **demande de décision en cours** ou `None` (lot `j-effets-choix`, `docs/jeu/DEMANDES.md`) : quand elle existe, la partie est **en pause** en attendant un joueur, et elle est sérialisée avec l'état (reprise après F5) |
 
 **L'orientation n'est pas stockée** : elle **dérive** de l'état d'orientation présent
 (`orientation(pokemon)` → endormi / confus / paralysé / normale), pour qu'elle ne puisse

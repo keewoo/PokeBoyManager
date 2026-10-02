@@ -328,6 +328,31 @@ def registre_dsl() -> RegistreEffets:
     return {TYPE_EFFET_DSL: resolveur_dsl}
 
 
+def resolveur_dsl_demandes(etat, effet, rng, gestionnaire):
+    """Résolveur DSL **sachant se suspendre** — la version du lot ``j-effets-choix``.
+
+    Signature d'un :data:`~pbm_game.demandes.moteur.ResolveurDecision`, comme :func:`resolveur_dsl`,
+    mais la stratégie injectée est :func:`~pbm_game.effets.dsl.execution.strategie_demande`,
+    qui réclame chaque ``choisir`` au ``gestionnaire``. Si une décision est neuve, la stratégie lève
+    ``SuspensionDemande`` ; l'exception **traverse** :func:`executer_programme` (dont le travail
+    partiel est donc jeté, état et tirages) et remonte au moteur, qui fige la pile. À la
+    reprise, le script est **re-déroulé** depuis le début : les ``choisir`` déjà répondus retombent
+    sur leurs réponses, le prochain non répondu suspend à nouveau (demandes imbriquées comprises).
+
+    ``destinataire`` vaut ``ctx.joueur`` (celui qui joue l'effet). Un effet qui doit faire choisir
+    l'**adversaire** passera par un type d'effet dédié ou une extension de ``choisir`` (lots
+    ``j-cartes-objets`` / ``j-cartes-supporters``) ; le mécanisme de demande, lui, gère déjà un
+    destinataire quelconque — c'est prouvé par les tests du moteur de résolution.
+    """
+    from .execution import strategie_demande
+
+    programme = charger_programme(effet.params["programme"])
+    ctx = _contexte_depuis_json(effet.source, effet.params["contexte"])
+    strategie = strategie_demande(gestionnaire, destinataire=ctx.joueur, regle=effet.regle)
+    resultat = executer_programme(etat, programme, ctx, rng, strategie=strategie)
+    return resultat.etat, list(resultat.evenements), []
+
+
 __all__ = [
     "TYPE_EFFET_DSL",
     "EVT_COUT_IMPAYABLE",
@@ -341,5 +366,6 @@ __all__ = [
     "executer_programme",
     "compiler_en_effet",
     "resolveur_dsl",
+    "resolveur_dsl_demandes",
     "registre_dsl",
 ]

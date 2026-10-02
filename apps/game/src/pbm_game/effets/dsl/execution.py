@@ -55,6 +55,65 @@ def strategie_canonique(
     return ordonnes[: max(0, nombre)]
 
 
+def _id_cible(cible: CibleCarte | CiblePokemon) -> str:
+    """L'identifiant d'option **stable** d'une cible, pour l'exposer dans une demande de décision.
+
+    Une :class:`~pbm_game.effets.dsl.selection.CibleCarte` s'identifie par son ``instance_id`` ; un
+    :class:`~pbm_game.effets.dsl.selection.CiblePokemon` par l'``instance_id`` de sa carte de base
+    (identité stable à l'évolution) — les mêmes identités que le reste du moteur manipule.
+    """
+    return cible.identite if isinstance(cible, CiblePokemon) else cible.instance_id
+
+
+def strategie_demande(
+    gestionnaire,
+    *,
+    destinataire: str,
+    regle: str,
+    libelle: str = "Choix d'une cible",
+    obligatoire: bool = True,
+    delai_ms: int | None = None,
+):
+    """Fabrique une :data:`StrategieChoix` qui transforme chaque ``choisir`` en **demande réelle**.
+
+    C'est le point de jonction, enfin branché, entre le DSL et les demandes de décision : au lieu de
+    trancher elle-même (comme :func:`strategie_canonique`), cette stratégie **réclame** le choix au
+    :class:`~pbm_game.demandes.gestionnaire.Gestionnaire` (import local pour ne pas coupler le DSL
+    paquet ``demandes`` à l'import). Si la décision est déjà connue (reprise), elle renvoie les
+    cibles correspondantes ; sinon le gestionnaire lève la suspension, qui remonte jusqu'au moteur.
+
+    Ce n'est **pas** une approximation d'effet (D9) : la primitive ``choisir`` reste exactement ce
+    qu'elle était ; seule change la *politique* de décision, qui était déjà conçue pour être
+    branchable. ``destinataire`` est le joueur qui tranche (par défaut celui qui joue l'effet ;
+    un effet qui fait choisir l'**adversaire** le passera explicitement).
+    """
+    from ...demandes.modele import CAT_CARTE, CAT_CARTES, DemandeDecision
+
+    def strategie(
+        candidats: list[CibleCarte | CiblePokemon], nombre: int, ctx: ContexteEffet
+    ) -> list[CibleCarte | CiblePokemon]:
+        options = tuple(_id_cible(c) for c in candidats)
+        combien = min(max(1, nombre), len(candidats))
+        demande = DemandeDecision(
+            destinataire=destinataire,
+            categorie=CAT_CARTE if combien == 1 else CAT_CARTES,
+            source=ctx.source,
+            regle=regle or "R-9.3",
+            libelle=libelle,
+            options=options,
+            minimum=combien,
+            maximum=combien,
+            obligatoire=obligatoire,
+            delai_ms=delai_ms,
+            temps_restant_ms=delai_ms,
+        )
+        reponse = gestionnaire.demander(demande)  # lève SuspensionDemande si la décision est neuve
+        par_id = {_id_cible(c): c for c in candidats}
+        return [par_id[i] for i in reponse.choix]
+
+    return strategie
+
+
 @dataclass
 class Execution:
     """Le contexte **mutable** d'une exécution de script (le temps d'un :func:`executer_programme`).

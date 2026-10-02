@@ -29,10 +29,18 @@ Règles de référence structurées ici (``docs/jeu/REGLES.md``) :
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    # Importé **seulement** pour l'annotation de ``EtatPartie.resolution`` : jamais au runtime, pour
+    # que ``state.modele`` reste une feuille sans dépendance au paquet ``demandes`` (pas de cycle).
+    from ..demandes.moteur import ResolutionEnCours
 
 # Version du schéma d'état : toute évolution incompatible de la forme sérialisée
 # l'incrémente. ``depuis_json`` refuse une version inconnue (jamais de repli silencieux).
-SCHEMA_VERSION = 2
+# v3 (lot ``j-effets-choix``) : ajout de ``EtatPartie.resolution`` — la demande de décision en
+# cours et la pile d'effets suspendue, pour qu'une partie se mette en pause en attendant un joueur.
+SCHEMA_VERSION = 3
 
 # --- États spéciaux (R-11.1) -------------------------------------------------
 ENDORMI = "endormi"
@@ -168,6 +176,14 @@ class EtatPartie:
     défausse). Une partie **terminée** est figée (R-14.6) : ``terminee`` vrai,
     ``vainqueur`` = l'id du gagnant (ou ``None`` pour une égalité, R-14.4),
     ``raison_fin`` le motif.
+
+    ``resolution`` : une **demande de décision en cours** (lot ``j-effets-choix``), ou ``None``
+    quand aucune n'attend. Quand elle n'est pas ``None``, la partie est **en pause** : un joueur —
+    éventuellement l'adversaire — doit trancher un choix avant que la résolution d'un effet ne
+    reprenne. C'est une donnée (type ``pbm_game.demandes.moteur.ResolutionEnCours``), pas une
+    attente de code : elle est sérialisée avec l'état, donc une partie interrompue au milieu d'une
+    demande **reprend exactement à cette demande**. Annotée en chaîne (``from __future__``) pour ne
+    pas importer le paquet ``demandes`` ici — ``state.modele`` reste une feuille sans dépendance.
     """
 
     joueurs: tuple[Joueur, Joueur]
@@ -178,6 +194,7 @@ class EtatPartie:
     terminee: bool = False
     vainqueur: str | None = None
     raison_fin: str | None = None
+    resolution: ResolutionEnCours | None = None
 
 
 def orientation(pokemon: PokemonEnJeu) -> str:
