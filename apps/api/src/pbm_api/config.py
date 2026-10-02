@@ -54,6 +54,14 @@ class Settings(BaseSettings):
     horloge_par_decision_s: float = 30.0
     horloge_tolerance_reseau_s: float = 10.0
     horloge_pause_deconnexion_s: float = 120.0
+
+    # Clôture des parties mortes (lot j-deconnexion-abandon), réglables par l'environnement :
+    # `jeu_inactivite_plafond_h` est le **plafond** au-delà duquel une partie sans activité est
+    # close d'office par le balayage (critère « aucune partie ne reste en cours plus longtemps que
+    # le plafond configuré ») ; chaque coup repousse l'échéance d'autant. `jeu_purge_anciennete_j`
+    # est l'ancienneté au-delà de laquelle une partie morte (terminée/expirée) est purgée.
+    jeu_inactivite_plafond_h: float = 72.0
+    jeu_purge_anciennete_j: float = 30.0
     csrf_cookie_name: str = "pbm_csrf"
     session_ttl_days: int = 30
     email_token_ttl_minutes: int = 60

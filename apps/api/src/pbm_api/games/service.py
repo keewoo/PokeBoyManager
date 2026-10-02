@@ -11,7 +11,10 @@ l'idempotence et la lecture du catalogue. Les cinq opérations :
   sous verrou de ligne et avec **idempotence par numéro d'action** (risque nommé du lot) ;
 * :func:`reprendre` — reconstruit l'état depuis le dernier instantané + la queue du journal, et
   **compare l'empreinte** : ce qui fait survivre une partie à un redémarrage complet de l'API ;
-* :func:`expirer_parties` — fige les parties abandonnées (inactives trop longtemps) ;
+* :func:`abandonner_partie` — abandon volontaire d'un joueur (lot ``j-deconnexion-abandon``) ;
+* :func:`expirer_horloge` — désertion (pause dépassée) ou action par défaut à une expiration ;
+* :func:`expirer_parties` — clôt les parties fantômes (inactives au-delà du plafond) avec un motif
+  **journalisé** (``j-deconnexion-abandon`` : jamais un nettoyage muet) ;
 * :func:`purger` — supprime les parties mortes anciennes et les instantanés superflus, avec une
   métrique de ce qui a été purgé (jamais un nettoyage muet).
 
@@ -41,11 +44,18 @@ from pbm_game.journal import (
     partie_neuve,
     reprendre,
 )
-from pbm_game.journal.modele import AUTEUR_SYSTEME, Entree, Instantane
+from pbm_game.journal.modele import (
+    ACTION_ABANDONNER,
+    ACTION_DESERTER,
+    ACTION_EXPIRER_INACTIVITE,
+    AUTEUR_SYSTEME,
+    Entree,
+    Instantane,
+)
 from pbm_game.rng import GRAINE_MIN_OCTETS, Rng, engagement
 from pbm_game.state.modele import EtatPartie
 from pbm_game.state.serialisation import vers_json as etat_vers_json
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
@@ -80,12 +90,27 @@ logger = logging.getLogger(__name__)
 #: :func:`appliquer_action` (les tests prennent un intervalle court pour exercer la compaction).
 INTERVALLE_INSTANTANE = 16
 
-#: Une partie sans action depuis ce délai est « abandonnée » : :func:`expirer_parties` la fige.
-#: Chaque coup repousse l'échéance (``last_action_at`` + ce délai).
+#: Une partie sans action depuis ce délai est une **partie fantôme** : :func:`expirer_parties` la
+#: clôt pour inactivité. Chaque coup repousse l'échéance (``last_action_at`` + ce délai). Défaut de
+#: repli si la configuration est absente ; le plafond réel vient des réglages
+#: (:func:`_delai_inactivite`, ``settings.jeu_inactivite_plafond_h``) — critère « aucune partie ne
+#: reste en cours plus longtemps que le plafond **configuré** » (lot ``j-deconnexion-abandon``).
 DELAI_INACTIVITE = timedelta(days=3)
 
-#: Une partie morte (terminée ou expirée) plus ancienne que ce délai est purgée.
+#: Une partie morte (terminée ou expirée) plus ancienne que ce délai est purgée (défaut de repli ;
+#: le réel vient de ``settings.jeu_purge_anciennete_j``).
 ANCIENNETE_PURGE = timedelta(days=30)
+
+
+def _delai_inactivite() -> timedelta:
+    """Le plafond d'inactivité, depuis la configuration (``settings.jeu_inactivite_plafond_h``).
+
+    Lu à chaque appel plutôt que figé à l'import : un changement d'environnement s'applique sans
+    redéployer. C'est le **plafond configuré** du critère d'acceptation — aucune partie ne reste en
+    cours au-delà.
+    """
+    return timedelta(hours=settings.jeu_inactivite_plafond_h)
+
 
 #: Fenêtre glissante d'observation des coups refusés, par (partie, joueur). Un client honnête se
 #: trompe rarement ; une **rafale** de coups illégaux trahit un client modifié qui sonde l'autorité
@@ -224,7 +249,7 @@ async def creer_partie(
         current_numero=0,
         current_empreinte=empreinte0,
         last_action_at=maintenant,
-        expires_at=maintenant + DELAI_INACTIVITE,
+        expires_at=maintenant + _delai_inactivite(),
         horloges=_adapt_horloges.etat_initial_json(
             _adapt_horloges.config_horloges(settings), etat_initial, maintenant.timestamp()
         ),
@@ -514,7 +539,7 @@ async def appliquer_action(
     game.current_numero += 1
     game.current_empreinte = empr
     game.last_action_at = maintenant
-    game.expires_at = maintenant + DELAI_INACTIVITE
+    game.expires_at = maintenant + _delai_inactivite()
     if etat2.terminee:
         game.status = GAME_STATUS_TERMINEE
         game.vainqueur_user_id = uuid.UUID(etat2.vainqueur) if etat2.vainqueur else None
@@ -556,25 +581,142 @@ async def appliquer_action(
     )
 
 
+# --- Application journalisée d'un coup déjà construit (hors boucle de joueur) ----
+
+
+async def _appliquer_coup(
+    db: AsyncSession,
+    game: Game,
+    action: Action,
+    maintenant: datetime,
+    *,
+    statut_termine: str,
+) -> ResultatAction:
+    """Reconstruit, rejoue une action **déjà construite** et la journalise, sous verrou. La partie
+    doit être chargée ``with_for_update`` par l'appelant.
+
+    Mutualise ce que partagent l'expiration d'horloge (lot ``j-timer``) et les trois clôtures de ce
+    lot (abandon, désertion, inactivité) : reconstruire l'état courant, rejouer l'action par le
+    moteur, écrire l'entrée de journal, mettre à jour le cache, l'échéance d'inactivité et les
+    horloges, puis commit. L'action vient de l'appelant (système ou joueur) ; elle peut être
+    **terminale** (abandon, désertion, défaite au temps, inactivité) ou non (fin de tour, réponse
+    par défaut). Le statut ne change **que** si le moteur marque la partie terminée :
+    ``statut_termine`` distingue alors une fin *méritée* (``terminee``) d'un ménage sans vainqueur
+    (``expiree``). Une partie déjà terminée est refusée par le moteur (R-14.6), jamais clôturée
+    deux fois en silence.
+    """
+    ts = maintenant.timestamp()
+    etat_courant, rng = await _reconstruire(db, game)
+    etat2, evenements = appliquer(etat_courant, action, rng)
+    empr = empreinte(etat2)
+    entree = Entree(
+        numero=game.current_numero,
+        auteur=action.auteur,
+        action=action,
+        evenements=evenements,
+        horodatage=maintenant.isoformat(),
+        empreinte=empr,
+    )
+    brut = entree_vers_json(entree)
+    db.add(
+        GameEvent(
+            game_id=game.id,
+            numero=brut["numero"],
+            auteur=brut["auteur"],
+            action=brut["action"],
+            evenements=brut["evenements"],
+            horodatage=brut["horodatage"],
+            empreinte=brut["empreinte"],
+        )
+    )
+    game.current_numero += 1
+    game.current_empreinte = empr
+    game.last_action_at = maintenant
+    game.expires_at = maintenant + _delai_inactivite()
+    if etat2.terminee:
+        game.status = statut_termine
+        game.vainqueur_user_id = uuid.UUID(etat2.vainqueur) if etat2.vainqueur else None
+        game.raison_fin = etat2.raison_fin
+    if game.horloges is not None:
+        game.horloges = _adapt_horloges.transition_json(game.horloges, etat_courant, etat2, ts)
+    await db.commit()
+    return ResultatAction(
+        numero=entree.numero,
+        evenements=[dict(e) for e in brut["evenements"]],
+        empreinte=empr,
+        terminee=etat2.terminee,
+        vainqueur_user_id=game.vainqueur_user_id,
+        raison_fin=etat2.raison_fin,
+        etat=etat_vers_json(etat2),
+        rejoue=False,
+        rng_compteurs=rng.compteurs(),
+        horloges=_adapt_horloges.restant_json(game.horloges, ts),
+    )
+
+
+async def abandonner_partie(
+    db: AsyncSession, game_id: uuid.UUID, user_id: uuid.UUID, maintenant: datetime | None = None
+) -> ResultatAction:
+    """**Abandon volontaire** d'un joueur (R-14.3) : la partie se termine, l'adversaire gagne.
+
+    Chemin dédié de l'« abandon explicite » du lot : un geste simple, sans numéro d'action à
+    deviner (contrairement à :func:`appliquer_action`). Chargée sous verrou et **bornée au
+    participant** (sinon :class:`PartieIntrouvable` → 404, pas de fuite d'existence). Une partie qui
+    n'est plus en cours refuse l'abandon (:class:`PartieNonActive` → 409) : jamais clos deux fois.
+    L'auteur est **toujours** le joueur de la session (jamais une identité reçue du client).
+    """
+    maintenant = maintenant or _maintenant()
+    game = await _game_pour_participant(db, game_id, user_id, verrou=True)
+    if game.status != GAME_STATUS_EN_COURS:
+        raise PartieNonActive(
+            f"Partie {game_id} au statut « {game.status} » : elle n'accepte plus d'abandon."
+        )
+    action = Action(type=ACTION_ABANDONNER, auteur=joueur_id_de(user_id), params={})
+    resultat = await _appliquer_coup(
+        db, game, action, maintenant, statut_termine=GAME_STATUS_TERMINEE
+    )
+    logger.info("abandon volontaire — partie %s, joueur %s.", game_id, user_id)
+    return resultat
+
+
 # --- Expiration / purge ------------------------------------------------------
 
 
 async def expirer_parties(db: AsyncSession, maintenant: datetime | None = None) -> int:
-    """Fige les parties en cours inactives au-delà du délai (abandon silencieux). Renvoie le compte.
+    """Clôt les parties fantômes (inactives au-delà du plafond) **avec un motif journalisé**.
 
-    Une partie ne reste jamais suspendue : faute d'activité, elle passe en `expiree`. Le compte est
-    journalisé — un balayage qui n'aurait rien fait le **dit**, il ne reste pas muet.
+    Une partie ne reste jamais suspendue : faute d'activité au-delà de ``expires_at``, elle est
+    close pour inactivité (statut `expiree`, raison `inactivite`, **aucun** vainqueur — personne n'a
+    joué). Chaque clôture est un **coup journalisé** (transition système ``expirer_inactivite``),
+    pas un simple changement de statut : l'historique porte son motif, et « tout est rejouable »
+    tient (critère « chaque clôture automatique porte son motif dans le journal et dans
+    l'historique », risque nommé : le nettoyage silencieux). On clôt une partie à la fois, sous
+    verrou de ligne, pour ne pas heurter un coup concurrent. Renvoie le compte, et le journalise.
     """
     maintenant = maintenant or _maintenant()
-    resultat = await db.execute(
-        update(Game)
-        .where(Game.status == GAME_STATUS_EN_COURS, Game.expires_at < maintenant)
-        .values(status=GAME_STATUS_EXPIREE)
-        .execution_options(synchronize_session=False)
-    )
-    await db.commit()
-    compte = resultat.rowcount or 0
-    logger.info("expiration des parties abandonnées : %d partie(s) figée(s).", compte)
+    ids = (
+        await db.execute(
+            select(Game.id).where(
+                Game.status == GAME_STATUS_EN_COURS, Game.expires_at < maintenant
+            )
+        )
+    ).scalars().all()
+
+    compte = 0
+    for game_id in ids:
+        game = await _game_sous_verrou(db, game_id)
+        # Re-contrôle sous verrou : un coup concurrent a pu la ranimer (nouvelle échéance) ou la
+        # clore entre-temps. On ne force rien dans ce cas — jamais une clôture « de mémoire ».
+        if game is None or game.status != GAME_STATUS_EN_COURS or game.expires_at >= maintenant:
+            await db.rollback()
+            continue
+        action = Action(type=ACTION_EXPIRER_INACTIVITE, auteur=AUTEUR_SYSTEME, params={})
+        await _appliquer_coup(
+            db, game, action, maintenant, statut_termine=GAME_STATUS_EXPIREE
+        )
+        compte += 1
+
+    logger.info("expiration des parties fantômes : %d partie(s) close(s) pour inactivité.", compte)
     return compte
 
 
@@ -582,7 +724,7 @@ async def purger(
     db: AsyncSession,
     maintenant: datetime | None = None,
     *,
-    anciennete: timedelta = ANCIENNETE_PURGE,
+    anciennete: timedelta | None = None,
 ) -> dict[str, int]:
     """Purge les parties mortes anciennes et les instantanés superflus, avec une métrique.
 
@@ -595,6 +737,8 @@ async def purger(
     muette (on doit pouvoir expliquer ce qui a disparu).
     """
     maintenant = maintenant or _maintenant()
+    if anciennete is None:
+        anciennete = timedelta(days=settings.jeu_purge_anciennete_j)
 
     # Instantanés superflus : tout sauf le plus récent (numero_entrees max) de **sa** partie. La
     # sous-requête corrèle sur le game_id de la ligne supprimée (alias), sans jointure à `games`.
@@ -644,82 +788,61 @@ async def _game_sous_verrou(db: AsyncSession, game_id: uuid.UUID) -> Game | None
 async def expirer_horloge(
     db: AsyncSession, game_id: uuid.UUID, maintenant: datetime | None = None
 ) -> ResultatAction | None:
-    """Applique l'action par défaut si une horloge a expiré ; renvoie le résultat, ou None.
+    """Résout une horloge expirée : **désertion** d'une pause dépassée, sinon action par défaut.
 
     Pilotée par le serveur (appelée au gré des synchronisations et des battements de cœur), sous
-    verrou de ligne comme un coup de joueur. Une pause de déconnexion dont la grâce est passée fait
-    **reprendre** les horloges (sans coup). Sinon, une expiration journalise l'action par défaut :
-    de tour, réponse par défaut d'une demande, ou défaite au temps) : **jamais un blocage** (critère
-    d'acceptation). Renvoie ``None`` si rien n'a expiré, ou si la partie n'est pas en cours / sans
-    horloges.
+    verrou de ligne comme un coup de joueur :
+
+    * une **pause de déconnexion dont la grâce est passée** devient une **désertion** (lot
+      ``j-deconnexion-abandon``) : le joueur déconnecté qui n'est pas revenu perd par forfait, coup
+      système ``deserter`` journalisé, l'adversaire gagne. C'est l'affinement de ``j-timer``, qui se
+      contentait de reprendre les horloges : la partie ne reste pas suspendue le temps que le
+      budget du déserteur s'épuise, elle se clôt dès la fin du délai de grâce annoncé ;
+    * sinon, une expiration journalise l'**action par défaut** (fin de tour, réponse par défaut
+      d'une demande, ou défaite au temps — DJ4) : **jamais un blocage** (critère d'acceptation).
+
+    Renvoie ``None`` si rien n'a expiré, ou si la partie n'est pas en cours / sans horloges.
     """
     maintenant = maintenant or _maintenant()
     ts = maintenant.timestamp()
     game = await _game_sous_verrou(db, game_id)
     if game is None or game.status != GAME_STATUS_EN_COURS or game.horloges is None:
         return None
+
+    # Pause dépassée → désertion (forfait du joueur qui ne revient pas). Le déserteur est nommé
+    # depuis l'état des horloges (celui dont la déconnexion a posé la pause), jamais « de mémoire ».
     if _adapt_horloges.pause_a_expire(game.horloges, ts):
-        game.horloges = _adapt_horloges.reprendre_json(game.horloges, ts)
-        await db.commit()
-        return None
+        deserteur = _adapt_horloges.joueur_en_pause(game.horloges)
+        if deserteur is None:  # garde : pause_a_expire implique un joueur en pause
+            return None
+        action = Action(type=ACTION_DESERTER, auteur=AUTEUR_SYSTEME, params={"joueur": deserteur})
+        resultat = await _appliquer_coup(
+            db, game, action, maintenant, statut_termine=GAME_STATUS_TERMINEE
+        )
+        logger.info(
+            "désertion — partie %s, le joueur %s n'est pas revenu avant la fin de la grâce ; "
+            "forfait au numéro %d.",
+            game_id,
+            deserteur,
+            resultat.numero,
+        )
+        return resultat
+
     decision = _adapt_horloges.action_par_defaut(game.horloges, ts)
     if decision is None:
         return None
     type_action, params = decision
-
-    etat_courant, rng = await _reconstruire(db, game)
     action = Action(type=type_action, auteur=AUTEUR_SYSTEME, params=params)
-    etat2, evenements = appliquer(etat_courant, action, rng)
-    empr = empreinte(etat2)
-    entree = Entree(
-        numero=game.current_numero,
-        auteur=AUTEUR_SYSTEME,
-        action=action,
-        evenements=evenements,
-        horodatage=maintenant.isoformat(),
-        empreinte=empr,
+    resultat = await _appliquer_coup(
+        db, game, action, maintenant, statut_termine=GAME_STATUS_TERMINEE
     )
-    brut = entree_vers_json(entree)
-    db.add(
-        GameEvent(
-            game_id=game.id,
-            numero=brut["numero"],
-            auteur=brut["auteur"],
-            action=brut["action"],
-            evenements=brut["evenements"],
-            horodatage=brut["horodatage"],
-            empreinte=brut["empreinte"],
-        )
-    )
-    game.current_numero += 1
-    game.current_empreinte = empr
-    game.last_action_at = maintenant
-    game.expires_at = maintenant + DELAI_INACTIVITE
-    if etat2.terminee:
-        game.status = GAME_STATUS_TERMINEE
-        game.vainqueur_user_id = uuid.UUID(etat2.vainqueur) if etat2.vainqueur else None
-        game.raison_fin = etat2.raison_fin
-    game.horloges = _adapt_horloges.transition_json(game.horloges, etat_courant, etat2, ts)
-    await db.commit()
-
     logger.info(
         "expiration d'horloge appliquée — partie %s, coup système « %s » au numéro %d.",
         game_id,
         type_action,
-        entree.numero,
+        resultat.numero,
     )
-    return ResultatAction(
-        numero=entree.numero,
-        evenements=[dict(e) for e in brut["evenements"]],
-        empreinte=empr,
-        terminee=etat2.terminee,
-        vainqueur_user_id=game.vainqueur_user_id,
-        raison_fin=etat2.raison_fin,
-        etat=etat_vers_json(etat2),
-        rejoue=False,
-        rng_compteurs=rng.compteurs(),
-        horloges=_adapt_horloges.restant_json(game.horloges, ts),
-    )
+    return resultat
 
 
 async def marquer_deconnexion(

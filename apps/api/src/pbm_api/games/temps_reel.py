@@ -330,8 +330,10 @@ async def piloter_canal(
                     transmis = max(transmis, rattrapage["numero"] - 1)
 
             if not termines:
-                # Expiration d'horloge (lot j-timer) : un silence est l'occasion de vérifier
-                # qu'aucune horloge n'a expiré ; si oui, le défaut est journalisé et diffusé.
+                # Expiration d'horloge (lots j-timer / j-deconnexion-abandon) : un silence est
+                # l'occasion de vérifier qu'aucune horloge n'a expiré. Si oui, le coup est
+                # journalisé et diffusé — action par défaut (fin de tour, défaite au temps), ou
+                # **désertion** si un joueur déconnecté a dépassé sa grâce (forfait).
                 async with fabrique_session() as db_exp:
                     resultat_exp = await expirer_horloge(db_exp, game_id)
                 if resultat_exp is not None:

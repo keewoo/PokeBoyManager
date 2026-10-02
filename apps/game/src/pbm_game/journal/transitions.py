@@ -55,7 +55,9 @@ from .modele import (
     ACTION_DEBUT_TOUR,
     ACTION_DECLARER_ATTAQUE,
     ACTION_DEFAITE_TEMPS,
+    ACTION_DESERTER,
     ACTION_EXPIRER_DEMANDE,
+    ACTION_EXPIRER_INACTIVITE,
     ACTION_MELANGER_PIOCHE,
     ACTION_PIOCHER,
     ACTION_REPONDRE_DEMANDE,
@@ -83,9 +85,19 @@ Transition = Callable[[EtatPartie, Action, Rng], tuple[EtatPartie, list[Evenemen
 _ORDRE_PHASES: tuple[str, ...] = (PHASE_PIOCHE, PHASE_PRINCIPALE, PHASE_ATTAQUE, PHASE_CHECKUP)
 
 # Les seules actions permises quand une demande de décision est en cours (lot ``j-effets-choix``) :
-# répondre, laisser expirer le délai, ou abandonner la partie (R-14.3, toujours permis).
+# répondre, laisser expirer le délai, ou clore la partie — abandon (R-14.3, toujours permis),
+# défaite au temps (le budget peut s'épuiser pendant la décision adverse), désertion (un joueur peut
+# ne pas revenir pendant que l'autre décide) et expiration pour inactivité (le balayage clôt une
+# partie fantôme restée suspendue sur une demande). Toutes terminales : jamais un blocage.
 _ACTIONS_PENDANT_DEMANDE: frozenset[str] = frozenset(
-    {ACTION_REPONDRE_DEMANDE, ACTION_EXPIRER_DEMANDE, ACTION_ABANDONNER, ACTION_DEFAITE_TEMPS}
+    {
+        ACTION_REPONDRE_DEMANDE,
+        ACTION_EXPIRER_DEMANDE,
+        ACTION_ABANDONNER,
+        ACTION_DEFAITE_TEMPS,
+        ACTION_DESERTER,
+        ACTION_EXPIRER_INACTIVITE,
+    }
 )
 
 
