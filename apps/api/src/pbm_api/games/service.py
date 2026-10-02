@@ -85,6 +85,58 @@ DELAI_INACTIVITE = timedelta(days=3)
 #: Une partie morte (terminée ou expirée) plus ancienne que ce délai est purgée.
 ANCIENNETE_PURGE = timedelta(days=30)
 
+#: Fenêtre glissante d'observation des coups refusés, par (partie, joueur). Un client honnête se
+#: trompe rarement ; une **rafale** de coups illégaux trahit un client modifié qui sonde l'autorité
+#: du serveur. Cadre du lot `j-autorite-vues` : « alerter sur les motifs anormaux ».
+FENETRE_REFUS = timedelta(minutes=1)
+
+#: Au-delà de ce nombre de refus dans la fenêtre pour un même joueur sur une même partie, on hausse
+#: le ton : un avis (WARNING par coup) devient une **alerte** (ERROR).
+SEUIL_REFUS_RAFALE = 5
+
+#: Horodatages des refus récents, par (game_id, user_id). En mémoire du process : c'est une sonde
+#: d'alerte, pas une source de vérité ni une limite de débit dure — elle ne persiste rien et ne
+#: bloque aucun coup ; elle rend seulement visible un comportement anormal.
+_refus_recents: dict[tuple[uuid.UUID, uuid.UUID], list[datetime]] = {}
+
+
+def reinitialiser_alerte_refus() -> None:
+    """Vide la fenêtre d'observation des refus — point d'entrée pour les tests, jamais en prod."""
+    _refus_recents.clear()
+
+
+def _journaliser_refus(
+    game_id: uuid.UUID, user_id: uuid.UUID, type_action: str, motif: str, maintenant: datetime
+) -> int:
+    """Trace un coup refusé et **alerte** en cas de rafale ; renvoie le nombre de refus récents.
+
+    Un coup refusé n'est jamais avalé en silence (« aucun repli silencieux ») : il est tracé avec
+    sa cause. Si un même joueur accumule les coups illégaux dans :data:`FENETRE_REFUS`, on émet une
+    alerte — signe d'un client modifié. On ne bloque pas le joueur pour autant : le serveur fait
+    déjà autorité (l'état n'a pas bougé), l'alerte sert la supervision, pas le refus.
+    """
+    logger.warning(
+        "coup refusé — partie %s, joueur %s, action « %s » : %s",
+        game_id,
+        user_id,
+        type_action,
+        motif,
+    )
+    cle = (game_id, user_id)
+    recents = [t for t in _refus_recents.get(cle, []) if maintenant - t < FENETRE_REFUS]
+    recents.append(maintenant)
+    _refus_recents[cle] = recents
+    if len(recents) >= SEUIL_REFUS_RAFALE:
+        logger.error(
+            "ALERTE anti-triche : %d coups illégaux en moins de %s pour le joueur %s sur la "
+            "partie %s — client possiblement modifié.",
+            len(recents),
+            FENETRE_REFUS,
+            user_id,
+            game_id,
+        )
+    return len(recents)
+
 
 def _maintenant() -> datetime:
     """Instant courant en UTC **aware** — les colonnes de parties sont `DateTime(timezone=True)`.
@@ -113,6 +165,10 @@ class ResultatAction:
     raison_fin: str | None
     etat: dict
     rejoue: bool
+    #: Compteurs de tirages du Rng à ce point (``rng.compteurs()``). La **projection** vers un
+    #: client (lot `j-autorite-vues`) en dérive l'**époque** des jetons de cartes cachées : le
+    #: nombre de mélanges du deck d'un joueur. Donnée interne — jamais renvoyée telle quelle.
+    rng_compteurs: dict[str, int]
 
 
 # --- Création ----------------------------------------------------------------
@@ -385,7 +441,7 @@ async def appliquer_action(
             )
         ).scalar_one()
         if _memes_actions(existante.action, action):
-            etat, _ = await _reconstruire(db, game)
+            etat, rng = await _reconstruire(db, game)
             return ResultatAction(
                 numero=existante.numero,
                 evenements=list(existante.evenements),
@@ -395,6 +451,7 @@ async def appliquer_action(
                 raison_fin=game.raison_fin,
                 etat=etat_vers_json(etat),
                 rejoue=True,
+                rng_compteurs=rng.compteurs(),
             )
         raise ConflitNumero(
             numero_attendu,
@@ -417,6 +474,9 @@ async def appliquer_action(
     try:
         etat2, evenements = appliquer(etat_courant, action, rng)
     except ValueError as exc:
+        # Le serveur fait autorité : un coup illégal est refusé, l'état n'a pas bougé (rien n'a été
+        # écrit, le `commit` est plus bas). On le trace, et on alerte si c'est une rafale.
+        _journaliser_refus(game_id, user_id, type, str(exc), maintenant)
         raise ActionRefusee(str(exc)) from exc
 
     empr = empreinte(etat2)
@@ -475,6 +535,7 @@ async def appliquer_action(
         raison_fin=etat2.raison_fin,
         etat=etat_vers_json(etat2),
         rejoue=False,
+        rng_compteurs=rng.compteurs(),
     )
 
 
