@@ -26,6 +26,9 @@ class DetectionFailedError(Exception):
 
 @dataclass(frozen=True)
 class DetectionRunResult:
+    """Résultat d'une détection sur une photo : découpes, image de contrôle, méthode utilisée
+    et verdict qualité par recadrage."""
+
     quads: list[np.ndarray]  # coordonnées pixels dans l'image d'origine, ordre de lecture
     crops: list[np.ndarray]  # BGR, 630×880, un par quad
     annotated_jpeg: bytes
@@ -37,6 +40,7 @@ class DetectionRunResult:
 
 
 def decode_image(data: bytes) -> np.ndarray:
+    """Décode les octets d'une photo en image OpenCV ; lève si la photo est illisible."""
     array = np.frombuffer(data, dtype=np.uint8)
     image = cv2.imdecode(array, cv2.IMREAD_COLOR)
     if image is None:

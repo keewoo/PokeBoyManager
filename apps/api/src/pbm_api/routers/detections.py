@@ -37,6 +37,9 @@ async def confirm_detection(
     current_user: Annotated[User, Depends(get_current_user)],
     _csrf: Annotated[None, Depends(require_csrf)],
 ) -> ConfirmDetectionResponse:
+    """Valide une détection et crée l'exemplaire correspondant en collection ; appartenance
+    vérifiée par jointure sur `Upload.user_id`. Lève 404 si la détection ou la carte au
+    catalogue est introuvable, 409 si déjà traitée."""
     try:
         detection, items = await service.confirm_detection(db, current_user, detection_id, payload)
     except DetectionNotFoundError:
@@ -62,6 +65,8 @@ async def reject_detection(
     current_user: Annotated[User, Depends(get_current_user)],
     _csrf: Annotated[None, Depends(require_csrf)],
 ) -> RejectDetectionResponse:
+    """Rejette une détection, sans écrire d'exemplaire en collection ; lève 404 si introuvable,
+    409 si déjà traitée."""
     try:
         detection = await service.reject_detection(db, current_user, detection_id)
     except DetectionNotFoundError:

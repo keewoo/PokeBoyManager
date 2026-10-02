@@ -22,6 +22,8 @@ _PROVIDER_CLASSES: dict[AiProviderEnum, type[AIProvider]] = {
 def create_provider(
     provider: AiProviderEnum, api_key: str, *, http_client: httpx.AsyncClient | None = None
 ) -> AIProvider:
+    """Instancie le fournisseur `provider` avec `api_key` — ou le double simulé si
+    `AI_SIMULATED_PROVIDER` est activé."""
     # Drapeau `AI_SIMULATED_PROVIDER` (lot `v5-e2e`), faux par défaut : jamais en UAT/PROD, voir
     # `pbm_api.ai.simulated_provider`.
     if settings.ai_simulated_provider:

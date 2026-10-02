@@ -106,6 +106,8 @@ class StatsCardInput:
 
 @dataclass
 class StatBucket:
+    """Un seau d'une répartition : clé stable, libellé affichable, décompte pondéré."""
+
     key: str
     label: str
     count: int
@@ -113,6 +115,9 @@ class StatBucket:
 
 @dataclass
 class DeckValue:
+    """Valeur marchande d'un deck (variante `normal`, Énergies de base exclues). `total_eur`
+    reste `None` si aucune carte comptée n'a de prix relevé — jamais 0 (risque documenté)."""
+
     total_eur: Decimal | None
     priced_cards: int
     missing_price_cards: int
@@ -122,6 +127,8 @@ class DeckValue:
 
 @dataclass
 class DeckStats:
+    """Les agrégats chiffrés d'un deck : composition, courbe de jeu et valeur marchande."""
+
     card_count: int
     distinct_cards: int
     by_supertype: list[StatBucket] = field(default_factory=list)

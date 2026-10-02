@@ -37,6 +37,7 @@ ARCHIVE_MISSING_MESSAGE = "Archive introuvable — réessaie de préparer un nou
 
 
 def get_storage() -> StorageBackend:
+    """Dépendance FastAPI : backend de stockage des archives d'export, remplaçable en test."""
     return _storage
 
 
@@ -56,6 +57,8 @@ async def request_export(
     current_user: Annotated[User, Depends(get_current_user)],
     _csrf: Annotated[None, Depends(require_csrf)],
 ) -> ExportResponse:
+    """Crée une demande d'export RGPD de la collection de l'utilisateur courant et l'enfile
+    au worker arq (`export_user_data_task`), qui écrit l'archive de façon asynchrone."""
     export = await service.create_export(db, current_user)
     await arq_pool.enqueue_job("export_user_data_task", str(export.id))
     return _to_response(export)
@@ -89,6 +92,8 @@ async def get_export(
     db: Annotated[AsyncSession, Depends(get_session)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> ExportResponse:
+    """Renvoie le statut d'un export demandé par l'utilisateur courant ; lève 404 s'il est
+    introuvable ou appartient à un autre utilisateur."""
     try:
         export = await service.get_owned_export(db, current_user, export_id)
     except ExportNotFoundError:
@@ -102,6 +107,9 @@ async def download_export(
     storage: Annotated[StorageBackend, Depends(get_storage)],
     token: str = Query(...),
 ) -> Response:
+    """Sert l'archive ZIP d'un export via le jeton reçu par e-mail — pas de cookie de session,
+    pour fonctionner depuis un autre navigateur. Lève 404 si le jeton est invalide/expiré ou
+    si l'archive n'a pas (ou plus) été produite."""
     try:
         export, data = await service.download_by_token(db, storage, token)
     except ExportTokenInvalidError:

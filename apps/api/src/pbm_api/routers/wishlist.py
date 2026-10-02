@@ -58,6 +58,7 @@ async def list_wishlist(
     session: Annotated[AsyncSession, Depends(get_session)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> WishlistListResponse:
+    """Liste les vœux de l'utilisateur courant, avec prix cible et prix de marché courant."""
     rows = await service.list_rows(session, current_user)
     return WishlistListResponse(items=[_to_response(row) for row in rows])
 
@@ -69,6 +70,8 @@ async def create_wishlist_item(
     current_user: Annotated[User, Depends(get_current_user)],
     _csrf: Annotated[None, Depends(require_csrf)],
 ) -> WishlistItemResponse:
+    """Ajoute une carte aux vœux de l'utilisateur courant ; lève 404 si la carte est inconnue
+    au catalogue, 409 si elle figure déjà dans les vœux."""
     try:
         item = await service.create_item(session, current_user, payload)
     except CardNotFoundError:
@@ -87,6 +90,8 @@ async def update_wishlist_item(
     current_user: Annotated[User, Depends(get_current_user)],
     _csrf: Annotated[None, Depends(require_csrf)],
 ) -> WishlistItemResponse:
+    """Met à jour un vœu (prix cible, note) de l'utilisateur courant ; lève 404 si introuvable
+    ou appartenant à un autre utilisateur."""
     try:
         item = await service.update_item(session, current_user, item_id, payload)
     except WishlistItemNotFoundError:
@@ -102,6 +107,8 @@ async def delete_wishlist_item(
     current_user: Annotated[User, Depends(get_current_user)],
     _csrf: Annotated[None, Depends(require_csrf)],
 ) -> None:
+    """Supprime un vœu de l'utilisateur courant ; lève 404 s'il est introuvable ou appartient
+    à un autre utilisateur."""
     try:
         await service.delete_item(session, current_user, item_id)
     except WishlistItemNotFoundError:

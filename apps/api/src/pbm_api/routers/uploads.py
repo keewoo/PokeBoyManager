@@ -95,6 +95,7 @@ _storage = build_storage()
 
 
 def get_storage() -> StorageBackend:
+    """Dépendance FastAPI : backend de stockage des photos envoyées, remplaçable en test."""
     return _storage
 
 
@@ -106,6 +107,9 @@ async def create_uploads(
     current_user: Annotated[User, Depends(get_current_user)],
     _csrf: Annotated[None, Depends(require_csrf)],
 ) -> CreateUploadsResponse:
+    """Crée une cible d'envoi par fichier (URL présignée S3, ou route locale signée en backend
+    `local`) ; le navigateur y envoie ensuite les octets directement. Lève 400 si trop de
+    fichiers sont demandés ou si un fichier est invalide."""
     try:
         created = await service.create_uploads(db, current_user, storage, payload.files)
     except TooManyFilesError as exc:
@@ -160,6 +164,10 @@ async def complete_upload(
     current_user: Annotated[User, Depends(get_current_user)],
     _csrf: Annotated[None, Depends(require_csrf)],
 ) -> CompleteUploadResponse:
+    """Vérifie le type réel du fichier envoyé, supprime l'EXIF, convertit le HEIC en JPEG, et
+    enfile le job de reconnaissance si une clé IA est configurée. Lève 404 si l'envoi est
+    introuvable, 409 s'il est déjà traité ou si aucune donnée n'a été reçue, 413 si le fichier
+    dépasse la taille maximale, 400 si le format d'image n'est pas pris en charge."""
     try:
         upload, job = await service.complete_upload(
             db, current_user, storage, arq_pool, upload_id
@@ -343,6 +351,9 @@ async def stream_upload_events(
     db: Annotated[AsyncSession, Depends(get_session)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> StreamingResponse:
+    """Flux SSE de progression de la reconnaissance d'un envoi : interroge la base par polling
+    (les services écrivent une détection à la fois) jusqu'à état terminal du job ou dépassement
+    du délai maximal. Lève 404 si l'envoi est introuvable ou appartient à un autre utilisateur."""
     try:
         await service.get_owned_upload(db, current_user, upload_id)
     except UploadNotFoundError:
@@ -382,6 +393,8 @@ async def get_detection_crop(
     storage: Annotated[StorageBackend, Depends(get_storage)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> Response:
+    """Sert l'image recadrée d'une détection (une carte isolée dans la photo d'origine) ; lève
+    404 si l'envoi, la détection, ou le recadrage dans le stockage est introuvable."""
     try:
         data = await service.get_detection_crop(db, storage, current_user, upload_id, detection_id)
     except UploadNotFoundError:

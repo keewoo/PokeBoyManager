@@ -29,10 +29,12 @@ _tcgdex = TcgdexClient()
 
 
 def get_storage() -> StorageBackend:
+    """Dépendance FastAPI : backend de stockage objet (cache des images), remplaçable en test."""
     return _storage
 
 
 def get_tcgdex_client() -> TcgdexClient:
+    """Dépendance FastAPI : client de la source d'images officielle Tcgdex, remplaçable en test."""
     return _tcgdex
 
 
@@ -44,6 +46,9 @@ async def get_card_image(
     tcgdex: Annotated[TcgdexClient, Depends(get_tcgdex_client)],
     size: str = Query("high", pattern="^(high|low)$"),
 ) -> Response:
+    """Sert l'image officielle d'une carte (route publique), mise en cache dans le stockage
+    objet au premier accès. Lève 404 si la carte est inconnue ou sans image, 502 si la source
+    officielle est injoignable — jamais un succès vide."""
     result = await session.execute(select(Card.image_url).where(Card.id == card_id))
     image_base_url = result.scalar_one_or_none()
     if image_base_url is None:

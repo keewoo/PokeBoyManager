@@ -32,14 +32,17 @@ PROVIDER_ERROR_MESSAGE = "La génération des anecdotes a échoué : {}"
 
 
 def get_pokepedia_client() -> MediaWikiClient:
+    """Dépendance FastAPI : client wiki Poképédia, remplaçable par un double en test."""
     return MediaWikiClient(POKEPEDIA_API_URL)
 
 
 def get_bulbapedia_client() -> MediaWikiClient:
+    """Dépendance FastAPI : client wiki Bulbapedia, remplaçable par un double en test."""
     return MediaWikiClient(BULBAPEDIA_API_URL)
 
 
 def get_ai_provider_factory() -> ProviderFactory:
+    """Dépendance FastAPI : fabrique de fournisseur IA, remplaçable par un double en test."""
     return create_provider
 
 
@@ -59,6 +62,10 @@ async def get_card_insights(
     bulbapedia_client: MediaWikiClient = Depends(get_bulbapedia_client),
     provider_factory: ProviderFactory = Depends(get_ai_provider_factory),
 ) -> CardInsightsResponse:
+    """Renvoie les anecdotes de la carte, les génère via l'IA de l'utilisateur à la première
+    consultation (résultat mis en cache ensuite). Lève 404 si la carte n'existe pas, répond
+    `status="no_ai_key"` sans échouer si l'utilisateur n'a configuré aucune clé, et 502 si le
+    fournisseur IA échoue. Ferme toujours les clients wiki ouverts pour l'appel."""
     card = await _get_card_or_404(db, card_id)
     try:
         try:
@@ -99,5 +106,6 @@ async def report_card_insights(
     current_user: User = Depends(get_current_user),
     _csrf: None = Depends(require_csrf),
 ) -> None:
+    """Signale une anecdote de la carte comme problématique ; lève 404 si la carte est inconnue."""
     await _get_card_or_404(db, card_id)
     await report_card_insight(db, card_id=card_id, user=current_user, reason=payload.reason)

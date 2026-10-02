@@ -169,6 +169,8 @@ def _evaluate(deck: Deck, cards: list[LoadedDeckCard], owned, counterfeit) -> De
 
 
 async def create_deck(session: AsyncSession, user: User, data: CreateDeckRequest) -> Deck:
+    """Crée un deck pour l'utilisateur, en fusionnant les quantités d'une même carte citée
+    deux fois — refuse si une carte citée n'existe pas au catalogue."""
     merged = _merge_inputs(data.cards)
     await _ensure_cards_exist(session, list(merged))
     deck = Deck(user_id=user.id, name=data.name, format=data.format)
@@ -182,6 +184,8 @@ async def create_deck(session: AsyncSession, user: User, data: CreateDeckRequest
 
 
 async def list_decks(session: AsyncSession, user: User) -> list[tuple[Deck, DeckLegality]]:
+    """Les decks de l'utilisateur, chacun avec sa légalité recalculée à partir de la collection
+    du moment (une seule requête de possession pour tous les decks, jamais une par deck)."""
     result = await session.execute(
         select(Deck).where(Deck.user_id == user.id).order_by(Deck.created_at)
     )
@@ -197,6 +201,8 @@ async def list_decks(session: AsyncSession, user: User) -> list[tuple[Deck, Deck
 async def deck_detail(
     session: AsyncSession, user: User, deck_id: uuid.UUID
 ) -> tuple[Deck, list[LoadedDeckCard], DeckLegality]:
+    """Le deck, ses cartes et la légalité recalculée à la lecture. Borné au propriétaire : un
+    deck d'un autre utilisateur lève `DeckNotFoundError` (→ 404)."""
     deck = await _get_owned_deck(session, user, deck_id)
     loaded = (await _load_cards(session, [deck.id]))[deck.id]
     owned, counterfeit = await _owned_counts(session, user.id, [c.card_id for c in loaded])
@@ -225,12 +231,15 @@ async def update_deck(
 
 
 async def delete_deck(session: AsyncSession, user: User, deck_id: uuid.UUID) -> None:
+    """Supprime le deck (et ses `DeckCard`, en cascade). Borné au propriétaire."""
     deck = await _get_owned_deck(session, user, deck_id)
     await session.delete(deck)
     await session.commit()
 
 
 async def duplicate_deck(session: AsyncSession, user: User, deck_id: uuid.UUID) -> Deck:
+    """Copie un deck (nom suffixé « (copie) », mêmes cartes et format) pour en garder une
+    variante à part sans perdre l'original."""
     source = await _get_owned_deck(session, user, deck_id)
     rows = await session.execute(select(DeckCard).where(DeckCard.deck_id == source.id))
     name = (source.name + _COPY_SUFFIX)[:120]
@@ -338,6 +347,7 @@ async def deck_history(
 async def remove_deck_card(
     session: AsyncSession, user: User, deck_id: uuid.UUID, card_id: uuid.UUID
 ) -> Deck:
+    """Retire une carte du deck. Lève `DeckCardNotFoundError` (→ 404) si elle n'y est pas."""
     deck = await _get_owned_deck(session, user, deck_id)
     result = await session.execute(
         select(DeckCard).where(DeckCard.deck_id == deck_id, DeckCard.card_id == card_id)

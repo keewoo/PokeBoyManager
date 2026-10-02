@@ -32,6 +32,9 @@ _REFUSAL_FINISH_REASONS = frozenset(
 
 
 class GeminiProvider(AIProvider):
+    """Fournisseur Gemini concret — pas de modèle économique séparé ; correspondance d'erreurs
+    sur `error.status` plutôt que le seul code HTTP (voir docstring du module)."""
+
     PROVIDER: ClassVar[AiProviderEnum] = AiProviderEnum.gemini
     DEFAULT_MODEL: ClassVar[str] = "gemini-2.5-flash"
 

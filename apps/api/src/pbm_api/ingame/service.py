@@ -54,6 +54,8 @@ _ADVISORY_LOCK_NAMESPACE = 785_432
 
 @dataclass
 class InGameStudyResult:
+    """Résultat complet de l'étude en jeu, assemblé par `get_or_create_in_game_study`."""
+
     legalities: Legalities
     prize_rule: PrizeRule
     attacks: list | None
@@ -124,6 +126,11 @@ async def get_or_create_in_game_study(
     current_user: User,
     provider_factory: ProviderFactory = create_provider,
 ) -> InGameStudyResult:
+    """Assemble légalités/règle des Prix (recalculées), présence en tournoi (lue telle quelle)
+    et synthèse IA (générée une fois par carte sous verrou Postgres, régénérée si le tournoi a
+    été relevé depuis). Sans clé IA chez l'utilisateur : `study_status="no_ai_key"`, le reste
+    reste renvoyé. Effets de bord : écrit `CardInsight`, appelle le fournisseur IA de l'utilisateur.
+    """
     legalities = legalities_of(
         legal_standard=card.legal_standard, legal_expanded=card.legal_expanded
     )

@@ -87,6 +87,9 @@ class ProposedCard(BaseModel):
 
 
 class DeckProposal(BaseModel):
+    """La réponse brute attendue du modèle : des cartes par `ref` et un résumé de stratégie —
+    jamais affichée telle quelle, toujours passée par `reconcile` avant d'être écrite."""
+
     cards: list[ProposedCard] = Field(default_factory=list, max_length=DECK_SIZE)
     summary: str | None = Field(default=None, max_length=400)
 
@@ -131,6 +134,8 @@ class ProposalOptions:
 
 @dataclass(frozen=True)
 class ChosenCard:
+    """Une carte retenue dans le deck final, après réconciliation, avec son explication."""
+
     card_id: uuid.UUID
     name: str
     quantity: int
@@ -139,12 +144,16 @@ class ChosenCard:
 
 @dataclass(frozen=True)
 class Correction:
+    """Un ajustement automatique appliqué à la proposition brute — tracé, jamais silencieux."""
+
     code: str
     message: str
 
 
 @dataclass
 class ReconcileResult:
+    """Le deck réconcilié : les cartes retenues et la trace de chaque correction appliquée."""
+
     cards: list[ChosenCard] = field(default_factory=list)
     corrections: list[Correction] = field(default_factory=list)
 
@@ -186,6 +195,8 @@ def build_prompt(
     candidates: list[Candidate],
     deck_format_label: str,
 ) -> str:
+    """Construit le prompt unique envoyé au modèle : règles du jeu, vœux du joueur et la liste
+    numérotée des cartes possédées (seules citables par `ref` dans la réponse)."""
     wishes: list[str] = []
     if options.types:
         parts = [f"{t}" + (f" (~{s}%)" if s is not None else "") for t, s in options.types]

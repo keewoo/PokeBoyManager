@@ -27,6 +27,7 @@ _storage = build_storage()
 
 
 def get_storage() -> StorageBackend:
+    """Dépendance FastAPI : backend de stockage du fichier déposé, remplaçable en test."""
     return _storage
 
 
@@ -39,6 +40,10 @@ async def create_import(
     _csrf: Annotated[None, Depends(require_csrf)],
     file: Annotated[UploadFile, File()],
 ) -> ImportCsvResponse:
+    """Dépose un CSV de collection, l'enregistre (`Upload`/`Job`) et enfile son analyse au
+    worker arq (`import_csv_task`) ; chaque ligne produit une `Detection` traitée ensuite
+    comme une carte photographiée. Lève 400 sur type de fichier non accepté, 413 si le
+    fichier dépasse la taille maximale configurée."""
     if file.content_type and file.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST, f"type de fichier non accepté : {file.content_type}"
