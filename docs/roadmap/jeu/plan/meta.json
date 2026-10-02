@@ -23,7 +23,7 @@
   ],
   "couloirs": [
     { "id": "J-MOT", "machine": "devAI", "quoi": "Moteur de règles (Python pur), tests de règles." },
-    { "id": "J-SRV", "machine": "devAI", "quoi": "Service de parties, temps réel, horloges, autorité et anti-triche." },
+    { "id": "J-SRV", "machine": "chimera", "quoi": "Service de parties, temps réel, horloges, autorité et anti-triche. Sur chimera depuis le 02/10/2026 : ses lots touchent `apps/api` (tables, migrations, tests sur Postgres) — base partagée `pbm-shared` sur chimera, disque système de devAI presque plein." },
     { "id": "J-EFF", "machine": "chimera", "quoi": "Langage d'effets, scripts de cartes, couverture du catalogue (gros volume, IA)." },
     { "id": "J-UI", "machine": "chimera", "quoi": "Plateau, interactions, décisions, journal, écrans de partie." },
     { "id": "J-GFX", "machine": "chimera", "quoi": "Assets, animations, effets typés, décors, son (GPU disponible)." },

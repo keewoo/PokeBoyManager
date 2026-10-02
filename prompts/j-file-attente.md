@@ -3,25 +3,25 @@
 > Prompt GÉNÉRÉ depuis `docs/roadmap/jeu/plan/` (via `jeu.json`) par `docs/roadmap/suivi.py build` — ne pas éditer à la main.
 > Plan du jeu : `docs/roadmap/jeu/BACKLOG-JEU.md` · onglet « Backlog du jeu » de `docs/roadmap/ROADMAP.html`.
 
-**P0** · piste Serveur de parties · couloir **J-SRV** (**devAI**) · jalon **J1 — Deux joueurs jouent une partie honnête** · palier 9 · taille M · complexité 3/5 · difficulté 3/5
+**P0** · piste Serveur de parties · couloir **J-SRV** (**chimera**) · jalon **J1 — Deux joueurs jouent une partie honnête** · palier 9 · taille M · complexité 3/5 · difficulté 3/5
 
 ## A. Où tourne cette session ? — à trancher AVANT tout le reste
 
-Ce lot **s'exécute sur devAI**. Lance `hostname -s` :
+Ce lot **s'exécute sur chimera**. Lance `hostname -s` :
 
-- **Mac-mini-de-keewoo (hostname -s)** → **mode EXÉCUTANT** : passe à la section 0.
+- **Chimaera (dans la WSL)** → **mode EXÉCUTANT** : passe à la section 0.
 - **Toute autre machine** (le Mac de JF `M-DRHKN6GJ77` notamment) → **mode PILOTE** : tu ne codes rien ici. Section P uniquement.
 
 ## P. Mode PILOTE
 
 1. Garde-fou : `python3 docs/roadmap/suivi.py verifier j-file-attente`. Code 2 → présente les raisons à JF et demande-lui quoi faire ; ne passe jamais outre sans son « oui » explicite.
-2. Prépare le worktree sur devAI :
+2. Prépare le worktree sur chimera :
 
 ```bash
-ssh devai 'cd ~/dev/pokeboy && git fetch -q origin && git worktree add ../wt-j-file-attente -b roadmap/j-file-attente origin/main && mkdir -p ~/dev/logs'
+ssh chimera 'wsl -d Ubuntu-24.04 -u upgreg -- bash -lc "cd ~/dev/pokeboy && git fetch -q origin && git worktree add ../wt-j-file-attente -b roadmap/j-file-attente origin/main && mkdir -p ~/dev/logs"'
 ```
 
-3. Lance le lot autonome : `ssh devai 'cd ~/dev/wt-j-file-attente && nohup claude -p --dangerously-skip-permissions < prompts/j-file-attente.md > ~/dev/logs/j-file-attente.log 2>&1 &'` (toutes les sorties redirigées : ssh rend la main).
+3. Lance le lot autonome : par le mécanisme de lots de chimera (`~/dev/lots/launch-lot.sh`, étendu au dépôt `~/dev/pokeboy` par le lot `v0-flotte`), **lancé côté Windows** — un `nohup` interne à la WSL meurt avec la session. Journal : `~/dev/logs/j-file-attente.log`.
 4. **3 minutes plus tard**, lis le journal du lot. Journal vide et processus mort = lot mort au démarrage : relance UNE fois, puis arrête-toi et alerte JF avec la cause. Un lot silencieux n'est jamais une conclusion.
 5. À la fin : `git fetch` et lis le compte rendu du lot dans `docs/roadmap/etat.json` de la branche `roadmap/j-file-attente` ; résume à JF : statut, grille, preuves, décisions attendues.
 
@@ -31,7 +31,7 @@ ssh devai 'cd ~/dev/pokeboy && git fetch -q origin && git worktree add ../wt-j-f
 
 ## 0. Garde-fou d'ordre — avant toute ligne de code
 
-Dépôt : `~/dev/pokeboy`. Travaille dans ton **worktree** `../wt-j-file-attente`, branche `roadmap/j-file-attente` depuis `origin/main` — jamais dans l'arbre commun, jamais `git stash`, jamais `git add -A`.
+Dépôt : `~/dev/pokeboy (WSL Ubuntu-24.04, utilisateur upgreg)`. Travaille dans ton **worktree** `../wt-j-file-attente`, branche `roadmap/j-file-attente` depuis `origin/main` — jamais dans l'arbre commun, jamais `git stash`, jamais `git add -A`.
 
 ```bash
 python3 docs/roadmap/suivi.py verifier j-file-attente

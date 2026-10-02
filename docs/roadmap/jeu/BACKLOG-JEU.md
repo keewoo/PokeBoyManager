@@ -26,7 +26,7 @@
 | Couloir | Machine | Rôle |
 |---|---|---|
 | `J-MOT` | devAI | Moteur de règles (Python pur), tests de règles. |
-| `J-SRV` | devAI | Service de parties, temps réel, horloges, autorité et anti-triche. |
+| `J-SRV` | chimera | Service de parties, temps réel, horloges, autorité et anti-triche. Sur chimera depuis le 02/10/2026 : ses lots touchent `apps/api` (tables, migrations, tests sur Postgres) — base partagée `pbm-shared` sur chimera, disque système de devAI presque plein. |
 | `J-EFF` | chimera | Langage d'effets, scripts de cartes, couverture du catalogue (gros volume, IA). |
 | `J-UI` | chimera | Plateau, interactions, décisions, journal, écrans de partie. |
 | `J-GFX` | chimera | Assets, animations, effets typés, décors, son (GPU disponible). |
@@ -677,7 +677,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 <a id="j-partie-service"></a>
 ### `j-partie-service` — Service de parties : créer, persister, reprendre, expirer
 
-**Palier 8** · jalon **J1** · piste S (Serveur de parties) · couloir `J-SRV` (devAI) · P0 · taille M · complexité 4/5 · difficulté 4/5
+**Palier 8** · jalon **J1** · piste S (Serveur de parties) · couloir `J-SRV` (chimera) · P0 · taille M · complexité 4/5 · difficulté 4/5
 
 **Pourquoi ce lot.** C'est l'enveloppe qui transforme un moteur de règles en parties réelles : deux comptes, deux decks, un journal persistant, et une partie qui survit à un redémarrage du serveur.
 
@@ -767,7 +767,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 <a id="j-autorite-vues"></a>
 ### `j-autorite-vues` — Autorité du serveur : le client ne voit que ce qu'il a le droit de voir
 
-**Palier 9** · jalon **J1** · piste S (Serveur de parties) · couloir `J-SRV` (devAI) · P0 · taille M · complexité 4/5 · difficulté 4/5
+**Palier 9** · jalon **J1** · piste S (Serveur de parties) · couloir `J-SRV` (chimera) · P0 · taille M · complexité 4/5 · difficulté 4/5
 
 **Pourquoi ce lot.** Sans cette règle tenue dès le début, l'anti-triche ne se rajoute jamais : il suffit d'ouvrir les outils du navigateur pour lire la main de l'adversaire, et plus personne n'a envie de jouer.
 
@@ -796,7 +796,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 <a id="j-file-attente"></a>
 ### `j-file-attente` — Recherche d'un adversaire : file d'attente privée et appariement
 
-**Palier 9** · jalon **J1** · piste S (Serveur de parties) · couloir `J-SRV` (devAI) · P0 · taille M · complexité 3/5 · difficulté 3/5 · décision **D11**
+**Palier 9** · jalon **J1** · piste S (Serveur de parties) · couloir `J-SRV` (chimera) · P0 · taille M · complexité 3/5 · difficulté 3/5 · décision **D11**
 
 **Pourquoi ce lot.** C'est la porte d'entrée du jeu : « je veux jouer » doit aboutir à une partie en quelques secondes, ou à une réponse claire (« personne en ligne »).
 
@@ -914,7 +914,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 <a id="j-replay"></a>
 ### `j-replay` — Replay d'une partie : la rejouer coup par coup, et la partager
 
-**Palier 9** · jalon **J4** · piste S (Serveur de parties) · couloir `J-SRV` (devAI) · P2 · taille S · complexité 2/5 · difficulté 3/5
+**Palier 9** · jalon **J4** · piste S (Serveur de parties) · couloir `J-SRV` (chimera) · P2 · taille S · complexité 2/5 · difficulté 3/5
 
 **Pourquoi ce lot.** Le journal existe déjà : en faire un replay coûte peu et sert trois fois — revoir sa partie, comprendre un désaccord de règle, et diagnostiquer une panne sans interroger le joueur.
 
@@ -943,7 +943,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 <a id="j-observabilite-jeu"></a>
 ### `j-observabilite-jeu` — Voir ce qui se passe : métriques du jeu et alertes de règles
 
-**Palier 9** · jalon **J5** · piste Q (Qualité & exploitation) · couloir `J-SRV` (devAI) · P1 · taille S · complexité 2/5 · difficulté 3/5
+**Palier 9** · jalon **J5** · piste Q (Qualité & exploitation) · couloir `J-SRV` (chimera) · P1 · taille S · complexité 2/5 · difficulté 3/5
 
 **Pourquoi ce lot.** Une règle qui casse doit se voir dans une métrique avant de se voir dans une plainte. C'est particulièrement vrai ici : les joueurs sont deux ou trois, ils ne signaleront pas tout.
 
@@ -972,7 +972,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 <a id="j-invitations"></a>
 ### `j-invitations` — Inviter quelqu'un à jouer : par pseudo ou par lien
 
-**Palier 10** · jalon **J1** · piste S (Serveur de parties) · couloir `J-SRV` (devAI) · P1 · taille S · complexité 2/5 · difficulté 2/5 · décision **D11**
+**Palier 10** · jalon **J1** · piste S (Serveur de parties) · couloir `J-SRV` (chimera) · P1 · taille S · complexité 2/5 · difficulté 2/5 · décision **D11**
 
 **Pourquoi ce lot.** Entre deux frères ou deux amis, on ne « cherche pas un adversaire » : on invite quelqu'un de précis. C'est l'usage le plus probable de ce jeu.
 
@@ -1001,7 +1001,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 <a id="j-temps-reel"></a>
 ### `j-temps-reel` — Canal temps réel : diffusion des coups, reconnexion et reprise après F5
 
-**Palier 10** · jalon **J1** · piste S (Serveur de parties) · couloir `J-SRV` (devAI) · P0 · taille M · complexité 4/5 · difficulté 4/5
+**Palier 10** · jalon **J1** · piste S (Serveur de parties) · couloir `J-SRV` (chimera) · P0 · taille M · complexité 4/5 · difficulté 4/5
 
 **Pourquoi ce lot.** Un jeu au tour par tour sans temps réel, c'est un formulaire. Et une partie qu'un F5 tue, c'est une partie qu'on ne recommence pas.
 
@@ -1179,7 +1179,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 <a id="j-lancement-partie"></a>
 ### `j-lancement-partie` — Lancement : choix du deck, contrôle, prêt à jouer, tirage au sort
 
-**Palier 11** · jalon **J1** · piste S (Serveur de parties) · couloir `J-SRV` (devAI) · P0 · taille S · complexité 3/5 · difficulté 3/5
+**Palier 11** · jalon **J1** · piste S (Serveur de parties) · couloir `J-SRV` (chimera) · P0 · taille S · complexité 3/5 · difficulté 3/5
 
 **Pourquoi ce lot.** C'est le moment que JF a nommé : le jeton « qui commence ». Il doit être visible, vérifiable, et donner au gagnant le choix que les règles lui accordent.
 
@@ -1238,7 +1238,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 <a id="j-timer"></a>
 ### `j-timer` — Horloges : par tour, par partie, par décision — et ce qui se passe à l'expiration
 
-**Palier 11** · jalon **J1** · piste S (Serveur de parties) · couloir `J-SRV` (devAI) · P0 · taille M · complexité 4/5 · difficulté 4/5 · décision **DJ4**
+**Palier 11** · jalon **J1** · piste S (Serveur de parties) · couloir `J-SRV` (chimera) · P0 · taille M · complexité 4/5 · difficulté 4/5 · décision **DJ4**
 
 **Pourquoi ce lot.** Sans horloge, un joueur qui part dîner bloque l'autre indéfiniment. Avec une horloge mal faite, un enfant perd une partie gagnée parce qu'il réfléchissait. Le réglage est un choix de JF (DJ4), pas un détail technique.
 
@@ -1414,7 +1414,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 <a id="j-echanges-emotes"></a>
 ### `j-echanges-emotes` — Emotes prédéfinies : se parler sans chat libre
 
-**Palier 11** · jalon **J4** · piste S (Serveur de parties) · couloir `J-SRV` (devAI) · P2 · taille S · complexité 1/5 · difficulté 1/5 · décision **DJ10**
+**Palier 11** · jalon **J4** · piste S (Serveur de parties) · couloir `J-SRV` (chimera) · P2 · taille S · complexité 1/5 · difficulté 1/5 · décision **DJ10**
 
 **Pourquoi ce lot.** Un jeu à deux sans aucun signe de vie est froid ; un chat libre entre un adulte et un mineur demande une modération que ce projet n'aura pas. Les emotes prennent le meilleur des deux.
 
@@ -1500,7 +1500,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 <a id="j-deconnexion-abandon"></a>
 ### `j-deconnexion-abandon` — Déconnexion, abandon, désertion : une partie ne reste jamais suspendue
 
-**Palier 12** · jalon **J1** · piste S (Serveur de parties) · couloir `J-SRV` (devAI) · P1 · taille S · complexité 3/5 · difficulté 3/5
+**Palier 12** · jalon **J1** · piste S (Serveur de parties) · couloir `J-SRV` (chimera) · P1 · taille S · complexité 3/5 · difficulté 3/5
 
 **Pourquoi ce lot.** La panne la plus fréquente d'un jeu en ligne n'est pas une erreur de règle, c'est un adversaire qui ne revient pas. Ce que le jeu fait alors décide s'il reste jouable.
 
@@ -1706,7 +1706,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 <a id="j-fin-effets-compte"></a>
 ### `j-fin-effets-compte` — Ce qu'une partie laisse sur le compte : écriture unique et exacte
 
-**Palier 13** · jalon **J4** · piste C (Compte & progression) · couloir `J-SRV` (devAI) · P0 · taille M · complexité 3/5 · difficulté 4/5 · décision **DJ6**
+**Palier 13** · jalon **J4** · piste C (Compte & progression) · couloir `J-SRV` (chimera) · P0 · taille M · complexité 3/5 · difficulté 4/5 · décision **DJ6**
 
 **Pourquoi ce lot.** C'est la demande de JF (« la fin de jeu, avec ses effets sur le compte joueur »). Le piège est technique : une partie peut se terminer deux fois — reprise, rejeu, double événement — et doubler les victoires.
 
@@ -1853,7 +1853,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 <a id="j-classement-prive"></a>
 ### `j-classement-prive` — Classement privé entre comptes invités
 
-**Palier 14** · jalon **J4** · piste C (Compte & progression) · couloir `J-SRV` (devAI) · P2 · taille S · complexité 2/5 · difficulté 2/5 · décision **DJ6**
+**Palier 14** · jalon **J4** · piste C (Compte & progression) · couloir `J-SRV` (chimera) · P2 · taille S · complexité 2/5 · difficulté 2/5 · décision **DJ6**
 
 **Pourquoi ce lot.** Entre deux ou trois joueurs, un tableau amical suffit à donner un enjeu. Mais c'est aussi ce qui peut transformer un jeu entre frères en dispute : le format se choisit avec JF (DJ6).
 
@@ -2205,7 +2205,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 <a id="j-securite-jeu"></a>
 ### `j-securite-jeu` — Revue de sécurité du jeu avant ouverture
 
-**Palier 17** · jalon **J5** · piste Q (Qualité & exploitation) · couloir `J-SRV` (devAI) · P0 · taille M · complexité 3/5 · difficulté 4/5
+**Palier 17** · jalon **J5** · piste Q (Qualité & exploitation) · couloir `J-SRV` (chimera) · P0 · taille M · complexité 3/5 · difficulté 4/5
 
 **Pourquoi ce lot.** Le jeu ouvre un canal permanent entre deux comptes, dont celui d'un mineur. Il mérite sa propre revue, comme le reste du produit en a eu une avant la mise en ligne.
 
@@ -2235,7 +2235,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 <a id="j-mise-en-ligne-jeu"></a>
 ### `j-mise-en-ligne-jeu` — Mettre le jeu en ligne sur le serveur partagé
 
-**Palier 18** · jalon **J5** · piste Q (Qualité & exploitation) · couloir `J-SRV` (devAI) · P0 · taille M · complexité 3/5 · difficulté 3/5
+**Palier 18** · jalon **J5** · piste Q (Qualité & exploitation) · couloir `J-SRV` (chimera) · P0 · taille M · complexité 3/5 · difficulté 3/5
 
 **Pourquoi ce lot.** Le jeu ne vaut que joué. Et il doit arriver sur une machine qui sert déjà deux autres sites, sans les mettre en péril.
 
