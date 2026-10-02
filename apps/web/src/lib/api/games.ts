@@ -1,4 +1,4 @@
-import { apiGet } from "@/lib/api/client";
+import { apiGet, apiJson } from "@/lib/api/client";
 import type { EtatPartieReponse } from "@/lib/game/plateau";
 
 // Contrats miroir de `apps/api/src/pbm_api/games/schemas.py` (`GameSummaryOut`). La liste des
@@ -35,4 +35,27 @@ export function listGames(): Promise<GameSummary[]> {
  */
 export function getGameState(gameId: string): Promise<EtatPartieReponse> {
   return apiGet<EtatPartieReponse>(`/games/${gameId}/state`);
+}
+
+
+/** Un coup soumis par le joueur : son type, ses paramètres, et le numéro d'action qu'il croit prochain. */
+export type CoupSoumis = {
+  type: string;
+  params: Record<string, unknown>;
+  numero_attendu: number;
+};
+
+/**
+ * Joue un coup — **le serveur fait autorité** : il le rejoue, le valide, et renvoie la vue projetée
+ * du joueur après coup (`{ vue, evenements, numero }`). Un coup illégal lève `ApiError` de statut
+ * 422 dont le `message` porte la **raison du moteur** (règle `R-x.y` en clair) ; un conflit de
+ * numéro ou une partie close, 409. `numero_attendu` assure l'**idempotence** : renvoyer deux fois le
+ * même coup au même numéro (double clic, renvoi réseau) ne le joue qu'une fois.
+ *
+ * L'auteur du coup n'est jamais dans le corps : le serveur l'impose depuis la session — un client ne
+ * peut pas agir sous une autre identité. Abandonner passe par ce même chemin (c'est une action
+ * légale, irréversible), pas par une route à part.
+ */
+export function playAction(gameId: string, coup: CoupSoumis): Promise<EtatPartieReponse> {
+  return apiJson<EtatPartieReponse>("POST", `/games/${gameId}/actions`, coup);
 }

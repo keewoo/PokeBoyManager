@@ -37,6 +37,14 @@ export type BoardCardProps = {
    * dans le zoom lui-même).
    */
   onPeek?: (carte: VueCarte | null) => void;
+  /**
+   * Illumine la carte comme **cible valide** d'un coup en préparation (lot
+   * `j-plateau-interactions`) : elle devient cliquable et zone de dépôt (glisser-déposer). La
+   * légalité vient du serveur ; l'écran ne fait que la rendre visible et saisissable.
+   */
+  illumine?: boolean;
+  /** Choisit cette carte comme cible (tap, Entrée, ou dépôt d'un glisser) : signalé au plateau. */
+  onActiver?: () => void;
 };
 
 /** Durée d'un maintien (ms) avant que le zoom s'ouvre au doigt — assez court pour être naturel,
@@ -177,6 +185,8 @@ export function BoardCard({
   className,
   miseEnEvidence,
   onPeek,
+  illumine,
+  onActiver,
 }: BoardCardProps) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -209,12 +219,14 @@ export function BoardCard({
           : "aspect-[63/88] h-full w-full gap-[0.2em] p-[0.3em] shadow-[0_0.3em_0.7em_-0.2em_#000]",
         miseEnEvidence &&
           "ring-2 ring-gold ring-offset-1 ring-offset-transparent shadow-[0_0_0.8em_rgba(242,193,78,0.8)]",
+        illumine &&
+          "cursor-pointer ring-2 ring-emerald-300 ring-offset-1 ring-offset-transparent shadow-[0_0_0.8em_rgba(110,231,183,0.75)]",
         className,
       )}
       data-orientation={pokemon?.orientation ?? "normale"}
       data-mise-en-evidence={miseEnEvidence ? "" : undefined}
-      role={onPeek ? "button" : undefined}
-      tabIndex={onPeek ? 0 : undefined}
+      role={onPeek || illumine ? "button" : undefined}
+      tabIndex={onPeek || illumine ? 0 : undefined}
       aria-label={etiquette ? `${etiquette} — ${carte.ref}` : carte.ref}
       onMouseEnter={onPeek ? ouvrir : undefined}
       onMouseLeave={
@@ -230,6 +242,27 @@ export function BoardCard({
       onPointerDown={onPeek ? demarrerMaintien : undefined}
       onPointerUp={onPeek ? annulerMaintien : undefined}
       onPointerCancel={onPeek ? annulerMaintien : undefined}
+      data-illumine={illumine ? "" : undefined}
+      onClick={illumine && onActiver ? onActiver : undefined}
+      onKeyDown={
+        illumine && onActiver
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onActiver();
+              }
+            }
+          : undefined
+      }
+      onDragOver={illumine ? (e) => e.preventDefault() : undefined}
+      onDrop={
+        illumine && onActiver
+          ? (e) => {
+              e.preventDefault();
+              onActiver();
+            }
+          : undefined
+      }
     >
       <span
         className={cn(
