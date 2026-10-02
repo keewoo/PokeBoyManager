@@ -33,6 +33,7 @@ RESET_PASSWORD_SUBJECT = "Réinitialisation de votre mot de passe PokeBoyManager
 
 
 def normalize_email(email: str) -> str:
+    """Forme canonique d'un e-mail (espaces retirés, minuscules) — la seule comparée/stockée."""
     return email.strip().lower()
 
 
@@ -156,6 +157,10 @@ async def _consume_email_token(
 
 
 async def verify_email(db: AsyncSession, token: str) -> None:
+    """Marque le compte vérifié et consomme le jeton (effet de bord : écrit et commit en base).
+
+    Lève `InvalidTokenError`/`TokenExpiredError`/`TokenAlreadyUsedError` selon l'état du jeton.
+    """
     email_token = await _consume_email_token(db, token, EmailTokenKind.verify_email)
     user = await db.get(User, email_token.user_id)
     if user is None:
@@ -192,6 +197,7 @@ async def authenticate_and_create_session(
 
 
 async def logout(db: AsyncSession, session_row: Session) -> None:
+    """Supprime la session reçue (déjà résolue par `get_current_session`) ; commit immédiat."""
     await db.delete(session_row)
     await db.commit()
 
@@ -225,6 +231,11 @@ async def reset_password(
     new_password: str,
     compromised_checker: CompromisedPasswordChecker,
 ) -> None:
+    """Change le mot de passe à partir du jeton reçu par e-mail et révoque toutes ses sessions.
+
+    Lève `PasswordTooShortError`/`PasswordCompromisedError` sur la politique, ou
+    `InvalidTokenError`/`TokenExpiredError`/`TokenAlreadyUsedError` sur l'état du jeton.
+    """
     await _check_password_policy(new_password, compromised_checker)
 
     email_token = await _consume_email_token(db, token, EmailTokenKind.reset_password)

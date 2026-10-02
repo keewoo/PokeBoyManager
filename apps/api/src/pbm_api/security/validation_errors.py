@@ -22,6 +22,8 @@ REDACTED_INPUT = "***"
 async def redact_sensitive_fields_in_validation_errors(
     request: Request, exc: RequestValidationError
 ) -> JSONResponse:
+    """Reconstruit la réponse 422 en masquant `input` pour tout champ listé dans
+    `SENSITIVE_FIELD_NAMES` — pare la fuite d'une clé IA mal formée dans le corps d'erreur."""
     errors = []
     for error in exc.errors():
         error = dict(error)
@@ -33,4 +35,6 @@ async def redact_sensitive_fields_in_validation_errors(
 
 
 def install_validation_error_redaction(app) -> None:
+    """Remplace le gestionnaire par défaut de `RequestValidationError` par la version qui
+    redacte — à appeler une fois au démarrage (`main.py`)."""
     app.add_exception_handler(RequestValidationError, redact_sensitive_fields_in_validation_errors)

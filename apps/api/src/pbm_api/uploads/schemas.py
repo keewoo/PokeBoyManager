@@ -1,3 +1,7 @@
+"""Schémas Pydantic des routes d'envoi de photos : requêtes de création, cibles de dépôt,
+état de l'envoi, détections et reprise de reconnaissance.
+"""
+
 import uuid
 from datetime import datetime
 
@@ -8,16 +12,23 @@ from pbm_api.models.jobs import JobStatus
 
 
 class UploadFileRequest(BaseModel):
+    """Un fichier annoncé avant envoi : nom, type déclaré et taille — revérifiés au contenu réel."""
+
     filename: str = Field(min_length=1, max_length=255)
     content_type: str = Field(min_length=1, max_length=128)
     size_bytes: int = Field(gt=0)
 
 
 class CreateUploadsRequest(BaseModel):
+    """Lot de fichiers à envoyer en une fois, borné par `upload_max_files_per_batch`."""
+
     files: list[UploadFileRequest] = Field(min_length=1)
 
 
 class UploadTarget(BaseModel):
+    """Destination où déposer les octets bruts d'un fichier (URL présignée ou route locale
+    jetonnée), avec la méthode et les en-têtes à utiliser."""
+
     upload_id: uuid.UUID
     method: str
     url: str
@@ -25,10 +36,15 @@ class UploadTarget(BaseModel):
 
 
 class CreateUploadsResponse(BaseModel):
+    """Une cible de dépôt par fichier accepté, dans l'ordre de la requête."""
+
     uploads: list[UploadTarget]
 
 
 class CompleteUploadResponse(BaseModel):
+    """État de l'envoi une fois les octets bruts validés et normalisés, et éventuel job de
+    reconnaissance mis en file (absent si aucune clé IA n'est configurée)."""
+
     upload_id: uuid.UUID
     status: UploadStatus
     content_type: str
@@ -38,6 +54,9 @@ class CompleteUploadResponse(BaseModel):
 
 
 class DetectionResponse(BaseModel):
+    """Une carte détectée dans la photo : recadrage, extraction, candidats et état de
+    reconnaissance."""
+
     id: uuid.UUID
     reading_order: int
     status: DetectionStatus
@@ -54,11 +73,15 @@ class DetectionResponse(BaseModel):
 
 
 class ListDetectionsResponse(BaseModel):
+    """Toutes les détections d'un envoi, triées par ordre de lecture."""
+
     upload_id: uuid.UUID
     detections: list[DetectionResponse]
 
 
 class PendingUploadItem(BaseModel):
+    """Un envoi qui a encore des détections `pending` à valider, avec le compte restant."""
+
     upload_id: uuid.UUID
     created_at: datetime
     pending_count: int
@@ -74,6 +97,8 @@ class PendingUploadsResponse(BaseModel):
 
 
 class RetryRecognitionResponse(BaseModel):
+    """Nouveau job de reconnaissance mis en file pour un envoi déjà traité."""
+
     upload_id: uuid.UUID
     job_id: uuid.UUID
     status: JobStatus

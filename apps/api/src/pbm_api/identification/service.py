@@ -74,6 +74,9 @@ _CROP_MEDIA_TYPE = "image/jpeg"  # tous les recadrages sont encodés en JPEG (de
 
 @dataclass(frozen=True)
 class IdentificationRunSummary:
+    """Bilan d'une passe d'identification sur un envoi : combien de cartes reconnues, et par
+    quelle voie (cache, index visuel, appel IA, secours vision)."""
+
     identified_count: int
     cache_hits: int
     ai_calls: int

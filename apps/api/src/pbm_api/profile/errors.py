@@ -1,3 +1,6 @@
+"""Exceptions métier du module profil — traduites en réponses HTTP par les routes."""
+
+
 class PseudoAlreadyTakenError(Exception):
     """Un autre compte utilise déjà ce pseudo (contrainte `users.pseudo` unique)."""
 

@@ -46,12 +46,18 @@ class UnsupportedImageError(Exception):
 
 @dataclass(frozen=True)
 class ProcessedImage:
+    """Résultat de la normalisation : octets prêts à stocker, type MIME et format final."""
+
     data: bytes
     content_type: str
     format: str
 
 
 def process_uploaded_image(raw: bytes) -> ProcessedImage:
+    """Décode `raw` par son contenu réel (jamais le `Content-Type` déclaré), redresse
+    l'orientation EXIF et réencode en JPEG (ou PNG conservé) ; lève `UnsupportedImageError` si
+    le fichier est vide, illisible comme image ou dans un format hors de `ALLOWED_SOURCE_FORMATS`.
+    """
     if not raw:
         raise UnsupportedImageError(
             f"fichier vide (formats acceptés : {ACCEPTED_FORMATS_LABEL})"

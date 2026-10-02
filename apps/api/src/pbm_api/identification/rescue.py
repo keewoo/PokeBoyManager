@@ -44,6 +44,9 @@ RESCUE_PROMPT = (
 
 
 class SingleCardBox(BaseModel):
+    """Sortie structurée demandée au LLM vision : la boîte englobante de l'unique carte visible
+    dans la sous-image qui lui est montrée."""
+
     box: NormalizedBox
 
 
@@ -57,6 +60,9 @@ def top_combined_score(candidates: list | None) -> float:
 
 @dataclass(frozen=True)
 class RescuedCrop:
+    """Résultat d'une redécoupe par le LLM vision : le quadrilatère retrouvé, le recadrage qui
+    en découle (brut et JPEG) et le coût IA de l'appel de localisation."""
+
     quad: np.ndarray  # coordonnées pixels dans la photo d'origine, ordre (hg, hd, bd, bg)
     crop: np.ndarray  # BGR, 630×880 (même format que `pbm_api.detection.geometry.warp_card`)
     crop_jpeg: bytes

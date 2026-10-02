@@ -1,3 +1,5 @@
+"""Schémas de requête/réponse de la page collection (liste, filtres, ajout manuel)."""
+
 import uuid
 from datetime import date
 from decimal import Decimal
@@ -9,6 +11,8 @@ from pbm_api.models.catalog import PriceVariant
 
 
 class CollectionSort(StrEnum):
+    """Clés de tri acceptées par la liste de collection."""
+
     value_desc = "value_desc"
     value_asc = "value_asc"
     value_change_30d_desc = "value_change_30d_desc"
@@ -20,6 +24,8 @@ class CollectionSort(StrEnum):
 
 
 class CollectionListItem(BaseModel):
+    """Une ligne de la liste de collection, prête à afficher (carte, variante, état, valeur)."""
+
     id: uuid.UUID
     card_id: uuid.UUID
     set_id: uuid.UUID
@@ -48,6 +54,8 @@ class CollectionListItem(BaseModel):
 
 
 class CollectionAggregates(BaseModel):
+    """Agrégats de valeur de l'ensemble filtré : total, variations 7 j/30 j, complétude des prix."""
+
     items_total: int
     items_priced: int
     items_missing_price: int
@@ -57,18 +65,25 @@ class CollectionAggregates(BaseModel):
 
 
 class CollectionListResponse(BaseModel):
+    """Réponse de la liste de collection : page d'exemplaires, curseur suivant et agrégats."""
+
     items: list[CollectionListItem]
     next_cursor: str | None
     aggregates: CollectionAggregates
 
 
 class CollectionFacetSet(BaseModel):
+    """Un set proposé comme filtre, avec son nom et son code d'affichage."""
+
     set_id: uuid.UUID
     name: str
     code: str
 
 
 class CollectionFacets(BaseModel):
+    """Valeurs disponibles pour chaque filtre, calculées sur les seuls exemplaires de
+    l'utilisateur."""
+
     sets: list[CollectionFacetSet]
     series: list[str]
     rarities: list[str]
@@ -79,6 +94,8 @@ class CollectionFacets(BaseModel):
 
 
 class CreateCollectionItemRequest(BaseModel):
+    """Requête d'ajout manuel d'un ou plusieurs exemplaires d'une carte à la collection."""
+
     card_id: uuid.UUID
     language: str = Field(default="fr", min_length=2, max_length=8)
     variant: PriceVariant = PriceVariant.normal
@@ -90,6 +107,8 @@ class CreateCollectionItemRequest(BaseModel):
 
 
 class CreateCollectionItemResponse(BaseModel):
+    """Identifiants des exemplaires créés par un ajout manuel."""
+
     collection_item_ids: list[uuid.UUID]
 
 
