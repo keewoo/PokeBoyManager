@@ -3,8 +3,9 @@
 Ce lot pose l'**enveloppe** de persistance d'une partie ; son API HTTP ici se limite à la lecture,
 toujours **bornée au participant** : une partie à laquelle l'utilisateur ne joue pas répond 404
 (jamais 403 — pas de fuite d'existence, comme les decks). La création d'une partie (choix du deck,
-adversaire, tirage au sort) est le lot `j-lancement-partie` ; appliquer un coup et sa diffusion
-temps réel sont `j-autorite-vues`/`j-temps-reel`. On ne les approxime pas ici.
+adversaire, tirage au sort) est le lot `j-lancement-partie` ; appliquer un coup, `j-autorite-vues` ;
+sa diffusion temps réel, `j-temps-reel` (canal WebSocket + repli HTTP, `routers/games_ws.py`).
+On ne les approxime pas ici.
 """
 
 import uuid
@@ -29,6 +30,7 @@ from pbm_api.games.service import (
     parties_du_joueur,
     reprendre_partie,
 )
+from pbm_api.games.temps_reel import HUB
 from pbm_api.models import GamePlayer, User
 
 router = APIRouter(prefix="/games", tags=["games"])
@@ -115,6 +117,11 @@ async def play_action(
     du moteur, **sans jamais altérer l'état** ; un conflit de numéro ou une partie close → 409. En
     retour, la vue autoritaire du joueur courant après le coup et les événements qui le concernent —
     jamais l'état brut, qui porte l'information cachée.
+
+    Après un coup réel (non rejeu), le résultat est **diffusé** sur le canal temps réel (`HUB`) :
+    chaque joueur abonné le reçoit projeté pour lui. Le journal reste la source de vérité — la
+    diffusion est un raccourci de latence, pas la garantie de livraison (celle-ci tient à la
+    resynchronisation par numéro, lot `j-temps-reel`).
     """
     try:
         resultat = await appliquer_action(
@@ -137,4 +144,5 @@ async def play_action(
     # `appliquer_action` a commité ; on relit la partie pour sa graine (secret serveur, jamais
     # renvoyé — seuls les jetons opaques en dérivent) et pour re-vérifier la participation.
     game = await _game_pour_participant(db, game_id, current_user.id)
+    HUB.publier(game_id, resultat, graine_hex=game.graine)
     return projeter_resultat(resultat, user_id=current_user.id, graine_hex=game.graine)

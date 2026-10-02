@@ -936,3 +936,21 @@ un seul appel, légalité recalculée, accès croisé B→404, 409 sans clé / c
 `apps/web/src/app/jeu/decks/[id]/deck-ai-assistant.tsx`, intégré au constructeur (l'écran remonte
 `response.deck` au parent — une seule vérité de légalité, côté serveur). Coût réel (clé requise,
 hors chimera) : `apps/api/scripts/measure_deck_ia_cost.py`.
+
+## Canal temps réel des parties (lot `j-temps-reel`)
+
+Deux routes diffusent les coups et permettent la reprise, toutes deux **bornées au participant**
+(404 pour un non-participant, comme les autres routes de partie) :
+
+- `WS /games/{id}/ws?depuis=N` — canal WebSocket authentifié (cookie de session) : diffusion des
+  coups **numérotés**, battement de cœur (détection de coupure), resynchronisation à la demande ;
+- `GET /games/{id}/sync?depuis=N` — **repli en interrogation périodique**, même charge que la resync
+  (un client sans WebSocket possible finit la partie, plus lentement).
+
+L'unité de séquence est le `numero` de l'entrée de journal : le client applique **par numéro** (il
+dédoublonne et détecte un trou pour redemander), et la resynchronisation porte la **vue complète**
+projetée par le moteur (`pbm_game.sortie.projeter`) — jamais l'état brut, jamais la graine. La
+diffusion live passe par un bus **en mémoire du process** (`games/temps_reel.py:Hub`) ; la
+**garantie de non-perte** ne tient pas au bus mais au journal numéroté (un message perdu est
+rattrapé par une resync). Protocole, messages et garanties : `docs/jeu/TEMPS-REEL.md`. Sécurité du
+canal (anti-CSWSH) : `docs/SECURITE.md`. Bandeau « connexion dégradée » : `docs/UI-UX.md`.
