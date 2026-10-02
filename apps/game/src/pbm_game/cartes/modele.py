@@ -217,6 +217,46 @@ def _attaque_depuis(donnees: object) -> AttaqueDef:
     )
 
 
+def definition_vers_dict(definition: DefinitionCarte) -> dict:
+    """Projette une :class:`DefinitionCarte` en ``dict`` JSON-natif (inverse de la lecture).
+
+    C'est le chemin **service → action** : le service (``apps/api``) a extrait la fiche du
+    catalogue, il la sérialise ici pour la porter dans les ``params`` d'une action (``poser``,
+    ``evoluer``, mise en place) — le journal la transporte, donc le rejeu n'a pas besoin du
+    catalogue. Round-trip exact : ``definition_depuis_dict(definition_vers_dict(d)) == d``.
+    """
+    donnees: dict = {
+        "ref": definition.ref,
+        "nom": definition.nom,
+        "stade": definition.stade,
+        "pv": definition.pv,
+        "type": definition.type,
+        "marqueur": definition.marqueur,
+        "evolue_depuis": definition.evolue_depuis,
+        "cout_retraite": definition.cout_retraite,
+        "attaques": [
+            {
+                "nom": a.nom,
+                "cout": {"types": dict(a.cout.types), "incolore": a.cout.incolore},
+                "degats": a.degats,
+                "effet": a.effet,
+            }
+            for a in definition.attaques
+        ],
+    }
+    if definition.faiblesse is not None:
+        donnees["faiblesse"] = {
+            "type": definition.faiblesse.type,
+            "facteur": definition.faiblesse.facteur,
+        }
+    if definition.resistance is not None:
+        donnees["resistance"] = {
+            "type": definition.resistance.type,
+            "reduction": definition.resistance.reduction,
+        }
+    return donnees
+
+
 def definition_depuis_dict(donnees: object) -> DefinitionCarte:
     """Construit un :class:`DefinitionCarte` depuis un mapping JSON-ish (params d'action, test).
 
@@ -274,4 +314,5 @@ __all__ = [
     "AttaqueDef",
     "DefinitionCarte",
     "definition_depuis_dict",
+    "definition_vers_dict",
 ]
