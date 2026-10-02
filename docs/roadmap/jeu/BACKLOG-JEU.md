@@ -809,12 +809,14 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 - Afficher la présence : qui est en ligne parmi les comptes invités, qui est en partie.
 - Traiter le cas « personne en ligne » : proposer l'invitation directe ou l'entraînement contre le bot.
 - Tests : deux joueurs appariés, trois joueurs dont un annule, deck refusé à l'entrée.
+- **Définir le « compte invité » (D11)**, que rien n'a encore modélisé : un droit d'accès au jeu par compte (`users.game_access`, faux par défaut, migration additive), posé et retiré par une commande d'administration (`set-game-access <email> on|off`) — l'inscription étant libre (D8), un compte ordinaire ne voit **rien** du jeu. Toutes les routes du jeu (file, invitations, parties, salon, présence) répondent **404** à un compte sans ce droit, comme pour un objet d'un autre utilisateur.
 
 **Critères d'acceptation**
 
 - Un joueur ne peut jamais se retrouver dans deux parties (test de concurrence).
 - Le refus d'un deck nomme les cartes en cause et la raison.
 - L'attente affiche l'état réel : nombre de joueurs disponibles, temps d'attente.
+- Un compte sans droit d'accès au jeu reçoit 404 sur chaque route du jeu (test sur chacune) ; la commande d'administration pose et retire le droit, et c'est testé.
 
 **Livrables** : file d'attente + appariement, vérification du deck à l'entrée, présence en ligne.
 
@@ -1221,12 +1223,14 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 - Mettre la reprise d'une partie en cours en tête : c'est l'action la plus urgente quand elle existe.
 - Afficher l'état réel de la file (attente, joueurs disponibles) sans faire attendre devant un écran muet.
 - Traiter le cas « personne en ligne » par une proposition concrète : inviter, ou s'entraîner.
+- N'afficher l'entrée « Jouer » (navigation, accueil, salon) qu'aux comptes qui ont le droit d'accès au jeu (`game_access`, lot `j-file-attente`) ; pour les autres, le jeu n'existe pas à l'écran.
 
 **Critères d'acceptation**
 
 - Une partie en cours est visible et reprenable en un clic depuis l'accueil du jeu.
 - Le choix du deck affiche sa jouabilité avant l'entrée en file.
 - L'écran reste lisible sur téléphone.
+- Un compte sans droit d'accès au jeu ne voit aucune entrée vers le jeu, et `/jeu/salon` lui répond comme une page inexistante.
 
 **Livrables** : écran salon, entrée en file avec deck, reprise visible.
 

@@ -105,12 +105,14 @@
     "Vérifier le deck à l'entrée : légalité, possession, scripts disponibles — et dire précisément ce qui manque.",
     "Afficher la présence : qui est en ligne parmi les comptes invités, qui est en partie.",
     "Traiter le cas « personne en ligne » : proposer l'invitation directe ou l'entraînement contre le bot.",
-    "Tests : deux joueurs appariés, trois joueurs dont un annule, deck refusé à l'entrée."
+    "Tests : deux joueurs appariés, trois joueurs dont un annule, deck refusé à l'entrée.",
+    "**Définir le « compte invité » (D11)**, que rien n'a encore modélisé : un droit d'accès au jeu par compte (`users.game_access`, faux par défaut, migration additive), posé et retiré par une commande d'administration (`set-game-access <email> on|off`) — l'inscription étant libre (D8), un compte ordinaire ne voit **rien** du jeu. Toutes les routes du jeu (file, invitations, parties, salon, présence) répondent **404** à un compte sans ce droit, comme pour un objet d'un autre utilisateur."
   ],
   "acceptation": [
     "Un joueur ne peut jamais se retrouver dans deux parties (test de concurrence).",
     "Le refus d'un deck nomme les cartes en cause et la raison.",
-    "L'attente affiche l'état réel : nombre de joueurs disponibles, temps d'attente."
+    "L'attente affiche l'état réel : nombre de joueurs disponibles, temps d'attente.",
+    "Un compte sans droit d'accès au jeu reçoit 404 sur chaque route du jeu (test sur chacune) ; la commande d'administration pose et retire le droit, et c'est testé."
   ],
   "livrables": ["file d'attente + appariement", "vérification du deck à l'entrée", "présence en ligne"],
   "risques": "L'appariement est le classique des conditions de course : deux joueurs appariés chacun avec un troisième. Le verrou atomique est obligatoire, et c'est un test, pas une relecture."

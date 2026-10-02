@@ -99,6 +99,7 @@ Si le serveur MCP `graphify` est chargé dans ta session, `query_graph`, `get_ne
 2. Mettre la reprise d'une partie en cours en tête : c'est l'action la plus urgente quand elle existe.
 3. Afficher l'état réel de la file (attente, joueurs disponibles) sans faire attendre devant un écran muet.
 4. Traiter le cas « personne en ligne » par une proposition concrète : inviter, ou s'entraîner.
+5. N'afficher l'entrée « Jouer » (navigation, accueil, salon) qu'aux comptes qui ont le droit d'accès au jeu (`game_access`, lot `j-file-attente`) ; pour les autres, le jeu n'existe pas à l'écran.
 
 ## 4. Critères d'acceptation
 
@@ -107,6 +108,7 @@ Le lot n'est fini que si **chacun** est vrai, preuve à l'appui dans le compte r
 - [ ] Une partie en cours est visible et reprenable en un clic depuis l'accueil du jeu.
 - [ ] Le choix du deck affiche sa jouabilité avant l'entrée en file.
 - [ ] L'écran reste lisible sur téléphone.
+- [ ] Un compte sans droit d'accès au jeu ne voit aucune entrée vers le jeu, et `/jeu/salon` lui répond comme une page inexistante.
 
 ## 5. Risques & pièges
 
