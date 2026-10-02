@@ -1065,3 +1065,26 @@ désactivé si `SMTP_HOST` est vide). La notification **PWA** est prévue pour l
   (`pbm_api.games.entry.verifier_deck`). 404 si le deck n'est pas celui du joueur (pas de fuite
   d'existence) ; en cas de refus, chaque carte en cause est nommée avec sa raison (D9). Lecture seule,
   pas de CSRF.
+
+## Indicateurs d'affichage de la vue (lot `j-plateau-etat-visuel`)
+
+La vue projetée gagne, pour chaque Pokémon **en jeu**, de quoi dessiner le plateau **sans recalcul
+côté client** (« l'interface ne décide de rien ») :
+
+- `pv_max` — le **seuil de K.O.** (R-13.1) : PV imprimés du sommet **plus** les deltas de PV continus
+  d'un Outil (`pbm_game.effets.continus.seuil_ko`). `pv_restants = max(0, pv_max − compteurs_degats)`.
+- `type` sur le Pokémon, sur chaque énergie attachée et sur l'Outil — le **code d'élément** du
+  catalogue (`null` si inconnu).
+
+Le moteur reste **pur** : `pbm_game.sortie.enrichir_indicateurs(vue, etat, pv_imprimes, types,
+registre)` reçoit en **données** les PV imprimés et les types ; il ne lit jamais le catalogue (D9).
+C'est l'adaptateur `pbm_api.games.indicateurs` (lecture **tolérante** du modèle `Card` : `hp` →
+PV, `element_type` → type ; une ref absente est omise, jamais devinée) qui les résout, via
+`CatalogueAffichage`. L'enrichissement est appliqué au **point de sortie unique** de l'API
+(`pbm_api.games.projection.vue_autoritaire`/`projeter_resultat`) : toutes les portes — route d'état,
+diffusion temps réel (`HUB.publier`), resynchronisation après F5 — montrent donc les mêmes
+indicateurs. `registre` est vide au jalon J1 (aucune carte à effet continu scriptée) ; c'est par lui
+que `pv_max` suivra un Outil dès qu'il en existera, **sans changer le code d'affichage**.
+
+Tests : `apps/game/tests/test_sortie_indicateurs.py` (PV avec/sans Outil, plancher à 0, type inconnu
+non deviné), `apps/api/tests/test_games_indicateurs.py` (câblage catalogue `Card` ↔ moteur).

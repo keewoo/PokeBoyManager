@@ -265,3 +265,21 @@ body {
     color: var(--gold);
   }
 }
+
+/* Orientation physique de la carte = manifestation d'un état spécial (R-11.3/5/6/8, lot
+   `j-plateau-etat-visuel`) : la carte se couche (endormi), se tourne (confus) ou pivote
+   (paralysé), comme sur une vraie table. Le signal est DOUBLÉ par une icône dans la carte, pour
+   rester lisible sans avoir à distinguer l'angle. Le `transform` est purement visuel : il ne
+   change pas la boîte de disposition, donc ne provoque aucun défilement horizontal. */
+.pbm-board-card {
+  transition: transform 180ms ease;
+}
+.pbm-board-card[data-orientation="endormi"] {
+  transform: rotate(90deg);
+}
+.pbm-board-card[data-orientation="confus"] {
+  transform: rotate(180deg);
+}
+.pbm-board-card[data-orientation="paralyse"] {
+  transform: rotate(-90deg);
+}
