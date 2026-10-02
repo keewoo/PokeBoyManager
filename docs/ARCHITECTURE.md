@@ -151,6 +151,15 @@ une seule fois — jamais en argument de commande ni journalisé.
   `Card.energy_type`, qui vaut "Normal"/"Special" pour les seules Énergies (légalité des decks).
   Exposé par `GET /cards/{id}` (`element_type`) et `GET /me/collection` (`element_type`, `hp`) pour
   le visuel de remplacement — voir « Visuel de remplacement » ci-dessous.
+- `Card.effect` et `Card.trainer_type` (lot `cat-textes-effets`, 02/10/2026) : le **texte d'effet**
+  d'une carte (TCGdex `effect`) et, pour les Dresseurs, leur **sous-type** (TCGdex `trainerType` :
+  "Objet"/"Supporter"/"Stade"/"Outil"/"Machine Technique", libellés anglais via le repli). `effect`
+  est porté par les Dresseurs et les Énergies spéciales ; `None` pour les Pokémon (leur jeu vit dans
+  `attacks`/`abilities`) et les Énergies de base. **Préalable à tout le chantier des effets du jeu**
+  (`j-effets-dsl`, `j-cartes-*`) : avant ce lot, 2 766 des 2 873 Dresseurs n'avaient aucun texte
+  stocké, donc rien à scripter (constat de `j-effets-architecture`). Rangé BRUT (deux langues
+  possibles), comme `supertype`/`stage` ; une carte sans texte chez TCGdex reste `None`, jamais un
+  texte inventé. Comptés par le rapport de complétude (`docs/catalogue/COMPLETUDE.md`).
 
 ## Visuel de remplacement des cartes sans image (lot `pbm-carte-remplacement`)
 
@@ -161,19 +170,21 @@ vraies données (`apps/web/src/components/replacement-card.tsx`) ; le serveur n'
 champs (`element_type`, `hp`, `supertype`, nom, extension, numéro, rareté). Le choix du fond est
 déterministe côté client (`empreinte(card_id) % 9`). Détail visuel : `docs/UI-UX.md`.
 
-⚠️ **Dette côté flotte (préexistante, hors de ce lot).** La base de référence catalogue de chimera
-(`pbm_catalogue_ref`) est restée à un alembic ancien (`216ae1bf9f95`, vérifié) : elle n'a **ni
-`energy_type` ni `stage` ni `element_type`**, et `infra/fleet/export_cards.sql` ne transporte donc
-pas `element_type`. La colonne est peuplée en PROD par un **backfill direct** — script
-`apps/api/scripts/backfill_element_type.py` : il lit les Pokémon **sans image** dont
-`element_type IS NULL`, récupère leur type chez TCGdex (qui expose `types` même sans image) et
-n'écrit que cette colonne (additif, idempotent). L'import hebdo étant **insert-only** (garde-fou
-explicite de `infra/fleet/import_weekly.sql` : « jamais d'UPDATE »), ce backfill **n'est pas
-écrasé** ; en revanche une carte **nouvelle** sans image, ajoutée par l'import hebdo, naît
-`element_type = NULL` (fond `colorless`) tant que le backfill n'est pas rejoué. Remettre
-`pbm_catalogue_ref` à `head` — ce qui ferait circuler `energy_type`/`stage`/`element_type` dans le
-pipeline — reste à faire, séparément. La date et le volume du backfill réellement exécuté sont dans
-le compte rendu du lot (`docs/roadmap/comptes-rendus/pbm-carte-remplacement.md`).
+**Dette côté flotte — en grande partie résorbée par `cat-textes-effets` (02/10/2026).** La base de
+référence catalogue de chimera (`pbm_catalogue_ref`) était restée à un alembic ancien
+(`216ae1bf9f95`) : elle n'avait **ni `energy_type` ni `stage` ni `element_type` ni `prize_marker`**,
+et `infra/fleet/export_cards.sql` ne transportait donc aucune de ces colonnes. Le lot
+`cat-textes-effets` a **remis `pbm_catalogue_ref` à `head`** (migration additive) puis **réimporté
+tout le catalogue** par la voie normale : ces colonnes y sont désormais peuplées, et l'export + le
+`import_weekly.sql` les transportent toutes les six (`energy_type`, `element_type`, `stage`,
+`prize_marker`, `trainer_type`, `effect`). ⚠️ **Il reste une limite, par conception** : l'import
+hebdo est **insert-only** (garde-fou de `infra/fleet/import_weekly.sql` : « jamais d'UPDATE ») —
+donc les cartes **déjà en PROD** avant que ces colonnes ne circulent ne sont **pas** rétro-remplies
+par la chaîne ; seules les cartes **nouvelles** les portent. Rétro-remplir les cartes PROD
+existantes relève d'un geste PROD distinct (manuel, décision JF) ou, pour `element_type` des Pokémon
+sans image, du backfill direct déjà en place — script `apps/api/scripts/backfill_element_type.py`
+(additif, idempotent, non écrasé par l'insert-only). Volumes et preuve chiffrée dans le compte rendu
+du lot (`docs/roadmap/comptes-rendus/cat-textes-effets.md`).
 
 ## Base de référence complète (lot `v2-catalogue-complet`)
 
@@ -195,7 +206,8 @@ le compte rendu du lot (`docs/roadmap/comptes-rendus/pbm-carte-remplacement.md`)
   pointée par `DATABASE_URL`, avec journal de progression (`progress_callback` optionnel sur les
   deux fonctions) — durées mesurées dans le compte rendu du lot.
 - `pbm_api.catalog.completeness.compute_completeness_stats` : extensions/cartes par langue, %
-  image/`ptcg_id`/prix/champs de règles, extensions non rapprochées, trous restants (cartes
+  image/`ptcg_id`/prix/champs de règles, **texte d'effet des Dresseurs (par sous-type) et des
+  Énergies spéciales** (lot `cat-textes-effets`), extensions non rapprochées, trous restants (cartes
   importées < `Set.total_cards` officiel TCGdex). `scripts/generate_completeness_report.py` en
   fait `docs/catalogue/COMPLETUDE.md`.
 - `scripts/catalogue_seed.sh export|import <DATABASE_URL> [DUMP_PATH]` : graine réutilisable

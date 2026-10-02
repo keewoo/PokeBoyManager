@@ -21,6 +21,13 @@ def _render(stats: CompletenessStats) -> str:
     def stat_line(label: str, n: int) -> str:
         return f"- {label} : **{n}** ({stats.pct(n):.1f} %)"
 
+    # Taux de texte d'effet calculés à part : les noms d'attributs (long) tiennent mal dans une
+    # f-string qui respecte la limite de 100 colonnes.
+    trainer_effect_pct = stats.ratio_pct(stats.cards_trainers_with_effect, stats.cards_trainers)
+    special_energy_effect_pct = stats.ratio_pct(
+        stats.cards_special_energy_with_effect, stats.cards_special_energy
+    )
+
     lines = [
         "# Rapport de complétude du catalogue",
         "",
@@ -40,6 +47,29 @@ def _render(stats: CompletenessStats) -> str:
         stat_line("Cartes avec coût de retraite", stats.cards_with_retreat),
         stat_line("Cartes avec variantes connues", stats.cards_with_variants),
         stat_line("Cartes avec au moins un prix relevé", stats.cards_with_price),
+        "",
+        "## Texte d'effet des Dresseurs et des Énergies spéciales",
+        "",
+        "Les Dresseurs (Objet, Supporter, Stade, Outil, Machine Technique) et les Énergies "
+        "spéciales sont les seules cartes dont l'effet vit dans le champ `effect` (les Pokémon "
+        "ont `attacks`/`abilities`, les Énergies de base n'ont pas d'effet). C'est le texte dont "
+        "part le chantier des effets du jeu (lot `cat-textes-effets`).",
+        "",
+        f"- Dresseurs : **{stats.cards_trainers}**, dont **{stats.cards_trainers_with_effect}** "
+        f"avec un texte d'effet ({trainer_effect_pct:.1f} %)",
+        f"- Énergies spéciales : **{stats.cards_special_energy}**, dont "
+        f"**{stats.cards_special_energy_with_effect}** avec un texte d'effet "
+        f"({special_energy_effect_pct:.1f} %)",
+        "",
+        "Détail des Dresseurs par sous-type (un Dresseur sans texte chez TCGdex reste vide et se "
+        "compte comme tel, jamais un effet inventé) :",
+        "",
+        "| Sous-type | Total | Avec effet |",
+        "|---|---|---|",
+        *[
+            f"| {subtype} | {total} | {with_effect} |"
+            for subtype, total, with_effect in stats.trainers_by_type
+        ],
         "",
         "## Extensions non rapprochées avec Pokémon TCG API",
         "",

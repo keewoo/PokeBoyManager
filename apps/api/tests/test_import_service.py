@@ -534,3 +534,161 @@ async def test_import_catalogue_refuses_to_report_success_when_no_language_answe
     d'un catalogue déjà à jour (règle : un repli silencieux masque une panne)."""
     with pytest.raises(RuntimeError, match="aucune extension listée"):
         await import_catalogue(db_session, MuteTcgdexClient(), None, languages=("fr", "en"))
+
+
+# --- Texte d'effet des Dresseurs et des Énergies (lot `cat-textes-effets`, 02/10/2026) ---------
+# Formes réelles capturées sur `api.tcgdex.net/v2/fr` le 02/10/2026 : les Dresseurs portent leur
+# règle dans `effect` et leur sous-type dans `trainerType` ("Objet"/"Supporter"/"Stade"/"Outil"/
+# "Machine Technique") ; les Énergies spéciales ont `energyType="Spécial"` + un `effect` ; les
+# Énergies de base ont `energyType="De base"` et aucun `effect`.
+
+EFFECTS_SET_DETAIL = {
+    "id": "eff1",
+    "name": "Effets",
+    "serie": {"id": "sv", "name": "Écarlate et Violet"},
+    "releaseDate": "2023-03-31",
+    "cardCount": {"official": 8, "total": 8},
+    "cards": [
+        {"id": "eff1-objet", "localId": "1", "name": "Hyper Ball"},
+        {"id": "eff1-supporter", "localId": "2", "name": "Recherches Professorales"},
+        {"id": "eff1-stade", "localId": "3", "name": "Système à haute pression"},
+        {"id": "eff1-outil", "localId": "4", "name": "Multi Exp"},
+        {"id": "eff1-tm", "localId": "5", "name": "Machine Technique : Évolution"},
+        {"id": "eff1-objet-vide", "localId": "6", "name": "Objet sans texte"},
+        {"id": "eff1-energie-sp", "localId": "7", "name": "Énergie Double Turbo"},
+        {"id": "eff1-energie-base", "localId": "8", "name": "Énergie Plante"},
+    ],
+}
+
+EFFECTS_CARD_DETAILS = {
+    "eff1-objet": {
+        "id": "eff1-objet", "localId": "1", "name": "Hyper Ball", "category": "Dresseur",
+        "trainerType": "Objet",
+        "effect": "Vous ne pouvez utiliser cette carte que si vous défaussez 2 autres cartes de "
+        "votre main.\nCherchez dans votre deck un Pokémon, montrez-le, "
+        "puis ajoutez-le à votre main.",
+    },
+    "eff1-supporter": {
+        "id": "eff1-supporter", "localId": "2", "name": "Recherches Professorales",
+        "category": "Dresseur", "trainerType": "Supporter",
+        "effect": "Défaussez votre main, puis piochez 7 cartes.",
+    },
+    "eff1-stade": {
+        "id": "eff1-stade", "localId": "3", "name": "Système à haute pression",
+        "category": "Dresseur", "trainerType": "Stade",
+        "effect": "Cette carte reste en jeu lorsque vous la jouez. Défaussez-la si une autre carte "
+        "Stade est mise en jeu.",
+    },
+    "eff1-outil": {
+        "id": "eff1-outil", "localId": "4", "name": "Multi Exp", "category": "Dresseur",
+        "trainerType": "Outil",
+        "effect": "Lorsque votre Pokémon Actif est mis K.O. par les dégâts d'une attaque de votre "
+        "adversaire, vous pouvez déplacer 1 carte Énergie de base.",
+    },
+    "eff1-tm": {
+        "id": "eff1-tm", "localId": "5", "name": "Machine Technique : Évolution",
+        "category": "Dresseur", "trainerType": "Machine Technique",
+        "effect": "L'attaque de cette Machine Technique peut être utilisée par le "
+        "Pokémon qui la porte.",
+    },
+    # Dresseur dont TCGdex n'a aucun texte : la colonne reste vide, jamais un effet inventé.
+    "eff1-objet-vide": {
+        "id": "eff1-objet-vide", "localId": "6", "name": "Objet sans texte", "category": "Dresseur",
+        "trainerType": "Objet", "effect": None,
+    },
+    "eff1-energie-sp": {
+        "id": "eff1-energie-sp", "localId": "7", "name": "Énergie Double Turbo",
+        "category": "Énergie", "energyType": "Spécial",
+        "effect": "Tant que cette carte est attachée à un Pokémon, elle fournit de l'Énergie "
+        "ColorlessColorless.",
+    },
+    "eff1-energie-base": {
+        "id": "eff1-energie-base", "localId": "8", "name": "Énergie Plante", "category": "Énergie",
+        "energyType": "De base", "effect": None,
+    },
+}
+
+
+class EffectsTcgdexClient(FakeTcgdexClient):
+    """Un jeu minimal de Dresseurs (un par sous-type), une Énergie spéciale et une Énergie de
+    base — sert à prouver que `import_service` range `effect` et `trainer_type`, et à vérifier
+    qu'une carte sans texte reste vide."""
+
+    async def list_sets(self, lang: str) -> list[dict]:
+        return [{"id": "eff1", "name": "Effets", "cardCount": {"total": 8, "official": 8}}]
+
+    async def get_set(self, lang: str, set_id: str) -> dict:
+        assert set_id == "eff1"
+        return EFFECTS_SET_DETAIL
+
+    async def get_card(self, lang: str, card_id: str) -> dict:
+        self.card_calls.append(card_id)
+        return EFFECTS_CARD_DETAILS[card_id]
+
+
+async def test_import_stores_effect_text_and_trainer_subtype(db_session):
+    """Objet, Supporter, Stade, Outil, Machine Technique et Énergie spéciale sortent de l'import
+    avec leur texte d'effet et, pour les Dresseurs, leur sous-type."""
+    await import_catalogue(db_session, EffectsTcgdexClient(), None, languages=("fr",))
+
+    async def card(tcgdex_id: str) -> Card:
+        return (
+            await db_session.execute(select(Card).where(Card.tcgdex_id == tcgdex_id))
+        ).scalar_one()
+
+    objet = await card("eff1-objet")
+    assert objet.trainer_type == "Objet"
+    assert objet.effect.startswith("Vous ne pouvez utiliser cette carte")
+
+    assert (await card("eff1-supporter")).trainer_type == "Supporter"
+    assert (await card("eff1-stade")).trainer_type == "Stade"
+    assert (await card("eff1-outil")).trainer_type == "Outil"
+    assert (await card("eff1-tm")).trainer_type == "Machine Technique"
+    for tid in ("eff1-supporter", "eff1-stade", "eff1-outil", "eff1-tm"):
+        assert (await card(tid)).effect
+
+    energie_sp = await card("eff1-energie-sp")
+    assert energie_sp.energy_type == "Spécial"
+    assert energie_sp.trainer_type is None
+    assert energie_sp.effect.startswith("Tant que cette carte est attachée")
+
+
+async def test_import_leaves_effect_empty_when_tcgdex_has_none(db_session):
+    """Un Dresseur ou une Énergie de base sans texte chez TCGdex est importé avec `effect` nul —
+    jamais une chaîne vide bricolée, jamais un texte inventé (règle anti-repli silencieux)."""
+    await import_catalogue(db_session, EffectsTcgdexClient(), None, languages=("fr",))
+
+    objet_vide = (
+        await db_session.execute(select(Card).where(Card.tcgdex_id == "eff1-objet-vide"))
+    ).scalar_one()
+    assert objet_vide.trainer_type == "Objet"
+    assert objet_vide.effect is None
+
+    energie_base = (
+        await db_session.execute(select(Card).where(Card.tcgdex_id == "eff1-energie-base"))
+    ).scalar_one()
+    assert energie_base.energy_type == "De base"
+    assert energie_base.effect is None
+
+
+async def test_completeness_counts_effect_text_honestly(db_session):
+    """Le rapport de complétude compte les Dresseurs/Énergies avec effet sur le DÉNOMINATEUR de
+    leur catégorie, et un Dresseur sans texte baisse le taux au lieu de le masquer."""
+    from pbm_api.catalog.completeness import compute_completeness_stats
+
+    await import_catalogue(db_session, EffectsTcgdexClient(), None, languages=("fr",))
+    stats = await compute_completeness_stats(db_session)
+
+    # 6 Dresseurs (Objet, Supporter, Stade, Outil, Machine Technique, Objet sans texte), dont 5
+    # avec un effet : le Dresseur sans texte fait tomber le taux à 5/6, il n'est pas masqué.
+    assert stats.cards_trainers == 6
+    assert stats.cards_trainers_with_effect == 5
+    assert stats.ratio_pct(stats.cards_trainers_with_effect, stats.cards_trainers) < 100.0
+
+    # 1 Énergie spéciale, avec effet. (L'Énergie de base n'est pas comptée comme spéciale.)
+    assert stats.cards_special_energy == 1
+    assert stats.cards_special_energy_with_effect == 1
+
+    by_type = dict((t[0], (t[1], t[2])) for t in stats.trainers_by_type)
+    assert by_type["Objet"] == (2, 1)  # Hyper Ball (effet) + Objet sans texte (vide)
+    assert by_type["Supporter"] == (1, 1)
