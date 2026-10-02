@@ -19,6 +19,7 @@ from pbm_api.routers.images import router as images_router
 from pbm_api.routers.imports import router as imports_router
 from pbm_api.routers.in_game_study import router as in_game_study_router
 from pbm_api.routers.invitations import router as invitations_router
+from pbm_api.routers.lancement import router as lancement_router
 from pbm_api.routers.matchmaking import router as matchmaking_router
 from pbm_api.routers.profile import router as profile_router
 from pbm_api.routers.uploads import router as uploads_router
@@ -69,3 +70,4 @@ app.include_router(games_router)
 app.include_router(games_ws_router)
 app.include_router(matchmaking_router)
 app.include_router(invitations_router)
+app.include_router(lancement_router)
