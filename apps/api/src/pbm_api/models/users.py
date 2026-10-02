@@ -52,6 +52,12 @@ class User(Base, TimestampMixin):
     must_change_password: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default="false"
     )
+    # Droit d'accès au jeu — « compte invité » (D11, lot `j-file-attente`). L'inscription est libre
+    # (D8), mais le jeu est réservé : un compte ordinaire ne voit RIEN du jeu (toutes ses routes
+    # répondent 404). Posé/retiré hors ligne par `pbm_api.admin set-game-access`, jamais en HTTP.
+    game_access: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="false"
+    )
 
 
 class Session(Base):

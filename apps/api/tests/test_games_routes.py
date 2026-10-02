@@ -13,7 +13,7 @@ import uuid
 import httpx
 
 from pbm_api.games.service import creer_partie
-from pbm_api.models import Card, Deck, DeckCard, Set
+from pbm_api.models import Card, Deck, DeckCard, Set, User
 
 PASSWORD = "correct horse battery staple"
 
@@ -85,8 +85,15 @@ async def test_acces_croise_et_liste_bornee_au_participant(api_client, db_sessio
         db_session, joueur_a=(a_id, deck_a), joueur_b=(b_id, deck_b)
     )
 
+    # Les trois comptes reçoivent le droit d'accès au jeu (D11) : ce test porte sur l'isolation
+    # entre participants, pas sur la garde d'accès (testée dans `test_game_access`).
+    c_id = uuid.UUID(await _register_verify_login(api_client, email_c))
+    for uid in (a_id, b_id, c_id):
+        u = await db_session.get(User, uid)
+        u.game_access = True
+    await db_session.flush()
+
     # L'intrus C ne participe pas : 404 sur la partie, et liste vide.
-    await _register_verify_login(api_client, email_c)
     r_intrus = await api_client.get(f"/games/{game.id}")
     assert r_intrus.status_code == 404, r_intrus.text
     r_liste_c = await api_client.get("/games")
@@ -112,6 +119,9 @@ async def test_acces_croise_et_liste_bornee_au_participant(api_client, db_sessio
 
 async def test_partie_inexistante_rend_404(api_client, db_session):
     email = _email("solo")
-    await _register_verify_login(api_client, email)
+    solo_id = uuid.UUID(await _register_verify_login(api_client, email))
+    u = await db_session.get(User, solo_id)
+    u.game_access = True
+    await db_session.flush()
     r = await api_client.get(f"/games/{uuid.uuid4()}")
     assert r.status_code == 404, r.text

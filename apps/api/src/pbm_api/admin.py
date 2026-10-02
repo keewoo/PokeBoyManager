@@ -18,6 +18,7 @@ from datetime import UTC, date, datetime
 
 from pydantic import EmailStr, TypeAdapter, ValidationError
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.auth.service import normalize_email
 from pbm_api.db import async_session_factory
@@ -30,6 +31,10 @@ _EMAIL_ADAPTER = TypeAdapter(EmailStr)
 
 class CreateUserError(Exception):
     pass
+
+
+class SetGameAccessError(Exception):
+    """Aucun compte pour l'adresse visée par `set-game-access`."""
 
 
 def _parse_email(value: str) -> str:
@@ -112,6 +117,40 @@ async def create_user(
     return normalized_email, generated_password
 
 
+async def set_game_access(db: AsyncSession, *, email: str, enabled: bool) -> str:
+    """Pose (`enabled=True`) ou retire le droit d'accès au jeu d'un compte (D11), ou **lève**.
+
+    Le jeu est réservé aux comptes invités : cette commande est le seul moyen d'accorder l'accès (il
+    n'existe aucune route HTTP). Renvoie l'adresse normalisée. Lève :class:`SetGameAccessError`
+    si aucun compte ne correspond — jamais un succès silencieux sur une adresse inconnue.
+    """
+    normalized_email = _parse_email(email)
+    user = (
+        await db.execute(select(User).where(User.email == normalized_email))
+    ).scalar_one_or_none()
+    if user is None:
+        raise SetGameAccessError(f"Aucun compte pour {normalized_email}.")
+    user.game_access = enabled
+    await db.commit()
+    return normalized_email
+
+
+async def _set_game_access_cli(*, email: str, enabled: bool) -> str:
+    async with async_session_factory() as db:
+        return await set_game_access(db, email=email, enabled=enabled)
+
+
+def _run_set_game_access(args: argparse.Namespace) -> int:
+    enabled = args.state == "on"
+    try:
+        email = asyncio.run(_set_game_access_cli(email=args.email, enabled=enabled))
+    except (CreateUserError, SetGameAccessError) as exc:
+        print(f"Erreur : {exc}", file=sys.stderr)
+        return 1
+    print(f"Accès au jeu {'accordé' if enabled else 'retiré'} : {email}")
+    return 0
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="python -m pbm_api.admin")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -137,11 +176,20 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     create.add_argument("--must-change-password", action="store_true")
 
+    ga = subparsers.add_parser(
+        "set-game-access", help="Accorde ou retire l'accès au jeu d'un compte (D11)."
+    )
+    ga.add_argument("email")
+    ga.add_argument("state", choices=["on", "off"], help="on = accorde, off = retire")
+
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
+
+    if args.command == "set-game-access":
+        return _run_set_game_access(args)
 
     if args.command != "create-user":
         return 1

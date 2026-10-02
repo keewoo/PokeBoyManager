@@ -51,3 +51,20 @@ async def require_csrf(
     submitted = request.headers.get(CSRF_HEADER_NAME)
     if not verify_csrf_token(raw_session_token, submitted):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Jeton CSRF invalide")
+
+
+
+async def require_game_access(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """Garde d'accès au jeu — « compte invité » (D11, lot `j-file-attente`).
+
+    L'inscription est libre (D8) : un compte ordinaire ne voit **rien** du jeu. Le droit d'accès est
+    posé hors ligne par l'administration (`pbm_api.admin set-game-access`). Sans ce droit, toute
+    route du jeu répond **404** — jamais 403 : pour un compte non invité, le jeu n'existe pas, comme
+    un objet d'un autre utilisateur. Renvoie l'utilisateur courant quand le droit est accordé, pour
+    pouvoir servir de dépendance en lieu et place de `get_current_user`.
+    """
+    if not current_user.game_access:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Ressource introuvable.")
+    return current_user

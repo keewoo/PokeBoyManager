@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pbm_api.auth.dependencies import get_current_user
+from pbm_api.auth.dependencies import require_game_access
 from pbm_api.db import get_session
 from pbm_api.games.errors import (
     ActionRefusee,
@@ -39,7 +39,7 @@ GAME_NOT_FOUND_MESSAGE = "Partie introuvable."
 @router.get("", response_model=list[GameSummaryOut])
 async def list_games(
     db: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_game_access),
 ) -> list[GameSummaryOut]:
     """Les parties du joueur courant, de la plus récente à la plus ancienne."""
     games = await parties_du_joueur(db, current_user.id)
@@ -50,7 +50,7 @@ async def list_games(
 async def get_game(
     game_id: uuid.UUID,
     db: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_game_access),
 ) -> GameDetailOut:
     """Le détail d'une partie du joueur courant, ou 404 s'il n'y participe pas (pas de fuite)."""
     try:
@@ -84,7 +84,7 @@ async def get_game(
 async def get_game_state(
     game_id: uuid.UUID,
     db: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_game_access),
 ) -> dict:
     """La **vue autoritaire** de la partie pour le joueur courant, ou 404 s'il n'y participe pas.
 
@@ -106,7 +106,7 @@ async def play_action(
     game_id: uuid.UUID,
     body: ActionIn,
     db: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_game_access),
 ) -> dict:
     """Jouer un coup : le serveur fait autorité — il rejoue et valide, puis renvoie la vue projetée.
 

@@ -108,6 +108,12 @@ async def _partie_a_vs_b(api_client, db_session) -> tuple[str, uuid.UUID, str, u
     b_id = await _register_verify_login(api_client, email_b)
     deck_b = await _make_deck_jouable(db_session, b_id)
     game = await creer_partie(db_session, joueur_a=(a_id, deck_a), joueur_b=(b_id, deck_b))
+    # Droit d'accès au jeu (D11) pour les deux participants : ces tests portent sur la projection et
+    # l'isolation, pas sur la garde d'accès (testée dans `test_game_access`).
+    for uid in (a_id, b_id):
+        u = await db_session.get(User, uid)
+        u.game_access = True
+    await db_session.flush()
     await _login(api_client, email_a)
     return email_a, a_id, email_b, b_id, game
 
@@ -160,7 +166,10 @@ async def test_state_ne_fuit_pas_la_carte_piochee_a_l_adversaire(api_client, db_
 async def test_acces_croise_state_et_action(api_client, db_session):
     """Un intrus ne voit pas l'état d'une partie d'autrui (404) et ne peut pas y jouer (404)."""
     email_a, a_id, email_b, b_id, game = await _partie_a_vs_b(api_client, db_session)
-    await _register_verify_login(api_client, _email("av-intrus"))  # devient l'utilisateur courant
+    intrus_id = await _register_verify_login(api_client, _email("av-intrus"))  # utilisateur courant
+    intrus = await db_session.get(User, intrus_id)
+    intrus.game_access = True  # a le droit d'accès, mais ne participe pas : 404 (pas 403)
+    await db_session.flush()
 
     r_state = await api_client.get(f"/games/{game.id}/state")
     assert r_state.status_code == 404, r_state.text
