@@ -17,9 +17,14 @@ from collections.abc import Mapping
 from .modele import (
     EVT_CARTES_PIOCHEES,
     EVT_ECHANGE_FORCE,
+    EVT_MAIN_REVELEE,
+    EVT_MISE_EN_PLACE_PRETE,
+    EVT_MISE_EN_PLACE_REVELEE,
+    EVT_MULLIGAN,
     EVT_PARTIE_TERMINEE,
     EVT_PHASE_AVANCEE,
     EVT_PIOCHE_MELANGEE,
+    EVT_PLACEMENT_CACHE,
     EVT_PROMOTION,
     EVT_RETRAITE,
     EVT_TOUR_COMMENCE,
@@ -82,6 +87,30 @@ def _decrire_evenement(evenement: Evenement, noms: Mapping[str, str]) -> str:
             f"{resoudre_id(d.get('ancien_actif', '?'), noms)} → "
             f"{resoudre_id(d.get('nouvel_actif', '?'), noms)}"
         )
+    if evenement.type == EVT_MAIN_REVELEE:
+        ids = [c.get("instance_id", "?") for c in d.get("cartes", [])]
+        cartes = ", ".join(resoudre_id(i, noms) for i in ids)
+        return f"{d.get('joueur', '?')} révèle sa main sans base : {cartes or '(vide)'}"
+    if evenement.type == EVT_MULLIGAN:
+        bonus = d.get("bonus_pour")
+        suffixe = f", carte bonus pour {bonus}" if bonus is not None else " (simultané, sans bonus)"
+        return f"{d.get('joueur', '?')} mulligan n°{d.get('numero', '?')}{suffixe}"
+    if evenement.type == EVT_MISE_EN_PLACE_PRETE:
+        parts = [
+            f"{j.get('id', '?')} : {j.get('mulligans', 0)} mulligan(s), {j.get('bonus', 0)} bonus"
+            for j in d.get("joueurs", [])
+        ]
+        return "mise en place prête — " + " ; ".join(parts)
+    if evenement.type == EVT_PLACEMENT_CACHE:
+        return f"{d.get('joueur', '?')} place son Actif et son banc (face caché)"
+    if evenement.type == EVT_MISE_EN_PLACE_REVELEE:
+        parts = [
+            f"{j.get('joueur', '?')} : Actif {j.get('actif', '?')}, "
+            f"{len(j.get('banc', []))} au banc, {j.get('recompenses_nombre', 0)} récompenses"
+            + (f", +{j.get('bonus_pioches', 0)} bonus" if j.get("bonus_pioches") else "")
+            for j in d.get("joueurs", [])
+        ]
+        return "révélation simultanée — " + " ; ".join(parts)
     # Événement d'un lot ultérieur, non encore gré ici : on le rend brut plutôt que de
     # prétendre le comprendre (pas d'approximation).
     return f"{evenement.type} {dict(d)}"

@@ -57,6 +57,15 @@ Lot ``j-autorite-vues`` : ``pbm_game.sortie``, le **point de sortie unique** ver
 **jetons opaques** des cartes cachées (``Jetonneur`` : non corrélables d'un mélange à l'autre) et
 la **projection des événements** par destinataire (un type non projeté est refusé, jamais diffusé
 brut). Rien de brut ne part vers un client en dehors de cette porte — ni l'API, ni le temps réel.
+
+Lot ``j-initialisation`` : ``pbm_game.mise_en_place``, la **mise en place** d'une partie (R-4) —
+mélange des deux decks et pioche de sept (R-4.1), boucle de **mulligan** (main sans base révélée,
+remélangée, repiochée ; double mulligan sans carte bonus, R-4.4/R-4.6), **cartes bonus** dues à
+l'adversaire (R-4.5), placement de l'Actif et du banc **face caché** (R-4.2) et **révélation
+simultanée** (R-4.3 : six récompenses posées face cachée, puis le premier tour). Deux transitions
+journalisées (``mise_en_place_initiale`` système, ``placer_mise_en_place`` par joueur) ; le
+placement caché vit dans ``EtatPartie.mise_en_place`` et ne passe dans l'Actif/banc publics qu'à la
+révélation — la projection ne laisse rien fuir à l'adversaire avant ce moment.
 """
 
 from __future__ import annotations
@@ -81,6 +90,14 @@ from . import checkup as _checkup  # noqa: F401,E402  (import pour effet d'enreg
 # ``expirer_demande`` dans le ``REGISTRE`` du journal à son import. On l'importe ici pour que
 # ``appliquer`` les reconnaisse, et pour poser la garde « demande en cours » dès le chargement.
 from . import demandes as _demandes  # noqa: F401,E402  (import pour effet d'enregistrement)
+
+# ``mise_en_place`` (lot ``j-initialisation``) enregistre ses transitions ``mise_en_place_initiale``
+# et ``placer_mise_en_place`` (R-4) dans le ``REGISTRE`` du journal à son import. On l'importe ici,
+# après le noyau des transitions, pour que ``appliquer`` les reconnaisse dès que ``pbm_game`` est
+# chargé (même motif que ``banc``, ``cartes`` et ``checkup``).
+from . import (
+    mise_en_place as _mise_en_place,  # noqa: F401,E402  (import pour effet d'enregistrement)
+)
 
 # Le résolveur DSL **sachant se suspendre** se branche dans le registre des résolveurs de décision
 # (``demandes.moteur.REGISTRE_EFFETS``). On le fait ici — et pas dans le paquet ``demandes`` — pour

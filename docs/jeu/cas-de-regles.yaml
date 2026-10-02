@@ -39,10 +39,22 @@ cas:
     categorie: setup
     description: "Une main d'ouverture sans Pokémon de base déclenche un mulligan."
   - id: mulligan-cartes-bonus
-    regles: [R-4.5]
+    regles: [R-4.5, R-16.9]
     categorie: cas-limite
     cas_limite: mulligan-multiple
-    description: "L'adversaire pioche une carte par mulligan supplémentaire pris par l'autre joueur."
+    description: "L'adversaire pioche une carte par mulligan que l'autre joueur prend seul (R-4.5/R-16.9)."
+  - id: mulligan-double-sans-bonus
+    regles: [R-4.6]
+    categorie: setup
+    description: "Les deux joueurs sans Pokémon de base : les deux remélangent, sans carte bonus."
+  - id: mise-en-place-revelation-simultanee
+    regles: [R-4.2, R-4.3]
+    categorie: setup
+    description: "Actif et banc placés face cachée, révélés simultanément ; six récompenses posées."
+  - id: mise-en-place-melange-pioche
+    regles: [R-4.1]
+    categorie: setup
+    description: "Chaque joueur mélange son deck et pioche sept cartes à l'ouverture."
 
   # --- Déroulé d'un tour ---
   - id: tour-une-energie

@@ -57,6 +57,7 @@ from .modele import (
     ACTION_EXPIRER_DEMANDE,
     ACTION_MELANGER_PIOCHE,
     ACTION_PIOCHER,
+    ACTION_PLACER_MISE_EN_PLACE,
     ACTION_REPONDRE_DEMANDE,
     AUTEUR_SYSTEME,
     EVT_ATTAQUE_DECLAREE,
@@ -85,6 +86,14 @@ _ORDRE_PHASES: tuple[str, ...] = (PHASE_PIOCHE, PHASE_PRINCIPALE, PHASE_ATTAQUE,
 # répondre, laisser expirer le délai, ou abandonner la partie (R-14.3, toujours permis).
 _ACTIONS_PENDANT_DEMANDE: frozenset[str] = frozenset(
     {ACTION_REPONDRE_DEMANDE, ACTION_EXPIRER_DEMANDE, ACTION_ABANDONNER}
+)
+
+# Les seules actions permises pendant la **mise en place** (lot ``j-initialisation``), tant que
+# ``etat.mise_en_place`` n'est pas ``None`` : poser son Actif et son banc (R-4.2), ou abandonner
+# (R-14.3, toujours permis). La partie n'a pas encore commencé — ni pioche de tour, ni attaque, ni
+# pose libre : ces coups sont refusés ici (jamais un repli silencieux).
+_ACTIONS_PENDANT_MISE_EN_PLACE: frozenset[str] = frozenset(
+    {ACTION_PLACER_MISE_EN_PLACE, ACTION_ABANDONNER}
 )
 
 
@@ -449,6 +458,18 @@ def appliquer(
             f"Décision en attente (« {etat.resolution.demande.id} » — "
             f"{etat.resolution.demande.libelle}) : seules la réponse, son expiration et l'abandon "
             f"sont permises, pas « {action.type} »."
+        )
+    # La mise en place (R-4) met la partie **avant son premier tour** : tant qu'elle n'est pas
+    # révélée, seuls le placement face caché et l'abandon sont permis — jamais une pioche de tour,
+    # une attaque ou une pose libre (ce serait jouer une partie qui n'a pas commencé). La garde est
+    # centrale, en plus de celles des transitions elles-mêmes (lot ``j-initialisation``).
+    if (
+        etat.mise_en_place is not None
+        and action.type not in _ACTIONS_PENDANT_MISE_EN_PLACE
+    ):
+        raise ValueError(
+            f"Mise en place en cours (R-4) : seuls le placement de l'Actif et du banc et l'abandon "
+            f"sont permis, pas « {action.type} »."
         )
     handler = REGISTRE.get(action.type)
     if handler is None:
