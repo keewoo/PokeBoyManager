@@ -85,7 +85,7 @@ def vue(etat: EtatPartie, joueur: str) -> dict:
     ids = {j.id for j in etat.joueurs}
     if joueur not in ids:
         raise ValueError(f"« {joueur} » ne participe pas à cette partie ({sorted(ids)}).")
-    return {
+    vue_etat: dict = {
         "schema_version": etat.schema_version,
         "pour": joueur,
         "joueurs": [_joueur_vu(j, cest_soi=(j.id == joueur)) for j in etat.joueurs],
@@ -103,3 +103,37 @@ def vue(etat: EtatPartie, joueur: str) -> dict:
         "vainqueur": etat.vainqueur,
         "raison_fin": etat.raison_fin,
     }
+    if etat.resolution is not None:
+        vue_etat["demande"] = _demande_vue(etat.resolution.demande, pour=joueur)
+    return vue_etat
+
+
+def _demande_vue(demande, *, pour: str) -> dict:
+    """La demande de décision en cours, telle que ``pour`` a le droit de la voir.
+
+    Qu'une décision soit en attente, et de **qui** elle l'attend, est **public** : les deux joueurs
+    voient la partie en pause (c'est ce qui évite un écran muet). Mais seules les **options** sont
+    réservées : le destinataire les voit — sauf si l'ensemble est **caché** (``ensemble_cache`` :
+    par ex. « choisis une carte de la main adverse »), auquel cas il n'en connaît que le **nombre**,
+    jamais les identités (anti-triche, même frontière que les zones cachées). L'adversaire du
+    destinataire ne reçoit, lui, aucune option.
+    """
+    base: dict = {
+        "id": demande.id,
+        "destinataire": demande.destinataire,
+        "categorie": demande.categorie,
+        "libelle": demande.libelle,
+        "regle": demande.regle,
+        "obligatoire": demande.obligatoire,
+        "minimum": demande.minimum,
+        "maximum": demande.maximum,
+        "source": demande.source.en_json(),
+        "delai_ms": demande.delai_ms,
+        "temps_restant_ms": demande.temps_restant_ms,
+    }
+    if pour == demande.destinataire:
+        if demande.ensemble_cache:
+            base["options_nombre"] = len(demande.options)
+        else:
+            base["options"] = list(demande.options)
+    return base

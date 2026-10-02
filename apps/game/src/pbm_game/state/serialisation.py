@@ -170,8 +170,14 @@ def _tour_depuis(donnees: object) -> Tour:
 
 
 def vers_json(etat: EtatPartie) -> dict:
-    """Projette un :class:`EtatPartie` vers un ``dict`` JSON-sérialisable et déterministe."""
-    return {
+    """Projette un :class:`EtatPartie` vers un ``dict`` JSON-sérialisable et déterministe.
+
+    ``resolution`` (la demande de décision en cours, lot ``j-effets-choix``) n'apparaît dans la
+    sortie que lorsqu'elle existe : un état sans demande produit exactement le JSON d'avant ce lot,
+    sous réserve de la ``schema_version``. L'import de ``demandes`` est **local** pour que
+    ``state`` reste une feuille sans dépendance de paquet (le moteur en dépend, pas l'inverse).
+    """
+    donnees: dict = {
         "schema_version": etat.schema_version,
         "joueurs": [_joueur_vers(etat.joueurs[0]), _joueur_vers(etat.joueurs[1])],
         "tour": _tour_vers(etat.tour),
@@ -181,6 +187,9 @@ def vers_json(etat: EtatPartie) -> dict:
         "vainqueur": etat.vainqueur,
         "raison_fin": etat.raison_fin,
     }
+    if etat.resolution is not None:
+        donnees["resolution"] = etat.resolution.en_json()
+    return donnees
 
 
 def depuis_json(donnees: object) -> EtatPartie:
@@ -212,6 +221,13 @@ def depuis_json(donnees: object) -> EtatPartie:
     terminee = donnees.get("terminee", False)
     if not isinstance(terminee, bool):
         raise ValueError("« terminee » doit être un booléen.")
+    resolution_brute = donnees.get("resolution")
+    resolution = None
+    if resolution_brute is not None:
+        # Import local : ``state`` reste une feuille ; seul le moteur de décision connaît la forme.
+        from ..demandes.moteur import ResolutionEnCours
+
+        resolution = ResolutionEnCours.depuis_json(resolution_brute)
     return EtatPartie(
         schema_version=version,
         joueurs=(_joueur_depuis(joueurs_bruts[0]), _joueur_depuis(joueurs_bruts[1])),
@@ -221,4 +237,5 @@ def depuis_json(donnees: object) -> EtatPartie:
         terminee=terminee,
         vainqueur=vainqueur,
         raison_fin=raison_fin,
+        resolution=resolution,
     )

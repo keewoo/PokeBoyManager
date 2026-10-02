@@ -96,6 +96,16 @@ ACTION_POSER = "poser"
 #: ``nom_base`` (nom du sommet actuel, pour la chaîne R-7.1). Conserve énergies/Outil/compteurs
 #: (R-7.1), retire les états (R-7.2). Ajoutée par ``j-cartes-pokemon``.
 ACTION_EVOLUER = "evoluer"
+#: **Répondre à une demande de décision** (R-9.3 étape D, et tout effet qui fait choisir un joueur)
+#: — coup d'un joueur quand une résolution est **suspendue** sur une demande. ``params`` : ``choix``
+#: (la liste des identifiants d'option retenus ; vide = abandon d'un effet facultatif). L'``auteur``
+#: doit être le **destinataire** de la demande — y compris l'adversaire, pendant le tour de l'autre.
+#: Ajoutée par ``j-effets-choix`` ; sa transition reprend la résolution (``pbm_game.demandes``).
+ACTION_REPONDRE_DEMANDE = "repondre_demande"
+#: **Expiration du délai** d'une demande de décision — action **système** déclenchée par l'extérieur
+#: (lot ``j-timer``) quand l'horloge d'une demande tombe à zéro. Applique la **réponse par défaut**
+#: (premier choix valide, ou abandon de l'effet facultatif) et la journalise. Aucun ``params``.
+ACTION_EXPIRER_DEMANDE = "expirer_demande"
 
 # --- Types d'événement (ce que PRODUIT le moteur) ----------------------------
 EVT_PIOCHE_MELANGEE = "pioche_melangee"

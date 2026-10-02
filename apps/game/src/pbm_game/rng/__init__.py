@@ -320,6 +320,27 @@ class Rng:
         rng._journal = [tirage_depuis_json(d) for d in journal_brut]
         return rng
 
+    def restaurer(self, donnees: object) -> None:
+        """Recharge **en place** l'état de :meth:`etat` — un *retour en arrière* des tirages.
+
+        Même contrat que :meth:`depuis_etat`, mais au lieu de fabriquer un nouvel objet, elle
+        ramène **celui-ci** à un instantané antérieur (mêmes compteurs de flux, même journal). Elle
+        sert au mécanisme de **demandes de décision** (lot ``j-effets-choix``) : quand la résolution
+        d'un effet se **suspend** en attendant la réponse d'un joueur, on annule les tirages que son
+        déroulé partiel avait consommés, puis on le **re-déroule à l'identique** à la reprise. Comme
+        le Rng est déterministe à position donnée (graine + indice), re-tirer après un
+        retour en arrière redonne **exactement** les mêmes valeurs — aucun tirage compté
+        deux fois dans le journal. La graine ne peut pas changer : restaurer une autre graine
+        est refusé (jamais un retour en arrière silencieux vers un autre hasard).
+        """
+        remis = Rng.depuis_etat(donnees)
+        if remis.graine_hex != self.graine_hex:
+            raise ValueError(
+                "Restauration d'un Rng vers une graine différente : refusée (changerait le hasard)."
+            )
+        self._compteurs = dict(remis._compteurs)
+        self._journal = list(remis._journal)
+
 
 # --- Engagement / révélation (commit-reveal) ---------------------------------
 

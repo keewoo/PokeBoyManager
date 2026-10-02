@@ -64,6 +64,21 @@ class SourceEffet:
         """La source en valeurs JSON natives, pour la charge utile d'un événement."""
         return {"libelle": self.libelle, "ref": self.ref, "instance_id": self.instance_id}
 
+    @staticmethod
+    def depuis_json(donnees: object) -> SourceEffet:
+        """Relit une source produite par :meth:`en_json` (ou lève ``ValueError``).
+
+        Sert à reprendre une pile **suspendue** après un F5 (lot ``j-effets-choix``) : la source
+        voyage dans l'état sérialisé, et doit en revenir identique.
+        """
+        if not isinstance(donnees, dict):
+            raise ValueError("Une source d'effet doit être un mapping {libelle, ref, instance_id}.")
+        return SourceEffet(
+            libelle=donnees.get("libelle", ""),
+            ref=donnees.get("ref"),
+            instance_id=donnees.get("instance_id"),
+        )
+
 
 @dataclass(frozen=True)
 class EffetEnAttente:
@@ -92,6 +107,32 @@ class EffetEnAttente:
             raise ValueError("Un effet en attente doit citer la règle R-x.y qu'il applique (D9).")
         if not isinstance(self.libelle, str) or not self.libelle.strip():
             raise ValueError("Un effet en attente doit porter un libellé lisible.")
+
+    def en_json(self) -> dict:
+        """L'effet en valeurs JSON natives — pour une pile **suspendue** reprise après un F5."""
+        return {
+            "type_effet": self.type_effet,
+            "source": self.source.en_json(),
+            "regle": self.regle,
+            "libelle": self.libelle,
+            "params": self.params,
+        }
+
+    @staticmethod
+    def depuis_json(donnees: object) -> EffetEnAttente:
+        """Relit un effet produit par :meth:`en_json` (ou lève ``ValueError``)."""
+        if not isinstance(donnees, dict):
+            raise ValueError("Un effet en attente doit être un mapping.")
+        params = donnees.get("params", {})
+        if not isinstance(params, dict):
+            raise ValueError("Effet en attente : « params » doit être un mapping.")
+        return EffetEnAttente(
+            type_effet=donnees.get("type_effet", ""),
+            source=SourceEffet.depuis_json(donnees.get("source")),
+            regle=donnees.get("regle", ""),
+            libelle=donnees.get("libelle", ""),
+            params=params,
+        )
 
 
 # Un résolveur transforme l'état, rend ses événements, et peut **empiler** de nouveaux effets
@@ -156,6 +197,17 @@ class PileEffets:
         if not self.effets:
             raise ValueError("Pile d'effets vide : rien à dépiler.")
         return self.effets[-1], PileEffets(self.effets[:-1])
+
+    def en_json(self) -> list[dict]:
+        """La pile en liste JSON native, du **bas vers le haut** (le dernier est le sommet)."""
+        return [e.en_json() for e in self.effets]
+
+    @staticmethod
+    def depuis_json(donnees: object) -> PileEffets:
+        """Relit une pile produite par :meth:`en_json` (ou lève ``ValueError``)."""
+        if not isinstance(donnees, list):
+            raise ValueError("Une pile d'effets sérialisée doit être une liste (bas → haut).")
+        return PileEffets(tuple(EffetEnAttente.depuis_json(d) for d in donnees))
 
 
 def evenement_resolu(source: SourceEffet, effet: EffetEnAttente) -> Evenement:

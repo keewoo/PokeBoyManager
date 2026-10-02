@@ -54,8 +54,10 @@ from .modele import (
     ACTION_AVANCER_PHASE,
     ACTION_DEBUT_TOUR,
     ACTION_DECLARER_ATTAQUE,
+    ACTION_EXPIRER_DEMANDE,
     ACTION_MELANGER_PIOCHE,
     ACTION_PIOCHER,
+    ACTION_REPONDRE_DEMANDE,
     AUTEUR_SYSTEME,
     EVT_ATTAQUE_DECLAREE,
     EVT_CARTES_PIOCHEES,
@@ -78,6 +80,12 @@ Transition = Callable[[EtatPartie, Action, Rng], tuple[EtatPartie, list[Evenemen
 # Ordre canonique des phases d'un tour (R-5.1), ``checkup`` étant la phase entre les deux
 # tours (R-12.1). ``avancer_phase`` suit cet ordre, puis repart au tour suivant.
 _ORDRE_PHASES: tuple[str, ...] = (PHASE_PIOCHE, PHASE_PRINCIPALE, PHASE_ATTAQUE, PHASE_CHECKUP)
+
+# Les seules actions permises quand une demande de décision est en cours (lot ``j-effets-choix``) :
+# répondre, laisser expirer le délai, ou abandonner la partie (R-14.3, toujours permis).
+_ACTIONS_PENDANT_DEMANDE: frozenset[str] = frozenset(
+    {ACTION_REPONDRE_DEMANDE, ACTION_EXPIRER_DEMANDE, ACTION_ABANDONNER}
+)
 
 
 # --- Helpers immuables -------------------------------------------------------
@@ -431,6 +439,16 @@ def appliquer(
         raise ValueError(
             f"Partie terminée : elle refuse toute action supplémentaire, « {action.type} » "
             "comprise (R-14.6)."
+        )
+    # Une demande de décision en cours met la partie **en pause** : tant qu'elle n'est pas tranchée,
+    # on n'accepte que la réponse, son expiration, ou l'abandon (R-14.3, toujours permis). Toute
+    # autre action est refusée — c'est la garde du lot ``j-effets-choix`` : « empêcher toute autre
+    # action tant qu'une demande est en cours, sauf l'abandon ». Jamais un repli silencieux.
+    if etat.resolution is not None and action.type not in _ACTIONS_PENDANT_DEMANDE:
+        raise ValueError(
+            f"Décision en attente (« {etat.resolution.demande.id} » — "
+            f"{etat.resolution.demande.libelle}) : seules la réponse, son expiration et l'abandon "
+            f"sont permises, pas « {action.type} »."
         )
     handler = REGISTRE.get(action.type)
     if handler is None:

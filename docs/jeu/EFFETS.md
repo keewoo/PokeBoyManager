@@ -18,6 +18,11 @@ Un moteur qui traite les effets « au fil de l'eau » se réécrit à la premiè
 | Comment **interdire** un coup, et pour combien de temps ? | `effets/verrous.py` | `Verrou`, `JeuDeVerrous` |
 | Comment tout cela **se branche** sur le moteur ? | `effets/bus.py` | `Bus`, `declencheur_fenetre` |
 
+Une sixième question — **comment un effet attend-il la décision d'un joueur** (y compris
+l'adversaire) sans bloquer un fil ? — a sa fiche propre : `docs/jeu/DEMANDES.md` (lot
+`j-effets-choix`, paquet `pbm_game.demandes`). La pile y gagne une résolution **suspendable** :
+elle pose la demande dans l'état et reprend à la réponse.
+
 ## Les onze moments de jeu (le bus d'événements)
 
 Un **événement de jeu** est un *moment* : « des dégâts viennent d'être posés », « un Pokémon

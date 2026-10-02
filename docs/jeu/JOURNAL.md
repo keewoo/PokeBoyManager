@@ -86,6 +86,8 @@ résolution qui disposent du catalogue ; elles s'enregistrent dans le **même** 
 | `piocher` | R-5.2, R-4.1 | déplace `params.nombre` (défaut 1) cartes du **sommet** (`pioche[0]`) vers la main | `cartes_piochees` |
 | `avancer_phase` | R-5.1, R-12.1 | `pioche → principale → attaque → checkup` ; depuis `checkup`, ouvre le tour suivant (numéro + 1, joueur adverse, drapeaux remis, phase `pioche`) | `phase_avancee` (+ `tour_commence` au changement de tour) |
 | `abandonner` | R-14.3, R-14.6 | l'auteur abandonne : la partie se fige, l'adversaire gagne (`raison_fin = "abandon"`) ; refuse une partie déjà terminée | `partie_terminee` |
+| `repondre_demande` | R-9.3 D | un joueur répond à la **demande de décision** en cours (`params.demande_id`, `params.choix`) et la résolution reprend ; l'auteur doit être le destinataire | `demande_repondue` (+ effets repris, et `demande_emise` si une décision imbriquée surgit) |
+| `expirer_demande` | R-9.3 D | **système** : le délai a expiré, la **réponse par défaut** est appliquée et la résolution reprend | `demande_expiree` (+ effets repris) |
 
 Le joueur cible d'une action est `params.joueur` s'il est donné, sinon `action.auteur` ;
 une action système sans joueur cible est refusée (jamais de joueur deviné).
@@ -94,6 +96,11 @@ une action système sans joueur cible est refusée (jamais de joueur deviné).
 `j-actions-legales`, elle vit dans le même registre que la pioche et l'avancée de phase. Le
 **générateur d'actions légales** qui décide *quand* elle est jouable est documenté dans
 `docs/jeu/ACTIONS.md`.
+
+`repondre_demande` / `expirer_demande` sont ajoutées par le lot `j-effets-choix` (paquet
+`pbm_game.demandes`, fiche `docs/jeu/DEMANDES.md`). Tant qu'une demande de décision est en cours
+(`EtatPartie.resolution` non nul), `appliquer` **refuse toute autre action** que ces deux-là et
+`abandonner` : la partie est en pause jusqu'à la réponse.
 
 ## Rejeu et compaction
 
