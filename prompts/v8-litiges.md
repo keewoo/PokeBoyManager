@@ -55,6 +55,20 @@ python3 docs/roadmap/suivi.py demarrer v8-litiges --machine "$(hostname -s)" --b
 
 Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_validation` avec la contradiction en motif.
 
+## 1 bis. Le dépôt est graphifié — interroge le graphe avant de lire dix fichiers
+
+Le code, la documentation et les schémas de ce dépôt sont indexés par **Graphify**. Dans ton worktree, `graphify-out/` n'existe pas encore (il n'est pas versionné) : construis-le, puis pose tes questions au graphe.
+
+```bash
+export PATH=$HOME/.local/bin:$PATH   # sur la flotte, graphify vit là
+graphify update .                     # ~5-25 s, sans LLM
+graphify query "<ta question>"      # qui appelle quoi, où vit telle règle
+graphify explain "<symbole>"        # un nœud et ses voisins
+graphify affected "<symbole>"       # ce qui dépend de ce que tu vas modifier
+```
+
+Si le serveur MCP `graphify` est chargé dans ta session, `query_graph`, `get_neighbors` et `shortest_path` font la même chose. Le graphe **oriente**, il ne prouve pas : ouvre le fichier réel avant d'affirmer qu'une ligne existe. Mode d'emploi : `docs/CODE.md` § « Chercher dans le dépôt ».
+
 ## 2. Contexte
 
 **Gain.** Un dispositif d'échange ne se juge pas sur les échanges qui marchent : il se juge sur ce qu'il fait le jour où une carte n'arrive pas.
@@ -85,6 +99,8 @@ L'arbitrage est un travail humain : on le dimensionne, on ne l'automatise pas. U
 - indicateurs de litige exportables (entrée de la décision D12)
 - CI GitHub Actions verte sur la PR (elle fait foi, pas une suite verte sur une machine).
 - Aucun secret dans le dépôt, les journaux ou les sorties.
+- **Code documenté** : chaque module, fonction et classe publique ajouté ou modifié a sa docstring (Python) ou son `/** … */` (TypeScript), en français, qui dit le pourquoi — `docs/CODE.md` § « Documenter le code ».
+- **Graphe à jour** : après la fusion dans `main`, `graphify update .` sur le clone qui suit `main` (un graphe en retard fait mentir les lots suivants).
 
 ## 6. Tests exigés
 

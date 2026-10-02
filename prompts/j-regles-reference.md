@@ -55,6 +55,20 @@ python3 docs/roadmap/suivi.py demarrer j-regles-reference --machine "$(hostname 
 
 Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_validation` avec la contradiction en motif.
 
+## 1 bis. Le dépôt est graphifié — interroge le graphe avant de lire dix fichiers
+
+Le code, la documentation et les schémas de ce dépôt sont indexés par **Graphify**. Dans ton worktree, `graphify-out/` n'existe pas encore (il n'est pas versionné) : construis-le, puis pose tes questions au graphe.
+
+```bash
+export PATH=$HOME/.local/bin:$PATH   # sur la flotte, graphify vit là
+graphify update .                     # ~5-25 s, sans LLM
+graphify query "<ta question>"      # qui appelle quoi, où vit telle règle
+graphify explain "<symbole>"        # un nœud et ses voisins
+graphify affected "<symbole>"       # ce qui dépend de ce que tu vas modifier
+```
+
+Si le serveur MCP `graphify` est chargé dans ta session, `query_graph`, `get_neighbors` et `shortest_path` font la même chose. Le graphe **oriente**, il ne prouve pas : ouvre le fichier réel avant d'affirmer qu'une ligne existe. Mode d'emploi : `docs/CODE.md` § « Chercher dans le dépôt ».
+
 ## 2. Contexte
 
 **Jalon J1 — Deux joueurs jouent une partie honnête.** Une partie complète se joue de bout en bout entre deux navigateurs, avec des Pokémon, des énergies et des attaques simples — sans Dresseur, sans talent, sans état spécial. Laid mais juste : les règles sont appliquées, la partie reprend après un F5, et le vainqueur est le bon.
@@ -110,6 +124,8 @@ Le piège est de recopier une page d'encyclopédie amateur : les règles y méla
 - Compte rendu `docs/roadmap/comptes-rendus/j-regles-reference.md` : résumé, livrables, preuves, écarts, reste à faire.
 - Le savoir durable va dans **une** fiche (« Où écrire quoi » de `CLAUDE.md`) ; pour le jeu, `docs/jeu/`.
 - Aucun secret dans le dépôt, les journaux ou les sorties.
+- **Code documenté** : chaque module, fonction et classe publique ajouté ou modifié a sa docstring (Python) ou son `/** … */` (TypeScript), en français, qui dit le pourquoi — `docs/CODE.md` § « Documenter le code ».
+- **Graphe à jour** : après la fusion dans `main`, `graphify update .` sur le clone qui suit `main` (un graphe en retard fait mentir les lots suivants).
 
 ## 7. Tests exigés
 

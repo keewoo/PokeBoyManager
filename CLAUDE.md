@@ -41,6 +41,8 @@ En service : **https://pokeboy.lol** — domaine propre depuis le 22/09/2026. Mi
   de JF.
 - **Traitements lourds sur la flotte, jamais sur la machine qui sert** — garde `HEAVY_JOBS_ENABLED`
   (faux par défaut en production).
+- **Tout code livré est documenté** (docstrings Python, `/** */` sur les exports TS, en français, le
+  *pourquoi* plutôt que la paraphrase) — détail `docs/CODE.md` § « Documenter le code ».
 - **Un repli silencieux est interdit** (`|| true`, `except: pass`, `2>/dev/null` sur un chemin
   nominal) : un relevé de prix vide ou un lot sans compte rendu est une panne, pas un cas normal.
 
@@ -62,6 +64,10 @@ git pull   … && graphify update .     # une fusion apporte du code : même rè
 Un lot n'est pas fini si le graphe retarde sur `main` (voir `docs/CODE.md` § « Définition du
 "fini" »). Un graphe vieux d'un jour envoie les agents sur des fonctions qui n'existent plus —
 et ils le croient, parce qu'il répond faux **avec aplomb**.
+
+Les **prompts de lots** le rappellent (section « Le dépôt est graphifié ») : une session `claude -p`
+sur la flotte interroge le graphe en ligne de commande (`graphify query`, `explain`, `affected`) —
+`docs/CODE.md` § « En session autonome ».
 
 Le graphe oriente, il ne prouve pas : on ouvre le fichier réel avant d'affirmer qu'une ligne
 existe. Détail : `docs/PLUGINS.md`.

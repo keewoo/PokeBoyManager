@@ -173,6 +173,7 @@ def prompt(plan: dict, it: dict) -> str:
           "| `BACKLOG.md` | l'état des autres lots |",
           "| `~/.claude/CLAUDE.md` de la machine | règles de la flotte (construire ≠ servir, Python 3.12, WSL) |", "",
           "Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_validation` avec la contradiction en motif.", ""]
+    L += _bloc_graphe()
 
     deps = "\n".join(f"- `{d}` — {par_id[d]['titre']}" for d in it["dependances"]) or "- aucune"
     L += ["## 2. Contexte", "",
@@ -188,7 +189,7 @@ def prompt(plan: dict, it: dict) -> str:
     L += ["## 4. Risques & pièges", "", it["risques"], ""]
     L += ["## 5. Livrables — définition de « fini »", ""] + [f"- {x}" for x in it["livrables"]] + [
           "- CI GitHub Actions verte sur la PR (elle fait foi, pas une suite verte sur une machine).",
-          "- Aucun secret dans le dépôt, les journaux ou les sorties.", ""]
+          "- Aucun secret dans le dépôt, les journaux ou les sorties."] + _livrables_communs() + [""]
     L += ["## 6. Tests exigés", "",
           "- Un test qui **échoue sans** ton changement et passe avec.",
           "- Route utilisateur → test d'accès croisé (l'utilisateur B reçoit 404 sur les objets de A).",
@@ -196,6 +197,33 @@ def prompt(plan: dict, it: dict) -> str:
           "- Suites complètes lancées sur la flotte (`fleet-run` depuis le Mac, ou directement sur la machine), jamais sur le Mac de JF.", ""]
     L += _bloc_cloture(plan, it, "7")
     return "\n".join(L)
+
+
+def _bloc_graphe() -> list[str]:
+    """Section « Le dépôt est graphifié » commune aux deux plans : une session autonome (`claude -p`
+    sur la flotte) n'a pas forcément le serveur MCP graphify, elle interroge le graphe en ligne de
+    commande dans son worktree (`graphify-out/` n'est pas versionné, il faut le construire)."""
+    return ["## 1 bis. Le dépôt est graphifié — interroge le graphe avant de lire dix fichiers", "",
+            "Le code, la documentation et les schémas de ce dépôt sont indexés par **Graphify**. Dans ton worktree, "
+            "`graphify-out/` n'existe pas encore (il n'est pas versionné) : construis-le, puis pose tes questions au graphe.", "",
+            "```bash",
+            "export PATH=$HOME/.local/bin:$PATH   # sur la flotte, graphify vit là",
+            "graphify update .                     # ~5-25 s, sans LLM",
+            "graphify query \"<ta question>\"      # qui appelle quoi, où vit telle règle",
+            "graphify explain \"<symbole>\"        # un nœud et ses voisins",
+            "graphify affected \"<symbole>\"       # ce qui dépend de ce que tu vas modifier",
+            "```", "",
+            "Si le serveur MCP `graphify` est chargé dans ta session, `query_graph`, `get_neighbors` et `shortest_path` font la même chose. "
+            "Le graphe **oriente**, il ne prouve pas : ouvre le fichier réel avant d'affirmer qu'une ligne existe. "
+            "Mode d'emploi : `docs/CODE.md` § « Chercher dans le dépôt ».", ""]
+
+
+def _livrables_communs() -> list[str]:
+    """Livrables exigés de tout lot, en plus des siens."""
+    return ["- **Code documenté** : chaque module, fonction et classe publique ajouté ou modifié a sa docstring "
+            "(Python) ou son `/** … */` (TypeScript), en français, qui dit le pourquoi — `docs/CODE.md` § « Documenter le code ».",
+            "- **Graphe à jour** : après la fusion dans `main`, `graphify update .` sur le clone qui suit `main` "
+            "(un graphe en retard fait mentir les lots suivants)."]
 
 
 def _bloc_depart(machine: str, i_id: str, sec_cloture: str) -> list[str]:
@@ -283,6 +311,7 @@ def prompt_jeu(plan: dict, jeu: dict, it: dict) -> str:
           "| `docs/ARCHITECTURE.md` | données, catalogue, decks — ce que le jeu consomme |",
           "| `~/.claude/CLAUDE.md` de la machine | règles de la flotte (construire ≠ servir, Python 3.12, WSL) |", "",
           "Le cadre l'emporte sur ce prompt : en cas de contradiction, passe en `attente_validation` avec la contradiction en motif.", ""]
+    L += _bloc_graphe()
 
     apres = "\n".join(f"- `{d}` — {par_id[d]['titre']}" for d in it["apres"]) or "- rien : premier lot de sa chaîne"
     ouvre = "\n".join(f"- `{d}` — {par_id[d]['titre']}" for d in suivants) or "- aucun lot n'en dépend"
@@ -308,7 +337,7 @@ def prompt_jeu(plan: dict, jeu: dict, it: dict) -> str:
           "- CI GitHub Actions verte sur la PR (elle fait foi, pas une suite verte sur une machine).",
           f"- Compte rendu `docs/roadmap/comptes-rendus/{i_id}.md` : résumé, livrables, preuves, écarts, reste à faire.",
           "- Le savoir durable va dans **une** fiche (« Où écrire quoi » de `CLAUDE.md`) ; pour le jeu, `docs/jeu/`.",
-          "- Aucun secret dans le dépôt, les journaux ou les sorties.", ""]
+          "- Aucun secret dans le dépôt, les journaux ou les sorties."] + _livrables_communs() + [""]
     L += ["## 7. Tests exigés", "",
           "- Un test qui **échoue sans** ton changement et passe avec.",
           "- Moteur : fonctions pures, aucune entrée/sortie — un test d'import le prouve ; chaque test de règle cite son `R-x.y`.",

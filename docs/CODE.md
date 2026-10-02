@@ -70,6 +70,43 @@ clone tient le sien, et chaque machine paie ses 5 à 25 secondes.
 Une règle écrite ne force rien toute seule : si le graphe d'un clone retarde, le premier agent qui
 s'en aperçoit le reconstruit **avant** de répondre, il ne travaille pas sur des réponses fausses.
 
+### En session autonome (`claude -p` sur la flotte) : le graphe en ligne de commande
+
+Un lot qui tourne sur chimera ou devAI n'a pas forcément le serveur MCP `graphify` (il est déclaré
+dans `.mcp.json`, mais une session `claude -p` ne le charge pas d'office). Le même graphe s'interroge
+alors **en ligne de commande**, dans le worktree du lot (`graphify-out/` y est absent au départ,
+puisqu'il n'est pas versionné) :
+
+```bash
+graphify update .                      # construit le graphe du worktree (~5-25 s, sans LLM)
+graphify query "qui écrit cards.prize_marker ?"   # parcours du graphe pour une question
+graphify explain "prize_rule_of"       # un nœud et ses voisins, en clair
+graphify affected "normalized_prize_marker"       # ce qui est touché si je change X
+graphify path "confirm_all" "detections"          # le chemin le plus court entre deux nœuds
+graphify god-nodes                     # les nœuds les plus connectés (les pivots de l'architecture)
+```
+
+Sur la flotte, `graphify` vit dans `~/.local/bin` : un `bash -s` non interactif ne l'a pas dans son
+PATH (`export PATH=$HOME/.local/bin:$PATH`). Le graphe **oriente**, il ne prouve pas : on ouvre le
+fichier réel avant d'affirmer qu'une ligne existe, et on cite le chemin, pas le nœud.
+
+## Documenter le code — tout code livré l'est
+
+Le code non documenté se relit mal, et il se **cherche** mal : Graphify extrait les docstrings et
+les commentaires de tête comme des nœuds rattachés au code, ce sont eux qui disent au graphe
+**pourquoi** une fonction existe. Mesure du 02/10/2026 : moteur `apps/game` 95 % des fonctions et
+classes publiques documentées, `apps/api` 38 %, `apps/web` ~7 % des exports.
+
+- **Python** : une docstring de module (ce que fait le module, et pourquoi il existe) ; une docstring
+  pour **chaque** fonction, méthode et classe publique (rôle, entrées qui comptent, ce qu'elle
+  refuse ou lève, effets de bord). Le moteur du jeu cite la règle `R-x.y` qu'il applique.
+- **TypeScript / React** : un commentaire de documentation (`/** … */`) sur chaque export — composant,
+  hook, fonction, constante de configuration : ce qu'il affiche ou calcule, d'où viennent ses
+  données, ce qu'il ne fait **pas** (l'interface ne décide de rien).
+- **En français**, comme le reste du dépôt ; on écrit le **pourquoi** et les pièges, pas la
+  paraphrase du code (`# incrémente i` n'apporte rien).
+- Une fonction **modifiée** par un lot sort documentée, même si elle ne l'était pas en entrant.
+
 ## Définition du « fini » pour un lot
 
 1. `python3 docs/roadmap/suivi.py verifier <id>` passe **avant** la première ligne de code
@@ -80,6 +117,8 @@ s'en aperçoit le reconstruit **avant** de répondre, il ne travaille pas sur de
    dans `CLAUDE.md` (voir `CLAUDE.md` § « Où écrire quoi »).
 5. **Le graphe est à jour avec `main`** : `graphify update .` après la fusion. Un lot livré qui
    laisse le graphe en arrière fait mentir toutes les sessions suivantes.
+6. **Le code livré est documenté** (§ « Documenter le code ») : aucune fonction publique, aucun
+   export ajouté ou modifié sans sa docstring ou son commentaire de documentation.
 
 ## Monorepo — structure et commandes
 
