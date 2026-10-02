@@ -218,3 +218,50 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ===================================================================================
+   Plateau de jeu (lot `j-plateau-layout`)
+   La difficulté est spatiale : neuf zones par joueur doivent tenir sur un écran de
+   téléphone en paysage, sans défilement. On met l'arène à l'échelle avec des `em` qui
+   suivent la plus petite dimension du conteneur — les cartes rétrécissent plutôt que de
+   déborder, et le zoom (`CardZoom`) rend le détail lisible.
+   =================================================================================== */
+.pbm-plateau {
+  /* Hauteur bornée à l'écran : l'arène ET la main tiennent sans défilement. 12rem couvre
+     largement l'en-tête de l'app-shell et les marges du <main> ; `dvh` suit la barre
+     d'adresse mobile. Plafonnée à 80vh pour ne pas occuper tout un grand écran. */
+  height: min(80vh, calc(100dvh - 12rem));
+}
+.pbm-arena-box {
+  /* Conteneur de requête SÉPARÉ de l'arène : un élément ne peut pas interroger sa PROPRE
+     taille — porté sur `.pbm-arena`, `cqh`/`cqw` se résolvaient sur l'ancêtre conteneur le
+     plus proche, donc sur le viewport faute d'ancêtre, et la police était calibrée pour la
+     hauteur de l'ÉCRAN (ex. 390px) alors que l'arène n'en fait qu'une fraction : le contenu
+     débordait et `overflow-hidden` écrêtait tout un camp. En posant `container-type` sur ce
+     parent (dont la hauteur est celle réellement disponible, `flex-1` borné par
+     `.pbm-plateau`), l'arène obtient un `cqh` fidèle : la police suit la hauteur de l'arène. */
+  container-type: size;
+}
+.pbm-arena {
+  /* 1em = la plus petite contrainte du conteneur `.pbm-arena-box` : largeur/120 (grille de
+     120 em héritée de la maquette du jeu) ou hauteur/64. Bornée pour rester nette sur grand
+     écran (13px) et jamais nulle sur très petit (1px). */
+  font-size: clamp(1px, min(100cqw / 120, 100cqh / 64), 13px);
+}
+.pbm-rotate-hint {
+  display: none;
+}
+@media (max-width: 640px) and (orientation: portrait) {
+  /* Le jeu reste jouable en portrait, mais le paysage est recommandé : on le suggère sans
+     masquer le plateau (il se redessine derrière). */
+  .pbm-rotate-hint {
+    display: block;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255, 215, 0, 0.5);
+    background: rgba(255, 215, 0, 0.1);
+    padding: 0.4rem 0.6rem;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--gold);
+  }
+}
