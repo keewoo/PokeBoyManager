@@ -19,11 +19,12 @@ import uuid
 
 from pbm_game.journal.serialisation import evenement_depuis_json
 from pbm_game.rng import Rng, flux_melange_deck
-from pbm_game.sortie import Jetonneur, projeter, secret_jetons
+from pbm_game.sortie import Jetonneur, enrichir_indicateurs, projeter, secret_jetons
 from pbm_game.state.modele import EtatPartie
 from pbm_game.state.serialisation import depuis_json
 
 from pbm_api.games.construction import joueur_id_de
+from pbm_api.games.indicateurs import CatalogueAffichage
 from pbm_api.games.service import ResultatAction
 
 
@@ -39,7 +40,12 @@ def _jetonneur(graine_hex: str, compteurs: dict[str, int], joueur_id: str) -> Je
 
 
 def vue_autoritaire(
-    etat: EtatPartie, rng: Rng, *, user_id: uuid.UUID, graine_hex: str
+    etat: EtatPartie,
+    rng: Rng,
+    *,
+    user_id: uuid.UUID,
+    graine_hex: str,
+    catalogue: CatalogueAffichage,
 ) -> dict:
     """La vue projetée de l'état courant pour `user_id`, sans événement (objets purs en entrée).
 
@@ -48,11 +54,26 @@ def vue_autoritaire(
     """
     joueur_id = joueur_id_de(user_id)
     jetonneur = _jetonneur(graine_hex, rng.compteurs(), joueur_id)
-    return projeter(etat, (), pour=joueur_id, jetonneur=jetonneur)
+    sortie = projeter(etat, (), pour=joueur_id, jetonneur=jetonneur)
+    # Indicateurs d'affichage (lot ``j-plateau-etat-visuel``) : PV restants, types des énergies,
+    # Outil — calculés par le moteur pur à partir des données du catalogue, pour que l'écran
+    # dessine sans recalcul.
+    enrichir_indicateurs(
+        sortie["vue"],
+        etat,
+        pv_imprimes=catalogue.pv_imprimes,
+        types=catalogue.types,
+        registre=catalogue.registre,
+    )
+    return sortie
 
 
 def projeter_resultat(
-    resultat: ResultatAction, *, user_id: uuid.UUID, graine_hex: str
+    resultat: ResultatAction,
+    *,
+    user_id: uuid.UUID,
+    graine_hex: str,
+    catalogue: CatalogueAffichage,
 ) -> dict:
     """La vue projetée **après** un coup + les événements de ce coup, pour `user_id`.
 
@@ -64,4 +85,12 @@ def projeter_resultat(
     etat = depuis_json(resultat.etat)
     evenements = tuple(evenement_depuis_json(e) for e in resultat.evenements)
     jetonneur = _jetonneur(graine_hex, resultat.rng_compteurs, joueur_id)
-    return projeter(etat, evenements, pour=joueur_id, jetonneur=jetonneur)
+    sortie = projeter(etat, evenements, pour=joueur_id, jetonneur=jetonneur)
+    enrichir_indicateurs(
+        sortie["vue"],
+        etat,
+        pv_imprimes=catalogue.pv_imprimes,
+        types=catalogue.types,
+        registre=catalogue.registre,
+    )
+    return sortie

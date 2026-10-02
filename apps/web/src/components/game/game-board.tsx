@@ -39,6 +39,11 @@ export type GameBoardProps = {
   vue: VuePartie;
   /** État de la connexion temps réel, affiché en surimpression (rien quand elle est directe). */
   etatConnexion?: EtatConnexion;
+  /**
+   * Identité (instance de la carte de base) du Pokémon qui **vient d'agir** — mis en évidence par un
+   * halo. Dérivé des événements du dernier coup ; `null`/absent quand rien n'a encore agi.
+   */
+  agisseur?: string | null;
 };
 
 /** Ouvre le zoom sur une carte (avec son Pokémon porteur s'il y en a un), ou le ferme avec `null`. */
@@ -138,6 +143,7 @@ function caseActif(
   etiquette: string,
   largeur: string,
   onZoom: ZoomFn,
+  agisseur?: string | null,
 ): React.ReactNode {
   const dessus = joueur.actif ? carteDessus(joueur.actif) : null;
   if (!joueur.actif || !dessus) {
@@ -149,10 +155,16 @@ function caseActif(
         carte={dessus}
         pokemon={joueur.actif}
         etiquette={etiquette}
+        miseEnEvidence={estAgisseur(joueur.actif, agisseur)}
         onPeek={(c) => onZoom(c, joueur.actif ?? undefined)}
       />
     </span>
   );
+}
+
+/** Vrai si ce Pokémon est celui qui vient d'agir (comparaison sur l'instance de sa carte de base). */
+function estAgisseur(pokemon: VuePokemon, agisseur?: string | null): boolean {
+  return !!agisseur && pokemon.cartes[0]?.instance_id === agisseur;
 }
 
 /** Le banc d'un joueur : cinq cases fixes, Pokémon ou vides. */
@@ -161,6 +173,7 @@ function banc(
   etiquette: string,
   largeur: string,
   onZoom: ZoomFn,
+  agisseur?: string | null,
 ): React.ReactNode {
   return (
     <div className="flex justify-center gap-[0.5em]">
@@ -172,6 +185,7 @@ function banc(
               carte={dessus}
               pokemon={p}
               etiquette={`${etiquette} ${i + 1}`}
+              miseEnEvidence={estAgisseur(p, agisseur)}
               onPeek={(c) => onZoom(c, p)}
             />
           </span>
@@ -183,7 +197,7 @@ function banc(
   );
 }
 
-export function GameBoard({ vue, etatConnexion }: GameBoardProps) {
+export function GameBoard({ vue, etatConnexion, agisseur }: GameBoardProps) {
   const { moi, adversaire } = separerCamps(vue);
   const monTour = estMonTour(vue);
   const [zoom, setZoom] = useState<Agrandie | null>(null);
@@ -215,9 +229,9 @@ export function GameBoard({ vue, etatConnexion }: GameBoardProps) {
           {/* Rang adverse */}
           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-[1em]">
             <span className="justify-self-start">
-              <Holder lab="banc adverse">{banc(adversaire, "banc adverse", "w-[4.6875em]", onZoom)}</Holder>
+              <Holder lab="banc adverse">{banc(adversaire, "banc adverse", "w-[4.6875em]", onZoom, agisseur)}</Holder>
             </span>
-            {caseActif(adversaire, "Actif adverse", "w-[6.875em]", onZoom)}
+            {caseActif(adversaire, "Actif adverse", "w-[6.875em]", onZoom, agisseur)}
             <span className="flex justify-self-end gap-[0.6em]">
               <Holder lab="pioche">
                 <ZoneCachee titre="pioche" nombre={adversaire.pioche_nombre} />
@@ -248,7 +262,7 @@ export function GameBoard({ vue, etatConnexion }: GameBoardProps) {
                 <Recompenses restantes={moi.recompenses_nombre} pour="Toi" />
               </Holder>
             </span>
-            {caseActif(moi, "Mon actif", "w-[9.0625em]", onZoom)}
+            {caseActif(moi, "Mon actif", "w-[9.0625em]", onZoom, agisseur)}
             <span className="flex justify-self-end gap-[0.6em]">
               <Holder lab="pioche">
                 <ZoneCachee titre="pioche" nombre={moi.pioche_nombre} />
@@ -260,7 +274,7 @@ export function GameBoard({ vue, etatConnexion }: GameBoardProps) {
           </div>
 
           {/* Mon banc */}
-          {banc(moi, "Mon banc", "w-[6.5625em]", onZoom)}
+          {banc(moi, "Mon banc", "w-[6.5625em]", onZoom, agisseur)}
           </div>
         </div>
       </div>

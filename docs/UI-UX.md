@@ -436,3 +436,31 @@ Tests : `plateau.test.ts` (aides pures), `board-card.test.tsx` + `zone-consultat
 nombre seulement), `partie-view.test.tsx` (gating). Le critère « sans défilement sur 390 px en paysage »
 et le redessin après rotation sont vérifiés en navigateur réel par `e2e/plateau-responsive.spec.ts` (la
 CI fait foi — e2e navigateur impossible en local sur chimera).
+
+## Indicateurs d'état du plateau (lot `j-plateau-etat-visuel`)
+
+Chaque Pokémon en jeu se lit **d'un coup d'œil**, sans clic : `components/game/board-card.tsx`
+(`BoardCard`) pose sur la carte, comme les jetons d'une vraie table, les indicateurs portés par la
+vue projetée (`lib/game/indicateurs.ts`, pur) :
+
+- **PV restants et maximum** (`pv_restants`/`pv_max`), en plus des **compteurs de dégâts**
+  (1 compteur = 10 dégâts, R-10.4) : l'enfant n'a pas à soustraire. Les PV viennent du serveur
+  (seuil de K.O. − dégâts), donc restent exacts même avec un Outil qui **ajoute** des PV — jamais
+  « imprimés − dégâts » déguisé (le risque nommé par le lot).
+- **Énergies typées** empilées : une pastille par énergie, colorée par son type **et** marquée d'une
+  abréviation (`Ea`, `Fe`…). **Outil** visible par une puce dédiée.
+- **États spéciaux** : une **icône** nommée (💤 endormi, 🔥 brûlé, 💫 confus, ⚡ paralysé, ☠️
+  empoisonné) **et** l'**orientation** physique de la carte (couchée/tournée/pivotée, via
+  `data-orientation` + `.pbm-board-card` dans `globals.css` — un `transform` purement visuel, qui ne
+  provoque aucun défilement).
+- **Mise en évidence** (halo) du Pokémon qui **vient d'agir** : `partie-view.tsx` dérive l'agisseur
+  des événements du dernier coup (`agisseurDepuisEvenements`, `donnees.pokemon`/`base`) et le passe à
+  `GameBoard`.
+
+**Accessibilité — jamais la couleur seule** (critère du lot) : chaque type porte une abréviation,
+chaque état une icône, chaque indicateur une étiquette ARIA. Un type inconnu du catalogue retombe sur
+un repère **neutre** nommé, jamais une couleur inventée (D9).
+
+Tests : `lib/game/indicateurs.test.ts` (données pures), `components/game/board-indicators.test.tsx`
+(rendu, daltonisme, halo, absence d'invention). Le calcul des PV (Outil, plancher à 0) est prouvé
+côté moteur et API — voir `docs/ARCHITECTURE.md` § « Indicateurs d'affichage de la vue ».

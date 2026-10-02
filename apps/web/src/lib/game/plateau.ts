@@ -11,8 +11,13 @@
  * Tout est pur (aucune E/S, aucun React) : testable sans navigateur.
  */
 
-/** Une carte, telle que le serveur la laisse voir : son identité d'instance et sa référence. */
-export type VueCarte = { instance_id: string; ref: string };
+/**
+ * Une carte, telle que le serveur la laisse voir : identité d'instance et référence. Les cartes
+ * **en jeu** (énergies attachées, Outil) portent en plus leur `type` (code d'élément), enrichi par
+ * le serveur pour une pastille typée (lot `j-plateau-etat-visuel`) — `null`/absent quand le type
+ * est inconnu du catalogue (repère neutre côté écran, jamais une couleur inventée).
+ */
+export type VueCarte = { instance_id: string; ref: string; type?: string | null };
 
 /**
  * Un Pokémon en jeu (actif ou banc), entièrement public (R-3.6).
@@ -29,6 +34,15 @@ export type VuePokemon = {
   compteurs_degats: number;
   etats_speciaux: string[];
   orientation: string;
+  /**
+   * Indicateurs d'affichage enrichis par le serveur (lot `j-plateau-etat-visuel`), à dessiner
+   * **sans recalcul** : `pv_max` est le seuil de K.O. (PV imprimés + PV d'un Outil, R-13.1),
+   * `pv_restants` = `pv_max − compteurs_degats` (jamais « imprimés − dégâts » côté écran) ; `type`
+   * est le code d'élément du Pokémon. Absents quand les PV sont inconnus du catalogue (D9).
+   */
+  pv_max?: number;
+  pv_restants?: number;
+  type?: string | null;
 };
 
 /**

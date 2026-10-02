@@ -8,6 +8,7 @@ import { GameBoard } from "@/components/game/game-board";
 import { ApiError } from "@/lib/api/client";
 import { getGameState } from "@/lib/api/games";
 import { CanalPartie, type EtatConnexion } from "@/lib/game/realtime";
+import { agisseurDepuisEvenements } from "@/lib/game/indicateurs";
 import type { VuePartie } from "@/lib/game/plateau";
 import { getProfile } from "@/lib/api/profile";
 
@@ -31,6 +32,8 @@ export function PartieView({ gameId }: { gameId: string }) {
   const [accessReady, setAccessReady] = useState(false);
   const [vue, setVue] = useState<VuePartie | null>(null);
   const [etatConnexion, setEtatConnexion] = useState<EtatConnexion>("connexion");
+  // Le Pokémon qui vient d'agir, mis en évidence par un halo (lot `j-plateau-etat-visuel`).
+  const [agisseur, setAgisseur] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const canal = useRef<CanalPartie | null>(null);
 
@@ -77,9 +80,11 @@ export function PartieView({ gameId }: { gameId: string }) {
       onVue: (v) => {
         if (active) setVue(v as VuePartie);
       },
-      onCoup: () => {
-        // Les coups animés (dégâts, déplacements) sont le lot aval `j-plateau-etat-visuel` : ici, la
-        // resynchronisation portée par la vue suffit à garder le plateau à jour.
+      onCoup: (coup) => {
+        // La vue (resync) garde le plateau à jour ; on relève en plus QUI vient d'agir pour le
+        // mettre en évidence. Les animations fines des coups sont le lot aval `j-anim-socle`.
+        const acteur = agisseurDepuisEvenements(coup.evenements);
+        if (active && acteur) setAgisseur(acteur);
       },
       onEtat: (e) => {
         if (active) setEtatConnexion(e);
@@ -107,7 +112,7 @@ export function PartieView({ gameId }: { gameId: string }) {
   return (
     <div className="space-y-3">
       {error && <FormNotice variant="error">{error}</FormNotice>}
-      {vue && <GameBoard vue={vue} etatConnexion={etatConnexion} />}
+      {vue && <GameBoard vue={vue} etatConnexion={etatConnexion} agisseur={agisseur} />}
     </div>
   );
 }

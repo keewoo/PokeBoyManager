@@ -24,6 +24,7 @@ from pbm_api.games.errors import (
     PartieIntrouvable,
     PartieNonActive,
 )
+from pbm_api.games.indicateurs import catalogue_pour_etat, catalogue_pour_resultat
 from pbm_api.games.projection import projeter_resultat, vue_autoritaire
 from pbm_api.games.schemas import ActionIn, GameDetailOut, GamePlayerOut, GameSummaryOut
 from pbm_api.games.service import (
@@ -103,7 +104,10 @@ async def get_game_state(
     except PartieIntrouvable as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, GAME_NOT_FOUND_MESSAGE) from exc
     etat, rng = await reprendre_partie(db, game)
-    vue = vue_autoritaire(etat, rng, user_id=current_user.id, graine_hex=game.graine)
+    catalogue = await catalogue_pour_etat(db, etat)
+    vue = vue_autoritaire(
+        etat, rng, user_id=current_user.id, graine_hex=game.graine, catalogue=catalogue
+    )
     vue["horloges"] = _adapt_horloges.restant_json(game.horloges, datetime.now(UTC).timestamp())
     return vue
 
@@ -149,8 +153,11 @@ async def play_action(
     # `appliquer_action` a commité ; on relit la partie pour sa graine (secret serveur, jamais
     # renvoyé — seuls les jetons opaques en dérivent) et pour re-vérifier la participation.
     game = await _game_pour_participant(db, game_id, current_user.id)
-    HUB.publier(game_id, resultat, graine_hex=game.graine)
-    return projeter_resultat(resultat, user_id=current_user.id, graine_hex=game.graine)
+    catalogue = await catalogue_pour_resultat(db, resultat)
+    HUB.publier(game_id, resultat, graine_hex=game.graine, catalogue=catalogue)
+    return projeter_resultat(
+        resultat, user_id=current_user.id, graine_hex=game.graine, catalogue=catalogue
+    )
 
 
 @router.post("/{game_id}/abandon")
@@ -176,5 +183,8 @@ async def abandon_game(
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
 
     game = await _game_pour_participant(db, game_id, current_user.id)
-    HUB.publier(game_id, resultat, graine_hex=game.graine)
-    return projeter_resultat(resultat, user_id=current_user.id, graine_hex=game.graine)
+    catalogue = await catalogue_pour_resultat(db, resultat)
+    HUB.publier(game_id, resultat, graine_hex=game.graine, catalogue=catalogue)
+    return projeter_resultat(
+        resultat, user_id=current_user.id, graine_hex=game.graine, catalogue=catalogue
+    )

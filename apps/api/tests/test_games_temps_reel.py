@@ -23,6 +23,7 @@ import uuid
 from contextlib import asynccontextmanager
 from datetime import date, datetime
 
+from pbm_api.games.indicateurs import catalogue_pour_resultat
 from pbm_api.games.service import ResultatAction, appliquer_action, creer_partie
 from pbm_api.games.temps_reel import Hub, piloter_canal, resynchroniser
 from pbm_api.models import Card, Deck, DeckCard, Set, User
@@ -190,7 +191,12 @@ async def test_hub_publier_projette_pour_chaque_destinataire(db_session):
     hub = Hub()
     ab_a = hub.souscrire(game.id, user_a.id)
     ab_b = hub.souscrire(game.id, user_b.id)
-    hub.publier(game.id, resultat, graine_hex=game.graine)
+    hub.publier(
+        game.id,
+        resultat,
+        graine_hex=game.graine,
+        catalogue=await catalogue_pour_resultat(db_session, resultat),
+    )
 
     msg_a = ab_a.file.get_nowait()
     msg_b = ab_b.file.get_nowait()
@@ -218,7 +224,12 @@ async def test_hub_rejeu_idempotent_non_diffuse(db_session):
 
     hub = Hub()
     abonne = hub.souscrire(game.id, user_a.id)
-    hub.publier(game.id, rejeu, graine_hex=game.graine)
+    hub.publier(
+        game.id,
+        rejeu,
+        graine_hex=game.graine,
+        catalogue=await catalogue_pour_resultat(db_session, rejeu),
+    )
 
     assert abonne.file.empty()  # un rejeu n'apporte aucun coup nouveau : rien à diffuser
 
@@ -231,7 +242,12 @@ async def test_hub_saturation_marque_sans_perte(db_session):
     abonne = hub.souscrire(game.id, user_a.id)
     abonne.file = asyncio.Queue(1)
     abonne.file.put_nowait({"type": "evenement", "numero": 0})  # file pleine
-    hub.publier(game.id, resultat, graine_hex=game.graine)
+    hub.publier(
+        game.id,
+        resultat,
+        graine_hex=game.graine,
+        catalogue=await catalogue_pour_resultat(db_session, resultat),
+    )
 
     # Jamais de perte muette : l'abonné est marqué, le pilote lui renverra une resync.
     assert abonne.sature is True
@@ -319,7 +335,12 @@ async def test_canal_diffuse_un_coup_publie(db_session):
     tache = await _piloter(canal, abonne, db_session, game)
     try:
         await canal.attendre("resync")
-        hub.publier(game.id, resultat, graine_hex=game.graine)  # diffusion en mémoire, sans base
+        hub.publier(
+            game.id,
+            resultat,
+            graine_hex=game.graine,
+            catalogue=await catalogue_pour_resultat(db_session, resultat),
+        )  # diffusion en mémoire
         evenement = await canal.attendre("evenement")
         assert evenement["numero"] == 0
     finally:

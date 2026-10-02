@@ -36,12 +36,23 @@ from typing import Protocol
 
 from pbm_game.journal import appliquer, empreinte, reprendre
 from pbm_game.rng import Rng, flux_melange_deck
-from pbm_game.sortie import Jetonneur, projeter, secret_jetons
+from pbm_game.sortie import (
+    Jetonneur,
+    enrichir_indicateurs,
+    projeter,
+    refs_en_jeu,
+    secret_jetons,
+)
 from pbm_game.state.modele import EtatPartie
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.games import horloges as _adapt_horloges
 from pbm_api.games.construction import joueur_id_de
+from pbm_api.games.indicateurs import (
+    CatalogueAffichage,
+    catalogue_affichage,
+    catalogue_pour_resultat,
+)
 from pbm_api.games.projection import projeter_resultat
 from pbm_api.games.service import (
     GAME_STATUS_EN_COURS,
@@ -74,7 +85,7 @@ def _vue_et_file(
     *,
     joueur_id: str,
     secret: bytes,
-) -> tuple[dict, list[dict]]:
+) -> tuple[dict, list[dict], EtatPartie]:
     """Rejoue ``entrees`` depuis ``(etat_depart, rng)`` et projette chaque coup pour ``joueur_id``.
 
     Renvoie ``(vue_finale, file)`` où ``file`` est la liste ``[{numero, evenements}]`` des coups
@@ -100,7 +111,7 @@ def _vue_et_file(
     epoque_finale = rng.compteurs().get(flux_melange_deck(joueur_id), 0)
     jetonneur_final = Jetonneur(secret=secret, epoque=epoque_finale)
     vue = projeter(etat, (), pour=joueur_id, jetonneur=jetonneur_final)["vue"]
-    return vue, file
+    return vue, file, etat
 
 
 async def resynchroniser(
@@ -127,7 +138,19 @@ async def resynchroniser(
 
     entrees = await _entrees_queue(db, game.id, depuis, courant)
     secret = secret_jetons(bytes.fromhex(game.graine))
-    vue, file = _vue_et_file(etat, rng, entrees, joueur_id=joueur_id, secret=secret)
+    vue, file, etat_final = _vue_et_file(
+        etat, rng, entrees, joueur_id=joueur_id, secret=secret
+    )
+    # Indicateurs d'affichage sur la vue de resynchronisation (lot ``j-plateau-etat-visuel``) :
+    # la reprise après F5 doit montrer PV restants, énergies typées et Outil comme le temps réel.
+    catalogue = await catalogue_affichage(db, refs_en_jeu(etat_final))
+    enrichir_indicateurs(
+        vue,
+        etat_final,
+        pv_imprimes=catalogue.pv_imprimes,
+        types=catalogue.types,
+        registre=catalogue.registre,
+    )
 
     return {
         "type": "resync",
@@ -198,7 +221,12 @@ class Hub:
         return len(self._abonnes.get(game_id, ()))
 
     def publier(
-        self, game_id: uuid.UUID, resultat: ResultatAction, *, graine_hex: str
+        self,
+        game_id: uuid.UUID,
+        resultat: ResultatAction,
+        *,
+        graine_hex: str,
+        catalogue: CatalogueAffichage,
     ) -> None:
         """Diffuse un coup appliqué à tous les abonnés d'une partie, projeté pour chacun.
 
@@ -210,7 +238,10 @@ class Hub:
             return
         for abonne in list(self._abonnes.get(game_id, ())):
             projete = projeter_resultat(
-                resultat, user_id=abonne.user_id, graine_hex=graine_hex
+                resultat,
+                user_id=abonne.user_id,
+                graine_hex=graine_hex,
+                catalogue=catalogue,
             )
             message = {
                 "type": "evenement",
@@ -340,8 +371,18 @@ async def piloter_canal(
                 # **désertion** si un joueur déconnecté a dépassé sa grâce (forfait).
                 async with fabrique_session() as db_exp:
                     resultat_exp = await expirer_horloge(db_exp, game_id)
+                    catalogue_exp = (
+                        await catalogue_pour_resultat(db_exp, resultat_exp)
+                        if resultat_exp is not None
+                        else None
+                    )
                 if resultat_exp is not None:
-                    HUB.publier(game_id, resultat_exp, graine_hex=graine_hex)
+                    HUB.publier(
+                        game_id,
+                        resultat_exp,
+                        graine_hex=graine_hex,
+                        catalogue=catalogue_exp,
+                    )
                 # Silence : battement de cœur, porteur du numéro courant (détection de coupure +
                 # rattrapage d'une dernière diffusion manquée côté client).
                 numero = await _numero_courant(fabrique_session, game_id)
