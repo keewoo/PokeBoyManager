@@ -28,20 +28,29 @@ WHERE NOT EXISTS (SELECT 1 FROM sets ps WHERE ps.tcgdex_id = s.tcgdex_id)
   AND NOT EXISTS (SELECT 1 FROM sets ps WHERE ps.code = s.code);
 
 -- ---- Cartes (insert-only, set résolu par tcgdex_id) ----------------------------------------
+-- L'ORDRE des colonnes suit EXACTEMENT celui de `export_cards.sql` (c'est le contrat du TSV) : les
+-- six dernières (energy_type, element_type, stage, prize_marker, trainer_type, effect) ajoutées le
+-- 02/10/2026 (lot `cat-textes-effets`). ⚠️ Toujours INSERT-ONLY : les cartes DÉJÀ en PROD ne sont
+-- pas rétro-remplies par cette chaîne — seules les cartes NOUVELLES portent ces colonnes. Un
+-- rétro-remplissage des cartes existantes relève d'un geste PROD distinct (hors de cette chaîne).
 CREATE TEMP TABLE _cards_in (
     tcgdex_id text, set_tcgdex_id text, number text, name text, rarity text, supertype text,
     hp int, image_url text, illustrator text, attacks jsonb, abilities jsonb,
     legal_standard boolean, legal_expanded boolean, ptcg_id text, weaknesses jsonb,
-    resistances jsonb, retreat_cost int, rule_marker text, variants jsonb
+    resistances jsonb, retreat_cost int, rule_marker text, variants jsonb,
+    energy_type text, element_type text, stage text, prize_marker text, trainer_type text,
+    effect text
 ) ON COMMIT DROP;
 \copy _cards_in FROM '/tmp/pbm-import/cards.tsv' WITH (FORMAT csv, DELIMITER E'\t', NULL '')
 
 INSERT INTO cards (id, set_id, number, name, rarity, supertype, hp, image_url, created_at,
                    updated_at, illustrator, attacks, abilities, legal_standard, legal_expanded,
-                   tcgdex_id, ptcg_id, weaknesses, resistances, retreat_cost, rule_marker, variants)
+                   tcgdex_id, ptcg_id, weaknesses, resistances, retreat_cost, rule_marker, variants,
+                   energy_type, element_type, stage, prize_marker, trainer_type, effect)
 SELECT gen_random_uuid(), ps.id, i.number, i.name, i.rarity, i.supertype, i.hp, i.image_url,
        now(), now(), i.illustrator, i.attacks, i.abilities, i.legal_standard, i.legal_expanded,
-       i.tcgdex_id, i.ptcg_id, i.weaknesses, i.resistances, i.retreat_cost, i.rule_marker, i.variants
+       i.tcgdex_id, i.ptcg_id, i.weaknesses, i.resistances, i.retreat_cost, i.rule_marker, i.variants,
+       i.energy_type, i.element_type, i.stage, i.prize_marker, i.trainer_type, i.effect
 FROM _cards_in i
 JOIN sets ps ON ps.tcgdex_id = i.set_tcgdex_id
 WHERE NOT EXISTS (SELECT 1 FROM cards pc WHERE pc.tcgdex_id = i.tcgdex_id)

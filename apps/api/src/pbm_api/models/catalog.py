@@ -68,6 +68,14 @@ class Card(Base, TimestampMixin):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     rarity: Mapped[str | None] = mapped_column(String(64), nullable=True)
     supertype: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # Sous-type d'une carte Dresseur tel qu'exposé par TCGdex (`trainerType`), dans la langue
+    # d'import : FR "Objet"/"Supporter"/"Stade"/"Outil"/"Machine Technique", EN "Item"/
+    # "Supporter"/"Stadium"/"Tool"/"Technical Machine". `None` hors Dresseur. Comme `supertype`
+    # et `stage`, la valeur reste BRUTE (deux langues possibles via le repli fr→en de l'import) :
+    # c'est au lecteur de normaliser, s'il en a besoin. Source du chantier des effets du jeu
+    # (lots `j-cartes-objets`/`-supporters`/`-stades`/`-outils`) : sans ce sous-type la carte ne
+    # peut pas être rangée dans la bonne règle de jeu (décision D9).
+    trainer_type: Mapped[str | None] = mapped_column(String(32), nullable=True)
     # Type d'énergie tel qu'exposé par TCGdex (`energyType`) : "Normal" pour une Énergie de base,
     # "Special" pour une Énergie spéciale — `None` pour toute carte non-Énergie, et pour les
     # Énergies importées avant l'ajout de cette colonne (le rapprochement retombe alors sur le
@@ -97,6 +105,13 @@ class Card(Base, TimestampMixin):
     # compterait alors à tort comme renseigné (constaté en écrivant le rapport de complétude).
     attacks: Mapped[list | None] = mapped_column(JSONB(none_as_null=True), nullable=True)
     abilities: Mapped[list | None] = mapped_column(JSONB(none_as_null=True), nullable=True)
+    # Texte d'effet / de règle de la carte (TCGdex `effect`), dans la langue d'import. Porté par
+    # les Dresseurs (Objet, Supporter, Stade, Outil, Machine Technique) et par les Énergies
+    # spéciales ; `None` pour les Pokémon (leur jeu vit dans `attacks`/`abilities`) et pour les
+    # Énergies de base (qui n'ont pas d'effet). C'est le texte dont part TOUT le chantier des
+    # effets du jeu (`j-effets-dsl`, `j-effets-catalogue-compilation`, `j-cartes-*`) : sans lui
+    # aucune carte Dresseur ne peut être scriptée et la règle D9 les refuserait toutes.
+    effect: Mapped[str | None] = mapped_column(Text, nullable=True)
     legal_standard: Mapped[bool | None] = mapped_column(nullable=True)
     legal_expanded: Mapped[bool | None] = mapped_column(nullable=True)
     weaknesses: Mapped[list | None] = mapped_column(JSONB(none_as_null=True), nullable=True)

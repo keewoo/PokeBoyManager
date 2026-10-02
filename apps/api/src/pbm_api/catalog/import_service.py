@@ -191,6 +191,10 @@ async def _upsert_card(
     card.name = detail["name"]
     card.rarity = detail.get("rarity")
     card.supertype = detail.get("category")
+    # Sous-type de Dresseur ("Objet"/"Supporter"/"Stade"/"Outil"/"Machine Technique" en français,
+    # équivalents anglais via le repli) — `None` hors Dresseur. Rangé BRUT comme `supertype`, le
+    # lecteur du jeu normalise (lots `j-cartes-*`, règle D9).
+    card.trainer_type = detail.get("trainerType")
     # "Normal" (Énergie de base) / "Special" (Énergie spéciale) chez TCGdex, `None` hors Énergie
     # — distingue les deux régimes de légalité des decks (lot `v7-decks-api`, D10).
     card.energy_type = detail.get("energyType")
@@ -206,6 +210,10 @@ async def _upsert_card(
     card.illustrator = detail.get("illustrator")
     card.attacks = detail.get("attacks")
     card.abilities = detail.get("abilities")
+    # Texte d'effet/règle (TCGdex `effect`) : présent sur les Dresseurs et les Énergies spéciales,
+    # `None` pour les Pokémon et les Énergies de base. Stocké tel quel ; une carte sans `effect`
+    # chez TCGdex reste `None` (jamais un texte inventé, voir rapport de complétude).
+    card.effect = detail.get("effect")
     card.legal_standard = legal.get("standard")
     card.legal_expanded = legal.get("expanded")
     card.weaknesses = detail.get("weaknesses")
