@@ -106,6 +106,14 @@ ACTION_REPONDRE_DEMANDE = "repondre_demande"
 #: (lot ``j-timer``) quand l'horloge d'une demande tombe à zéro. Applique la **réponse par défaut**
 #: (premier choix valide, ou abandon de l'effet facultatif) et la journalise. Aucun ``params``.
 ACTION_EXPIRER_DEMANDE = "expirer_demande"
+#: **Fin de tour forcée** — action **système** déclenchée à l'expiration de l'horloge par
+#: tour (lot ``j-timer``, DJ4). Termine le tour du joueur actif (entrée en Checkup), sans
+#: déclarer d'attaque. Aucun ``params``. Peut aussi être un passage volontaire du joueur actif.
+ACTION_FIN_TOUR = "fin_tour"
+#: **Défaite au temps** — action **système** déclenchée quand le budget total d'un joueur est
+#: épuisé (lot ``j-timer``, DJ4 « sinon défaite au temps »). ``params["joueur"]`` nomme le
+#: perdant ; l'adversaire gagne, raison :data:`RAISON_TEMPS_ECOULE`.
+ACTION_DEFAITE_TEMPS = "defaite_temps"
 
 # --- Types d'événement (ce que PRODUIT le moteur) ----------------------------
 EVT_PIOCHE_MELANGEE = "pioche_melangee"
@@ -164,6 +172,9 @@ EVT_POKEMON_POSE = "pokemon_pose"
 #: ``j-cartes-pokemon``) : porte le joueur, l'identité (base) du Pokémon, la ref de la carte
 #: d'évolution, son nom et les états spéciaux retirés par l'évolution (R-7.2).
 EVT_EVOLUTION = "evolution"
+#: Un tour se **termine** (R-5.8) sur expiration de l'horloge par tour ou passage volontaire.
+#: Produit par la transition ``fin_tour`` (lot ``j-timer``) : porte le joueur et la phase quittée.
+EVT_FIN_TOUR = "fin_tour"
 
 #: Raison de fin pour un abandon (R-14.3), portée par ``EtatPartie.raison_fin`` et par
 #: l'événement :data:`EVT_PARTIE_TERMINEE`.
@@ -181,6 +192,9 @@ RAISON_PLUS_DE_POKEMON = "plus_de_pokemon"
 #: ``j-ko-recompenses``. Ce n'est pas un K.O. de l'adversaire : c'est la victoire par les
 #: récompenses, distincte de :data:`RAISON_PLUS_DE_POKEMON`.
 RAISON_DERNIERE_RECOMPENSE = "derniere_recompense"
+#: Raison de fin pour une **défaite au temps** (R-14.6) : le budget total d'un joueur est
+#: épuisé (DJ4). Posée par ``j-timer`` via la transition système ``defaite_temps``.
+RAISON_TEMPS_ECOULE = "temps_ecoule"
 
 
 @dataclass(frozen=True)

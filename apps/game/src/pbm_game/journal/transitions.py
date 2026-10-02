@@ -54,6 +54,7 @@ from .modele import (
     ACTION_AVANCER_PHASE,
     ACTION_DEBUT_TOUR,
     ACTION_DECLARER_ATTAQUE,
+    ACTION_DEFAITE_TEMPS,
     ACTION_EXPIRER_DEMANDE,
     ACTION_MELANGER_PIOCHE,
     ACTION_PIOCHER,
@@ -84,7 +85,7 @@ _ORDRE_PHASES: tuple[str, ...] = (PHASE_PIOCHE, PHASE_PRINCIPALE, PHASE_ATTAQUE,
 # Les seules actions permises quand une demande de décision est en cours (lot ``j-effets-choix``) :
 # répondre, laisser expirer le délai, ou abandonner la partie (R-14.3, toujours permis).
 _ACTIONS_PENDANT_DEMANDE: frozenset[str] = frozenset(
-    {ACTION_REPONDRE_DEMANDE, ACTION_EXPIRER_DEMANDE, ACTION_ABANDONNER}
+    {ACTION_REPONDRE_DEMANDE, ACTION_EXPIRER_DEMANDE, ACTION_ABANDONNER, ACTION_DEFAITE_TEMPS}
 )
 
 
