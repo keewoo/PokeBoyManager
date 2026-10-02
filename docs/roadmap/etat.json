@@ -8345,7 +8345,7 @@
       }
     },
     "j-timer": {
-      "statut": "a_faire",
+      "statut": "integre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
@@ -8397,8 +8397,21 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-10-02T19:20+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": "branche roadmap/j-timer fusionnee dans main (verifie par git merge-base)"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": {
+        "quand": "2026-10-02T19:20+0200",
+        "raisons": [
+          "branche roadmap/j-timer fusionnee dans main (verifie par git merge-base)"
+        ]
+      }
     },
     "j-file-attente": {
       "statut": "integre",
