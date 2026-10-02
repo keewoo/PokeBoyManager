@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "@/components/app-shell";
 import * as decksApi from "@/lib/api/decks";
+import * as profileApi from "@/lib/api/profile";
 import { ThemeProvider } from "@/lib/theme-provider";
 
 vi.mock("next/navigation", () => ({
@@ -11,11 +12,16 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/lib/api/decks", () => ({ fetchDeckAlerts: vi.fn() }));
+vi.mock("@/lib/api/profile", () => ({ getProfile: vi.fn() }));
 const api = vi.mocked(decksApi);
+const profile = vi.mocked(profileApi);
 
 beforeEach(() => {
   api.fetchDeckAlerts.mockReset();
   api.fetchDeckAlerts.mockResolvedValue({ alerts: [], unread_count: 0 });
+  profile.getProfile.mockReset();
+  // Par défaut, pas d'accès au jeu : les tests de cette suite portent sur l'onglet « Decks ».
+  profile.getProfile.mockRejectedValue(new Error("non pertinent ici"));
 });
 
 function renderShell(hasSession: boolean) {

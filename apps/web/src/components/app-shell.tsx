@@ -6,9 +6,11 @@ import { useEffect, useState } from "react";
 
 import { logout } from "@/lib/api/auth";
 import { fetchDeckAlerts } from "@/lib/api/decks";
+import { getProfile } from "@/lib/api/profile";
 import { cn } from "@/lib/utils";
 
 const DECKS_HREF = "/jeu/decks";
+const JEU_HREF = "/jeu/salon";
 
 type NavLink = { href: string; label: string };
 
@@ -25,6 +27,16 @@ const SESSION_LINKS: NavLink[] = [
   { href: "/jeu/decks", label: "Decks" },
   { href: "/profil", label: "Profil" },
 ];
+
+// L'entrée « Jouer » (lot `j-salon-partie`, critère 5) n'est montrée QU'aux comptes qui ont le
+// droit d'accès au jeu (D11) : pour les autres, le jeu n'existe pas à l'écran — l'API leur répond
+// déjà 404 partout, la nav ne doit pas promettre une porte qui mène à un 404. On l'insère juste
+// après le tableau de bord, avant « Decks », pour que l'action de jeu la plus directe soit en tête.
+function withJeu(links: NavLink[]): NavLink[] {
+  const jeu: NavLink = { href: JEU_HREF, label: "Jouer" };
+  const [premier, ...reste] = links;
+  return premier ? [premier, jeu, ...reste] : [jeu];
+}
 
 function MenuIcon() {
   return (
@@ -53,7 +65,31 @@ export function AppShell({
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const navLinks = hasSession ? SESSION_LINKS : VISITOR_LINKS;
+
+  // Droit d'accès au jeu (D11), lu côté serveur via `GET /me` (`game_access`). Décide si l'entrée
+  // « Jouer » apparaît. Best-effort, comme le badge d'alertes : un échec de lecture laisse l'entrée
+  // masquée plutôt que de promettre un accès incertain — jamais une porte vers un 404.
+  const [gameAccess, setGameAccess] = useState(false);
+  useEffect(() => {
+    if (!hasSession) {
+      setGameAccess(false);
+      return;
+    }
+    let active = true;
+    getProfile()
+      .then((profile) => {
+        if (active) setGameAccess(profile.game_access);
+      })
+      .catch(() => {
+        if (active) setGameAccess(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [hasSession]);
+
+  const baseLinks = hasSession ? SESSION_LINKS : VISITOR_LINKS;
+  const navLinks = hasSession && gameAccess ? withJeu(baseLinks) : baseLinks;
 
   // Badge d'alertes « à compléter » sur l'onglet Decks (mission `v7-decks-collection-sync` :
   // « notification au joueur, en-tête »). Best-effort : si l'appel échoue, on n'affiche pas de

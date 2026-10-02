@@ -30,6 +30,12 @@ class ProfileResponse(BaseModel):
     first_name: str | None
     last_name: str
     birth_date: date
+    # Droit d'accès au jeu (D11, lot `j-file-attente`) : posé hors ligne par l'administration.
+    # Exposé ici — et nulle part ailleurs — pour que le front décide s'il montre l'entrée « Jouer »
+    # (navigation, salon). Le serveur reste l'autorité : chaque route du jeu répond déjà 404 à un
+    # compte sans ce droit (`require_game_access`). Ce booléen n'ouvre aucun accès, il évite
+    # seulement d'afficher une porte qui mène à un 404 (lot `j-salon-partie`, critère 5).
+    game_access: bool
 
 
 class ChangeEmailRequest(BaseModel):

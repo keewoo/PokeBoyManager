@@ -18,6 +18,7 @@ const PROFILE: ProfileResponse = {
   first_name: null,
   last_name: "Fontaine",
   birth_date: "2000-01-01",
+  game_access: false,
 };
 
 function dashboard(overrides: Partial<DashboardResponse> = {}): DashboardResponse {

@@ -57,6 +57,7 @@ const PROFILE = {
   first_name: null,
   last_name: "Dresseur",
   birth_date: "2000-01-01",
+  game_access: false,
 };
 
 const SESSION = {

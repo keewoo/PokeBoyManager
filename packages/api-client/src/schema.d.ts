@@ -2602,6 +2602,8 @@ export interface components {
              * Format: date
              */
             birth_date: string;
+        /** Game Access */
+            game_access: boolean;
         };
         /** RegisterRequest */
         RegisterRequest: {

@@ -1021,3 +1021,15 @@ des lots aval `j-lancement-partie` et `j-salon-partie`. Un tiers étranger à l'
 invitation par pseudo envoie en plus un **rappel e-mail** via l'`EmailSender` injecté (proprement
 désactivé si `SMTP_HOST` est vide). La notification **PWA** est prévue pour le lot
 `j-notifications-jeu` — relais nommé, pas approximé.
+
+### Salon de jeu — accès au jeu et jouabilité d'un deck (lot `j-salon-partie`)
+
+- `GET /me` (`ProfileResponse`) expose désormais `game_access` (bool) — **seul endroit** où ce droit
+  sort du serveur, pour que le front décide d'afficher l'entrée « Jouer » (navigation, salon).
+  N'ouvre aucun accès : toutes les routes du jeu restent gardées par `require_game_access` (404 sans
+  le droit, D11).
+- `GET /matchmaking/decks/{deck_id}/jouabilite` → `{deck_id, jouable, refus[]}` : dit si un deck est
+  jouable **avant** l'entrée en file, avec le contrôle exact de l'entrée
+  (`pbm_api.games.entry.verifier_deck`). 404 si le deck n'est pas celui du joueur (pas de fuite
+  d'existence) ; en cas de refus, chaque carte en cause est nommée avec sa raison (D9). Lecture seule,
+  pas de CSRF.
