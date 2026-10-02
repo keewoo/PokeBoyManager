@@ -333,3 +333,20 @@ laissé en l'état et pourquoi). Ce que ça change dans le code, pour les lots s
   contrôle amont (voir `uploads/service.py::complete_upload` pour l'usage de référence).
 - `/auth/register` est désormais limité en débit par IP (même `RateLimiter` que `/auth/login`/
   `/auth/forgot`, scope `register:ip`).
+
+## Canal WebSocket temps réel — authentification et anti-CSWSH (lot `j-temps-reel`)
+
+Le WebSocket `WS /games/{id}/ws` porte **le cookie de session** comme une requête HTTP, mais
+**échappe à la protection CORS** du navigateur. Deux gardes, dans `apps/api/src/pbm_api/routers/games_ws.py` :
+
+- **Origine** (`origine_autorisee`) — l'en-tête `Origin` doit être celui du front
+  (`settings.app_public_url`) ; une origine tierce (ou absente) est **refusée avant toute
+  authentification** (fermeture `4403`). Sans ce contrôle, un site tiers ouvrirait un canal
+  authentifié par le cookie du joueur (*cross-site WebSocket hijacking*).
+- **Session + droit de jeu + participation** (`resoudre_utilisateur`, puis `_game_pour_participant`)
+  — mêmes règles qu'en HTTP : pas de session → `4401` ; sans droit de jeu (D11) ou non-participant →
+  **`4404`** (pas de fuite d'existence, comme un objet d'un autre compte).
+
+Le secret d'aléatoire (graine) n'apparaît **jamais** dans la charge temps réel : seuls les jetons
+opaques en dérivent (projection du moteur, lot `j-autorite-vues`). Les tests couvrent l'accès croisé
+(404), le refus d'origine tierce et la résolution de session : `apps/api/tests/test_games_ws_routes.py`.

@@ -362,3 +362,17 @@ répartition par rôle et par type de carte, et deux graphiques `recharts` sobre
 d'attaque et répartition par type élémentaire (couleurs alignées sur les fonds de carte). Tous les
 chiffres viennent de l'API (`GET /me/decks/{id}/stats`), jamais recalculés côté écran ; recharge
 quand le deck change (`refreshKey = deck.updated_at`), comme l'historique.
+
+## Connexion temps réel dégradée (lot `j-temps-reel`)
+
+`StatutConnexion` (`apps/web/src/components/game/connection-status.tsx`) annonce l'état du canal
+temps réel. En connexion **directe**, il n'affiche **rien** — il ne distrait pas du plateau. Quand le
+WebSocket est impossible et que la partie continue par interrogation périodique, il affiche
+« Connexion dégradée : la partie continue, un peu plus lentement » : jamais un écran muet, et on
+rassure (la partie n'est pas interrompue, seulement ralentie — principe du jeu). `role="status"` +
+`aria-live="polite"` : le passage en mode dégradé est annoncé sans voler le focus.
+
+Le client temps réel (`apps/web/src/lib/game/realtime.ts`) applique les coups **par numéro**
+(dédoublonnage, détection de trou → resynchronisation), bascule seul en repli après l'échec du
+WebSocket, et remonte l'état de connexion à l'écran. Le plateau qui branche ce client — et compare à
+l'onglet « Maquette du jeu » — est le lot aval `j-plateau-layout`, débloqué par celui-ci.
