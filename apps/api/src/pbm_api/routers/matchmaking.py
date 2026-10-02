@@ -1,7 +1,8 @@
-"""Routes de la recherche d'adversaire (lot `j-file-attente`) : file d'attente, présence.
+"""Routes de la recherche d'adversaire : file d'attente, présence, jouabilité du deck.
 
 Entrer dans la file avec un deck choisi, consulter son attente, annuler, voir la présence des
-comptes invités. **Toutes** les routes sont gardées par
+comptes invités, et — pour le salon (lot `j-salon-partie`) — **savoir si un deck est jouable avant
+d'entrer en file**. **Toutes** les routes sont gardées par
 :func:`~pbm_api.auth.dependencies.require_game_access` (D11) : un compte sans droit d'accès au jeu
 reçoit **404** partout, comme pour un objet d'autrui —
 le jeu n'existe pas pour lui. Les écritures (entrer, annuler) exigent le jeton CSRF, comme toute
@@ -26,7 +27,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pbm_api.auth.dependencies import require_csrf, require_game_access
 from pbm_api.db import get_session
 from pbm_api.games import matchmaking
-from pbm_api.games.entry import DeckInjouable, DeckIntrouvable
+from pbm_api.games.entry import DeckInjouable, DeckIntrouvable, verifier_deck
 from pbm_api.games.matchmaking import Apparie, DejaEnPartie, EnAttente
 from pbm_api.models import User
 from pbm_api.security.rate_limit import get_redis
@@ -59,6 +60,20 @@ class RefusDeckOut(BaseModel):
 
     carte: str
     raison: str
+
+
+class JouabiliteOut(BaseModel):
+    """Jouabilité d'un deck **avant** l'entrée en file — de quoi l'afficher au choix du deck.
+
+    `jouable` vrai = l'appariement aboutira (chaque carte se compile pour le moteur, D9) ; sinon
+    `refus` nomme chaque carte en cause et sa raison, exactement comme le refus à l'entrée. Le
+    salon (lot `j-salon-partie`, critère « le choix du deck affiche sa jouabilité avant l'entrée en
+    file ») lit ce verdict pour ne proposer d'entrer qu'avec un deck réellement jouable.
+    """
+
+    deck_id: uuid.UUID
+    jouable: bool
+    refus: list[RefusDeckOut] = Field(default_factory=list)
 
 
 class FileOut(BaseModel):
@@ -167,6 +182,32 @@ async def quitter_file(
     """Annule la recherche : retire le joueur de la file. Idempotent (absent → `absent`)."""
     await matchmaking.quitter(redis, current_user.id)
     return FileOut(status="absent")
+
+
+@router.get("/decks/{deck_id}/jouabilite", response_model=JouabiliteOut)
+async def jouabilite_deck(
+    deck_id: uuid.UUID,
+    db: Annotated[AsyncSession, Depends(get_session)],
+    current_user: Annotated[User, Depends(require_game_access)],
+) -> JouabiliteOut:
+    """Dit si un deck est jouable **sans** entrer dans la file — pour l'afficher au choix du deck.
+
+    Même contrôle exact que l'entrée en file (:func:`~pbm_api.games.entry.verifier_deck`) : 404 si
+    le deck n'est pas celui du joueur (pas de fuite d'existence, comme un deck d'autrui) ; sinon le
+    verdict, et en cas de refus la liste des cartes en cause avec leur raison (D9 — jamais un refus
+    muet). Lecture seule, pas de CSRF : elle n'écrit rien, elle éclaire le choix.
+    """
+    try:
+        await verifier_deck(db, current_user.id, deck_id)
+    except DeckIntrouvable as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, NOT_FOUND_MESSAGE) from exc
+    except DeckInjouable as exc:
+        return JouabiliteOut(
+            deck_id=deck_id,
+            jouable=False,
+            refus=[RefusDeckOut(carte=nom, raison=raison) for nom, raison in exc.refus],
+        )
+    return JouabiliteOut(deck_id=deck_id, jouable=True, refus=[])
 
 
 @router.get("/presence", response_model=PresenceOut)

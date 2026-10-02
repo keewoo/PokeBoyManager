@@ -376,3 +376,25 @@ Le client temps réel (`apps/web/src/lib/game/realtime.ts`) applique les coups *
 (dédoublonnage, détection de trou → resynchronisation), bascule seul en repli après l'échec du
 WebSocket, et remonte l'état de connexion à l'écran. Le plateau qui branche ce client — et compare à
 l'onglet « Maquette du jeu » — est le lot aval `j-plateau-layout`, débloqué par celui-ci.
+
+## Salon de jeu (lot `j-salon-partie`)
+
+`apps/web/src/app/jeu/salon/salon-view.tsx` (`SalonView`), à `/jeu/salon` : le point d'entrée du jeu.
+Sections empilées en une colonne (lisibles sur téléphone), par ordre d'urgence :
+
+- **Reprendre une partie** en tête quand une partie `en_cours` existe — « Reprendre » en un clic vers
+  `/jeu/parties/{id}` (le plateau est le lot aval `j-plateau-layout`, débloqué par celui-ci).
+- **Jouer** : sélecteur de deck + **jouabilité affichée avant l'entrée** (`GET
+  /matchmaking/decks/{id}/jouabilite`) ; l'entrée en file reste bloquée tant que le deck n'est pas
+  jouable, les cartes en cause nommées (D9). Selon l'état de la file : « adversaire trouvé »
+  (rejoindre), attente (rang/temps, annuler, interrogation toutes les 4 s), ou choix du deck.
+- **Qui est là** : présence des joueurs ; si personne n'est disponible, repli concret — générer un
+  lien d'invitation (`POST /invitations/lien`) ou « s'entraîner contre le bot » (désactivé, lot
+  `j-mode-solo` à venir — jamais simulé, D9).
+- **Invitations reçues** en attente, acceptables/refusables depuis le salon.
+- **Dernier résultat** : la partie close la plus récente (victoire/défaite/nulle).
+
+L'entrée « Jouer » (navigation `app-shell.tsx` + salon) n'apparaît qu'aux comptes avec `game_access`
+(D11, lu via `GET /me`) ; sans ce droit, `SalonView` rend une page inexistante (`notFound()`) — le
+jeu n'existe pas à l'écran, et l'API répond déjà 404 partout. Tout vient du serveur, aucune règle
+n'est rejouée côté écran. Tests : `salon-view.test.tsx`, `app-shell-jeu.test.tsx`.
