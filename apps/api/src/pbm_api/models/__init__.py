@@ -27,6 +27,14 @@ from pbm_api.models.decks import (
     DeckCard,
     DeckEvent,
 )
+from pbm_api.models.game_launch import (
+    LANCEMENT_STATUT_ABANDONNE,
+    LANCEMENT_STATUT_LANCE,
+    LANCEMENT_STATUT_PREPARATION,
+    LANCEMENT_STATUT_TIRAGE,
+    LANCEMENT_STATUTS,
+    GameLaunch,
+)
 from pbm_api.models.games import (
     GAME_STATUS_EN_COURS,
     GAME_STATUS_EXPIREE,
@@ -115,4 +123,10 @@ __all__ = [
     "DataExport",
     "ExchangeRateDaily",
     "WishlistItem",
+    "GameLaunch",
+    "LANCEMENT_STATUT_PREPARATION",
+    "LANCEMENT_STATUT_TIRAGE",
+    "LANCEMENT_STATUT_LANCE",
+    "LANCEMENT_STATUT_ABANDONNE",
+    "LANCEMENT_STATUTS",
 ]
