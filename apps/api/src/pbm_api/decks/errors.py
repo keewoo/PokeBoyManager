@@ -1,3 +1,6 @@
+"""Exceptions métier des decks, traduites en codes HTTP par le routeur `pbm_api.routers.decks`."""
+
+
 class DeckNotFoundError(Exception):
     """Aucun deck avec cet id pour cet utilisateur (jamais un 403 : pas de fuite d'existence,
     même règle que `pbm_api.collection.errors.CollectionItemNotFoundError`)."""

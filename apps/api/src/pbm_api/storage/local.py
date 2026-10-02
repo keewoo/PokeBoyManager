@@ -12,6 +12,8 @@ from pbm_api.config import settings
 
 
 class LocalObjectStorage:
+    """Stockage objet sur disque local — alternative à `ObjectStorage` (S3/SeaweedFS)."""
+
     def __init__(self, root: str | None = None) -> None:
         self._root = Path(root or settings.photos_storage_path)
 
@@ -26,6 +28,7 @@ class LocalObjectStorage:
         self._root.mkdir(parents=True, exist_ok=True)
 
     async def ensure_bucket(self) -> None:
+        """Crée le répertoire racine s'il n'existe pas (effet de bord disque)."""
         await asyncio.to_thread(self._ensure_bucket_sync)
 
     def _get_sync(self, key: str) -> bytes | None:
@@ -35,6 +38,7 @@ class LocalObjectStorage:
         return path.read_bytes()
 
     async def get(self, key: str) -> bytes | None:
+        """Lit le fichier `key` (lecture disque) ; `None` si absent."""
         return await asyncio.to_thread(self._get_sync, key)
 
     def _head_sync(self, key: str) -> int | None:
@@ -56,10 +60,12 @@ class LocalObjectStorage:
         path.write_bytes(data)
 
     async def put(self, key: str, data: bytes, content_type: str) -> None:
+        """Écrit `data` sous `key` (effet de bord disque), créant les dossiers parents au besoin."""
         await asyncio.to_thread(self._put_sync, key, data, content_type)
 
     def _delete_sync(self, key: str) -> None:
         self._path_for(key).unlink(missing_ok=True)
 
     async def delete(self, key: str) -> None:
+        """Supprime le fichier `key` (effet de bord disque) ; silencieux si déjà absent."""
         await asyncio.to_thread(self._delete_sync, key)

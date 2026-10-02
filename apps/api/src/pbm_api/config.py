@@ -1,3 +1,5 @@
+"""Réglages applicatifs lus depuis l'environnement (`.env`), un singleton `settings` partagé."""
+
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 

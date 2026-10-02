@@ -63,6 +63,8 @@ def _normalize(text: str) -> str:
 
 @dataclass(frozen=True)
 class ParsedImportRow:
+    """Une ligne de CSV normalisée, prête pour le rapprochement catalogue."""
+
     line_number: int
     name: str | None
     number: str | None
@@ -77,6 +79,8 @@ class ParsedImportRow:
 
 @dataclass(frozen=True)
 class ParsedImportResult:
+    """Résultat de `parse_csv` : les lignes exploitables, et celles ignorées (avec motif)."""
+
     rows: list[ParsedImportRow]
     # Ligne (1-based, en-tête compris) et motif — une ligne ignorée n'est jamais retirée en
     # silence (`CLAUDE.md` : « un repli silencieux ... est interdit »).
@@ -140,6 +144,10 @@ def _parse_variant(raw: str | None) -> str:
 
 
 def parse_csv(data: bytes, *, max_rows: int) -> ParsedImportResult:
+    """Décode et normalise un CSV d'import (en-têtes reconnus via `_HEADER_ALIASES`). Lève
+    `ImportFileUndecodableError`, `ImportFileEmptyError` ou `ImportTooManyRowsError` (au-delà de
+    `max_rows` lignes de données) ; une ligne sans nom ni numéro reconnu est ignorée, jamais en
+    silence (motif dans `ParsedImportResult.ignored`)."""
     text = _decode(data)
     sample = text[:4096]
     dialect = _sniff_dialect(sample)

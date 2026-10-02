@@ -1,3 +1,8 @@
+"""Erreurs métier de l'export RGPD — levées par `pbm_api.export.service`, traduites en codes
+HTTP par `pbm_api.routers.export`.
+"""
+
+
 class ExportNotFoundError(Exception):
     """Aucun export avec cet id pour l'utilisateur courant (accès croisé inclus)."""
 

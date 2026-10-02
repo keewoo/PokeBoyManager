@@ -1,3 +1,6 @@
+"""Erreurs métier de l'import CSV, levées par `pbm_api.imports.parser` et `.service`."""
+
+
 class ImportFileEmptyError(Exception):
     """Le fichier envoyé n'a aucune ligne de données (en-tête seul ou fichier vide)."""
 

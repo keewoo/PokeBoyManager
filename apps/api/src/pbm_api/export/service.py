@@ -76,6 +76,8 @@ async def collection_rows_for_user(
 
 
 async def create_export(db: AsyncSession, user: User) -> DataExport:
+    """Pose la ligne `DataExport` en `queued` (effet de bord base) ; le travail réel est fait
+    plus tard par `run_export`, appelée depuis le worker arq."""
     export = DataExport(user_id=user.id, status=JobStatus.queued)
     db.add(export)
     await db.commit()
@@ -148,6 +150,8 @@ async def run_export(
 
 
 async def get_owned_export(db: AsyncSession, user: User, export_id: uuid.UUID) -> DataExport:
+    """Lève `ExportNotFoundError` si l'export n'existe pas ou appartient à un autre utilisateur
+    (accès croisé)."""
     result = await db.execute(
         select(DataExport).where(DataExport.id == export_id, DataExport.user_id == user.id)
     )
@@ -160,6 +164,8 @@ async def get_owned_export(db: AsyncSession, user: User, export_id: uuid.UUID) -
 async def download_by_token(
     db: AsyncSession, storage: StorageBackend, token: str
 ) -> tuple[DataExport, bytes]:
+    """Lève `ExportTokenInvalidError` si le jeton est inconnu, expiré ou l'export pas `succeeded` ;
+    `ExportArchiveMissingError` si l'archive a disparu du stockage malgré un export réussi."""
     result = await db.execute(select(DataExport).where(DataExport.token_hash == hash_token(token)))
     export = result.scalar_one_or_none()
     if (
