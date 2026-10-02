@@ -278,7 +278,7 @@ function Main({ moi, onZoom }: { moi: VueJoueur; onZoom: ZoomFn }) {
   const main = moi.main ?? [];
   return (
     <div
-      className="flex min-h-[4.5rem] items-end justify-center overflow-x-auto px-2 pt-2"
+      className="flex min-h-[4rem] items-end justify-center overflow-x-auto px-2 pt-2"
       data-testid="main-joueur"
       aria-label={`Ta main : ${main.length} carte(s)`}
     >

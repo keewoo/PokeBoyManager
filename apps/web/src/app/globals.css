@@ -227,10 +227,10 @@ body {
    déborder, et le zoom (`CardZoom`) rend le détail lisible.
    =================================================================================== */
 .pbm-plateau {
-  /* Hauteur bornée à l'écran : l'arène ET la main tiennent sans défilement. 9.5rem couvre
+  /* Hauteur bornée à l'écran : l'arène ET la main tiennent sans défilement. 12rem couvre
      largement l'en-tête de l'app-shell et les marges du <main> ; `dvh` suit la barre
      d'adresse mobile. Plafonnée à 80vh pour ne pas occuper tout un grand écran. */
-  height: min(80vh, calc(100dvh - 9.5rem));
+  height: min(80vh, calc(100dvh - 12rem));
 }
 .pbm-arena {
   container-type: size;
