@@ -82,6 +82,7 @@ async def get_game(
         raison_fin=game.raison_fin,
         created_at=game.created_at,
         updated_at=game.updated_at,
+        entrainement=game.entrainement,
         engagement=game.engagement,
         journal_version=game.journal_version,
         players=[GamePlayerOut.model_validate(p, from_attributes=True) for p in players],

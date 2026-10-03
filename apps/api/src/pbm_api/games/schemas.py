@@ -30,15 +30,24 @@ class ActionIn(BaseModel):
 
 
 class GamePlayerOut(BaseModel):
-    """Un siège de la partie : l'utilisateur et le deck joué."""
+    """Un siège de la partie : l'utilisateur, le deck joué, et le niveau du bot le cas échéant.
+
+    ``bot_niveau`` est ``None`` pour un siège humain ; renseigné (« hasard »/« correct »/
+    « coriace »), il désigne le siège tenu par le bot d'entraînement (lot `j-mode-solo`).
+    """
 
     user_id: uuid.UUID
     seat: int
     deck_id: uuid.UUID | None
+    bot_niveau: str | None = None
 
 
 class GameSummaryOut(BaseModel):
-    """Résumé d'une partie pour la liste « mes parties »."""
+    """Résumé d'une partie pour la liste « mes parties » (l'historique).
+
+    ``entrainement`` distingue une partie contre le bot (lot `j-mode-solo`) : elle figure dans
+    l'historique mais ne compte ni au classement ni aux séries.
+    """
 
     id: uuid.UUID
     status: str
@@ -47,6 +56,7 @@ class GameSummaryOut(BaseModel):
     raison_fin: str | None
     created_at: datetime
     updated_at: datetime
+    entrainement: bool = False
 
 
 class GameDetailOut(GameSummaryOut):

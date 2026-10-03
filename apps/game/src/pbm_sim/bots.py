@@ -177,10 +177,80 @@ def _degats_le_plus_bas(vue: dict, coup: ActionLegale) -> int:
     return _degats_subis(vue, coup.cibles[0].reference)
 
 
+def _identite_actif(vue: dict) -> str | None:
+    """L'``instance_id`` de la carte de base de l'Actif du camp de ``vue``.
+
+    ``None`` s'il n'y a pas d'Actif.
+
+    Lu sur la vue publique (zone Actif, toujours visible, R-3.6) : aucune information cachée n'est
+    touchée. Sert à :func:`bot_coriace` pour reconnaître, parmi les attaches proposées, celle qui
+    vise le Pokémon qui attaquera.
+    """
+    moi = vue["pour"]
+    for joueur in vue["joueurs"]:
+        if joueur["id"] == moi:
+            actif = joueur.get("actif")
+            cartes = actif.get("cartes") if actif else None
+            if cartes:
+                return cartes[0]["instance_id"]
+    return None
+
+
+def bot_coriace(
+    vue: dict, legales: Sequence[ActionLegale], alea: random.Random | None = None
+) -> ActionLegale | None:
+    """Troisième niveau (« coriace ») : l'heuristique, mais qui **concentre l'énergie sur l'Actif**.
+
+    Même ordre de priorités que :func:`bot_heuristique` (promouvoir, placer, attaquer fort,
+    évoluer, poser), à une différence près qui le rend plus mordant **sans rien apprendre
+    d'interdit** : quand il n'a pas encore d'attaque et doit attacher une énergie, il la pose
+    sur son **Actif** (le Pokémon qui attaquera) plutôt que sur le premier venu — il atteint
+    donc une attaque plus tôt (R-9.2). L'heuristique « correct », attache au premier coup trié,
+    Pokémon du banc : l'énergie s'y gaspille. Le gain est calculé sur la **seule vue** (identité de
+    l'Actif) et la liste légale (cible de chaque attache), jamais sur l'état complet.
+
+    ``alea`` complète la signature commune (stratégie déterministe). ``None`` si la liste est vide.
+    """
+    choix = _sans_abandon(legales)
+    if not choix:
+        return None
+    par_type: dict[str, list[ActionLegale]] = {}
+    for coup in choix:
+        par_type.setdefault(coup.action.type, []).append(coup)
+
+    if ACTION_PROMOUVOIR in par_type:
+        return min(
+            par_type[ACTION_PROMOUVOIR],
+            key=lambda c: (_degats_le_plus_bas(vue, c), _cle_tri(c)),
+        )
+    if ACTION_PLACER_MISE_EN_PLACE in par_type:
+        return min(par_type[ACTION_PLACER_MISE_EN_PLACE], key=_cle_tri)
+    if ACTION_DECLARER_ATTAQUE in par_type:
+        attaques = par_type[ACTION_DECLARER_ATTAQUE]
+        return sorted(attaques, key=lambda c: (-_degats_du_coup(c), _cle_tri(c)))[0]
+    if ACTION_EVOLUER in par_type:
+        return min(par_type[ACTION_EVOLUER], key=_cle_tri)
+    if ACTION_POSER in par_type:
+        return min(par_type[ACTION_POSER], key=_cle_tri)
+    if ACTION_ATTACHER_ENERGIE in par_type:
+        # La différence avec « correct » : viser l'Actif en priorité (concentrer la ressource).
+        actif = _identite_actif(vue)
+        attaches = par_type[ACTION_ATTACHER_ENERGIE]
+        sur_actif = [c for c in attaches if c.action.params.get("cible") == actif]
+        return min(sur_actif or attaches, key=_cle_tri)
+    non_retraite = [c for c in choix if c.action.type != ACTION_RETRAITE]
+    candidats = non_retraite or choix
+    avancer = [c for c in candidats if c.action.type == ACTION_AVANCER_PHASE]
+    if avancer:
+        return avancer[0]
+    return min(candidats, key=_cle_tri)
+
+
 #: Les bots par nom (``BOT_*`` de :mod:`pbm_sim.decks`) — ce que l'orchestrateur résout.
 _PAR_NOM = {
     "aleatoire": bot_aleatoire,
     "heuristique": bot_heuristique,
+    "coriace": bot_coriace,
 }
 
 
@@ -192,4 +262,4 @@ def par_nom(nom: str):
     return bot
 
 
-__all__ = ["bot_aleatoire", "bot_heuristique", "par_nom"]
+__all__ = ["bot_aleatoire", "bot_heuristique", "bot_coriace", "par_nom"]
