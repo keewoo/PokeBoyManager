@@ -1,5 +1,6 @@
 import { apiUpload } from "@/lib/api/client";
 
+/** Accusé de création d'un import CSV : l'`upload_id` de reprise et le job de rapprochement au catalogue. */
 export type ImportCsvResult = {
   upload_id: string;
   job_id: string;

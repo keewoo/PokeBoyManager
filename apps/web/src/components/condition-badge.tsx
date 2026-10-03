@@ -1,6 +1,7 @@
 import { Badge, type badgeVariants } from "@/components/ui/badge";
 import type { VariantProps } from "class-variance-authority";
 
+/** Les six états possibles d'une carte, du neuf (`mint`) à l'abîmé. */
 export type ConditionGrade =
   | "mint"
   | "near-mint"
@@ -9,6 +10,7 @@ export type ConditionGrade =
   | "joue"
   | "abime";
 
+/** Props de `ConditionBadge` : l'état à représenter. */
 export type ConditionBadgeProps = {
   condition: ConditionGrade;
   className?: string;
@@ -34,6 +36,11 @@ const CONDITION_VARIANT: Record<ConditionGrade, BadgeVariant> = {
   abime: "danger",
 };
 
+/**
+ * Badge d'état d'une carte : traduit le `condition` en libellé français et en couleur
+ * (vert pour les bons états, violet au milieu, rose pour les mauvais) via le `Badge` de base.
+ * La couleur n'est qu'un renfort du libellé, jamais la seule information.
+ */
 export function ConditionBadge({ condition, className }: ConditionBadgeProps) {
   return (
     <Badge data-slot="condition-badge" variant={CONDITION_VARIANT[condition]} className={className}>

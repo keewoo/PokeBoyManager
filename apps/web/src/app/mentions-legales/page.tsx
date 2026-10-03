@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
 
+/** Métadonnées SEO de la page mentions légales (titre d'onglet + description). */
 export const metadata: Metadata = {
   title: "Mentions légales — PokéBoy",
   description: "Éditeur, hébergement et contact de PokéBoy.",
 };
 
+/**
+ * Page statique des mentions légales (`/mentions-legales`) : éditeur, hébergement, propriété
+ * intellectuelle (PokéBoy n'est pas affilié à Nintendo / The Pokémon Company) et contenu déposé
+ * par les utilisateurs. Aucune donnée dynamique — encore un brouillon à relire avant mise en ligne.
+ */
 export default function MentionsLegalesPage() {
   return (
     <article className="prose grid max-w-3xl gap-4">

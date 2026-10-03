@@ -6,10 +6,14 @@ import type { EtatPartieReponse } from "@/lib/game/plateau";
 // résultat. Toujours bornée au participant côté serveur — une partie d'autrui n'apparaît jamais.
 
 // Statuts possibles d'une partie, miroir de `pbm_api.models.games` (`GAME_STATUS_*`).
+/** Statut d'une partie en cours (miroir de `GAME_STATUS_*` côté serveur). */
 export const GAME_EN_COURS = "en_cours";
+/** Statut d'une partie achevée normalement. */
 export const GAME_TERMINEE = "terminee";
+/** Statut d'une partie abandonnée faute d'activité (expirée). */
 export const GAME_EXPIREE = "expiree";
 
+/** Résumé d'une partie pour le salon : statut, numéro d'action courant, vainqueur et raison de fin. */
 export type GameSummary = {
   id: string;
   status: string;

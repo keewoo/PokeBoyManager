@@ -7,6 +7,11 @@ import { FeaturedCardImage } from "./featured-card-image";
 // serveur de l'accueil) : reste un composant synchrone, testable avec `@testing-library/react`
 // comme le reste de l'arbre `LandingPage` — un composant serveur asynchrone imbriqué ici ne
 // pourrait pas être rendu par le réconciliateur client qu'utilisent ces tests.
+/**
+ * La section « Dans le catalogue » de l'accueil visiteur : une grille de vignettes de cartes du
+ * catalogue, illustrant ce que PokeBoy reconnaît. Les cartes sont fournies par `page.tsx` (seul point
+ * de récupération serveur) ; sans carte, la section ne s'affiche pas.
+ */
 export function FeaturedCards({ cards }: { cards: FeaturedCard[] }) {
   if (cards.length === 0) return null;
 

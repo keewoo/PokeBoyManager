@@ -3,10 +3,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+/** Action proposée dans un état vide : soit un lien (`href`), soit un clic (`onClick`), jamais les deux. */
 export type EmptyStateAction =
   | { label: string; href: string; onClick?: never }
   | { label: string; onClick: () => void; href?: never };
 
+/** Props de `EmptyState` : titre, texte d'explication facultatif et action facultative. */
 export type EmptyStateProps = {
   title: string;
   description?: string;
@@ -14,6 +16,11 @@ export type EmptyStateProps = {
   className?: string;
 };
 
+/**
+ * Encart affiché quand une liste est vide (collection, résultats, decks) : un titre, une
+ * explication, et un bouton d'appel à l'action facultatif (lien ou clic). Purement présentatif
+ * — le contenu et l'action viennent de la page appelante.
+ */
 export function EmptyState({ title, description, action, className }: EmptyStateProps) {
   return (
     <div

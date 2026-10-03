@@ -5,6 +5,11 @@ import { cn } from "@/lib/utils";
 // Charte PokéBoy : les champs prennent la pilule comme les boutons, sur un fond plus
 // sombre que la surface qui les porte, avec un halo violet INTÉRIEUR — c'est ce qui les
 // fait lire comme des creux et non comme des pavés posés dessus.
+/**
+ * Primitive du design system : un champ texte en pilule. L'état `aria-invalid` vire le
+ * contour au rose pour signaler une erreur (jamais par la seule couleur côté appelant).
+ * Reste un `<input>` natif — valeur et validation sont gérées par l'appelant.
+ */
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
     <input

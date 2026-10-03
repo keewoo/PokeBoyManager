@@ -5,6 +5,10 @@ const EUR_FORMATTER = new Intl.NumberFormat("fr-FR", { style: "currency", curren
 // `ValueDelta` (`@/components/value-delta`) affiche un pourcentage : l'agrégat de tête de la
 // maquette (« ▲ +42,50 € sur 30 j ») est un montant en euros, jamais un pourcentage — pas la
 // même donnée, pas le composant à réutiliser tel quel.
+/**
+ * Affiche une variation de valeur en **montant** euro signé, avec flèche ▲/▼/= et couleur, pour
+ * l'agrégat de tête du tableau de bord. La donnée (euros sur 30 j) est fournie par l'appelant.
+ */
 export function TotalValueDelta({ value }: { value: number }) {
   const variant = value > 0 ? "up" : value < 0 ? "down" : "flat";
   const sign = value > 0 ? "+" : "";

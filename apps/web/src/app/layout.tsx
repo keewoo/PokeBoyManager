@@ -16,6 +16,12 @@ import "./globals.css";
 // `metadataBase` est l'origine qui absolutise `opengraph-image` : sans elle, Next avertit à la
 // construction et sert une URL relative, que les aperçus (réseaux sociaux, messageries) ne savent
 // pas résoudre. Surchargeable par `NEXT_PUBLIC_SITE_URL` pour l'UAT ou une préproduction.
+/**
+ * Métadonnées globales lues par Next pour le `<head>` de chaque page : titre
+ * (gabarit `%s · PokéBoy`), description, nom d'application et cartes Open Graph.
+ * `metadataBase` absolutise les images d'aperçu ; les pages la complètent via
+ * leur propre `metadata`, elles ne la remplacent pas.
+ */
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://pokeboy.lol"),
   title: {
@@ -42,6 +48,10 @@ export const metadata: Metadata = {
 
 // Couleur de la barre d'adresse sur mobile et de l'écran de lancement en PWA : le bleu nuit
 // de la charte (#050A30), dans les deux thèmes — le fond du produit est sombre par nature.
+/**
+ * Viewport Next : fixe la couleur de la barre d'adresse mobile et de l'écran de
+ * lancement PWA au bleu nuit de la charte, identique dans les deux thèmes.
+ */
 export const viewport: Viewport = {
   themeColor: "#050A30",
 };
@@ -58,6 +68,13 @@ const NO_FLASH_THEME_SCRIPT = `
 })();
 `;
 
+/**
+ * Layout racine de l'application : `<html lang="fr">`, polices de la charte, thème (clair/sombre
+ * sans flash via un script inline portant le nonce CSP de la requête) et app-shell commune.
+ * Lit le cookie de session côté serveur pour que la navigation d'`AppShell` connaisse l'état
+ * connecté/visiteur, et le re-rend après connexion/déconnexion (`router.refresh()`), ce qui garde
+ * l'en-tête aligné sur l'état réel.
+ */
 export default async function RootLayout({
   children,
 }: Readonly<{

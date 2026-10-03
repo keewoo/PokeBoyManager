@@ -5,10 +5,14 @@ import { apiGet, apiJson } from "@/lib/api/client";
 // n'applique aucune règle — il affiche l'état réel de la file et la jouabilité calculée là-bas.
 
 // Statuts de la file, miroir de `FileOut.status`.
+/** Statut de file : le joueur est apparié, une partie est créée (miroir de `FileOut.status`). */
 export const FILE_APPARIE = "apparie";
+/** Statut de file : le joueur attend un adversaire. */
 export const FILE_EN_ATTENTE = "en_attente";
+/** Statut de file : le joueur n'est pas dans la file. */
 export const FILE_ABSENT = "absent";
 
+/** État de la recherche d'adversaire : statut, partie éventuelle, rang et temps d'attente. */
 export type FileState = {
   status: string;
   game_id: string | null;
@@ -18,6 +22,7 @@ export type FileState = {
   attente_secondes: number | null;
 };
 
+/** Présence des joueurs (en ligne, en partie, en file) et chemins de repli quand personne n'est disponible. */
 export type Presence = {
   en_ligne: number;
   en_partie: number;
@@ -27,8 +32,10 @@ export type Presence = {
   options: string[];
 };
 
+/** Une carte qui empêche un deck d'entrer en file, avec la raison du refus (le serveur nomme ce qui manque). */
 export type RefusDeck = { carte: string; raison: string };
 
+/** Verdict de jouabilité d'un deck pour le matchmaking : jouable ou non, et la liste des refus. */
 export type DeckJouabilite = {
   deck_id: string;
   jouable: boolean;

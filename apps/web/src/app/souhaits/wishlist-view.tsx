@@ -226,6 +226,14 @@ function WishlistRow({
   );
 }
 
+/**
+ * Vue complète de la liste de souhaits : charge les vœux de l'utilisateur via `listWishlist`
+ * (lib/api/wishlist) au montage, puis permet d'en ajouter (recherche au catalogue + prix cible),
+ * d'en corriger ou d'en retirer, en tenant l'état local à jour après chaque appel.
+ *
+ * Le périmètre est toujours celui du compte connecté : le filtrage par utilisateur est fait côté
+ * serveur, cette vue n'affiche que ce que l'API lui renvoie.
+ */
 export function WishlistView() {
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);

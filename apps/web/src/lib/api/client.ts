@@ -1,5 +1,10 @@
 import { getApiBaseUrl, getCsrfCookieName } from "@/lib/config";
 
+/**
+ * Erreur d'un appel API portant le code HTTP (`status`) et le message serveur destiné à
+ * l'utilisateur. Levée par `handle` dès que la réponse n'est pas 2xx ; les écrans s'en servent
+ * pour distinguer 401/404/422 et afficher la raison (`detail`) telle que l'API l'a rédigée.
+ */
 export class ApiError extends Error {
   status: number;
 
@@ -40,11 +45,20 @@ async function handle<T>(response: Response): Promise<T> {
   return (await response.json()) as T;
 }
 
+/**
+ * GET sur l'API avec le cookie de session (`credentials: "include"`). Résout vers le corps JSON
+ * typé, ou lève `ApiError` sur une réponse non-2xx. Point d'entrée en lecture de tous les clients.
+ */
 export async function apiGet<T>(path: string): Promise<T> {
   const response = await fetch(`${getApiBaseUrl()}${path}`, { credentials: "include" });
   return handle<T>(response);
 }
 
+/**
+ * Appel JSON mutant (POST/PUT/PATCH/DELETE) : joint le cookie de session, l'en-tête CSRF quand il
+ * existe, et sérialise `body` si fourni. Un 204 résout vers `undefined` ; tout non-2xx lève
+ * `ApiError`. C'est le serveur qui décide — l'interface ne fait que transmettre la demande.
+ */
 export async function apiJson<T>(method: string, path: string, body?: unknown): Promise<T> {
   const response = await fetch(`${getApiBaseUrl()}${path}`, {
     method,
@@ -55,6 +69,11 @@ export async function apiJson<T>(method: string, path: string, body?: unknown): 
   return handle<T>(response);
 }
 
+/**
+ * POST multipart d'un fichier unique (champ `file`), avec session et en-tête CSRF. Le
+ * `Content-Type` est laissé au navigateur (frontière multipart). Même gestion d'erreur que les
+ * autres helpers. Sert aux envois de photos, avatar et imports CSV.
+ */
 export async function apiUpload<T>(path: string, file: File): Promise<T> {
   const formData = new FormData();
   formData.append("file", file);

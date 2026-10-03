@@ -52,6 +52,12 @@ function MoverRow({ mover }: { mover: DashboardMoverCard }) {
   );
 }
 
+/**
+ * Le tableau de bord de l'accueil connecté (maquette `ROADMAP.html`, § « Accueil connecté ») : valeur
+ * totale cotée et sa variation sur 30 j, courbe sur 90 j, plus fortes variations et derniers ajouts.
+ * Toutes les données viennent de l'API (`GET /me/dashboard` + `GET /me/profile`) — aucun calcul ici ;
+ * l'écran se contente d'afficher, et montre un message clair pendant le chargement comme en cas d'échec.
+ */
 export function DashboardView() {
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
   const [profile, setProfile] = useState<ProfileResponse | null>(null);

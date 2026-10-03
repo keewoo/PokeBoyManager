@@ -16,6 +16,7 @@ import localFont from "next/font/local";
 // (découpe fonttools sur la police amont). Fichiers `.woff2` et licences : `./fonts/`
 // (voir `./fonts/README.md`).
 
+/** Police de texte Roboto (variable 100-900), exposée via `--font-roboto`. */
 export const roboto = localFont({
   src: "./fonts/roboto.woff2",
   weight: "100 900",
@@ -24,6 +25,7 @@ export const roboto = localFont({
   variable: "--font-roboto",
 });
 
+/** Police de titres Exo 2 (variable 100-900), exposée via `--font-exo2`. */
 export const exo2 = localFont({
   src: "./fonts/exo2.woff2",
   weight: "100 900",
@@ -32,6 +34,7 @@ export const exo2 = localFont({
   variable: "--font-exo2",
 });
 
+/** Police à chasse fixe JetBrains Mono (variable 100-800), exposée via `--font-jetbrains-mono`. */
 export const jetbrainsMono = localFont({
   src: "./fonts/jetbrains-mono.woff2",
   weight: "100 800",
@@ -40,6 +43,7 @@ export const jetbrainsMono = localFont({
   variable: "--font-jetbrains-mono",
 });
 
+/** Police d'accent rétro Press Start 2P (statique 400), exposée via `--font-press-start`. */
 export const pressStart2P = localFont({
   src: "./fonts/press-start-2p.woff2",
   weight: "400",

@@ -10,6 +10,13 @@ import { ApiError, verifyEmail } from "@/lib/api/auth";
 
 type Status = "loading" | "success" | "error";
 
+/**
+ * Écran de vérification de l'adresse e-mail après inscription.
+ *
+ * Lit le `token` de l'URL et appelle `verifyEmail` (lib/api/auth) une seule fois au montage ;
+ * affiche l'état en cours / succès (lien vers la connexion) / erreur (lien vers l'inscription).
+ * La validité du jeton est tranchée par le serveur ; cet écran ne fait qu'en relayer le verdict.
+ */
 export function VerifierStatus() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");

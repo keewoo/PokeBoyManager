@@ -33,6 +33,13 @@ const TYPE_OPTIONS: { code: string; label: string }[] = [
   { code: "colorless", label: "Incolore" },
 ];
 
+/**
+ * Assistant IA du constructeur de deck (écran « Constructeur de deck », maquette `docs/UI-UX.md`
+ * § « Alertes à compléter du deck »). Le joueur choisit des types privilégiés, un style et une
+ * taille ; `proposeDeck` (`lib/api/decks`) fait composer par SON IA un deck légal pris dans sa
+ * collection. L'écran ne tranche jamais la légalité — il remonte le deck renvoyé au parent (une
+ * seule vérité, côté serveur) et affiche résumé, ajustements automatiques et explications.
+ */
 export function DeckAiAssistant({
   deckId,
   onProposed,

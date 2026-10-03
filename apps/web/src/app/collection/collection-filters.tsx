@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { CollectionFacets, CollectionFilters as Filters } from "@/lib/api/collection";
 
+/** Une case à cocher d'un groupe de filtres : `value` est la donnée envoyée à l'API, `label` ce qu'on affiche. */
 export type FilterOption = { value: string; label: string };
 
 function CheckboxGroup({
@@ -38,6 +39,14 @@ function CheckboxGroup({
   );
 }
 
+/**
+ * Panneau de filtres de la collection (maquette « Page collection », docs/UI-UX.md) : groupes de
+ * cases extension/série/rareté/type/langue/variante/état, bornes de valeur, dates d'ajout, doublons
+ * et contrefaçons. Les valeurs proposées viennent des `facets` (scopées à l'utilisateur, jamais le
+ * catalogue entier) ; le composant ne charge rien lui-même et ne porte aucun état — il remonte
+ * chaque changement par `onChange` au parent, qui est seul propriétaire des filtres (stockés dans
+ * l'URL par `CollectionView`). Rendu en aside sur desktop, dans un tiroir sur mobile.
+ */
 export function CollectionFiltersPanel({
   facets,
   filters,

@@ -7,6 +7,12 @@ import { cn } from "@/lib/utils";
 // Charte PokéBoy : tout ce qui se clique prend la PILULE (`rounded-full`). C'est ce qui
 // éloigne l'interface du « plat et carré ». Les hauteurs ne descendent jamais sous 44 px —
 // le produit est utilisé au doigt, sur un téléphone, par un enfant de onze ans.
+/**
+ * Fabrique les classes du bouton (class-variance-authority). Variantes : `default` (or,
+ * l'action principale), `secondary` (contour violet), `outline`, `ghost`, `destructive`
+ * (rose en contour). Tailles `sm`/`default`/`lg`/`icon`, jamais sous 44 px de haut.
+ * Exporté pour habiller un `<Link>` ou un autre élément aux mêmes classes.
+ */
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full font-heading uppercase tracking-[0.09em] transition-shadow disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
   {
@@ -41,6 +47,11 @@ const buttonVariants = cva(
   }
 );
 
+/**
+ * Primitive du design system : le bouton de la charte, en pilule. `asChild` rend l'enfant
+ * (via Radix `Slot`) au lieu d'un `<button>` — pour transformer un `<Link>` en bouton sans
+ * imbrication. L'apparence vient de `variant`/`size` ; le comportement reste à l'appelant.
+ */
 function Button({
   className,
   variant,

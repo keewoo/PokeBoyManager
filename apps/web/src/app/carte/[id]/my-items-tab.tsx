@@ -19,6 +19,11 @@ function purchaseCell(item: MyCardItem): string {
   return "—";
 }
 
+/** Onglet « Mes exemplaires » de la fiche carte (maquette `docs/UI-UX.md` § « Fiche carte ») :
+ * tableau de TOUS les exemplaires possédés de cette carte (ajout, langue, état, prix d'achat,
+ * valeur, photo). Reçoit la liste déjà chargée par `CardDetailView` (`getCardMyItems`) — ne
+ * refait aucun appel. Signale « contrefaçon probable » (valeur neutralisée) et le prix d'achat
+ * en devise d'origine quand le taux de change manque. */
 export function MyItemsTab({ items }: { items: MyCardItem[] }) {
   if (items.length === 0) {
     return (

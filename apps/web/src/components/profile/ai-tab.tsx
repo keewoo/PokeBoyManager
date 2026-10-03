@@ -57,6 +57,14 @@ const PROVIDERS: {
 
 type TestOutcome = { valid: boolean; message: string };
 
+/**
+ * Onglet « Mon IA » du profil : gère les clés API des fournisseurs (Anthropic, Gemini,
+ * OpenAI) que l'utilisateur dépose pour la reconnaissance de cartes. Les clés sont
+ * chiffrées côté serveur et jamais renvoyées en clair — on n'affiche que leur masque
+ * (`key_mask`). Permet d'enregistrer/remplacer/tester/supprimer une clé, de choisir le
+ * fournisseur par défaut, et montre l'usage agrégé (appels, coût estimé). Toutes les
+ * données viennent de `lib/api/ai-keys` (listAiKeys, getAiSettings, getAiUsage…).
+ */
 export function AiTab() {
   const [keys, setKeys] = useState<AiKeyResponse[] | null>(null);
   const [defaultProviderId, setDefaultProviderId] = useState<AiProvider | null>(null);

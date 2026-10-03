@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 /** Données d'une carte, pour composer un visuel de remplacement à défaut d'image officielle. */
 export type CardImageReplacement = Omit<ReplacementCardProps, "className" | "loading">;
 
+/** Props de `CardImage` : la source officielle et les deux niveaux de repli possibles. */
 export type CardImageProps = {
   /** URL de l'image. `undefined` ou `null` = on sait déjà qu'il n'y en a pas. */
   src?: string | null;
@@ -31,6 +32,13 @@ export type CardImageProps = {
 // Ce composant est le SEUL endroit qui traite ce cas. Deux niveaux de repli :
 //   - avec `replacement`, une carte est COMPOSÉE (`ReplacementCard`) — le cas nominal du catalogue ;
 //   - sans, un cadre sobre avec un `label` (photo personnelle absente, accueil visiteur).
+/**
+ * Affiche l'image officielle d'une carte, avec repli quand elle manque ou ne se charge pas.
+ * SEUL point qui décide du repli : si `src` est absent ou si le chargement échoue, on compose
+ * une `ReplacementCard` (quand `replacement` est fourni) ou on montre un cadre à `label`. Un
+ * échec de chargement d'une URL pourtant fournie est journalisé (`console.warn`) avant bascule
+ * — un repli là où une image officielle existe est une panne, pas un cas normal.
+ */
 export function CardImage({
   src,
   alt,

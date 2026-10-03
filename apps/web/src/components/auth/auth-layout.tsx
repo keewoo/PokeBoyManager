@@ -1,9 +1,15 @@
+/** Props du gabarit d'authentification : `title`/`description` nourrissent l'en-tête de droite, `children` reçoit le formulaire concret (connexion, inscription…). */
 export type AuthLayoutProps = {
   title: string;
   description?: string;
   children: React.ReactNode;
 };
 
+/**
+ * Cadre visuel partagé par les écrans d'authentification : colonne de marque (logotype
+ * PokéBoy + accroche) à gauche sur grand écran, carte titrée accueillant le formulaire à
+ * droite. Purement présentationnel — aucune logique d'auth, aucun appel API ici.
+ */
 export function AuthLayout({ title, description, children }: AuthLayoutProps) {
   return (
     <div className="pbm-surface mx-auto grid max-w-4xl overflow-hidden rounded-lg md:grid-cols-2">

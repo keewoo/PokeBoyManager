@@ -5,6 +5,7 @@
 // "localhost" ne doit plus apparaître dans le JavaScript servi en production).
 const RELATIVE_API_FALLBACK = "/api";
 
+/** Base d'API vue du navigateur : `NEXT_PUBLIC_API_URL` sans slash final, ou le repli relatif `/api`. */
 export function getApiBaseUrl(): string {
   const url = process.env.NEXT_PUBLIC_API_URL;
   if (!url) {
@@ -18,6 +19,11 @@ export function getApiBaseUrl(): string {
 // pas d'origine implicite pour résoudre une URL relative comme `/api` — il faut une URL absolue.
 // `null` sans `NEXT_PUBLIC_API_URL` (jamais une origine devinée) : l'appelant doit alors renoncer
 // à l'appel plutôt que de risquer une requête vers une origine inventée.
+/**
+ * Base d'API pour un appel côté serveur (Server Component) : une URL absolue est obligatoire car
+ * `fetch` sous Node n'a pas d'origine implicite pour résoudre `/api`. `null` sans
+ * `NEXT_PUBLIC_API_URL` — l'appelant doit alors renoncer plutôt que viser une origine inventée.
+ */
 export function getServerApiBaseUrl(): string | null {
   const url = process.env.NEXT_PUBLIC_API_URL;
   if (!url) return null;
@@ -25,6 +31,7 @@ export function getServerApiBaseUrl(): string | null {
 }
 
 // Doit rester alignée avec `SESSION_COOKIE_NAME` côté `apps/api` (`pbm_api.config.Settings`).
+/** Nom du cookie de session, à garder aligné sur `SESSION_COOKIE_NAME` de `apps/api`. */
 export function getSessionCookieName(): string {
   return process.env.NEXT_PUBLIC_SESSION_COOKIE_NAME || "pbm_session";
 }
@@ -32,6 +39,7 @@ export function getSessionCookieName(): string {
 // Doit rester alignée avec `CSRF_COOKIE_NAME` côté `apps/api`. Ce cookie n'est pas HttpOnly :
 // le front le relit pour le renvoyer dans l'en-tête `X-CSRF-Token` sur toute requête qui écrit
 // (`pbm_api.security.csrf`).
+/** Nom du cookie CSRF (non HttpOnly, relu pour l'en-tête `X-CSRF-Token`), aligné sur l'API. */
 export function getCsrfCookieName(): string {
   return process.env.NEXT_PUBLIC_CSRF_COOKIE_NAME || "pbm_csrf";
 }
@@ -41,6 +49,7 @@ export function getCsrfCookieName(): string {
 // passer par l'API : nécessaire à la CSP `connect-src` (`src/middleware.ts`, lot `v5-securite`),
 // sinon le navigateur bloque l'envoi. `null` avec `STORAGE_BACKEND=local` (UAT/PROD) : l'envoi
 // passe alors par l'API elle-même, déjà couverte par `getApiBaseUrl()`.
+/** Origine du stockage objet présigné (`PUT` direct), à ajouter à la CSP `connect-src` ; `null` en backend local. */
 export function getUploadOrigin(): string | null {
   const url = process.env.NEXT_PUBLIC_UPLOAD_ORIGIN;
   return url ? new URL(url).origin : null;

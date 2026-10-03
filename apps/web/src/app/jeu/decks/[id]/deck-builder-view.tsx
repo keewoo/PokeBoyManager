@@ -586,6 +586,14 @@ function DeckContents({
 
 // -------------------------------------------------------------------------------- vue principale
 
+/**
+ * Vue principale du constructeur de deck (écran « Constructeur de deck »). Charge le deck via
+ * `getDeck` (`lib/api/decks`) puis pilote toutes ses mutations — ajout/retrait de cartes,
+ * quantité, renommage, format, duplication, export, suppression, remplacements de cartes
+ * manquantes. Chaque mutation renvoie le deck recalculé (légalité comprise) et remplace l'état
+ * entier : jamais deux vérités de légalité, celle du serveur prime. Compose la recherche de
+ * cartes, le contenu du deck, l'assistant IA, les stats et l'historique ; ne rejoue aucune règle.
+ */
 export function DeckBuilderView({ deckId }: { deckId: string }) {
   const router = useRouter();
   const [deck, setDeck] = useState<DeckDetail | null>(null);

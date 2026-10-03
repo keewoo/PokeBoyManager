@@ -16,6 +16,14 @@ const VARIANTS = [
   { value: "first_edition", label: "1ère édition" },
 ];
 
+/**
+ * Formulaire d'ajout d'une carte sans photo (maquette « Page collection » § ajout manuel,
+ * docs/UI-UX.md) : on cherche la carte au catalogue (`searchCatalog`, `GET /catalog/search`), on
+ * la choisit, puis on précise langue, variante, quantité, état et prix d'achat avant d'appeler
+ * `createCollectionItem` (`POST /me/collection`, sans `Detection` ni clé photo). Prévient le parent
+ * par `onAdded` (qui recharge la liste) ou `onCancel`. Ne reconnaît aucune image : c'est la voie
+ * manuelle, utilisable sans clé IA.
+ */
 export function ManualAddForm({
   onAdded,
   onCancel,

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { SalonView } from "./salon-view";
 
+/** Titre d'onglet du salon de jeu. */
 export const metadata: Metadata = {
   title: "Salon de jeu",
 };

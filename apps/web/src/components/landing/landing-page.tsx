@@ -36,6 +36,11 @@ const STEPS = [
 
 const AI_PROVIDERS = ["Claude · Anthropic", "Gemini · Google", "ChatGPT · OpenAI"];
 
+/**
+ * La page d'accueil visiteur (maquette `ROADMAP.html`, § « Les écrans » / page d'accueil) : accroche
+ * et appels à l'action (inscription / connexion), image héros, cartes à la une, les quatre étapes du
+ * parcours et le bloc « apporte ta propre IA ». Statique : seules les `featuredCards` viennent du serveur.
+ */
 export function LandingPage({ featuredCards }: { featuredCards: FeaturedCard[] }) {
   return (
     <div>

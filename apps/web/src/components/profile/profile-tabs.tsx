@@ -21,6 +21,13 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
+/**
+ * Conteneur à onglets de la page profil : navigation latérale (Identité, Sécurité, Mon
+ * IA, Mes données) et rendu de l'onglet actif. Charge le profil une fois via `getProfile`
+ * et le partage aux enfants. L'onglet initial est déduit des paramètres d'URL (`?onglet=`,
+ * `?mot-de-passe-a-changer=1` pour forcer le changement post-connexion). N'édite pas lui-même
+ * les données : chaque onglet porte sa propre logique.
+ */
 export function ProfileTabs() {
   const searchParams = useSearchParams();
   // Redirection post-connexion (`must_change_password`, voir `ConnexionForm`) : ouvre

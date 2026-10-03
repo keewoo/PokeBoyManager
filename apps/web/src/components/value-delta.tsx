@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 
 type ValueDeltaVariant = "up" | "down" | "flat";
 
+/** Props de `ValueDelta` : la variation en pourcentage (positive, négative ou nulle). */
 export type ValueDeltaProps = {
   value: number;
   className?: string;
@@ -25,6 +26,11 @@ const VARIANT_CLASS: Record<ValueDeltaVariant, string> = {
   flat: "text-muted-foreground",
 };
 
+/**
+ * Affiche l'évolution de valeur d'une carte en pourcentage signé, formaté en français
+ * (virgule décimale) : vert à la hausse, rose à la baisse, gris si nul. Se contente de mettre
+ * en forme la valeur reçue — aucun calcul de tendance ici.
+ */
 export function ValueDelta({ value, className }: ValueDeltaProps) {
   const variant = variantOf(value);
 

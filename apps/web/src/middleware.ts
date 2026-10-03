@@ -5,6 +5,10 @@ import { getApiBaseUrl, getSessionCookieName, getUploadOrigin } from "@/lib/conf
 // Élargi (mission `v5-securite` point 2) : les en-têtes de sécurité ci-dessous doivent
 // s'appliquer à toute page, pas seulement aux routes protégées par session — seuls les
 // assets déjà immuables/statiques de Next.js en sont exclus (rien à protéger, coût inutile).
+/**
+ * Portée du middleware : toutes les routes sauf les assets statiques/immuables de Next
+ * (`_next/static`, `_next/image`, `favicon.ico`) — ceux-ci n'ont rien à protéger.
+ */
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
@@ -65,6 +69,12 @@ function withSecurityHeaders(response: NextResponse, nonce: string): NextRespons
   return response;
 }
 
+/**
+ * Middleware Next exécuté à chaque requête : pose les en-têtes de sécurité (CSP à nonce par requête,
+ * HSTS, anti-framing, nosniff…) sur toute réponse, et redirige vers `/connexion?next=…` l'accès à une
+ * route protégée (`PROTECTED_PATH_PREFIXES`) sans cookie de session — l'API 401 restant l'autorité.
+ * Le nonce est transmis au rendu serveur via l'en-tête de requête `x-nonce` (relu par `layout.tsx`).
+ */
 export function middleware(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
 

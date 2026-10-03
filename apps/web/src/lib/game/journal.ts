@@ -148,6 +148,13 @@ function frRaison(code: string | undefined): string {
 // casse en CI si un événement projetable n'a pas sa traduction (« un test qui échoue sur un
 // événement non traduit » plutôt qu'un identifiant brut servi au joueur).
 
+/**
+ * Registre des traducteurs d'événements, indexé par type d'événement serveur.
+ * Chaque entrée transforme la charge utile d'un événement en texte français
+ * affiché dans le journal ; `automatique` marque les effets déclenchés par le
+ * moteur (vs. une action volontaire). Doit couvrir TOUT événement projetable :
+ * la parité est garantie par un test côté moteur, pas par ce fichier.
+ */
 export const TRADUCTEURS: Record<string, Traducteur> = {
   pioche_melangee: {
     automatique: true,

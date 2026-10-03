@@ -110,6 +110,18 @@ function pctFromEurChange(changeEur: string, totalEur: string): number | null {
   return (change / base) * 100;
 }
 
+/**
+ * Écran « Ma collection » (maquette « Page collection », docs/UI-UX.md) : grille des exemplaires de
+ * l'utilisateur avec image, valeur et variation 30 j, en-tête d'agrégats (nombre, valeur totale,
+ * tendances 7/30 j), panneau de filtres, recherche, tri et pagination « Charger plus ».
+ *
+ * Données : `listCollection` (`GET /me/collection`, valorisation à la demande côté serveur) et
+ * `getCollectionFacets` (valeurs de filtre scopées à l'utilisateur), via `lib/api/collection`.
+ * Tout l'état de filtrage/tri vit dans l'URL (partageable, retour arrière du navigateur) — seul le
+ * curseur de pagination reste en état local. Un `requestId` ignore les réponses d'une requête
+ * dépassée par une plus récente. Ne fait aucune valorisation ni filtrage côté client (le serveur
+ * s'en charge) ; l'ajout manuel est délégué à `ManualAddForm`.
+ */
 export function CollectionView() {
   const router = useRouter();
   const searchParams = useSearchParams();

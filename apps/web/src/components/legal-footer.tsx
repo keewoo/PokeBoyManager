@@ -6,6 +6,11 @@ const LEGAL_LINKS = [
   { href: "/conditions", label: "Conditions générales" },
 ];
 
+/**
+ * Pied de page légal : liens vers mentions légales, confidentialité et conditions, plus la
+ * mention de non-affiliation à Nintendo / The Pokémon Company — exigée par la charte, qui
+ * interdit tout usage de la marque officielle. Contenu statique, aucune donnée externe.
+ */
 export function LegalFooter() {
   return (
     <footer data-slot="legal-footer" className="mt-16 border-t border-border pt-6 text-sm">

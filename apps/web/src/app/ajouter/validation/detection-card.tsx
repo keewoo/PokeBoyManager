@@ -16,6 +16,8 @@ import { CardImage } from "@/components/card-image";
 import { getApiBaseUrl } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
+/** Champs éditables d'une détection avant son ajout à la collection (langue, variante, quantité,
+ * état déclaré, prix d'achat) — ce que `ValidationView` passe à `confirmDetection`. */
 export type ConfirmForm = {
   language: string;
   variant: string;
@@ -24,6 +26,9 @@ export type ConfirmForm = {
   purchasePrice: string;
 };
 
+/** Carte du catalogue retenue pour une détection : soit un candidat proposé par la
+ * reconnaissance, soit un résultat de la recherche manuelle. Minimum pour l'affichage et
+ * la confirmation (`card_id` est ce qui sera réellement envoyé). */
 export type SelectedCard = { card_id: string; name: string; number: string; set_name: string };
 
 const VARIANTS = [
@@ -113,6 +118,11 @@ function ManualSearch({ onPick }: { onPick: (card: CardSearchResult) => void }) 
   );
 }
 
+/** Une carte détectée dans l'écran de validation (maquette `docs/UI-UX.md` § « Écran de
+ * validation ») : recadrage photographié + image officielle du candidat, badges (état estimé,
+ * « reconnue sans IA », « contrefaçon probable », « découpe douteuse »), choix du candidat ou
+ * recherche manuelle au catalogue, et le formulaire d'ajout. Composant contrôlé : tout l'état
+ * (candidat choisi, formulaire) est porté par `ValidationView`, qui décide de l'ajout. */
 export function DetectionCard({
   detection,
   isActive,

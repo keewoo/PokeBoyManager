@@ -5,6 +5,7 @@ import { RarityBadge, type RarityTier } from "@/components/rarity-badge";
 import { ValueDelta } from "@/components/value-delta";
 import { cn } from "@/lib/utils";
 
+/** Props de `CardTile` : les champs d'une carte à afficher en vignette, et son lien cible. */
 export type CardTileProps = {
   href: string;
   name: string;
@@ -22,6 +23,12 @@ export type CardTileProps = {
 // 3 px, reflet holographique en diagonale, légère inclinaison au repos — et au survol elle
 // se redresse, monte et son liseré s'allume. C'est l'état qui explique l'interaction sans
 // qu'on ait à l'écrire.
+/**
+ * Vignette cliquable d'une carte dans la collection : visuel, badges de rareté et d'état,
+ * nom, extension·numéro, prix et évolution de valeur. Reçoit toutes ses données en props
+ * (aucun appel réseau) et renvoie vers `href` au clic. Délègue l'affichage des badges et du
+ * delta aux composants dédiés ; elle n'interprète rien, elle met en forme.
+ */
 export function CardTile({
   href,
   name,

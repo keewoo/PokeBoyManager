@@ -40,6 +40,11 @@ function GradeBlock({
   );
 }
 
+/** Onglet « État » de la fiche carte (maquette `docs/UI-UX.md` § « Fiche carte ») : estimation
+ * automatique de l'état par axes (centrage H/V, coins, bords, surface), note globale (/10) et
+ * avertissement de contrefaçon probable. Reçoit le meilleur exemplaire choisi par `CardDetailView`
+ * (pas d'appel propre) ; retombe sur l'état déclaré, ou sur un message, quand la mesure
+ * automatique (lot `v3-etat`) n'existe pas. L'estimation n'est jamais imposée à l'utilisateur. */
 export function StateTab({ item }: { item: MyCardItem | null }) {
   if (!item) {
     return (

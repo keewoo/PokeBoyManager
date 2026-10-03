@@ -11,6 +11,14 @@ import { confirmEmailChange } from "@/lib/api/profile";
 
 type Status = "loading" | "success" | "error";
 
+/**
+ * Écran de confirmation d'un changement d'adresse e-mail.
+ *
+ * Lit le `token` dans l'URL et appelle `confirmEmailChange` (lib/api/profile) une seule
+ * fois au montage ; affiche l'un des trois états (en cours / succès / erreur). Sans token,
+ * ou si l'API refuse, l'erreur est montrée. La validité du jeton est décidée côté serveur :
+ * cet écran ne fait que relayer le verdict.
+ */
 export function ConfirmerEmailStatus() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");

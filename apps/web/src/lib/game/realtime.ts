@@ -39,6 +39,11 @@ export interface WebSocketLike {
   addEventListener(type: string, écouteur: (événement: unknown) => void): void;
 }
 
+/**
+ * Les réglages et rappels d'un {@link CanalPartie} : `onVue`/`onCoup`/`onEtat` remontent l'état à
+ * l'écran ; les points d'injection (`creerWebSocket`, `fetchSync`, intervalles) permettent de tester
+ * tout l'enchaînement en mémoire, sans vrai socket ni vrai réseau.
+ */
 export type OptionsCanal = {
   gameId: string;
   /** Dernier numéro appliqué + 1 (0 pour tout recevoir depuis le début). */
