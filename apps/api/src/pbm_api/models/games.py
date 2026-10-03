@@ -27,6 +27,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
+    Boolean,
     DateTime,
     ForeignKey,
     Integer,
@@ -98,6 +99,12 @@ class Game(Base, TimestampMixin):
     # calculée depuis des horodatages. C'est une donnée de la partie (survit au F5), jamais un
     # minuteur en mémoire. Nullable : les parties d'avant le lot n'en ont pas.
     horloges: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    # Partie d'ENTRAÎNEMENT contre un bot (lot `j-mode-solo`, DJ7) : elle entre dans l'historique
+    # du joueur mais **ne compte pas** (ni classement ni séries — qui n'existent pas encore ; le
+    # marqueur est posé pour qu'ils l'excluent dès qu'ils existeront). Dénormalisé ici (plutôt que
+    # déduit du siège bot) pour que la liste « mes parties » le lise sans charger les sièges, et
+    # pour que la boucle d'application sache piloter le bot sans requête supplémentaire.
+    entrainement: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
 
 
 class GamePlayer(Base, TimestampMixin):
@@ -129,6 +136,11 @@ class GamePlayer(Base, TimestampMixin):
         PGUUID(as_uuid=True), ForeignKey("decks.id", ondelete="SET NULL"), nullable=True
     )
     seat: Mapped[int] = mapped_column(Integer, nullable=False)
+    # Niveau du bot quand CE siège est tenu par le bot d'entraînement (lot `j-mode-solo`) :
+    # "hasard" | "correct" | "coriace" (les trois niveaux de DJ7). `None` pour un siège humain —
+    # un siège dont `bot_niveau` est renseigné est donc, et seulement dans ce cas, celui du bot.
+    # Le bot joue côté serveur (il ne passe jamais par HTTP) ; `user_id` pointe le compte réservé.
+    bot_niveau: Mapped[str | None] = mapped_column(String(16), nullable=True)
 
 
 class GameEvent(Base):

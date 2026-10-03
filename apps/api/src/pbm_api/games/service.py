@@ -218,6 +218,8 @@ async def creer_partie(
     joueur_b: tuple[uuid.UUID, uuid.UUID],
     graine_hex: str | None = None,
     maintenant: datetime | None = None,
+    entrainement: bool = False,
+    bot_niveau: str | None = None,
 ) -> Game:
     """Crée une partie entre deux joueurs (chacun `(user_id, deck_id)`), ou **refuse**.
 
@@ -226,6 +228,10 @@ async def creer_partie(
     graine d'aléatoire (le moteur est pur : la graine vient d'ici), et persiste `Game`, les deux
     `GamePlayer` et un `GameSnapshot` au coup 0. La graine est un **secret** (commit-reveal) : seul
     l'engagement est destiné à être publié.
+
+    ``entrainement`` marque une partie d'**entraînement contre un bot** (lot `j-mode-solo`,
+    DJ7) : elle entre dans l'historique mais ne compte pas. ``bot_niveau``, s'il est fourni,
+    est posé sur le **siège 1** (``joueur_b``) : c'est lui, et lui seul, que le bot tient.
     """
     maintenant = maintenant or _maintenant()
     user_a, deck_a = joueur_a
@@ -255,6 +261,7 @@ async def creer_partie(
         journal_version=JOURNAL_VERSION,
         current_numero=0,
         current_empreinte=empreinte0,
+        entrainement=entrainement,
         last_action_at=maintenant,
         expires_at=maintenant + _delai_inactivite(),
         horloges=_adapt_horloges.etat_initial_json(
@@ -267,7 +274,9 @@ async def creer_partie(
     db.add_all(
         [
             GamePlayer(game_id=game.id, user_id=user_a, deck_id=deck_a, seat=0),
-            GamePlayer(game_id=game.id, user_id=user_b, deck_id=deck_b, seat=1),
+            GamePlayer(
+                game_id=game.id, user_id=user_b, deck_id=deck_b, seat=1, bot_niveau=bot_niveau
+            ),
         ]
     )
     db.add(_snapshot_row(game.id, instantane0))
@@ -697,6 +706,17 @@ async def appliquer_action(
             db, game, etat_courant, rng, maintenant, catalogue, intervalle_instantane
         )
         evts_json += evts_sys
+
+    # Mode solo : après le coup de l'humain, le bot d'entraînement joue son tour — il ne voit
+    # que sa vue projetée, jamais l'état complet (lot `j-mode-solo`). Import local : le module
+    # `bot` importe ce service, l'importer au chargement créerait un cycle.
+    if game.entrainement and catalogue is not None and not etat_courant.terminee:
+        from pbm_api.games.bot import boucle_bot_pour_partie
+
+        etat_courant, evts_bot = await boucle_bot_pour_partie(
+            db, game, etat_courant, rng, maintenant, catalogue, intervalle_instantane
+        )
+        evts_json += evts_bot
 
     await db.commit()
     return ResultatAction(

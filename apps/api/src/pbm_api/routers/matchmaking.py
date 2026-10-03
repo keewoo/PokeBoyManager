@@ -26,7 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.auth.dependencies import require_csrf, require_game_access
 from pbm_api.db import get_session
-from pbm_api.games import matchmaking
+from pbm_api.games import bot, matchmaking
 from pbm_api.games.entry import DeckInjouable, DeckIntrouvable, verifier_deck
 from pbm_api.games.matchmaking import Apparie, DejaEnPartie, EnAttente
 from pbm_api.models import User
@@ -102,6 +102,25 @@ class PresenceOut(BaseModel):
         description="Joueurs en ligne, hors partie, autres que soi : les adversaires possibles."
     )
     options: list[str]
+
+
+class EntrainementIn(BaseModel):
+    """Lancer une partie d'entraînement : le deck du joueur et le niveau du bot (DJ7)."""
+
+    deck_id: uuid.UUID
+    niveau: str = "correct"
+
+
+class EntrainementOut(BaseModel):
+    """La partie d'entraînement créée : son identifiant, le niveau choisi, le délai d'animation.
+
+    ``bot_delai_ms`` est le temps de réflexion **visible** du bot (DJ7, « rester lisible ») : le
+    serveur ne temporise pas (il sert d'autres joueurs), l'écran révèle les coups à ce rythme.
+    """
+
+    game_id: uuid.UUID
+    niveau: str
+    bot_delai_ms: int
 
 
 def _reponse(resultat: Apparie | EnAttente) -> FileOut:
@@ -224,4 +243,45 @@ async def presence(
         en_file=p.en_file,
         autres_disponibles=p.autres_disponibles,
         options=p.options,
+    )
+
+
+@router.post("/entrainement", response_model=EntrainementOut, status_code=status.HTTP_201_CREATED)
+async def entrainement(
+    body: EntrainementIn,
+    db: Annotated[AsyncSession, Depends(get_session)],
+    current_user: Annotated[User, Depends(require_game_access)],
+    _csrf: Annotated[None, Depends(require_csrf)],
+) -> EntrainementOut:
+    """Lance une partie d'entraînement contre le bot — en un clic, sans file ni invitation (DJ7).
+
+    C'est l'entrée « S'entraîner » du salon (lot `j-salon-partie`) : le repli quand personne n'est
+    en ligne (`presence` propose alors l'option ``entrainement_bot``). 404 si le deck n'est pas
+    celui du joueur (pas de fuite) ; 422 si le deck n'est pas jouable (cartes nommées) ou si le
+    niveau est inconnu ; 409 si le joueur est déjà dans une partie. Sinon la partie est créée, le
+    bot a placé son camp, et le joueur n'a plus qu'à ouvrir ``/games/{game_id}``.
+    """
+    if await matchmaking.partie_active_de(db, current_user.id) is not None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Vous êtes déjà dans une partie en cours : terminez-la avant d'en lancer une autre.",
+        )
+    try:
+        game = await bot.creer_partie_entrainement(
+            db, user_id=current_user.id, deck_id=body.deck_id, niveau=body.niveau
+        )
+    except DeckIntrouvable as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, NOT_FOUND_MESSAGE) from exc
+    except DeckInjouable as exc:
+        raise HTTPException(
+            422,
+            detail={
+                "message": "Deck non jouable.",
+                "refus": [{"carte": nom, "raison": raison} for nom, raison in exc.refus],
+            },
+        ) from exc
+    except bot.NiveauBotInconnu as exc:
+        raise HTTPException(422, str(exc)) from exc
+    return EntrainementOut(
+        game_id=game.id, niveau=body.niveau, bot_delai_ms=bot.DELAI_REFLEXION_MS
     )
