@@ -123,12 +123,18 @@ async def get_default_credential(db: AsyncSession, user: User) -> tuple[AiProvid
     return credential.provider, decrypted
 
 
-async def record_usage(db: AsyncSession, user: User, usage: ExtractionUsage) -> None:
+async def record_usage(
+    db: AsyncSession, user: User, usage: ExtractionUsage, *, commit: bool = True
+) -> None:
     """Alimente `ai_usage_monthly` (mission `v2-prix`/`v1-byok` : table posée, lecture seule
     jusqu'ici) à chaque appel réel au fournisseur — premier appelant : le repli LLM de la
     détection (mission `v3-detection`). `estimated_cost_eur` reste à 0 : aucune table de
     tarification par modèle n'existe encore dans ce dépôt (reste à faire, hors périmètre de ce
-    lot), seuls les compteurs d'appels et de jetons sont fiables aujourd'hui."""
+    lot), seuls les compteurs d'appels et de jetons sont fiables aujourd'hui.
+
+    ``commit`` à faux laisse le commit à l'appelant : l'adversaire IA (lot `j-adversaire-ia`)
+    enregistre l'usage **au sein** de la transaction du coup, pour que l'usage ne soit compté que si
+    le coup est bien persisté (pas de commit à mi-chemin d'une transaction de jeu)."""
     period = date.today().replace(day=1)
     result = await db.execute(
         select(AiUsageMonthly).where(
@@ -148,7 +154,8 @@ async def record_usage(db: AsyncSession, user: User, usage: ExtractionUsage) -> 
         db.add(row)
     row.calls_count += 1
     row.tokens_count += usage.input_tokens + usage.output_tokens
-    await db.commit()
+    if commit:
+        await db.commit()
 
 
 async def list_usage(db: AsyncSession, user: User) -> list[AiUsageMonthly]:

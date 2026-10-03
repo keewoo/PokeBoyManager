@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pbm_api.auth.dependencies import require_game_access
 from pbm_api.db import get_session
 from pbm_api.games import horloges as _adapt_horloges
+from pbm_api.games.adversaire_ia import MAX_APPELS_PAR_PARTIE
 from pbm_api.games.catalogue_jeu import construire_catalogue_jeu
 from pbm_api.games.errors import (
     ActionRefusee,
@@ -28,7 +29,13 @@ from pbm_api.games.errors import (
 )
 from pbm_api.games.indicateurs import catalogue_pour_etat, catalogue_pour_resultat
 from pbm_api.games.projection import projeter_resultat, vue_autoritaire
-from pbm_api.games.schemas import ActionIn, GameDetailOut, GamePlayerOut, GameSummaryOut
+from pbm_api.games.schemas import (
+    ActionIn,
+    GameDetailOut,
+    GamePlayerOut,
+    GameSummaryOut,
+    IaCoutOut,
+)
 from pbm_api.games.service import (
     _game_pour_participant,
     abandonner_partie,
@@ -72,6 +79,16 @@ async def get_game(
         )
     ).scalars().all()
 
+    # Coût estimé de l'adversaire IA (lot j-adversaire-ia) : présent seulement quand un siège est
+    # tenu par l'IA du joueur. Compteurs réels de la partie ; le prix en euros reste à faire.
+    ia_cout = None
+    if any(p.adversaire_ia for p in players):
+        ia_cout = IaCoutOut(
+            appels=game.ia_appels,
+            jetons=game.ia_tokens,
+            plafond_appels=MAX_APPELS_PAR_PARTIE,
+        )
+
     # Construction explicite (le `Game` ORM ne porte pas `players`) : on assemble le résumé et on
     # y greffe les sièges chargés à part.
     return GameDetailOut(
@@ -86,6 +103,7 @@ async def get_game(
         engagement=game.engagement,
         journal_version=game.journal_version,
         players=[GamePlayerOut.model_validate(p, from_attributes=True) for p in players],
+        ia_cout=ia_cout,
     )
 
 

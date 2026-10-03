@@ -24,6 +24,7 @@ from pydantic import BaseModel, Field
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from pbm_api.ai import service as ai_service
 from pbm_api.auth.dependencies import require_csrf, require_game_access
 from pbm_api.db import get_session
 from pbm_api.games import bot, matchmaking
@@ -102,24 +103,40 @@ class PresenceOut(BaseModel):
         description="Joueurs en ligne, hors partie, autres que soi : les adversaires possibles."
     )
     options: list[str]
+    ia_disponible: bool = Field(
+        default=False,
+        description=(
+            "Vrai si le joueur a une clé IA utilisable : l'écran peut alors proposer « mon IA » "
+            "comme adversaire d'entraînement. Faux → n'offrir que le bot et expliquer comment "
+            "ajouter une clé (lot j-adversaire-ia, critère 4)."
+        ),
+    )
 
 
 class EntrainementIn(BaseModel):
-    """Lancer une partie d'entraînement : le deck du joueur et le niveau du bot (DJ7)."""
+    """Lancer une partie d'entraînement : le deck, le niveau du bot (DJ7) et l'adversaire (DJ7/IA).
+
+    ``adversaire`` vaut ``"bot"`` (le bot heuristique, défaut) ou ``"ia"`` (l'IA du joueur, qui
+    raisonne et explique, sur sa propre clé — lot `j-adversaire-ia`). ``niveau`` fixe le niveau du
+    bot, qui sert aussi de repli à l'IA.
+    """
 
     deck_id: uuid.UUID
     niveau: str = "correct"
+    adversaire: str = "bot"
 
 
 class EntrainementOut(BaseModel):
-    """La partie d'entraînement créée : son identifiant, le niveau choisi, le délai d'animation.
+    """La partie d'entraînement créée : son identifiant, le niveau choisi, l'adversaire, le délai.
 
     ``bot_delai_ms`` est le temps de réflexion **visible** du bot (DJ7, « rester lisible ») : le
     serveur ne temporise pas (il sert d'autres joueurs), l'écran révèle les coups à ce rythme.
+    ``adversaire`` renvoie le choix effectif (``"bot"`` ou ``"ia"``).
     """
 
     game_id: uuid.UUID
     niveau: str
+    adversaire: str
     bot_delai_ms: int
 
 
@@ -237,12 +254,16 @@ async def presence(
 ) -> PresenceOut:
     """La présence des comptes invités, et les options de repli s'il n'y a personne à affronter."""
     p = await matchmaking.presence(db, redis, current_user.id)
+    # Clé IA utilisable ? (lot j-adversaire-ia) — pour que le salon propose « mon IA » ou explique
+    # comment en ajouter une. Lecture seule du coffre ; la clé elle-même n'est jamais renvoyée.
+    ia_disponible = await ai_service.get_default_credential(db, current_user) is not None
     return PresenceOut(
         en_ligne=p.en_ligne,
         en_partie=p.en_partie,
         en_file=p.en_file,
         autres_disponibles=p.autres_disponibles,
         options=p.options,
+        ia_disponible=ia_disponible,
     )
 
 
@@ -268,7 +289,11 @@ async def entrainement(
         )
     try:
         game = await bot.creer_partie_entrainement(
-            db, user_id=current_user.id, deck_id=body.deck_id, niveau=body.niveau
+            db,
+            user_id=current_user.id,
+            deck_id=body.deck_id,
+            niveau=body.niveau,
+            adversaire=body.adversaire,
         )
     except DeckIntrouvable as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, NOT_FOUND_MESSAGE) from exc
@@ -280,8 +305,15 @@ async def entrainement(
                 "refus": [{"carte": nom, "raison": raison} for nom, raison in exc.refus],
             },
         ) from exc
+    except bot.CleIAIndisponible as exc:
+        # 422 explicite (jamais un repli muet sur le bot) : le client affiche comment ajouter une
+        # clé IA, et propose le bot en attendant (critère 4 du lot `j-adversaire-ia`).
+        raise HTTPException(422, str(exc)) from exc
     except bot.NiveauBotInconnu as exc:
         raise HTTPException(422, str(exc)) from exc
     return EntrainementOut(
-        game_id=game.id, niveau=body.niveau, bot_delai_ms=bot.DELAI_REFLEXION_MS
+        game_id=game.id,
+        niveau=body.niveau,
+        adversaire=body.adversaire,
+        bot_delai_ms=bot.DELAI_REFLEXION_MS,
     )

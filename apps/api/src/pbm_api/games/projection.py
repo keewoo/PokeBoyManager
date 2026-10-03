@@ -75,6 +75,16 @@ def vue_autoritaire(
     return sortie
 
 
+def _commentaires_json(resultat: ResultatAction) -> list[dict]:
+    """Les commentaires d'affichage du résultat (lot `j-adversaire-ia`), tels quels pour le client.
+
+    Ce sont des **faits publics** sur le déroulé (l'explication de l'IA adverse, la note de repli du
+    bot) : ils ne portent aucune information cachée (ni main, ni pioche), donc ils ne sont pas
+    reprojetés — ils sont les mêmes pour les deux joueurs, comme le journal des coups.
+    """
+    return [dict(c) for c in resultat.commentaires]
+
+
 def projeter_resultat(
     resultat: ResultatAction,
     *,
@@ -106,4 +116,7 @@ def projeter_resultat(
     actions = actions_pour(etat, joueur_id, catalogue_jeu)
     sortie["vue"]["actions_legales"] = actions["legales"]
     sortie["vue"]["actions_refusees"] = actions["refusees"]
+    # Commentaires de l'adversaire automatique (explications de l'IA, note de repli du bot) : hors
+    # de la vue projetée du moteur, ils voyagent à côté, à destination du journal du client.
+    sortie["commentaires"] = _commentaires_json(resultat)
     return sortie

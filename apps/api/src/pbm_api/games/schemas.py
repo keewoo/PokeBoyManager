@@ -34,12 +34,15 @@ class GamePlayerOut(BaseModel):
 
     ``bot_niveau`` est ``None`` pour un siège humain ; renseigné (« hasard »/« correct »/
     « coriace »), il désigne le siège tenu par le bot d'entraînement (lot `j-mode-solo`).
+    ``adversaire_ia`` est vrai quand ce siège est tenu par l'IA du joueur (lot `j-adversaire-ia`) ;
+    ``bot_niveau`` est alors son niveau de repli.
     """
 
     user_id: uuid.UUID
     seat: int
     deck_id: uuid.UUID | None
     bot_niveau: str | None = None
+    adversaire_ia: bool = False
 
 
 class GameSummaryOut(BaseModel):
@@ -59,13 +62,29 @@ class GameSummaryOut(BaseModel):
     entrainement: bool = False
 
 
+class IaCoutOut(BaseModel):
+    """Le **coût estimé** de l'adversaire IA sur une partie (lot `j-adversaire-ia`).
+
+    ``appels`` et ``jetons`` sont les compteurs réels (``games.ia_appels``/``ia_tokens``) ;
+    ``plafond_appels`` est la limite par partie. Le coût en euros n'est pas encore calculé (aucune
+    table de tarification par modèle dans ce dépôt — reste à faire, documenté) : l'écran affiche le
+    nombre d'appels et de jetons, honnêtement, plutôt qu'un chiffre inventé.
+    """
+
+    appels: int
+    jetons: int
+    plafond_appels: int
+
+
 class GameDetailOut(GameSummaryOut):
     """Détail d'une partie : le résumé, l'engagement (commit-reveal) et les deux sièges.
 
     `engagement` est l'empreinte de la graine, publiable (commit-reveal) ; la graine elle-même
     n'est jamais renvoyée. `journal_version` dit sous quel schéma le journal a été écrit.
+    ``ia_cout`` n'est présent que pour une partie contre « mon IA » : le coût estimé à afficher.
     """
 
     engagement: str
     journal_version: int
     players: list[GamePlayerOut]
+    ia_cout: IaCoutOut | None = None
