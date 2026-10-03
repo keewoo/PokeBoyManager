@@ -11,11 +11,14 @@ import {
   YAxis,
 } from "recharts";
 
+/** Un point de la courbe de valeur : un jour (ISO) et le prix relevé ce jour-là, en euros. */
 export type ValueChartPoint = {
   day: string;
   price: number;
 };
 
+/** Entrées de `ValueChart` : la série de points et, en option, le prix d'achat à tracer en
+ * ligne de référence. */
 export type ValueChartProps = {
   points: ValueChartPoint[];
   /** Prix d'achat de l'exemplaire (mission point 2 : ligne de référence), `null` si inconnu. */
@@ -57,6 +60,10 @@ function ChartTooltip({
   );
 }
 
+/** Courbe de valeur de l'onglet « Valeur » (maquette `docs/UI-UX.md` § « Fiche carte »), tracée
+ * avec Recharts, plus une ligne de référence au prix d'achat quand il est connu. Affiche un
+ * message plutôt qu'une courbe tant qu'il y a moins de deux relevés — un historique court en
+ * début de vie n'est jamais complété artificiellement. */
 export function ValueChart({ points, purchasePrice }: ValueChartProps) {
   if (points.length < 2) {
     return (

@@ -11,6 +11,10 @@ function LegalBadge({ label, legal }: { label: string; legal: boolean | null }) 
   return <Badge variant={legal ? "success" : "danger"}>{label} : {legal ? "légale" : "non légale"}</Badge>;
 }
 
+/** Onglet « En jeu » de la fiche carte (maquette `docs/UI-UX.md` § « Fiche carte ») : légalité
+ * (Standard/Étendu), règle de prix, attaques et dégâts, présence récente en tournoi, et une
+ * synthèse de jouabilité générée par l'IA. Données : `getInGameStudy` (`lib/api/cards`). Sans clé
+ * IA, la synthèse invite à en déposer une ; le reste (légalité, attaques, tournoi) reste affiché. */
 export function InGameTab({ cardId }: { cardId: string }) {
   const [study, setStudy] = useState<InGameStudy | null>(null);
   const [error, setError] = useState<string | null>(null);

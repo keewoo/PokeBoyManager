@@ -22,6 +22,8 @@ import type { VueCarte, VuePokemon } from "@/lib/game/plateau";
  */
 export type TailleCarte = "plateau" | "zoom";
 
+/** Props de {@link BoardCard} : la carte à poser, son Pokémon porteur éventuel, la taille, et les
+ * accroches d'interaction (zoom, mise en évidence, cible illuminée) — toutes pilotées par le parent. */
 export type BoardCardProps = {
   carte: VueCarte;
   /** Le Pokémon porteur, quand la carte est un Pokémon en jeu : porte énergies, dégâts, PV, états. */
@@ -177,6 +179,11 @@ function Indicateurs({ pokemon, zoom }: { pokemon: VuePokemon; zoom: boolean }) 
   );
 }
 
+/**
+ * Rend la carte (surface + indicateurs) et câble les gestes : survol/focus/maintien long ouvrent le
+ * zoom (`onPeek`), un état « cible illuminée » (`illumine`) la rend cliquable, focusable et zone de
+ * dépôt. Aucune règle ici : la carte affiche ce que la vue projetée porte, le parent décide du reste.
+ */
 export function BoardCard({
   carte,
   pokemon,

@@ -207,6 +207,12 @@ function AlertsNotice({ alerts, onRead }: { alerts: DeckAlert[]; onRead: () => v
   );
 }
 
+/**
+ * Liste des decks du joueur (écran « Mes decks »). Charge les decks via `listDecks` et les alertes
+ * « à compléter » via `fetchDeckAlerts` (`lib/api/decks`) ; offre la création, la duplication et
+ * la suppression d'un deck. Le bandeau d'alertes signale les cartes qui ont quitté la collection
+ * sans qu'aucune n'ait été retirée d'un deck, et peut être marqué lu (`markDeckAlertsRead`).
+ */
 export function DecksListView() {
   const [decks, setDecks] = useState<DeckSummary[]>([]);
   const [loading, setLoading] = useState(true);

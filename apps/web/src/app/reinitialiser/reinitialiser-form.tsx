@@ -15,6 +15,14 @@ import { Label } from "@/components/ui/label";
 import { ApiError, resetPassword } from "@/lib/api/auth";
 import { resetPasswordSchema, type ResetPasswordFormValues } from "@/lib/validation/auth";
 
+/**
+ * Formulaire de réinitialisation du mot de passe, à partir du `token` présent dans l'URL.
+ *
+ * Sans token, affiche un écran « lien invalide » renvoyant vers une nouvelle demande. Sinon,
+ * valide le mot de passe (`resetPasswordSchema`, avec jauge de robustesse) et appelle
+ * `resetPassword` (lib/api/auth) ; en cas de succès, confirme que les sessions actives ont été
+ * déconnectées. La validité du jeton et la révocation des sessions sont décidées côté serveur.
+ */
 export function ReinitialiserForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");

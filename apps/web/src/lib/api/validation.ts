@@ -1,8 +1,10 @@
 import { apiGet, apiJson } from "@/lib/api/client";
 import { getApiBaseUrl } from "@/lib/config";
 
+/** État d'une détection de carte : en attente d'arbitrage, validée, ou rejetée par l'utilisateur. */
 export type DetectionStatus = "pending" | "validated" | "rejected";
 
+/** Une carte du catalogue proposée comme correspondance d'une détection, avec ses scores et la présélection éventuelle (décidés serveur). */
 export type IdentificationCandidate = {
   card_id: string;
   set_id: string;
@@ -15,6 +17,7 @@ export type IdentificationCandidate = {
   preselected: boolean;
 };
 
+/** Champs lus sur la carte par la reconnaissance (nom, numéro, set, langue…), chacun assorti d'un indice de confiance. */
 export type CardExtraction = {
   name: string | null;
   name_confidence: number;
@@ -43,6 +46,7 @@ export type ConditionAssessment = {
   counterfeit_reasons: string[];
 };
 
+/** Une carte détectée dans une photo : son recadrage, l'extraction, les candidats du catalogue, l'état estimé et la qualité du découpage. */
 export type Detection = {
   id: string;
   reading_order: number;
@@ -78,8 +82,10 @@ export function decoupeDouteuse(detection: Detection): boolean {
   return qualite.seam === true || (qualite.truncated ?? 0) >= SEUIL_TRONCATURE;
 }
 
+/** État d'un job de reconnaissance côté serveur (en file, en cours, réussi, échoué). */
 export type JobStatus = "queued" | "running" | "succeeded" | "failed";
 
+/** Détail d'un envoi en cours de reconnaissance : statut, état du job (et son erreur), et les détections obtenues. */
 export type UploadDetail = {
   upload_id: string;
   status: string;
@@ -88,6 +94,7 @@ export type UploadDetail = {
   detections: Detection[];
 };
 
+/** Choix de l'utilisateur au moment de confirmer une détection : la carte retenue et les attributs de l'exemplaire à créer. */
 export type ConfirmDetectionPayload = {
   card_id: string;
   language?: string;
@@ -99,23 +106,27 @@ export type ConfirmDetectionPayload = {
   acquired_at?: string | null;
 };
 
+/** Résultat d'une confirmation : la détection passe `validated` et les exemplaires de collection créés sont renvoyés. */
 export type ConfirmDetectionResult = {
   detection_id: string;
   status: DetectionStatus;
   collection_item_ids: string[];
 };
 
+/** Résultat d'un rejet : la détection passe `rejected`, aucun exemplaire n'est créé. */
 export type RejectDetectionResult = {
   detection_id: string;
   status: DetectionStatus;
 };
 
+/** Résultat d'une confirmation en masse : les détections confirmées et celles laissées de côté. */
 export type ConfirmAllResult = {
   upload_id: string;
   confirmed: string[];
   skipped: string[];
 };
 
+/** Une carte trouvée par la recherche manuelle au catalogue, quand l'utilisateur corrige une détection. */
 export type CardSearchResult = {
   card_id: string;
   set_id: string;
@@ -128,10 +139,12 @@ export type CardSearchResult = {
   score: number;
 };
 
+/** Lit l'état d'un envoi et ses détections (`GET /uploads/{id}`), pour l'écran de validation. */
 export function getUpload(uploadId: string): Promise<UploadDetail> {
   return apiGet<UploadDetail>(`/uploads/${uploadId}`);
 }
 
+/** Confirme une détection (`POST /detections/{id}/confirm`) : le serveur crée les exemplaires de collection correspondants. */
 export function confirmDetection(
   detectionId: string,
   payload: ConfirmDetectionPayload
@@ -139,14 +152,17 @@ export function confirmDetection(
   return apiJson<ConfirmDetectionResult>("POST", `/detections/${detectionId}/confirm`, payload);
 }
 
+/** Rejette une détection (`POST /detections/{id}/reject`) ; rien n'est ajouté à la collection. */
 export function rejectDetection(detectionId: string): Promise<RejectDetectionResult> {
   return apiJson<RejectDetectionResult>("POST", `/detections/${detectionId}/reject`);
 }
 
+/** Confirme toutes les détections présélectionnables d'un envoi (`POST /uploads/{id}/confirm-all`) ; le serveur choisit lesquelles sont sûres. */
 export function confirmAll(uploadId: string): Promise<ConfirmAllResult> {
   return apiJson<ConfirmAllResult>("POST", `/uploads/${uploadId}/confirm-all`);
 }
 
+/** Accusé de relance de la reconnaissance : l'envoi concerné et le nouveau job. */
 export type RetryRecognitionResult = {
   upload_id: string;
   job_id: string;
@@ -159,12 +175,14 @@ export function retryRecognition(uploadId: string): Promise<RetryRecognitionResu
   return apiJson<RetryRecognitionResult>("POST", `/uploads/${uploadId}/retry-recognition`);
 }
 
+/** Recherche manuelle au catalogue (`GET /catalog/search`) pour corriger une détection ; requête vide → liste vide, sans appel. */
 export async function searchCatalog(query: string): Promise<CardSearchResult[]> {
   if (!query.trim()) return [];
   const params = new URLSearchParams({ q: query });
   return apiGet<CardSearchResult[]>(`/catalog/search?${params.toString()}`);
 }
 
+/** URL de l'image officielle d'une carte du catalogue (`/img/cards/{id}`), en basse ou haute définition. */
 export function cardImageUrl(cardId: string, size: "high" | "low" = "low"): string {
   return `${getApiBaseUrl()}/img/cards/${cardId}?size=${size}`;
 }

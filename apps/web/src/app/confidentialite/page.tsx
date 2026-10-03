@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
 
+/** Métadonnées de la page (titre d'onglet et description) pour la route `/confidentialite`. */
 export const metadata: Metadata = {
   title: "Politique de confidentialité — PokéBoy",
   description: "Quelles données PokéBoy conserve, pourquoi, et comment les supprimer.",
 };
 
+/**
+ * Page statique de la politique de confidentialité : données collectées et leur finalité,
+ * chiffrement des clés IA, sous-traitants IA choisis par l'utilisateur, durées de conservation,
+ * export et droits (accès, rectification, suppression). Contenu éditorial figé, sans appel serveur.
+ */
 export default function ConfidentialitePage() {
   return (
     <article className="prose grid max-w-3xl gap-4">

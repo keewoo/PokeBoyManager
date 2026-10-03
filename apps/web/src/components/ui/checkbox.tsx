@@ -4,6 +4,11 @@ import { cn } from "@/lib/utils";
 
 // Cible tactile confortable (20 px de case, dans une zone de 44 px via le label qui
 // l'entoure) et couleur d'accent en or, comme toute action de la charte.
+/**
+ * Primitive du design system : une case à cocher native (`input type="checkbox"`) habillée
+ * aux couleurs de la charte. Reste un champ natif — l'état coché/décoché est piloté par
+ * l'appelant via les props standards (`checked`, `onChange`).
+ */
 function Checkbox({ className, ...props }: React.ComponentProps<"input">) {
   return (
     <input

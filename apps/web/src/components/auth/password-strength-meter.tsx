@@ -9,6 +9,12 @@ const LEVEL_COLOR = {
   bonne: "bg-success",
 } as const;
 
+/**
+ * Jauge visuelle (3 segments) de robustesse du mot de passe saisi. Le niveau vient de
+ * `estimatePasswordStrength` (lib/validation/auth) — faible/moyenne/bonne — jamais d'un
+ * calcul maison ici. Rendu `null` tant que le champ est vide. Indicatif seulement : le
+ * contrôle réel (longueur minimale, fuites connues) se fait côté serveur à l'envoi.
+ */
 export function PasswordStrengthMeter({ password }: { password: string }) {
   if (!password) return null;
 

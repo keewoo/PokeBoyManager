@@ -13,6 +13,13 @@ import { Label } from "@/components/ui/label";
 import { ApiError, forgotPassword } from "@/lib/api/auth";
 import { forgotPasswordSchema, type ForgotPasswordFormValues } from "@/lib/validation/auth";
 
+/**
+ * Écran « mot de passe oublié » : saisie de l'e-mail pour demander un lien de réinitialisation.
+ *
+ * Valide l'e-mail (`forgotPasswordSchema`) et appelle `forgotPassword` (lib/api/auth). L'écran de
+ * succès est volontairement identique que le compte existe ou non (anti-énumération) ; seul un
+ * 429 (trop de demandes) donne un message distinct. La décision d'envoyer l'e-mail est côté serveur.
+ */
 export default function MotDePasseOubliePage() {
   const [submitted, setSubmitted] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);

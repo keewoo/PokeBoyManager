@@ -39,6 +39,11 @@ const BTN_REFUS =
 
 const BARRE = "flex flex-wrap items-center justify-center gap-2 px-2 py-1";
 
+/**
+ * Rend la barre selon la phase de `selection` : confirmation d'un coup irréversible, choix d'une
+ * cible, ou repos (les coups jouables puis les coups refusés grisés). Ne décide rien — `legales`,
+ * `refusees` et `irreversible` viennent du serveur ; les callbacks remontent le choix au conteneur.
+ */
 export function ActionBar({
   legales,
   refusees,

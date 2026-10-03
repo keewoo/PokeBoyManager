@@ -23,6 +23,14 @@ function safeNextPath(next: string | null): string {
   return next;
 }
 
+/**
+ * Formulaire de connexion (e-mail + mot de passe), validé côté client par `loginSchema` (zod).
+ *
+ * Appelle `login` (lib/api/auth) ; en cas de succès, redirige vers le `next` de l'URL (nettoyé
+ * par `safeNextPath` contre l'open-redirect), ou vers le changement de mot de passe si le compte
+ * y est contraint. Traduit les codes d'erreur de l'API (401 identifiants, 429 blocage temporaire)
+ * en messages lisibles. La décision d'authentifier appartient au serveur.
+ */
 export function ConnexionForm() {
   const router = useRouter();
   const searchParams = useSearchParams();

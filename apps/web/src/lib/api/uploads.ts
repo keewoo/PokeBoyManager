@@ -1,7 +1,13 @@
 import { getApiBaseUrl, getCsrfCookieName } from "@/lib/config";
 
+/** Nom de l'en-tête HTTP portant le jeton CSRF, attendu par l'API sur les requêtes mutantes. */
 export const CSRF_HEADER_NAME = "X-CSRF-Token";
 
+/**
+ * Erreur d'un appel d'upload portant le code HTTP et le message serveur. Dupliquée ici (plutôt
+ * qu'importée de `client.ts`) car ce module fait ses appels `fetch` à la main — flux multipart et
+ * cibles d'envoi présignées — sans passer par les helpers génériques.
+ */
 export class ApiError extends Error {
   status: number;
 
@@ -11,12 +17,14 @@ export class ApiError extends Error {
   }
 }
 
+/** Métadonnées d'un fichier à envoyer, déclarées avant l'envoi pour que le serveur prépare la cible. */
 export type UploadFileMeta = {
   filename: string;
   content_type: string;
   size_bytes: number;
 };
 
+/** Cible d'envoi retournée par le serveur : où et comment déposer les octets bruts (URL, méthode, en-têtes signés). */
 export type UploadTarget = {
   upload_id: string;
   method: string;
@@ -24,6 +32,7 @@ export type UploadTarget = {
   headers: Record<string, string>;
 };
 
+/** Résultat de la finalisation d'un envoi : statut, métadonnées retenues, et le job de reconnaissance s'il a été lancé. */
 export type CompleteUploadResult = {
   upload_id: string;
   status: string;
@@ -42,6 +51,7 @@ function readCookie(name: string): string | null {
   return match?.[1] ? decodeURIComponent(match[1]) : null;
 }
 
+/** Lit le jeton CSRF déposé en cookie après connexion (ou `null` côté serveur / avant session). */
 export function getCsrfToken(): string | null {
   return readCookie(getCsrfCookieName());
 }
@@ -54,6 +64,7 @@ async function parseErrorMessage(response: Response): Promise<string> {
   return "Une erreur est survenue. Réessaie dans un instant.";
 }
 
+/** Étape 1 de l'envoi : déclare les fichiers (`POST /uploads`) et récupère une cible signée par fichier. Lève `ApiError` sur échec. */
 export async function createUploads(files: UploadFileMeta[]): Promise<UploadTarget[]> {
   const csrf = getCsrfToken();
   const response = await fetch(`${getApiBaseUrl()}/uploads`, {
@@ -72,6 +83,11 @@ export async function createUploads(files: UploadFileMeta[]): Promise<UploadTarg
   return body.uploads;
 }
 
+/**
+ * Étape 2 : dépose les octets bruts du fichier vers la cible fournie. L'URL peut être absolue (S3
+ * présigné) ou relative à notre API ; dans tous les cas `credentials: "omit"` — une signature S3
+ * serait invalidée par un cookie, et la cible locale s'authentifie par le jeton dans l'URL.
+ */
 export async function putRawBytes(target: UploadTarget, file: Blob): Promise<void> {
   const isAbsolute = /^https?:\/\//i.test(target.url);
   const url = isAbsolute ? target.url : `${getApiBaseUrl()}${target.url}`;
@@ -89,6 +105,7 @@ export async function putRawBytes(target: UploadTarget, file: Blob): Promise<voi
   }
 }
 
+/** Étape 3 : signale la fin de l'envoi (`POST /uploads/{id}/complete`) ; le serveur valide et lance la reconnaissance. Lève `ApiError` sur échec. */
 export async function completeUpload(uploadId: string): Promise<CompleteUploadResult> {
   const csrf = getCsrfToken();
   const response = await fetch(`${getApiBaseUrl()}/uploads/${uploadId}/complete`, {
@@ -102,6 +119,7 @@ export async function completeUpload(uploadId: string): Promise<CompleteUploadRe
   return (await response.json()) as CompleteUploadResult;
 }
 
+/** Un envoi qui a encore des cartes à valider : point de reprise du parcours de validation. */
 export type PendingUpload = {
   upload_id: string;
   created_at: string;
@@ -126,6 +144,7 @@ export async function listPendingValidations(): Promise<PendingUpload[]> {
   }
 }
 
+/** Indique si l'utilisateur a déposé au moins une clé IA (`GET /me/ai-keys`) ; renvoie `false` sur échec, pour aiguiller l'écran d'ajout. */
 export async function hasAnyAiKey(): Promise<boolean> {
   const response = await fetch(`${getApiBaseUrl()}/me/ai-keys`, { credentials: "include" });
   if (!response.ok) {

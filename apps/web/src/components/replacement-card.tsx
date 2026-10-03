@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { couleurType, ELEMENT_LABELS, codeFond, fondPour } from "@/lib/replacement-card";
 
+/** Props de `ReplacementCard` : les vraies données catalogue dont on compose le visuel de substitution. */
 export type ReplacementCardProps = {
   /** Identifiant catalogue : fige le choix du fond, la même carte garde toujours le même visuel. */
   cardId: string;
@@ -23,6 +24,13 @@ export type ReplacementCardProps = {
 // reçoit un fond générique, déterministe d'après l'identifiant. Une mention « visuel non
 // disponible » reste toujours affichée : un remplacement ne se fait jamais passer pour l'image
 // officielle. Référence visuelle : `docs/visuels-remplacement/README.md`.
+/**
+ * Visuel de substitution pour une carte sans image officielle, COMPOSÉ à partir de ses vraies
+ * données (nom, PV ou catégorie, type, extension·numéro, rareté). Le fond générique est choisi
+ * de façon déterministe d'après `cardId` (via `lib/replacement-card`), donc stable dans le temps ;
+ * le texte se mesure en `cqw` pour rester lisible de la vignette au grand format. Affiche
+ * toujours « visuel non disponible » : jamais un faux passant pour l'image officielle.
+ */
 export function ReplacementCard({
   cardId,
   name,

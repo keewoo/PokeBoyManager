@@ -6,12 +6,19 @@ import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/client";
 import { avatarUrl, uploadAvatar } from "@/lib/api/profile";
 
+/** Props du sélecteur d'avatar : `hasAvatar` décide image vs initiales, `initials` sert de repli, `onUploaded` prévient le parent après un envoi réussi. */
 export type AvatarPickerProps = {
   hasAvatar: boolean;
   initials: string;
   onUploaded: () => void;
 };
 
+/**
+ * Affiche l'avatar (image privée servie par l'API via le cookie de session, d'où
+ * `crossOrigin`) ou les initiales en repli, et un bouton d'envoi d'une nouvelle photo
+ * (JPEG/PNG). L'upload passe par `uploadAvatar` ; un paramètre anti-cache (`bust`) force
+ * le rechargement de l'image après succès. Ne recadre pas lui-même — c'est le serveur.
+ */
 export function AvatarPicker({ hasAvatar, initials, onUploaded }: AvatarPickerProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);

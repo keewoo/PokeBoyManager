@@ -111,6 +111,12 @@ function formatDateTime(iso: string): string {
   }).format(date);
 }
 
+/** Vue cliente de `/ajouter` (étape 1 « Photos », maquette `docs/UI-UX.md` § « Les écrans »).
+ * Sélection/drag-drop ou appareil photo, contrôle local (format, 20 Mo, 30 photos max par lot)
+ * et estimation du coût IA avant envoi, puis `createUploads` → `putRawBytes` → `completeUpload`
+ * (`lib/api/uploads`) et redirection vers `/ajouter/validation`. Affiche aussi les lots déjà
+ * reconnus mais non validés (reprise) et l'import CSV. Sans clé IA : la reconnaissance est
+ * masquée, seul l'import CSV reste. Ne fait PAS la validation des cartes (écran suivant). */
 export function UploadView() {
   const router = useRouter();
   const [aiKeyStatus, setAiKeyStatus] = useState<"loading" | "missing" | "ready">("loading");

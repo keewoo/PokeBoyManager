@@ -5,8 +5,10 @@ import { apiGet, apiJson } from "@/lib/api/client";
 // invitations reçues ne portent que des identifiants — pas de jeton, pas d'empreinte.
 
 // Modes et statuts, miroir du modèle `GameInvitation`.
+/** Statut d'une invitation encore en attente de réponse (miroir du modèle `GameInvitation`). */
 export const INVITATION_EN_ATTENTE = "en_attente";
 
+/** Une invitation à jouer (par pseudo ou par lien) ; ne porte que des identifiants, jamais de jeton ni d'empreinte. */
 export type Invitation = {
   id: string;
   mode: string; // "pseudo" | "lien"
@@ -17,17 +19,20 @@ export type Invitation = {
   invitee_deck_id: string | null;
 };
 
+/** Invitation par lien tout juste créée : c'est le seul endroit où le jeton et l'URL sont renvoyés (jamais relus ensuite). */
 export type LienCree = Invitation & {
   jeton: string;
   url: string;
 };
 
+/** Un joueur dans le salon d'attente : son identité et le deck qu'il a choisi (ou aucun). */
 export type JoueurSalon = {
   user_id: string;
   pseudo: string | null;
   deck: { deck_id: string; nom: string } | null;
 };
 
+/** Le salon d'attente à deux rattaché à une invitation : hôte et invité, et le statut courant. */
 export type Salon = {
   invitation_id: string;
   statut: string;

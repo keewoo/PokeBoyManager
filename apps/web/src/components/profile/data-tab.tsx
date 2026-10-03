@@ -13,6 +13,14 @@ import { deleteAccount } from "@/lib/api/profile";
 import { downloadCollectionCsv, requestExport } from "@/lib/api/export";
 import { deleteAccountSchema, type DeleteAccountFormValues } from "@/lib/validation/profile";
 
+/**
+ * Onglet « Mes données » du profil : deux actions RGPD. L'export complet
+ * (`requestExport`) prépare un ZIP (collection JSON/CSV + photos) livré par e-mail avec
+ * lien valable 24 h ; l'export CSV seul (`downloadCollectionCsv`) est téléchargé
+ * immédiatement. La suppression de compte (`deleteAccount`) exige le mot de passe, est
+ * confirmée en deux temps, puis redirige vers l'accueil. Données via `lib/api/profile`
+ * et `lib/api/export`.
+ */
 export function DataTab() {
   const [confirming, setConfirming] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);

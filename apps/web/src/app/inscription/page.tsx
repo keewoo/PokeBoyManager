@@ -15,6 +15,14 @@ import { Label } from "@/components/ui/label";
 import { ApiError, registerAccount } from "@/lib/api/auth";
 import { registerSchema, type RegisterFormValues } from "@/lib/validation/auth";
 
+/**
+ * Formulaire d'inscription : nom, date de naissance, e-mail, mot de passe (avec jauge de
+ * robustesse) et acceptation des conditions, validés par `registerSchema` (zod).
+ *
+ * Appelle `registerAccount` (lib/api/auth) puis affiche un écran invitant à vérifier la boîte mail.
+ * Ce message est volontairement neutre quant à l'existence préalable de l'adresse (anti-énumération).
+ * Le compte n'est activé qu'après le clic sur le lien de vérification, décision prise côté serveur.
+ */
 export default function InscriptionPage() {
   const [submitted, setSubmitted] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);

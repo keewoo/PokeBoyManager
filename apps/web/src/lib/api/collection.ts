@@ -1,5 +1,6 @@
 import { apiGet, apiJson } from "@/lib/api/client";
 
+/** Tris acceptés pour la liste de collection (valeur, variation 30 j, date d'acquisition, numéro, nom). */
 export type CollectionSort =
   | "value_desc"
   | "value_asc"
@@ -10,6 +11,7 @@ export type CollectionSort =
   | "number_asc"
   | "name_asc";
 
+/** Une ligne de la collection : l'exemplaire possédé, sa carte, sa valeur et sa variation sur 30 jours. */
 export type CollectionListItem = {
   id: string;
   card_id: string;
@@ -36,6 +38,7 @@ export type CollectionListItem = {
   is_duplicate: boolean;
 };
 
+/** Totaux de la collection pour l'en-tête : nombre d'exemplaires, valeur totale, variations 7 j / 30 j (calculés serveur). */
 export type CollectionAggregates = {
   items_total: number;
   items_priced: number;
@@ -45,12 +48,14 @@ export type CollectionAggregates = {
   value_change_30d_eur: string;
 };
 
+/** Réponse paginée de la collection : les lignes, le curseur de page suivante, et les totaux. */
 export type CollectionListResponse = {
   items: CollectionListItem[];
   next_cursor: string | null;
   aggregates: CollectionAggregates;
 };
 
+/** Valeurs distinctes présentes dans la collection, pour alimenter les filtres de l'écran. */
 export type CollectionFacets = {
   sets: { set_id: string; name: string; code: string }[];
   series: string[];
@@ -61,6 +66,7 @@ export type CollectionFacets = {
   condition_grades: string[];
 };
 
+/** Filtres, tri et pagination de la collection ; `buildQuery` les transpose en query string. */
 export type CollectionFilters = {
   q?: string;
   set_id?: string[];
@@ -109,15 +115,18 @@ function buildQuery(filters: CollectionFilters): string {
   return params.toString();
 }
 
+/** Liste filtrée et paginée de la collection (`GET /me/collection`) ; le filtrage et les totaux sont faits côté serveur. */
 export function listCollection(filters: CollectionFilters): Promise<CollectionListResponse> {
   const query = buildQuery(filters);
   return apiGet<CollectionListResponse>(`/me/collection${query ? `?${query}` : ""}`);
 }
 
+/** Valeurs de filtres disponibles dans la collection (`GET /me/collection/facets`). */
 export function getCollectionFacets(): Promise<CollectionFacets> {
   return apiGet<CollectionFacets>("/me/collection/facets");
 }
 
+/** Données d'ajout manuel d'un exemplaire à la collection (langue, variante, quantité, état, achat). */
 export type CreateCollectionItemPayload = {
   card_id: string;
   language?: string;
@@ -129,12 +138,14 @@ export type CreateCollectionItemPayload = {
   acquired_at?: string | null;
 };
 
+/** Ajoute un (ou plusieurs, via `quantity`) exemplaire à la collection (`POST /me/collection`) ; renvoie les identifiants créés. */
 export function createCollectionItem(
   payload: CreateCollectionItemPayload
 ): Promise<{ collection_item_ids: string[] }> {
   return apiJson<{ collection_item_ids: string[] }>("POST", "/me/collection", payload);
 }
 
+/** Retire un exemplaire de la collection (`DELETE /me/collection/{id}`) ; borné à l'utilisateur côté serveur. */
 export function deleteCollectionItem(itemId: string): Promise<void> {
   return apiJson<void>("DELETE", `/me/collection/${itemId}`);
 }

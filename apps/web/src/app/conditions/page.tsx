@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
 
+/** Métadonnées de la page (titre d'onglet et description) pour la route `/conditions`. */
 export const metadata: Metadata = {
   title: "Conditions générales d'utilisation — PokéBoy",
   description: "Ce que couvre le service PokéBoy et les règles d'usage de l'espace privé.",
 };
 
+/**
+ * Page statique des conditions générales d'utilisation : objet du service, responsabilité de
+ * la clé IA de l'utilisateur, nature des estimations de prix, résiliation, non-affiliation.
+ * Contenu éditorial figé (brouillon en attente de relecture), sans donnée ni appel serveur.
+ */
 export default function ConditionsPage() {
   return (
     <article className="prose grid max-w-3xl gap-4">

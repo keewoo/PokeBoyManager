@@ -13,11 +13,19 @@ import { ApiError } from "@/lib/api/client";
 import { requestEmailChange, updateIdentity, type ProfileResponse } from "@/lib/api/profile";
 import { identitySchema, type IdentityFormValues } from "@/lib/validation/profile";
 
+/** Props de l'onglet identité : le `profile` chargé par le parent et `onProfileChange` pour lui remonter la version mise à jour après enregistrement. */
 export type IdentityTabProps = {
   profile: ProfileResponse;
   onProfileChange: (profile: ProfileResponse) => void;
 };
 
+/**
+ * Onglet « Identité » du profil : avatar (via `AvatarPicker`) et formulaire pseudo /
+ * prénom / nom / date de naissance / e-mail, validé par `identitySchema`. N'appelle
+ * `updateIdentity` que si un champ d'identité a changé ; un changement d'e-mail passe par
+ * `requestEmailChange` (double opt-in : l'ancienne adresse reste active jusqu'à
+ * confirmation). Ne gère pas le mot de passe — c'est l'onglet Sécurité.
+ */
 export function IdentityTab({ profile, onProfileChange }: IdentityTabProps) {
   const [serverError, setServerError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);

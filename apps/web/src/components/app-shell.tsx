@@ -54,6 +54,15 @@ function CloseIcon() {
   );
 }
 
+/**
+ * Cadre de navigation de toute l'application : en-tête (logotype + menu) et zone de contenu.
+ * `hasSession` vient du serveur (cookie de session httpOnly lu par `app/layout.tsx`) et
+ * décide des liens affichés : présentation + connexion/inscription pour un visiteur, le menu
+ * complet pour un connecté. L'entrée « Jouer » et le badge d'alertes decks sont chargés en
+ * best-effort via l'API (`GET /me`, alertes) : un échec masque l'option plutôt que de
+ * promettre une porte vers un 404 ou un compteur mensonger. Le cadre n'autorise rien lui-même
+ * — la vraie garde d'accès est `src/middleware.ts` côté serveur.
+ */
 export function AppShell({
   children,
   hasSession = false,

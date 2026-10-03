@@ -55,6 +55,12 @@ function pickPrimaryItem(items: MyCardItem[]): MyCardItem | null {
   return best;
 }
 
+/** Fiche carte complète (maquette `docs/UI-UX.md` § « Fiche carte ») : en-tête (image officielle
+ * ou « Ma photo », extension, rareté, classement, et faits dérivés du meilleur exemplaire possédé
+ * via `pickPrimaryItem` — état, prix d'achat, plus-value) puis cinq onglets (Valeur, État,
+ * Histoire, En jeu, Mes exemplaires). Données : `getCardDetail` + `getCardMyItems` (`lib/api/cards`).
+ * L'onglet actif est un état local (bascule instantanée, sans requête), seulement reflété dans
+ * `?onglet=` pour le partage et le retour arrière. Chaque onglet charge ses propres données. */
 export function CardDetailView({ cardId }: { cardId: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();

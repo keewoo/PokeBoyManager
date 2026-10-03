@@ -6,6 +6,10 @@ import Image from "next/image";
 // modernes (AVIF/WebP) à partir de cette seule source — une largeur adaptée à chaque écran, sans
 // dupliquer un second fichier à la main (`sizes` ci-dessous couvre aussi bien un téléphone à
 // 390 px que la moitié d'un conteneur `max-w-6xl` en desktop).
+/**
+ * L'image d'en-tête de l'accueil visiteur, servie par `next/image` (variantes de taille et formats
+ * modernes générés depuis la source unique). Illustre la promesse du produit ; purement décorative.
+ */
 export function HeroImage() {
   return (
     <figure className="m-0 overflow-hidden rounded-xl bg-screen shadow-lg">

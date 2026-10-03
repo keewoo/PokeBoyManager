@@ -261,6 +261,11 @@ function banc(
   );
 }
 
+/**
+ * Dispose les deux camps à partir de la vue projetée : adversaire en haut, soi en bas, zones cachées
+ * en compteur. Tient l'état d'interaction (sélection, verrou anti double-envoi, raison d'un refus) et
+ * le zoom. Sans `onJouer`, reste en lecture seule — aucune barre d'actions, aucune cible saisissable.
+ */
 export function GameBoard({ vue, etatConnexion, agisseur, surligne, onJouer }: GameBoardProps) {
   const { moi, adversaire } = separerCamps(vue);
   const monTour = estMonTour(vue);

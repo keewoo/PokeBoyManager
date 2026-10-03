@@ -169,6 +169,14 @@ function TypeChart({ buckets }: { buckets: DeckStatBucket[] }) {
   );
 }
 
+/**
+ * Panneau de statistiques du deck (maquette `docs/UI-UX.md` § « Fiche de statistiques de deck »).
+ * Charge les mesures via `fetchDeckStats` (`lib/api/decks`) et les rend : compteurs (cartes, PV
+ * moyens, cartes spéciales, valeur, doublons), répartitions par rôle, type de carte et ligne
+ * d'évolution, courbe des coûts d'attaque et répartition par type élémentaire. Tout vient du
+ * catalogue et des prix relevés, jamais d'une estimation ; recalculé quand `refreshKey` (date de
+ * mise à jour du deck) change.
+ */
 export function DeckStatsPanel({ deckId, refreshKey }: { deckId: string; refreshKey: string }) {
   const [stats, setStats] = useState<DeckStats | null>(null);
   const [loading, setLoading] = useState(true);

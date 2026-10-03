@@ -33,6 +33,7 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
   );
 }
 
+/** Props de {@link DashboardValueChart} : les points de valeur (date + total) fournis par l'API. */
 export type DashboardValueChartProps = {
   points: DashboardValuePoint[];
 };
@@ -40,6 +41,10 @@ export type DashboardValueChartProps = {
 // Un seul point (collection sans historique de 90 j) : Recharts n'a rien à tracer, le chiffre
 // du dessus (valeur totale) porte déjà l'information, mieux vaut ne rien afficher qu'un graphe
 // vide trompeur.
+/**
+ * Courbe Recharts de la valeur totale sur 90 jours pour le tableau de bord. Les points viennent du
+ * serveur (un tous les 7 j) ; en dessous de 2 points elle ne trace rien et le dit (voir note ci-dessus).
+ */
 export function DashboardValueChart({ points }: DashboardValueChartProps) {
   if (points.length < 2) {
     return (

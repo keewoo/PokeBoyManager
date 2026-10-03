@@ -73,6 +73,13 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+/**
+ * Route `/design` : galerie interne du design system (recette visuelle), pas une page destinée aux
+ * utilisateurs finaux. Affiche côte à côte les jetons de couleur, les typographies de la charte et
+ * les composants de base (boutons, badges, `RarityBadge`, `ConditionBadge`, `ValueDelta`,
+ * `CardTile`, `EmptyState`) sur des données d'exemple en dur. N'appelle aucune API : sert de
+ * référence pour vérifier d'un coup d'œil cohérence et rendu dans les deux thèmes.
+ */
 export default function DesignSystemPage() {
   return (
     <div className="flex flex-col gap-14 pb-16">

@@ -40,6 +40,13 @@ function defaultForm(detection: Detection): ConfirmForm {
   };
 }
 
+/** Vue cliente de l'étape 3 « Validation » (maquette `docs/UI-UX.md` § « Écran de validation »).
+ * Charge chaque envoi (`getUpload`) et suit sa reconnaissance en temps réel par SSE
+ * (`subscribeToUploadEvents`), fusionne et trie toutes les détections par ordre de lecture, puis
+ * laisse l'utilisateur valider/rejeter carte par carte (`confirmDetection`/`rejectDetection`) ou
+ * tout ajouter d'un coup (`confirmAll`) — rien n'entre en collection sans son accord. Gère les
+ * raccourcis clavier (Entrée, 1/2/3), la relance d'un job en échec, et affiche les erreurs du
+ * pipeline au lieu d'un écran muet. Les `DetectionCard` sont pilotées depuis ici. */
 export function ValidationView({ uploadIds }: { uploadIds: string[] }) {
   const router = useRouter();
   const [uploads, setUploads] = useState<Record<string, UploadDetail>>({});

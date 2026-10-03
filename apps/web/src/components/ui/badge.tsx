@@ -5,6 +5,11 @@ import { cn } from "@/lib/utils";
 
 // Charte PokéBoy : contour teinté, fond transparent. Le badge qualifie une carte, il ne
 // doit jamais lui faire concurrence — d'où l'absence d'aplat.
+/**
+ * Fabrique les classes du badge (class-variance-authority). Cinq variantes de couleur
+ * — `default` (violet), `gold`, `success`, `danger`, `outline` — toutes en contour teinté
+ * sans aplat. Exporté pour composer ces mêmes classes ailleurs (ex. rareté, condition).
+ */
 const badgeVariants = cva(
   "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-heading text-xs font-bold tracking-[0.05em] whitespace-nowrap",
   {
@@ -23,6 +28,11 @@ const badgeVariants = cva(
   }
 );
 
+/**
+ * Primitive du design system : une pastille `<span>` qui qualifie un élément (rareté,
+ * état, statut) sans lui faire concurrence. La variante choisit la couleur du contour ;
+ * le texte vient des enfants. N'embarque aucune logique — il affiche ce qu'on lui passe.
+ */
 function Badge({
   className,
   variant,

@@ -34,6 +34,12 @@ function eur(value: string | number): string {
   );
 }
 
+/** Onglet « Valeur » de la fiche carte (maquette `docs/UI-UX.md` § « Fiche carte ») : prix courant
+ * Cardmarket par variante, sélecteur de variante et de période (7 j / 30 j / 1 an / tout), et la
+ * courbe (`ValueChart`) avec le prix d'achat en référence. Historique chargé par
+ * `getCardPriceHistory` (`lib/api/cards`) à chaque changement de variante/période. La ligne de
+ * référence n'est tracée QUE sur la courbe : la plus-value de l'en-tête compare, elle, la valeur
+ * réelle de l'exemplaire (état inclus) — pas le prix catalogue de la variante choisie ici. */
 export function ValueTab({
   cardId,
   card,

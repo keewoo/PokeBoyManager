@@ -140,7 +140,9 @@ export type VuePartie = {
  */
 export type EtatPartieReponse = { vue: VuePartie; evenements: unknown[]; numero?: number };
 
+/** Nombre maximal de Pokémon sur le banc (R-3.x) : fixe le nombre de cases dessinées. */
 export const BANC_MAX = 5;
+/** Nombre de récompenses d'une partie (R-2.x) : prendre toutes les siennes fait gagner. */
 export const RECOMPENSES_MAX = 6;
 
 /** Le joueur « moi » (celui à qui la vue est destinée) et son adversaire. */

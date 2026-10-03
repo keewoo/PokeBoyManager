@@ -3,8 +3,10 @@ import type { components } from "@pbm/api-client";
 import { ApiError, apiJson } from "@/lib/api/client";
 import { getApiBaseUrl } from "@/lib/config";
 
+/** Accusé de prise en compte d'une demande d'export RGPD (job asynchrone, livré par e-mail). */
 export type ExportResponse = components["schemas"]["ExportResponse"];
 
+/** Demande l'archive ZIP complète des données personnelles (`POST /me/export`, lot `v5-rgpd`) : job asynchrone, pas de fichier immédiat. */
 export function requestExport(): Promise<ExportResponse> {
   return apiJson<ExportResponse>("POST", "/me/export");
 }

@@ -25,6 +25,7 @@ const MESSAGES: Record<EtatConnexion, { texte: string; ton: string } | null> = {
   },
 };
 
+/** Props de {@link StatutConnexion} : l'état du canal temps réel à annoncer (rien si `direct`). */
 export type StatutConnexionProps = {
   etat: EtatConnexion;
   className?: string;

@@ -5,6 +5,10 @@ import { useEffect, useState } from "react";
 import { ApiError } from "@/lib/api/client";
 import { getCardInsights, type CardInsights } from "@/lib/api/cards";
 
+/** Onglet « Histoire » de la fiche carte (maquette `docs/UI-UX.md` § « Fiche carte ») : anecdotes
+ * sourcées de la carte, chacune avec son lien de source. Données : `getCardInsights`
+ * (`lib/api/cards`). Les anecdotes déjà générées priment toujours sur le statut `no_ai_key` ;
+ * sans clé ni anecdote, invite à déposer une clé IA dans le profil. Ne génère rien lui-même. */
 export function HistoryTab({ cardId }: { cardId: string }) {
   const [insights, setInsights] = useState<CardInsights | null>(null);
   const [error, setError] = useState<string | null>(null);

@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 
+/** Métadonnées de la page d'aide à la clé IA : titre et description centrés sur le « où, combien, pourquoi » de la clé. */
 export const metadata: Metadata = {
   title: "Ajouter ta clé IA",
   description:
@@ -131,6 +132,13 @@ const TROUBLES: { title: string; messages: string[]; fix: React.ReactNode }[] = 
   },
 ];
 
+/**
+ * Route `/profil/aide-cle` (Server Component, espace connecté) : page d'aide statique expliquant où
+ * créer une clé Claude/Gemini/OpenAI, combien ça coûte, ce que PokéBoy en fait et comment lire les
+ * messages d'erreur. Contenu purement éditorial issu des constantes `PROVIDERS` et `TROUBLES` —
+ * aucun appel API, accessible au clavier sans JS. Atteignable depuis l'onglet « Mon IA » du profil
+ * et l'écran d'envoi de photos sans clé ; renvoie vers ces deux écrans en bas de page.
+ */
 export default function AideClePage() {
   return (
     <article className="prose flex max-w-3xl flex-col gap-6">

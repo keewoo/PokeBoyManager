@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { PartieView } from "./partie-view";
 
+/** Titre d'onglet de l'écran plateau de partie. */
 export const metadata: Metadata = {
   title: "Partie",
 };

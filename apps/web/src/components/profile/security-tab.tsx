@@ -13,10 +13,18 @@ import { ApiError } from "@/lib/api/client";
 import { changePassword, listSessions, revokeSession, type SessionResponse } from "@/lib/api/profile";
 import { changePasswordSchema, type ChangePasswordFormValues } from "@/lib/validation/profile";
 
+/** Props de l'onglet sécurité : `forcePasswordChange` affiche l'avertissement « mot de passe temporaire » après une connexion qui l'exige. */
 export type SecurityTabProps = {
   forcePasswordChange?: boolean;
 };
 
+/**
+ * Onglet « Sécurité » du profil : changement de mot de passe (validé par
+ * `changePasswordSchema`, qui déconnecte les autres sessions au succès) et liste des
+ * sessions actives avec possibilité de les révoquer une à une. Les données viennent de
+ * `lib/api/profile` (listSessions, changePassword, revokeSession) ; la session courante
+ * est marquée et ne peut pas être déconnectée depuis ici.
+ */
 export function SecurityTab({ forcePasswordChange = false }: SecurityTabProps) {
   const [serverError, setServerError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);

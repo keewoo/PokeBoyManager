@@ -44,6 +44,11 @@ const CATEGORIES: Record<CategorieLigne, { court: string; filtre: string; classe
 
 const ORDRE_FILTRES: CategorieLigne[] = ["moi", "adversaire", "auto"];
 
+/**
+ * Rend le tiroir : en-tête repliable, filtres par catégorie (actifs par défaut), et la liste du plus
+ * récent au plus ancien (dernier coup mis en évidence, détail des dégâts dépliable, ligne non traduite
+ * toujours visible). Survoler/focaliser une ligne remonte son `instance_id` au plateau via `onSurvol`.
+ */
 export function JournalPanel({ lignes, onSurvol }: JournalPanelProps) {
   // Replié par défaut : sur le plateau plein écran, on n'ouvre le tiroir que pour relire.
   const [ouvert, setOuvert] = useState(false);
