@@ -3,7 +3,7 @@
 > Prompt GÉNÉRÉ depuis `docs/roadmap/jeu/plan/` (via `jeu.json`) par `docs/roadmap/suivi.py build` — ne pas éditer à la main.
 > Plan du jeu : `docs/roadmap/jeu/BACKLOG-JEU.md` · onglet « Backlog du jeu » de `docs/roadmap/ROADMAP.html`.
 
-**P0** · piste Qualité & exploitation · couloir **J-QUA** (**chimera**) · jalon **J2 — Toutes les cartes du deck sont vraiment jouées** · palier 10 · taille M · complexité 4/5 · difficulté 4/5
+**P0** · piste Qualité & exploitation · couloir **J-QUA** (**chimera**) · jalon **J2 — Toutes les cartes du deck sont vraiment jouées** · palier 15 · taille M · complexité 4/5 · difficulté 4/5
 
 ## A. Où tourne cette session ? — à trancher AVANT tout le reste
 
@@ -89,6 +89,7 @@ Si le serveur MCP `graphify` est chargé dans ta session, `query_graph`, `get_ne
 **Vient après :**
 - `j-tests-regles` — Batterie de cas de règles : la table qui dit si le moteur a raison
 - `j-effets-dsl` — Langage d'effets : décrire ce que fait une carte, sans écrire de code par carte
+- `j-coups-joueur` — Coups du joueur : la partie se joue vraiment, de la mise en place à la victoire
 
 **Débloque :**
 - `j-charge-temps-reel` — Tenue en charge : combien de parties simultanées sur deux cœurs

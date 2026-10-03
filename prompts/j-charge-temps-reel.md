@@ -3,7 +3,7 @@
 > Prompt GÉNÉRÉ depuis `docs/roadmap/jeu/plan/` (via `jeu.json`) par `docs/roadmap/suivi.py build` — ne pas éditer à la main.
 > Plan du jeu : `docs/roadmap/jeu/BACKLOG-JEU.md` · onglet « Backlog du jeu » de `docs/roadmap/ROADMAP.html`.
 
-**P1** · piste Qualité & exploitation · couloir **J-QUA** (**chimera**) · jalon **J5 — Le jeu tient debout tout seul** · palier 11 · taille S · complexité 3/5 · difficulté 3/5
+**P1** · piste Qualité & exploitation · couloir **J-QUA** (**chimera**) · jalon **J5 — Le jeu tient debout tout seul** · palier 16 · taille S · complexité 3/5 · difficulté 3/5
 
 ## A. Où tourne cette session ? — à trancher AVANT tout le reste
 

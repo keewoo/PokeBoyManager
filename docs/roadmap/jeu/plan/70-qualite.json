@@ -45,7 +45,8 @@
     "difficulte": 4,
     "apres": [
       "j-tests-regles",
-      "j-effets-dsl"
+      "j-effets-dsl",
+      "j-coups-joueur"
     ],
     "gain": "Les cas de règles vérifient ce qu'on a prévu. Les bots trouvent ce qu'on n'a pas prévu : boucles infinies, états impossibles, parties qui ne finissent jamais, scripts de cartes qui se bloquent mutuellement.",
     "fonctionnalites": "Un bot aléatoire (joue n'importe quelle action légale) et un bot heuristique (attaque, évolue, économise ses ressources) ; exécution massive en parallèle sur chimera ; détection des anomalies (partie sans fin, état invalide, action légale qui lève une exception, durée anormale) ; reproduction d'une anomalie depuis sa graine ; rapport par lot de scripts de cartes.",

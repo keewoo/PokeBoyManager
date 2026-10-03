@@ -1,9 +1,9 @@
-# Lot `j-mode-solo` — Partie d'entraînement contre un bot
+# Lot `j-coach-ia` — Coach IA : un conseil sur demande, et ce qu'on retient d'une partie
 
 > Prompt GÉNÉRÉ depuis `docs/roadmap/jeu/plan/` (via `jeu.json`) par `docs/roadmap/suivi.py build` — ne pas éditer à la main.
 > Plan du jeu : `docs/roadmap/jeu/BACKLOG-JEU.md` · onglet « Backlog du jeu » de `docs/roadmap/ROADMAP.html`.
 
-**P2** · piste Règles & moteur · couloir **J-SRV** (**chimera**) · jalon **J4 — La partie laisse une trace** · palier 16 · taille S · complexité 2/5 · difficulté 2/5
+**P2** · piste Serveur de parties · couloir **J-SRV** (**chimera**) · jalon **J4 — La partie laisse une trace** · palier 18 · taille S · complexité 3/5 · difficulté 2/5
 
 ## A. Où tourne cette session ? — à trancher AVANT tout le reste
 
@@ -14,16 +14,16 @@ Ce lot **s'exécute sur chimera**. Lance `hostname -s` :
 
 ## P. Mode PILOTE
 
-1. Garde-fou : `python3 docs/roadmap/suivi.py verifier j-mode-solo`. Code 2 → présente les raisons à JF et demande-lui quoi faire ; ne passe jamais outre sans son « oui » explicite.
+1. Garde-fou : `python3 docs/roadmap/suivi.py verifier j-coach-ia`. Code 2 → présente les raisons à JF et demande-lui quoi faire ; ne passe jamais outre sans son « oui » explicite.
 2. Prépare le worktree sur chimera :
 
 ```bash
-ssh chimera 'wsl -d Ubuntu-24.04 -u upgreg -- bash -lc "cd ~/dev/pokeboy && git fetch -q origin && git worktree add ../wt-j-mode-solo -b roadmap/j-mode-solo origin/main && mkdir -p ~/dev/logs"'
+ssh chimera 'wsl -d Ubuntu-24.04 -u upgreg -- bash -lc "cd ~/dev/pokeboy && git fetch -q origin && git worktree add ../wt-j-coach-ia -b roadmap/j-coach-ia origin/main && mkdir -p ~/dev/logs"'
 ```
 
-3. Lance le lot autonome : par le mécanisme de lots de chimera (`~/dev/lots/launch-lot.sh`, étendu au dépôt `~/dev/pokeboy` par le lot `v0-flotte`), **lancé côté Windows** — un `nohup` interne à la WSL meurt avec la session. Journal : `~/dev/logs/j-mode-solo.log`.
+3. Lance le lot autonome : par le mécanisme de lots de chimera (`~/dev/lots/launch-lot.sh`, étendu au dépôt `~/dev/pokeboy` par le lot `v0-flotte`), **lancé côté Windows** — un `nohup` interne à la WSL meurt avec la session. Journal : `~/dev/logs/j-coach-ia.log`.
 4. **3 minutes plus tard**, lis le journal du lot. Journal vide et processus mort = lot mort au démarrage : relance UNE fois, puis arrête-toi et alerte JF avec la cause. Un lot silencieux n'est jamais une conclusion.
-5. À la fin : `git fetch` et lis le compte rendu du lot dans `docs/roadmap/etat.json` de la branche `roadmap/j-mode-solo` ; résume à JF : statut, grille, preuves, décisions attendues.
+5. À la fin : `git fetch` et lis le compte rendu du lot dans `docs/roadmap/etat.json` de la branche `roadmap/j-coach-ia` ; résume à JF : statut, grille, preuves, décisions attendues.
 
 ---
 
@@ -31,15 +31,15 @@ ssh chimera 'wsl -d Ubuntu-24.04 -u upgreg -- bash -lc "cd ~/dev/pokeboy && git 
 
 ## 0. Garde-fou d'ordre — avant toute ligne de code
 
-Dépôt : `~/dev/pokeboy (WSL Ubuntu-24.04, utilisateur upgreg)`. Travaille dans ton **worktree** `../wt-j-mode-solo`, branche `roadmap/j-mode-solo` depuis `origin/main` — jamais dans l'arbre commun, jamais `git stash`, jamais `git add -A`.
+Dépôt : `~/dev/pokeboy (WSL Ubuntu-24.04, utilisateur upgreg)`. Travaille dans ton **worktree** `../wt-j-coach-ia`, branche `roadmap/j-coach-ia` depuis `origin/main` — jamais dans l'arbre commun, jamais `git stash`, jamais `git add -A`.
 
 ```bash
-python3 docs/roadmap/suivi.py verifier j-mode-solo
-python3 docs/roadmap/suivi.py demarrer j-mode-solo --machine "$(hostname -s)" --branche roadmap/j-mode-solo
+python3 docs/roadmap/suivi.py verifier j-coach-ia
+python3 docs/roadmap/suivi.py demarrer j-coach-ia --machine "$(hostname -s)" --branche roadmap/j-coach-ia
 ```
 
 - **Code 0** → continuer.
-- **Code 2 — ordre non tenu** (dépendance non livrée, décision non prise) → ne rien coder. Session interactive : demande à JF. Lot autonome : `suivi.py statut j-mode-solo attente_validation --motif "<raisons>"`, section 8, dernier message `ATTENTE VALIDATION — j-mode-solo — <raisons>`.
+- **Code 2 — ordre non tenu** (dépendance non livrée, décision non prise) → ne rien coder. Session interactive : demande à JF. Lot autonome : `suivi.py statut j-coach-ia attente_validation --motif "<raisons>"`, section 8, dernier message `ATTENTE VALIDATION — j-coach-ia — <raisons>`.
 - Tu n'accordes **jamais** toi-même une dérogation.
 
 ## 1. Cadre — relire avant d'agir
@@ -82,45 +82,44 @@ Si le serveur MCP `graphify` est chargé dans ta session, `query_graph`, `get_ne
 - **L'interface ne décide de rien.** Elle affiche les actions que le moteur déclare légales, et affiche la raison quand un coup est refusé. Aucune règle n'est réécrite côté écran.
 - **Le jeu est celui d'un enfant de onze ans.** Lisible sans connaître les règles, animé, sonore, indulgent : on peut annuler avant de valider, on comprend pourquoi un coup est interdit, et on n'attend jamais devant un écran muet.
 
-**Gain.** Le jeu est privé entre quelques comptes invités : il y aura des soirs sans adversaire. Le bot de simulation existe déjà pour les tests — l'ouvrir aux joueurs coûte peu et évite un écran d'attente vide.
+**Gain.** Deuxième visage de l'IA du joueur (DJ7) : au lieu de jouer contre lui, elle l'aide — un conseil pendant son tour, et un bilan après la partie. C'est ce qui fait progresser un enfant sans qu'un adulte soit à côté.
 
-**Fonctionnalités.** Lancer une partie contre le bot heuristique depuis le salon, trois niveaux (hasard, correct, coriace), partie non comptée au classement et marquée « entraînement » dans l'historique, abandon libre, temps de réflexion du bot volontairement visible pour rester lisible.
+**Fonctionnalités.** Bouton « Un conseil ? » pendant son propre tour : l'IA du joueur (sa clé) reçoit **sa** vue et ses coups légaux, propose un coup et explique pourquoi ; elle ne joue jamais à sa place. Nombre de conseils limité par partie et réglable. Après une partie, un bilan court tiré du journal : les deux ou trois moments décisifs, et ce qu'on aurait pu faire autrement.
 
 **Vient après :**
-- `j-simulation-bots` — Bots de simulation : des milliers de parties pour débusquer les blocages
-- `j-partie-service` — Service de parties : créer, persister, reprendre, expirer
+- `j-adversaire-ia` — Adversaire IA : un partenaire d'entraînement qui raisonne et explique ses coups, sur la clé du joueur
 
 **Débloque :**
-- `j-adversaire-ia` — Adversaire IA : un partenaire d'entraînement qui raisonne et explique ses coups, sur la clé du joueur
+- aucun lot n'en dépend
 
 **Décision DJ7** — Mode solo contre un bot ? Lis la décision prise dans `docs/roadmap/etat.json` (`decisions_prises.DJ7`) et applique-la à la lettre ; la proposition du pilote n'est qu'un contexte : _Oui, en réutilisant le bot heuristique de la simulation, annoncé comme « entraînement » et non compté au classement._
 
 ## 3. Mission
 
-1. Brancher le bot de `j-simulation-bots` comme deuxième joueur d'une partie ordinaire du service.
-2. Trois niveaux d'heuristique, et un délai simulé pour que le joueur voie ce qui se passe.
-3. Marquer la partie « entraînement » : elle entre dans l'historique mais ne touche ni classement ni séries.
-4. Vérifier que le bot n'accède jamais à l'information cachée (il joue avec la vue du joueur, pas avec l'état complet).
-5. Brancher l'entrée « S'entraîner » du salon (`j-salon-partie`) : une partie contre le bot se lance en un clic, sans file d'attente ni invitation. (Couloir serveur depuis le 03/10/2026 : le bot se branche dans le service de parties, `apps/api`.)
+1. Réutiliser l'interface et les garde-fous de `j-adversaire-ia` (vue seule, coups légaux, plafonds, coût affiché, clé jamais exposée).
+2. Le conseil est une suggestion : aucun coup n'est envoyé au serveur sans le geste du joueur.
+3. Bilan de fin de partie depuis le journal (pas depuis l'état complet), en français simple ; désactivable.
+4. Désactivé dans les parties classées entre joueurs : un conseil d'IA n'a sa place qu'en entraînement, sauf décision contraire de JF.
+5. Tests avec fournisseur factice ; accès croisé.
 
 ## 4. Critères d'acceptation
 
 Le lot n'est fini que si **chacun** est vrai, preuve à l'appui dans le compte rendu :
 
-- [ ] Une partie contre le bot se joue de bout en bout et se reprend après un F5.
-- [ ] Le bot n'utilise que `vue(etat, bot)` — vérifié par un test.
-- [ ] La partie apparaît dans l'historique en « entraînement » et n'affecte pas le classement.
+- [ ] Le conseil propose toujours un coup légal, ou dit qu'il n'en a pas trouvé — jamais un coup inventé.
+- [ ] Le conseil n'est pas disponible dans une partie entre deux joueurs humains.
+- [ ] Le bilan de fin de partie cite des coups réellement joués (vérifié contre le journal).
 
 ## 5. Risques & pièges
 
-Un bot qui triche en lisant la main adverse est indétectable côté joueur et ruine la confiance : la contrainte de vue est un test, pas une intention.
+Un coach qui joue à la place de l'enfant : il apprend à cliquer « conseil », pas à jouer. Le geste reste le sien.
 
 ## 6. Livrables — définition de « fini »
 
-- adversaire bot dans le salon
-- trois niveaux
+- conseil sur demande
+- bilan de fin de partie
 - CI GitHub Actions verte sur la PR (elle fait foi, pas une suite verte sur une machine).
-- Compte rendu `docs/roadmap/comptes-rendus/j-mode-solo.md` : résumé, livrables, preuves, écarts, reste à faire.
+- Compte rendu `docs/roadmap/comptes-rendus/j-coach-ia.md` : résumé, livrables, preuves, écarts, reste à faire.
 - Le savoir durable va dans **une** fiche (« Où écrire quoi » de `CLAUDE.md`) ; pour le jeu, `docs/jeu/`.
 - Aucun secret dans le dépôt, les journaux ou les sorties.
 - **Code documenté** : chaque module, fonction et classe publique ajouté ou modifié a sa docstring (Python) ou son `/** … */` (TypeScript), en français, qui dit le pourquoi — `docs/CODE.md` § « Documenter le code ».
@@ -148,13 +147,13 @@ Grille de tâches du lot :
 - `compte_rendu` — Compte rendu dans le suivi
 
 ```bash
-python3 docs/roadmap/suivi.py tache j-mode-solo <tache> fait "<preuve : commit, test, URL, capture>"
-python3 docs/roadmap/suivi.py compte-rendu j-mode-solo --resume "…" --livrable "…" --preuve "…" --ecart "…" --reste "…"
-python3 docs/roadmap/suivi.py statut j-mode-solo <livre_uat|attente_go_prod|livre|bloque>
+python3 docs/roadmap/suivi.py tache j-coach-ia <tache> fait "<preuve : commit, test, URL, capture>"
+python3 docs/roadmap/suivi.py compte-rendu j-coach-ia --resume "…" --livrable "…" --preuve "…" --ecart "…" --reste "…"
+python3 docs/roadmap/suivi.py statut j-coach-ia <livre_uat|attente_go_prod|livre|bloque>
 python3 docs/roadmap/suivi.py build
 git add docs/roadmap/etat.json docs/roadmap/ROADMAP.html BACKLOG.md prompts/ <tes fichiers>   # jamais git add -A
-git commit -m "j-mode-solo: …" && git push -u origin roadmap/j-mode-solo
-bash scripts/ouvrir-pr.sh roadmap/j-mode-solo   # ouvre la PR, ou echoue en disant pourquoi
+git commit -m "j-coach-ia: …" && git push -u origin roadmap/j-coach-ia
+bash scripts/ouvrir-pr.sh roadmap/j-coach-ia   # ouvre la PR, ou echoue en disant pourquoi
 ```
 
 **La PR n'est pas optionnelle** : sans elle, la CI ne tourne pas sur ton travail, et c'est la CI qui fait foi. Si `ouvrir-pr.sh` sort en erreur, tu NE conclus PAS que c'est sans importance : tu nommes le manque dans ton compte rendu et dans ton dernier message.

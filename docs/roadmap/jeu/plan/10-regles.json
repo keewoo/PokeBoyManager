@@ -257,7 +257,7 @@
 {
   "id": "j-mode-solo",
   "titre": "Partie d'entraînement contre un bot",
-  "piste": "R", "couloir": "J-MOT", "jalon": "J4",
+  "piste": "R", "couloir": "J-SRV", "jalon": "J4",
   "priorite": "P2", "taille": "S", "complexite": 2, "difficulte": 2,
   "decision": "DJ7",
   "apres": ["j-simulation-bots", "j-partie-service"],
@@ -267,7 +267,8 @@
     "Brancher le bot de `j-simulation-bots` comme deuxième joueur d'une partie ordinaire du service.",
     "Trois niveaux d'heuristique, et un délai simulé pour que le joueur voie ce qui se passe.",
     "Marquer la partie « entraînement » : elle entre dans l'historique mais ne touche ni classement ni séries.",
-    "Vérifier que le bot n'accède jamais à l'information cachée (il joue avec la vue du joueur, pas avec l'état complet)."
+    "Vérifier que le bot n'accède jamais à l'information cachée (il joue avec la vue du joueur, pas avec l'état complet).",
+    "Brancher l'entrée « S'entraîner » du salon (`j-salon-partie`) : une partie contre le bot se lance en un clic, sans file d'attente ni invitation. (Couloir serveur depuis le 03/10/2026 : le bot se branche dans le service de parties, `apps/api`.)"
   ],
   "acceptation": [
     "Une partie contre le bot se joue de bout en bout et se reprend après un F5.",

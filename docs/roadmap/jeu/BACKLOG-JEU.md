@@ -1,7 +1,7 @@
 # Backlog du jeu — plateau, moteur de règles et parties
 
 > GÉNÉRÉ par `docs/roadmap/jeu/build-jeu.py` depuis `docs/roadmap/jeu/plan/`. Ne pas éditer à la main.
-> Version 1.0 — 2026-09-21 — 68 lots.
+> Version 1.0 — 2026-09-21 — 70 lots.
 
 **Objet.** Deux joueurs s'affrontent en ligne avec les cartes qu'ils possèdent vraiment : recherche d'un adversaire, choix du deck, mise en place, partie au tour par tour sur un plateau animé, puis une fin de partie qui laisse une trace sur le compte. Le moteur applique les règles officielles et sait jouer les cartes — attaques, défense, appâts, Dresseurs, talents, états spéciaux — sans jamais approximer un effet qu'il ne connaît pas.
 
@@ -90,7 +90,7 @@ _Objets, Supporters, Stades, Outils, talents, états spéciaux, appâts, attaque
 
 **Preuve attendue.** Un deck entièrement construit depuis la collection d'Aymeric est déclaré jouable, et chacune de ses cartes a un script testé.
 
-**15 lots**, poids 29 (S=1, M=2, L=3), paliers 8 → 14. Les jalons se chevauchent : pendant que l'interface se construit, les cartes se scriptent dans un autre couloir. Un jalon est atteint quand son dernier lot est livré.
+**15 lots**, poids 29 (S=1, M=2, L=3), paliers 8 → 15. Les jalons se chevauchent : pendant que l'interface se construit, les cartes se scriptent dans un autre couloir. Un jalon est atteint quand son dernier lot est livré.
 
 | Palier | Lot | Titre | Piste | Couloir | Prio | Taille | Après |
 |---|---|---|---|---|---|---|---|
@@ -102,13 +102,13 @@ _Objets, Supporters, Stades, Outils, talents, états spéciaux, appâts, attaque
 | 10 | [`j-cartes-regles-speciales`](#j-cartes-regles-speciales) | Règles de cartes particulières : ACE SPEC, Radiant, VSTAR, GX, Prism Star | E | `J-EFF` | P1 | S | `j-effets-dsl`, `j-ko-recompenses` |
 | 10 | [`j-effets-catalogue-compilation`](#j-effets-catalogue-compilation) | Du catalogue aux cartes jouables : compilation, versions et errata | E | `J-EFF` | P0 | L | `j-effets-dsl`, `j-cartes-pokemon` |
 | 10 | [`j-effets-choix`](#j-effets-choix) | Demandes de décision : quand le moteur doit attendre un joueur — y compris l'adversaire | E | `J-EFF` | P0 | M | `j-effets-dsl` |
-| 10 | [`j-simulation-bots`](#j-simulation-bots) | Bots de simulation : des milliers de parties pour débusquer les blocages | Q | `J-QUA` | P0 | M | `j-tests-regles`, `j-effets-dsl` |
 | 11 | [`j-cartes-objets`](#j-cartes-objets) | Cartes Objet, dont les appâts qui forcent l'échange de l'actif adverse | E | `J-EFF` | P0 | M | `j-effets-choix` |
 | 11 | [`j-cartes-supporters`](#j-cartes-supporters) | Supporters : un par tour, et les effets qui perturbent l'adversaire | E | `J-EFF` | P0 | M | `j-effets-choix` |
 | 11 | [`j-cartes-talents`](#j-cartes-talents) | Talents : passifs, activés une fois par tour, déclenchés — et annulables | E | `J-EFF` | P0 | M | `j-effets-architecture`, `j-effets-choix` |
 | 11 | [`j-effets-assistance-ia`](#j-effets-assistance-ia) | Assistance IA : proposer le script d'une carte, jamais le valider seule | E | `J-EFF` | P1 | M | `j-effets-catalogue-compilation` |
 | 11 | [`j-effets-couverture-outil`](#j-effets-couverture-outil) | Tableau de couverture : ce qui est jouable, ce qui manque, et pour qui | E | `J-EFF` | P1 | S | `j-effets-catalogue-compilation` |
 | 14 | [`j-plateau-decisions`](#j-plateau-decisions) | Fenêtres de décision : choisir des cartes, ordonner, répondre pendant le tour adverse | U | `J-UI` | P0 | M | `j-plateau-interactions`, `j-effets-choix` |
+| 15 | [`j-simulation-bots`](#j-simulation-bots) | Bots de simulation : des milliers de parties pour débusquer les blocages | Q | `J-QUA` | P0 | M | `j-tests-regles`, `j-effets-dsl`, `j-coups-joueur` |
 
 ### J3 — Le plateau donne envie d'y jouer
 
@@ -137,19 +137,21 @@ _La fin de partie écrit sur le compte : historique, statistiques par deck, clas
 
 **Preuve attendue.** Après dix parties, la page « Mes parties » raconte qui gagne, avec quoi, et contre qui.
 
-**9 lots**, poids 11 (S=1, M=2, L=3), paliers 9 → 17. Les jalons se chevauchent : pendant que l'interface se construit, les cartes se scriptent dans un autre couloir. Un jalon est atteint quand son dernier lot est livré.
+**11 lots**, poids 14 (S=1, M=2, L=3), paliers 9 → 18. Les jalons se chevauchent : pendant que l'interface se construit, les cartes se scriptent dans un autre couloir. Un jalon est atteint quand son dernier lot est livré.
 
 | Palier | Lot | Titre | Piste | Couloir | Prio | Taille | Après |
 |---|---|---|---|---|---|---|---|
 | 9 | [`j-replay`](#j-replay) | Replay d'une partie : la rejouer coup par coup, et la partager | S | `J-SRV` | P2 | S | `j-journal-actions`, `j-partie-service` |
 | 11 | [`j-echanges-emotes`](#j-echanges-emotes) | Emotes prédéfinies : se parler sans chat libre | S | `J-SRV` | P2 | S | `j-temps-reel` |
-| 11 | [`j-mode-solo`](#j-mode-solo) | Partie d'entraînement contre un bot | R | `J-MOT` | P2 | S | `j-simulation-bots`, `j-partie-service` |
 | 12 | [`j-notifications-jeu`](#j-notifications-jeu) | Être prévenu : invitation reçue, c'est ton tour, partie reprise | C | `J-UI` | P2 | S | `j-invitations`, `j-timer` |
 | 13 | [`j-fin-effets-compte`](#j-fin-effets-compte) | Ce qu'une partie laisse sur le compte : écriture unique et exacte | C | `J-SRV` | P0 | M | `j-ko-recompenses`, `j-deconnexion-abandon` |
 | 14 | [`j-classement-prive`](#j-classement-prive) | Classement privé entre comptes invités | C | `J-SRV` | P2 | S | `j-fin-effets-compte` |
 | 15 | [`j-partie-fin-ui`](#j-partie-fin-ui) | Fin de partie : qui a gagné, pourquoi, et ce qu'on en retient | U | `J-UI` | P0 | S | `j-plateau-journal`, `j-ko-recompenses` |
+| 16 | [`j-mode-solo`](#j-mode-solo) | Partie d'entraînement contre un bot | R | `J-SRV` | P2 | S | `j-simulation-bots`, `j-partie-service` |
 | 16 | [`j-stats-joueur`](#j-stats-joueur) | Mes parties : historique, statistiques et ce que ça dit de mes decks | C | `J-UI` | P1 | M | `j-fin-effets-compte`, `j-partie-fin-ui` |
+| 17 | [`j-adversaire-ia`](#j-adversaire-ia) | Adversaire IA : un partenaire d'entraînement qui raisonne et explique ses coups, sur la clé du joueur | S | `J-SRV` | P1 | M | `j-mode-solo` |
 | 17 | [`j-profil-jeu`](#j-profil-jeu) | Profil de joueur : avatar, carte fétiche, badges | C | `J-UI` | P2 | S | `j-stats-joueur` |
+| 18 | [`j-coach-ia`](#j-coach-ia) | Coach IA : un conseil sur demande, et ce qu'on retient d'une partie | S | `J-SRV` | P2 | S | `j-adversaire-ia` |
 
 ### J5 — Le jeu tient debout tout seul
 
@@ -162,7 +164,7 @@ _Des bots jouent des milliers de parties sans bloquer, l'e2e passe en CI, le pet
 | Palier | Lot | Titre | Piste | Couloir | Prio | Taille | Après |
 |---|---|---|---|---|---|---|---|
 | 9 | [`j-observabilite-jeu`](#j-observabilite-jeu) | Voir ce qui se passe : métriques du jeu et alertes de règles | Q | `J-SRV` | P1 | S | `j-partie-service` |
-| 11 | [`j-charge-temps-reel`](#j-charge-temps-reel) | Tenue en charge : combien de parties simultanées sur deux cœurs | Q | `J-QUA` | P1 | S | `j-simulation-bots`, `j-temps-reel` |
+| 16 | [`j-charge-temps-reel`](#j-charge-temps-reel) | Tenue en charge : combien de parties simultanées sur deux cœurs | Q | `J-QUA` | P1 | S | `j-simulation-bots`, `j-temps-reel` |
 | 16 | [`j-e2e-deux-navigateurs`](#j-e2e-deux-navigateurs) | Partie complète jouée automatiquement, à deux navigateurs | Q | `J-QUA` | P0 | M | `j-partie-fin-ui`, `j-plateau-decisions` |
 | 17 | [`j-securite-jeu`](#j-securite-jeu) | Revue de sécurité du jeu avant ouverture | Q | `J-SRV` | P0 | M | `j-autorite-vues`, `j-e2e-deux-navigateurs` |
 | 18 | [`j-mise-en-ligne-jeu`](#j-mise-en-ligne-jeu) | Mettre le jeu en ligne sur le serveur partagé | Q | `J-SRV` | P0 | M | `j-securite-jeu`, `j-charge-temps-reel`, `j-fin-effets-compte` |
@@ -183,23 +185,23 @@ Un palier ne peut commencer que quand tout ce dont il dépend est livré. À l'i
 | **7** | [`j-cartes-pokemon`](#j-cartes-pokemon), [`j-etats-speciaux`](#j-etats-speciaux), [`j-ko-recompenses`](#j-ko-recompenses) | `J-EFF`, `J-MOT` |
 | **8** | [`j-cartes-energies`](#j-cartes-energies), [`j-effets-architecture`](#j-effets-architecture), [`j-partie-service`](#j-partie-service), [`j-tests-regles`](#j-tests-regles) | `J-EFF`, `J-MOT`, `J-SRV` |
 | **9** | [`j-autorite-vues`](#j-autorite-vues), [`j-cartes-outils`](#j-cartes-outils), [`j-cartes-stades`](#j-cartes-stades), [`j-effets-dsl`](#j-effets-dsl), [`j-file-attente`](#j-file-attente), [`j-observabilite-jeu`](#j-observabilite-jeu), [`j-replay`](#j-replay) | `J-EFF`, `J-SRV` |
-| **10** | [`j-cartes-attaques-effets`](#j-cartes-attaques-effets), [`j-cartes-regles-speciales`](#j-cartes-regles-speciales), [`j-effets-catalogue-compilation`](#j-effets-catalogue-compilation), [`j-effets-choix`](#j-effets-choix), [`j-invitations`](#j-invitations), [`j-simulation-bots`](#j-simulation-bots), [`j-temps-reel`](#j-temps-reel) | `J-EFF`, `J-QUA`, `J-SRV` |
-| **11** | [`j-cartes-objets`](#j-cartes-objets), [`j-cartes-supporters`](#j-cartes-supporters), [`j-cartes-talents`](#j-cartes-talents), [`j-charge-temps-reel`](#j-charge-temps-reel), [`j-echanges-emotes`](#j-echanges-emotes), [`j-effets-assistance-ia`](#j-effets-assistance-ia), [`j-effets-couverture-outil`](#j-effets-couverture-outil), [`j-lancement-partie`](#j-lancement-partie), [`j-mode-solo`](#j-mode-solo), [`j-salon-partie`](#j-salon-partie), [`j-timer`](#j-timer) | `J-EFF`, `J-MOT`, `J-QUA`, `J-SRV`, `J-UI` |
+| **10** | [`j-cartes-attaques-effets`](#j-cartes-attaques-effets), [`j-cartes-regles-speciales`](#j-cartes-regles-speciales), [`j-effets-catalogue-compilation`](#j-effets-catalogue-compilation), [`j-effets-choix`](#j-effets-choix), [`j-invitations`](#j-invitations), [`j-temps-reel`](#j-temps-reel) | `J-EFF`, `J-SRV` |
+| **11** | [`j-cartes-objets`](#j-cartes-objets), [`j-cartes-supporters`](#j-cartes-supporters), [`j-cartes-talents`](#j-cartes-talents), [`j-echanges-emotes`](#j-echanges-emotes), [`j-effets-assistance-ia`](#j-effets-assistance-ia), [`j-effets-couverture-outil`](#j-effets-couverture-outil), [`j-lancement-partie`](#j-lancement-partie), [`j-salon-partie`](#j-salon-partie), [`j-timer`](#j-timer) | `J-EFF`, `J-SRV`, `J-UI` |
 | **12** | [`j-deconnexion-abandon`](#j-deconnexion-abandon), [`j-initialisation`](#j-initialisation), [`j-notifications-jeu`](#j-notifications-jeu), [`j-plateau-layout`](#j-plateau-layout) | `J-MOT`, `J-SRV`, `J-UI` |
 | **13** | [`j-fin-effets-compte`](#j-fin-effets-compte), [`j-plateau-etat-visuel`](#j-plateau-etat-visuel), [`j-plateau-interactions`](#j-plateau-interactions), [`j-rendu-carte`](#j-rendu-carte) | `J-GFX`, `J-SRV`, `J-UI` |
 | **14** | [`j-anim-socle`](#j-anim-socle), [`j-assets-pipeline`](#j-assets-pipeline), [`j-classement-prive`](#j-classement-prive), [`j-coups-joueur`](#j-coups-joueur), [`j-plateau-decisions`](#j-plateau-decisions), [`j-plateau-journal`](#j-plateau-journal) | `J-GFX`, `J-SRV`, `J-UI` |
-| **15** | [`j-accessibilite-jeu`](#j-accessibilite-jeu), [`j-anim-attaques-typees`](#j-anim-attaques-typees), [`j-anim-evolution-ko`](#j-anim-evolution-ko), [`j-anim-pokemon-apparition`](#j-anim-pokemon-apparition), [`j-arene-decors`](#j-arene-decors), [`j-partie-fin-ui`](#j-partie-fin-ui), [`j-plateau-aide`](#j-plateau-aide), [`j-son`](#j-son) | `J-GFX`, `J-UI` |
-| **16** | [`j-e2e-deux-navigateurs`](#j-e2e-deux-navigateurs), [`j-stats-joueur`](#j-stats-joueur) | `J-QUA`, `J-UI` |
-| **17** | [`j-profil-jeu`](#j-profil-jeu), [`j-securite-jeu`](#j-securite-jeu) | `J-SRV`, `J-UI` |
-| **18** | [`j-mise-en-ligne-jeu`](#j-mise-en-ligne-jeu) | `J-SRV` |
+| **15** | [`j-accessibilite-jeu`](#j-accessibilite-jeu), [`j-anim-attaques-typees`](#j-anim-attaques-typees), [`j-anim-evolution-ko`](#j-anim-evolution-ko), [`j-anim-pokemon-apparition`](#j-anim-pokemon-apparition), [`j-arene-decors`](#j-arene-decors), [`j-partie-fin-ui`](#j-partie-fin-ui), [`j-plateau-aide`](#j-plateau-aide), [`j-simulation-bots`](#j-simulation-bots), [`j-son`](#j-son) | `J-GFX`, `J-QUA`, `J-UI` |
+| **16** | [`j-charge-temps-reel`](#j-charge-temps-reel), [`j-e2e-deux-navigateurs`](#j-e2e-deux-navigateurs), [`j-mode-solo`](#j-mode-solo), [`j-stats-joueur`](#j-stats-joueur) | `J-QUA`, `J-SRV`, `J-UI` |
+| **17** | [`j-adversaire-ia`](#j-adversaire-ia), [`j-profil-jeu`](#j-profil-jeu), [`j-securite-jeu`](#j-securite-jeu) | `J-SRV`, `J-UI` |
+| **18** | [`j-coach-ia`](#j-coach-ia), [`j-mise-en-ligne-jeu`](#j-mise-en-ligne-jeu) | `J-SRV` |
 
 ### Chemin critique
 
 La plus longue chaîne de dépendances, pondérée par la taille des lots. C'est elle qui fixe la durée du chantier : tout retard pris ici se paie intégralement.
 
-[`j-regles-reference`](#j-regles-reference) → [`j-modele-etat`](#j-modele-etat) → [`j-aleatoire-determinisme`](#j-aleatoire-determinisme) → [`j-journal-actions`](#j-journal-actions) → [`j-actions-legales`](#j-actions-legales) → [`j-machine-tour`](#j-machine-tour) → [`j-degats-resolution`](#j-degats-resolution) → [`j-cartes-pokemon`](#j-cartes-pokemon) → [`j-partie-service`](#j-partie-service) → [`j-autorite-vues`](#j-autorite-vues) → [`j-temps-reel`](#j-temps-reel) → [`j-plateau-layout`](#j-plateau-layout) → [`j-plateau-etat-visuel`](#j-plateau-etat-visuel) → [`j-plateau-journal`](#j-plateau-journal) → [`j-partie-fin-ui`](#j-partie-fin-ui) → [`j-e2e-deux-navigateurs`](#j-e2e-deux-navigateurs) → [`j-securite-jeu`](#j-securite-jeu) → [`j-mise-en-ligne-jeu`](#j-mise-en-ligne-jeu)
+[`j-regles-reference`](#j-regles-reference) → [`j-modele-etat`](#j-modele-etat) → [`j-aleatoire-determinisme`](#j-aleatoire-determinisme) → [`j-journal-actions`](#j-journal-actions) → [`j-actions-legales`](#j-actions-legales) → [`j-machine-tour`](#j-machine-tour) → [`j-degats-resolution`](#j-degats-resolution) → [`j-cartes-pokemon`](#j-cartes-pokemon) → [`j-partie-service`](#j-partie-service) → [`j-autorite-vues`](#j-autorite-vues) → [`j-temps-reel`](#j-temps-reel) → [`j-plateau-layout`](#j-plateau-layout) → [`j-plateau-interactions`](#j-plateau-interactions) → [`j-coups-joueur`](#j-coups-joueur) → [`j-simulation-bots`](#j-simulation-bots) → [`j-mode-solo`](#j-mode-solo) → [`j-adversaire-ia`](#j-adversaire-ia) → [`j-coach-ia`](#j-coach-ia)
 
-*18 lots, poids cumulé 35.*
+*18 lots, poids cumulé 36.*
 
 ## Décisions à prendre par JF
 
@@ -1149,36 +1151,6 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 **Vient après** : [`j-effets-dsl`](#j-effets-dsl)  
 **Débloque** : [`j-cartes-objets`](#j-cartes-objets), [`j-cartes-supporters`](#j-cartes-supporters), [`j-cartes-talents`](#j-cartes-talents), [`j-coups-joueur`](#j-coups-joueur), [`j-plateau-decisions`](#j-plateau-decisions), [`j-timer`](#j-timer)
 
-<a id="j-simulation-bots"></a>
-### `j-simulation-bots` — Bots de simulation : des milliers de parties pour débusquer les blocages
-
-**Palier 10** · jalon **J2** · piste Q (Qualité & exploitation) · couloir `J-QUA` (chimera) · P0 · taille M · complexité 4/5 · difficulté 4/5
-
-**Pourquoi ce lot.** Les cas de règles vérifient ce qu'on a prévu. Les bots trouvent ce qu'on n'a pas prévu : boucles infinies, états impossibles, parties qui ne finissent jamais, scripts de cartes qui se bloquent mutuellement.
-
-**Ce qu'il fait.** Un bot aléatoire (joue n'importe quelle action légale) et un bot heuristique (attaque, évolue, économise ses ressources) ; exécution massive en parallèle sur chimera ; détection des anomalies (partie sans fin, état invalide, action légale qui lève une exception, durée anormale) ; reproduction d'une anomalie depuis sa graine ; rapport par lot de scripts de cartes.
-
-**Mission**
-
-- Écrire les deux bots sur la seule vue joueur (jamais l'état complet).
-- Lancer les campagnes sur chimera et collecter les anomalies avec leur graine.
-- Mesurer la distribution des durées de partie et le nombre de tours : une dérive signale un script de carte fautif.
-- Intégrer une campagne réduite en CI à chaque lot de scripts, et une campagne longue chaque nuit.
-- Faire échouer bruyamment sur toute anomalie — jamais de `continue` silencieux.
-
-**Critères d'acceptation**
-
-- 10 000 parties simulées sans état invalide ni blocage, et le chiffre est publié.
-- Toute anomalie est reproductible depuis sa graine en une commande.
-- La campagne de CI tourne sur chaque lot de scripts de cartes.
-
-**Livrables** : bots aléatoire et heuristique, campagnes massives, reproduction par graine.
-
-**Risque à surveiller.** Ignorer les parties « trop longues » comme un artefact : c'est exactement la forme que prend une boucle d'effets entre deux cartes.
-
-**Vient après** : [`j-tests-regles`](#j-tests-regles), [`j-effets-dsl`](#j-effets-dsl)  
-**Débloque** : [`j-charge-temps-reel`](#j-charge-temps-reel), [`j-mode-solo`](#j-mode-solo)
-
 <a id="j-lancement-partie"></a>
 ### `j-lancement-partie` — Lancement : choix du deck, contrôle, prêt à jouer, tirage au sort
 
@@ -1443,64 +1415,6 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 
 **Vient après** : [`j-temps-reel`](#j-temps-reel)  
 **Débloque** : — (rien n'en dépend)
-
-<a id="j-mode-solo"></a>
-### `j-mode-solo` — Partie d'entraînement contre un bot
-
-**Palier 11** · jalon **J4** · piste R (Règles & moteur) · couloir `J-MOT` (devAI) · P2 · taille S · complexité 2/5 · difficulté 2/5 · décision **DJ7**
-
-**Pourquoi ce lot.** Le jeu est privé entre quelques comptes invités : il y aura des soirs sans adversaire. Le bot de simulation existe déjà pour les tests — l'ouvrir aux joueurs coûte peu et évite un écran d'attente vide.
-
-**Ce qu'il fait.** Lancer une partie contre le bot heuristique depuis le salon, trois niveaux (hasard, correct, coriace), partie non comptée au classement et marquée « entraînement » dans l'historique, abandon libre, temps de réflexion du bot volontairement visible pour rester lisible.
-
-**Mission**
-
-- Brancher le bot de `j-simulation-bots` comme deuxième joueur d'une partie ordinaire du service.
-- Trois niveaux d'heuristique, et un délai simulé pour que le joueur voie ce qui se passe.
-- Marquer la partie « entraînement » : elle entre dans l'historique mais ne touche ni classement ni séries.
-- Vérifier que le bot n'accède jamais à l'information cachée (il joue avec la vue du joueur, pas avec l'état complet).
-
-**Critères d'acceptation**
-
-- Une partie contre le bot se joue de bout en bout et se reprend après un F5.
-- Le bot n'utilise que `vue(etat, bot)` — vérifié par un test.
-- La partie apparaît dans l'historique en « entraînement » et n'affecte pas le classement.
-
-**Livrables** : adversaire bot dans le salon, trois niveaux.
-
-**Risque à surveiller.** Un bot qui triche en lisant la main adverse est indétectable côté joueur et ruine la confiance : la contrainte de vue est un test, pas une intention.
-
-**Vient après** : [`j-simulation-bots`](#j-simulation-bots), [`j-partie-service`](#j-partie-service)  
-**Débloque** : — (rien n'en dépend)
-
-<a id="j-charge-temps-reel"></a>
-### `j-charge-temps-reel` — Tenue en charge : combien de parties simultanées sur deux cœurs
-
-**Palier 11** · jalon **J5** · piste Q (Qualité & exploitation) · couloir `J-QUA` (chimera) · P1 · taille S · complexité 3/5 · difficulté 3/5
-
-**Pourquoi ce lot.** Le jeu sera servi par la machine qui héberge déjà kailo.life et ACX : deux cœurs, quatre gigaoctets, partagés. Il faut savoir avant, pas pendant.
-
-**Ce qu'il fait.** Mesure du coût d'une partie (mémoire, CPU, connexions), montée en charge jusqu'au point de rupture, plafond de parties simultanées configuré et appliqué (file d'attente plutôt que dégradation), mesure de l'empreinte des instantanés et du journal en base, purge.
-
-**Mission**
-
-- Mesurer sur chimera puis vérifier sur le serveur cible, avec les autres services en fonctionnement.
-- Fixer un plafond de parties simultanées et le faire appliquer par le service (refus explicite, pas ralentissement).
-- Mesurer la croissance de la base par partie et dimensionner la purge en conséquence.
-- Écrire les chiffres dans `docs/jeu/CHARGE.md` : ce sont eux qu'on relira le jour d'un incident.
-
-**Critères d'acceptation**
-
-- Le plafond est mesuré, écrit et appliqué.
-- Une partie de plus que le plafond reçoit un refus clair, et les parties en cours ne ralentissent pas.
-- La croissance de la base par partie est chiffrée et la purge dimensionnée.
-
-**Livrables** : mesures de charge, plafond appliqué, docs/jeu/CHARGE.md.
-
-**Risque à surveiller.** Mesurer sur une machine vide : le serveur cible sert déjà deux autres sites, et c'est là que se joue la vraie limite.
-
-**Vient après** : [`j-simulation-bots`](#j-simulation-bots), [`j-temps-reel`](#j-temps-reel)  
-**Débloque** : [`j-mise-en-ligne-jeu`](#j-mise-en-ligne-jeu)
 
 <a id="j-deconnexion-abandon"></a>
 ### `j-deconnexion-abandon` — Déconnexion, abandon, désertion : une partie ne reste jamais suspendue
@@ -1767,7 +1681,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 **Risque à surveiller.** Réécrire une règle dans la famille au lieu de réutiliser la transition livrée : les deux divergent, et le refus ne cite plus la bonne règle. Et repousser encore le branchement « au lot suivant » : il n'y en a pas.
 
 **Vient après** : [`j-plateau-interactions`](#j-plateau-interactions), [`j-initialisation`](#j-initialisation), [`j-effets-choix`](#j-effets-choix), [`j-cartes-energies`](#j-cartes-energies), [`j-cartes-pokemon`](#j-cartes-pokemon), [`j-degats-resolution`](#j-degats-resolution), [`j-retraite-banc`](#j-retraite-banc), [`j-ko-recompenses`](#j-ko-recompenses), [`j-temps-reel`](#j-temps-reel)  
-**Débloque** : — (rien n'en dépend)
+**Débloque** : [`j-simulation-bots`](#j-simulation-bots)
 
 <a id="j-plateau-journal"></a>
 ### `j-plateau-journal` — Journal de partie : ce qui vient de se passer, en français
@@ -1914,6 +1828,36 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 
 **Vient après** : [`j-fin-effets-compte`](#j-fin-effets-compte)  
 **Débloque** : — (rien n'en dépend)
+
+<a id="j-simulation-bots"></a>
+### `j-simulation-bots` — Bots de simulation : des milliers de parties pour débusquer les blocages
+
+**Palier 15** · jalon **J2** · piste Q (Qualité & exploitation) · couloir `J-QUA` (chimera) · P0 · taille M · complexité 4/5 · difficulté 4/5
+
+**Pourquoi ce lot.** Les cas de règles vérifient ce qu'on a prévu. Les bots trouvent ce qu'on n'a pas prévu : boucles infinies, états impossibles, parties qui ne finissent jamais, scripts de cartes qui se bloquent mutuellement.
+
+**Ce qu'il fait.** Un bot aléatoire (joue n'importe quelle action légale) et un bot heuristique (attaque, évolue, économise ses ressources) ; exécution massive en parallèle sur chimera ; détection des anomalies (partie sans fin, état invalide, action légale qui lève une exception, durée anormale) ; reproduction d'une anomalie depuis sa graine ; rapport par lot de scripts de cartes.
+
+**Mission**
+
+- Écrire les deux bots sur la seule vue joueur (jamais l'état complet).
+- Lancer les campagnes sur chimera et collecter les anomalies avec leur graine.
+- Mesurer la distribution des durées de partie et le nombre de tours : une dérive signale un script de carte fautif.
+- Intégrer une campagne réduite en CI à chaque lot de scripts, et une campagne longue chaque nuit.
+- Faire échouer bruyamment sur toute anomalie — jamais de `continue` silencieux.
+
+**Critères d'acceptation**
+
+- 10 000 parties simulées sans état invalide ni blocage, et le chiffre est publié.
+- Toute anomalie est reproductible depuis sa graine en une commande.
+- La campagne de CI tourne sur chaque lot de scripts de cartes.
+
+**Livrables** : bots aléatoire et heuristique, campagnes massives, reproduction par graine.
+
+**Risque à surveiller.** Ignorer les parties « trop longues » comme un artefact : c'est exactement la forme que prend une boucle d'effets entre deux cartes.
+
+**Vient après** : [`j-tests-regles`](#j-tests-regles), [`j-effets-dsl`](#j-effets-dsl), [`j-coups-joueur`](#j-coups-joueur)  
+**Débloque** : [`j-charge-temps-reel`](#j-charge-temps-reel), [`j-mode-solo`](#j-mode-solo)
 
 <a id="j-accessibilite-jeu"></a>
 ### `j-accessibilite-jeu` — Confort et accessibilité : jouable par un enfant, lisible par tous
@@ -2151,6 +2095,36 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 **Vient après** : [`j-plateau-journal`](#j-plateau-journal), [`j-ko-recompenses`](#j-ko-recompenses)  
 **Débloque** : [`j-e2e-deux-navigateurs`](#j-e2e-deux-navigateurs), [`j-stats-joueur`](#j-stats-joueur)
 
+<a id="j-mode-solo"></a>
+### `j-mode-solo` — Partie d'entraînement contre un bot
+
+**Palier 16** · jalon **J4** · piste R (Règles & moteur) · couloir `J-SRV` (chimera) · P2 · taille S · complexité 2/5 · difficulté 2/5 · décision **DJ7**
+
+**Pourquoi ce lot.** Le jeu est privé entre quelques comptes invités : il y aura des soirs sans adversaire. Le bot de simulation existe déjà pour les tests — l'ouvrir aux joueurs coûte peu et évite un écran d'attente vide.
+
+**Ce qu'il fait.** Lancer une partie contre le bot heuristique depuis le salon, trois niveaux (hasard, correct, coriace), partie non comptée au classement et marquée « entraînement » dans l'historique, abandon libre, temps de réflexion du bot volontairement visible pour rester lisible.
+
+**Mission**
+
+- Brancher le bot de `j-simulation-bots` comme deuxième joueur d'une partie ordinaire du service.
+- Trois niveaux d'heuristique, et un délai simulé pour que le joueur voie ce qui se passe.
+- Marquer la partie « entraînement » : elle entre dans l'historique mais ne touche ni classement ni séries.
+- Vérifier que le bot n'accède jamais à l'information cachée (il joue avec la vue du joueur, pas avec l'état complet).
+- Brancher l'entrée « S'entraîner » du salon (`j-salon-partie`) : une partie contre le bot se lance en un clic, sans file d'attente ni invitation. (Couloir serveur depuis le 03/10/2026 : le bot se branche dans le service de parties, `apps/api`.)
+
+**Critères d'acceptation**
+
+- Une partie contre le bot se joue de bout en bout et se reprend après un F5.
+- Le bot n'utilise que `vue(etat, bot)` — vérifié par un test.
+- La partie apparaît dans l'historique en « entraînement » et n'affecte pas le classement.
+
+**Livrables** : adversaire bot dans le salon, trois niveaux.
+
+**Risque à surveiller.** Un bot qui triche en lisant la main adverse est indétectable côté joueur et ruine la confiance : la contrainte de vue est un test, pas une intention.
+
+**Vient après** : [`j-simulation-bots`](#j-simulation-bots), [`j-partie-service`](#j-partie-service)  
+**Débloque** : [`j-adversaire-ia`](#j-adversaire-ia)
+
 <a id="j-stats-joueur"></a>
 ### `j-stats-joueur` — Mes parties : historique, statistiques et ce que ça dit de mes decks
 
@@ -2180,6 +2154,35 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 **Vient après** : [`j-fin-effets-compte`](#j-fin-effets-compte), [`j-partie-fin-ui`](#j-partie-fin-ui)  
 **Débloque** : [`j-profil-jeu`](#j-profil-jeu)
 
+<a id="j-charge-temps-reel"></a>
+### `j-charge-temps-reel` — Tenue en charge : combien de parties simultanées sur deux cœurs
+
+**Palier 16** · jalon **J5** · piste Q (Qualité & exploitation) · couloir `J-QUA` (chimera) · P1 · taille S · complexité 3/5 · difficulté 3/5
+
+**Pourquoi ce lot.** Le jeu sera servi par la machine qui héberge déjà kailo.life et ACX : deux cœurs, quatre gigaoctets, partagés. Il faut savoir avant, pas pendant.
+
+**Ce qu'il fait.** Mesure du coût d'une partie (mémoire, CPU, connexions), montée en charge jusqu'au point de rupture, plafond de parties simultanées configuré et appliqué (file d'attente plutôt que dégradation), mesure de l'empreinte des instantanés et du journal en base, purge.
+
+**Mission**
+
+- Mesurer sur chimera puis vérifier sur le serveur cible, avec les autres services en fonctionnement.
+- Fixer un plafond de parties simultanées et le faire appliquer par le service (refus explicite, pas ralentissement).
+- Mesurer la croissance de la base par partie et dimensionner la purge en conséquence.
+- Écrire les chiffres dans `docs/jeu/CHARGE.md` : ce sont eux qu'on relira le jour d'un incident.
+
+**Critères d'acceptation**
+
+- Le plafond est mesuré, écrit et appliqué.
+- Une partie de plus que le plafond reçoit un refus clair, et les parties en cours ne ralentissent pas.
+- La croissance de la base par partie est chiffrée et la purge dimensionnée.
+
+**Livrables** : mesures de charge, plafond appliqué, docs/jeu/CHARGE.md.
+
+**Risque à surveiller.** Mesurer sur une machine vide : le serveur cible sert déjà deux autres sites, et c'est là que se joue la vraie limite.
+
+**Vient après** : [`j-simulation-bots`](#j-simulation-bots), [`j-temps-reel`](#j-temps-reel)  
+**Débloque** : [`j-mise-en-ligne-jeu`](#j-mise-en-ligne-jeu)
+
 <a id="j-e2e-deux-navigateurs"></a>
 ### `j-e2e-deux-navigateurs` — Partie complète jouée automatiquement, à deux navigateurs
 
@@ -2208,6 +2211,37 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 
 **Vient après** : [`j-partie-fin-ui`](#j-partie-fin-ui), [`j-plateau-decisions`](#j-plateau-decisions)  
 **Débloque** : [`j-securite-jeu`](#j-securite-jeu)
+
+<a id="j-adversaire-ia"></a>
+### `j-adversaire-ia` — Adversaire IA : un partenaire d'entraînement qui raisonne et explique ses coups, sur la clé du joueur
+
+**Palier 17** · jalon **J4** · piste S (Serveur de parties) · couloir `J-SRV` (chimera) · P1 · taille M · complexité 4/5 · difficulté 3/5 · décision **DJ7**
+
+**Pourquoi ce lot.** DJ7 (JF, 03/10/2026) : le bot d'abord, puis une IA branchée sur la clé de l'utilisateur. Le bot heuristique joue juste mais muet ; l'IA du joueur — le principe même du produit — peut jouer en expliquant pourquoi, ce qui fait d'une partie d'entraînement une leçon pour un enfant de onze ans.
+
+**Ce qu'il fait.** Dans une partie d'entraînement, l'adversaire peut être « le bot » ou « mon IA » (fournisseur et clé du coffre du joueur, `pbm_api.ai`) : à chaque décision, l'IA reçoit la **vue** de son camp (jamais l'information cachée) et la liste des coups légaux avec leurs étiquettes, choisit un coup et l'explique en une ou deux phrases simples, en français ; le moteur valide le coup ; l'explication s'affiche dans le journal de la partie. Budget par partie (nombre d'appels plafonné), délai maximal par coup, coût estimé affiché. Sans clé : bot seulement, avec l'explication pour ajouter une clé.
+
+**Mission**
+
+- Une seule interface « joueur automatique » (bot ou IA) que la partie d'entraînement appelle : l'IA ne contourne ni la validation du moteur ni l'autorité du serveur.
+- Le message envoyé à l'IA ne contient que la vue du joueur IA et les coups légaux : un test parcourt le message à la recherche d'un identifiant caché (main adverse, ordre de la pioche, récompenses) — zéro occurrence.
+- Réponse invalide, absente ou trop lente : c'est le bot qui joue ce coup **et l'écran le dit** (« mon IA n'a pas répondu, le bot a joué à sa place ») — jamais un repli silencieux, jamais un coup inventé.
+- Plafonds : appels par partie, délai par coup, longueur des explications ; coût estimé visible ; clé jamais journalisée ni renvoyée (règles du coffre, `docs/SECURITE.md`).
+- Tests avec un fournisseur factice (coup valide, coup illégal, délai dépassé, réponse non conforme), test d'accès croisé (l'IA d'un joueur ne joue jamais dans la partie d'un autre).
+
+**Critères d'acceptation**
+
+- Une partie d'entraînement se joue jusqu'au bout contre « mon IA » avec un fournisseur factice, chaque coup de l'IA est légal et expliqué.
+- Aucune information cachée n'est envoyée à l'IA (vérifié par un test sur le message).
+- Un échec de l'IA fait jouer le bot et s'affiche ; le plafond d'appels arrête l'IA proprement et le dit.
+- Sans clé IA, l'option « mon IA » explique comment en ajouter une et la partie se joue contre le bot.
+
+**Livrables** : adversaire « mon IA » dans les parties d'entraînement, explications des coups dans le journal, plafonds et coût affiché.
+
+**Risque à surveiller.** Laisser l'IA voir l'état complet « pour qu'elle joue mieux » : ce serait de la triche, et un enfant ne battrait jamais un adversaire qui voit sa main. L'IA joue avec la même vue que n'importe quel joueur.
+
+**Vient après** : [`j-mode-solo`](#j-mode-solo)  
+**Débloque** : [`j-coach-ia`](#j-coach-ia)
 
 <a id="j-profil-jeu"></a>
 ### `j-profil-jeu` — Profil de joueur : avatar, carte fétiche, badges
@@ -2268,6 +2302,36 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 **Vient après** : [`j-autorite-vues`](#j-autorite-vues), [`j-e2e-deux-navigateurs`](#j-e2e-deux-navigateurs)  
 **Débloque** : [`j-mise-en-ligne-jeu`](#j-mise-en-ligne-jeu)
 
+<a id="j-coach-ia"></a>
+### `j-coach-ia` — Coach IA : un conseil sur demande, et ce qu'on retient d'une partie
+
+**Palier 18** · jalon **J4** · piste S (Serveur de parties) · couloir `J-SRV` (chimera) · P2 · taille S · complexité 3/5 · difficulté 2/5 · décision **DJ7**
+
+**Pourquoi ce lot.** Deuxième visage de l'IA du joueur (DJ7) : au lieu de jouer contre lui, elle l'aide — un conseil pendant son tour, et un bilan après la partie. C'est ce qui fait progresser un enfant sans qu'un adulte soit à côté.
+
+**Ce qu'il fait.** Bouton « Un conseil ? » pendant son propre tour : l'IA du joueur (sa clé) reçoit **sa** vue et ses coups légaux, propose un coup et explique pourquoi ; elle ne joue jamais à sa place. Nombre de conseils limité par partie et réglable. Après une partie, un bilan court tiré du journal : les deux ou trois moments décisifs, et ce qu'on aurait pu faire autrement.
+
+**Mission**
+
+- Réutiliser l'interface et les garde-fous de `j-adversaire-ia` (vue seule, coups légaux, plafonds, coût affiché, clé jamais exposée).
+- Le conseil est une suggestion : aucun coup n'est envoyé au serveur sans le geste du joueur.
+- Bilan de fin de partie depuis le journal (pas depuis l'état complet), en français simple ; désactivable.
+- Désactivé dans les parties classées entre joueurs : un conseil d'IA n'a sa place qu'en entraînement, sauf décision contraire de JF.
+- Tests avec fournisseur factice ; accès croisé.
+
+**Critères d'acceptation**
+
+- Le conseil propose toujours un coup légal, ou dit qu'il n'en a pas trouvé — jamais un coup inventé.
+- Le conseil n'est pas disponible dans une partie entre deux joueurs humains.
+- Le bilan de fin de partie cite des coups réellement joués (vérifié contre le journal).
+
+**Livrables** : conseil sur demande, bilan de fin de partie.
+
+**Risque à surveiller.** Un coach qui joue à la place de l'enfant : il apprend à cliquer « conseil », pas à jouer. Le geste reste le sien.
+
+**Vient après** : [`j-adversaire-ia`](#j-adversaire-ia)  
+**Débloque** : — (rien n'en dépend)
+
 <a id="j-mise-en-ligne-jeu"></a>
 ### `j-mise-en-ligne-jeu` — Mettre le jeu en ligne sur le serveur partagé
 
@@ -2324,6 +2388,8 @@ Ce sont les manques que le découpage grossier cachait : sans eux, le jeu se liv
 | Lot | Titre |
 |---|---|
 | [`j-accessibilite-jeu`](#j-accessibilite-jeu) | Confort et accessibilité : jouable par un enfant, lisible par tous |
+| [`j-adversaire-ia`](#j-adversaire-ia) | Adversaire IA : un partenaire d'entraînement qui raisonne et explique ses coups, sur la clé du joueur |
+| [`j-coach-ia`](#j-coach-ia) | Coach IA : un conseil sur demande, et ce qu'on retient d'une partie |
 | [`j-coups-joueur`](#j-coups-joueur) | Coups du joueur : la partie se joue vraiment, de la mise en place à la victoire |
 | [`j-echanges-emotes`](#j-echanges-emotes) | Emotes prédéfinies : se parler sans chat libre |
 | [`j-mise-en-ligne-jeu`](#j-mise-en-ligne-jeu) | Mettre le jeu en ligne sur le serveur partagé |

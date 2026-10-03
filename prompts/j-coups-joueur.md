@@ -98,7 +98,7 @@ Si le serveur MCP `graphify` est chargé dans ta session, `query_graph`, `get_ne
 - `j-temps-reel` — Canal temps réel : diffusion des coups, reconnexion et reprise après F5
 
 **Débloque :**
-- aucun lot n'en dépend
+- `j-simulation-bots` — Bots de simulation : des milliers de parties pour débusquer les blocages
 
 ## 3. Mission
 

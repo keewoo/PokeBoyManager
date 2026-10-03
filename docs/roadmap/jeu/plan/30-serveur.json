@@ -296,5 +296,75 @@
     "partie complète testée jusqu'à la victoire"
   ],
   "risques": "Réécrire une règle dans la famille au lieu de réutiliser la transition livrée : les deux divergent, et le refus ne cite plus la bonne règle. Et repousser encore le branchement « au lot suivant » : il n'y en a pas."
+},
+{
+  "id": "j-adversaire-ia",
+  "titre": "Adversaire IA : un partenaire d'entraînement qui raisonne et explique ses coups, sur la clé du joueur",
+  "piste": "S",
+  "couloir": "J-SRV",
+  "jalon": "J4",
+  "priorite": "P1",
+  "taille": "M",
+  "complexite": 4,
+  "difficulte": 3,
+  "decision": "DJ7",
+  "apres": [
+    "j-mode-solo"
+  ],
+  "gain": "DJ7 (JF, 03/10/2026) : le bot d'abord, puis une IA branchée sur la clé de l'utilisateur. Le bot heuristique joue juste mais muet ; l'IA du joueur — le principe même du produit — peut jouer en expliquant pourquoi, ce qui fait d'une partie d'entraînement une leçon pour un enfant de onze ans.",
+  "fonctionnalites": "Dans une partie d'entraînement, l'adversaire peut être « le bot » ou « mon IA » (fournisseur et clé du coffre du joueur, `pbm_api.ai`) : à chaque décision, l'IA reçoit la **vue** de son camp (jamais l'information cachée) et la liste des coups légaux avec leurs étiquettes, choisit un coup et l'explique en une ou deux phrases simples, en français ; le moteur valide le coup ; l'explication s'affiche dans le journal de la partie. Budget par partie (nombre d'appels plafonné), délai maximal par coup, coût estimé affiché. Sans clé : bot seulement, avec l'explication pour ajouter une clé.",
+  "mission": [
+    "Une seule interface « joueur automatique » (bot ou IA) que la partie d'entraînement appelle : l'IA ne contourne ni la validation du moteur ni l'autorité du serveur.",
+    "Le message envoyé à l'IA ne contient que la vue du joueur IA et les coups légaux : un test parcourt le message à la recherche d'un identifiant caché (main adverse, ordre de la pioche, récompenses) — zéro occurrence.",
+    "Réponse invalide, absente ou trop lente : c'est le bot qui joue ce coup **et l'écran le dit** (« mon IA n'a pas répondu, le bot a joué à sa place ») — jamais un repli silencieux, jamais un coup inventé.",
+    "Plafonds : appels par partie, délai par coup, longueur des explications ; coût estimé visible ; clé jamais journalisée ni renvoyée (règles du coffre, `docs/SECURITE.md`).",
+    "Tests avec un fournisseur factice (coup valide, coup illégal, délai dépassé, réponse non conforme), test d'accès croisé (l'IA d'un joueur ne joue jamais dans la partie d'un autre)."
+  ],
+  "acceptation": [
+    "Une partie d'entraînement se joue jusqu'au bout contre « mon IA » avec un fournisseur factice, chaque coup de l'IA est légal et expliqué.",
+    "Aucune information cachée n'est envoyée à l'IA (vérifié par un test sur le message).",
+    "Un échec de l'IA fait jouer le bot et s'affiche ; le plafond d'appels arrête l'IA proprement et le dit.",
+    "Sans clé IA, l'option « mon IA » explique comment en ajouter une et la partie se joue contre le bot."
+  ],
+  "livrables": [
+    "adversaire « mon IA » dans les parties d'entraînement",
+    "explications des coups dans le journal",
+    "plafonds et coût affiché"
+  ],
+  "risques": "Laisser l'IA voir l'état complet « pour qu'elle joue mieux » : ce serait de la triche, et un enfant ne battrait jamais un adversaire qui voit sa main. L'IA joue avec la même vue que n'importe quel joueur."
+},
+{
+  "id": "j-coach-ia",
+  "titre": "Coach IA : un conseil sur demande, et ce qu'on retient d'une partie",
+  "piste": "S",
+  "couloir": "J-SRV",
+  "jalon": "J4",
+  "priorite": "P2",
+  "taille": "S",
+  "complexite": 3,
+  "difficulte": 2,
+  "decision": "DJ7",
+  "apres": [
+    "j-adversaire-ia"
+  ],
+  "gain": "Deuxième visage de l'IA du joueur (DJ7) : au lieu de jouer contre lui, elle l'aide — un conseil pendant son tour, et un bilan après la partie. C'est ce qui fait progresser un enfant sans qu'un adulte soit à côté.",
+  "fonctionnalites": "Bouton « Un conseil ? » pendant son propre tour : l'IA du joueur (sa clé) reçoit **sa** vue et ses coups légaux, propose un coup et explique pourquoi ; elle ne joue jamais à sa place. Nombre de conseils limité par partie et réglable. Après une partie, un bilan court tiré du journal : les deux ou trois moments décisifs, et ce qu'on aurait pu faire autrement.",
+  "mission": [
+    "Réutiliser l'interface et les garde-fous de `j-adversaire-ia` (vue seule, coups légaux, plafonds, coût affiché, clé jamais exposée).",
+    "Le conseil est une suggestion : aucun coup n'est envoyé au serveur sans le geste du joueur.",
+    "Bilan de fin de partie depuis le journal (pas depuis l'état complet), en français simple ; désactivable.",
+    "Désactivé dans les parties classées entre joueurs : un conseil d'IA n'a sa place qu'en entraînement, sauf décision contraire de JF.",
+    "Tests avec fournisseur factice ; accès croisé."
+  ],
+  "acceptation": [
+    "Le conseil propose toujours un coup légal, ou dit qu'il n'en a pas trouvé — jamais un coup inventé.",
+    "Le conseil n'est pas disponible dans une partie entre deux joueurs humains.",
+    "Le bilan de fin de partie cite des coups réellement joués (vérifié contre le journal)."
+  ],
+  "livrables": [
+    "conseil sur demande",
+    "bilan de fin de partie"
+  ],
+  "risques": "Un coach qui joue à la place de l'enfant : il apprend à cliquer « conseil », pas à jouer. Le geste reste le sien."
 }
 ]
