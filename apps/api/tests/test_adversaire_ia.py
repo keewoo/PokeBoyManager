@@ -307,12 +307,14 @@ async def test_message_ne_fuite_aucune_information_cachee(db_session, monkeypatc
     catalogue = await construire_catalogue_jeu(db_session, etat)
     legales = actions_legales(etat, BOT_JID, familles=familles_jeu(catalogue))
     message = construire_message(vue(etat, BOT_JID), [c for c in legales])
+    # On cherche l'identifiant **comme jeton JSON entre guillemets** (``"…:d5"``), pas en
+    # sous-chaîne : sinon ``:d5`` matcherait ``:d50`` (même préfixe joueur, indices 5 vs 50).
     for identifiant in ids_caches:
-        assert identifiant not in message, (
+        assert f'"{identifiant}"' not in message, (
             f"fuite : l'identifiant caché {identifiant} figure dans le message envoyé à l'IA"
         )
     # Et l'IA a bien été exercée sur le vrai chemin durant la partie (messages réellement transmis).
-    assert faux.messages, "l'IA n'a reçu aucun message pendant la partie — le chemin réel n'a pas servi"
+    assert faux.messages, "l'IA n'a reçu aucun message — le chemin réel n'a pas servi"
 
 
 # --- 2 bis) construire_message : unitaire, vue projetée seulement -------------------------------
