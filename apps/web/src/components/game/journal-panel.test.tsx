@@ -19,7 +19,22 @@ function ligne(over: Partial<LigneJournal> = {}): LigneJournal {
   };
 }
 
+/** Le tiroir est replié par défaut (plateau plein écran) : on l'ouvre pour voir le fil. */
+function ouvrir() {
+  fireEvent.click(screen.getByRole("button", { name: /Journal/ }));
+}
+
 describe("JournalPanel", () => {
+  it("est un tiroir replié par défaut, qui s'ouvre et se replie", () => {
+    render(<JournalPanel lignes={[ligne()]} />);
+    // Replié : le corps n'est pas rendu.
+    expect(screen.queryByTestId("journal-liste")).toBeNull();
+    ouvrir();
+    expect(screen.getByTestId("journal-liste")).toBeInTheDocument();
+    ouvrir();
+    expect(screen.queryByTestId("journal-liste")).toBeNull();
+  });
+
   it("affiche chaque ligne en français, la plus récente en tête et mise en évidence", () => {
     render(
       <JournalPanel
@@ -29,6 +44,7 @@ describe("JournalPanel", () => {
         ]}
       />,
     );
+    ouvrir();
     const items = screen.getAllByTestId("ligne-journal");
     // Ordre anti-chronologique : la plus récente (#1) en tête.
     expect(items[0]).toHaveTextContent("L'adversaire pioche 1 carte.");
@@ -46,11 +62,11 @@ describe("JournalPanel", () => {
         ]}
       />,
     );
+    ouvrir();
     expect(screen.getAllByTestId("ligne-journal")).toHaveLength(3);
     // On masque l'adversaire : sa ligne disparaît, les autres restent.
     fireEvent.click(screen.getByTestId("filtre-adversaire"));
-    const restantes = screen.getAllByTestId("ligne-journal");
-    expect(restantes).toHaveLength(2);
+    expect(screen.getAllByTestId("ligne-journal")).toHaveLength(2);
     expect(screen.queryByText("L'adversaire pioche.")).toBeNull();
     expect(screen.getByText("Poison sur ton Actif : 10 dégâts.")).toBeInTheDocument();
   });
@@ -68,6 +84,7 @@ describe("JournalPanel", () => {
         ]}
       />,
     );
+    ouvrir();
     // Le détail n'est pas affiché tant qu'on ne le demande pas.
     expect(screen.queryByTestId("detail-degats")).toBeNull();
     fireEvent.click(screen.getByTestId("detail-degats-bouton"));
@@ -82,6 +99,7 @@ describe("JournalPanel", () => {
         onSurvol={onSurvol}
       />,
     );
+    ouvrir();
     const item = screen.getByTestId("ligne-journal");
     fireEvent.mouseEnter(item);
     expect(onSurvol).toHaveBeenCalledWith("p-9");
@@ -95,6 +113,7 @@ describe("JournalPanel", () => {
         lignes={[ligne({ cle: "0-0", traduit: false, texte: "Événement non traduit : effet_mysterieux" })]}
       />,
     );
+    ouvrir();
     // Même en coupant tous les filtres, la ligne non traduite reste visible.
     fireEvent.click(screen.getByTestId("filtre-moi"));
     fireEvent.click(screen.getByTestId("filtre-adversaire"));
@@ -102,12 +121,5 @@ describe("JournalPanel", () => {
     const item = screen.getByTestId("ligne-journal");
     expect(item).toHaveAttribute("data-traduit", "non");
     expect(within(item).getByText(/non traduit/)).toBeInTheDocument();
-  });
-
-  it("est escamotable : le corps se replie", () => {
-    render(<JournalPanel lignes={[ligne()]} />);
-    expect(screen.getByTestId("journal-liste")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Journal/ }));
-    expect(screen.queryByTestId("journal-liste")).toBeNull();
   });
 });
