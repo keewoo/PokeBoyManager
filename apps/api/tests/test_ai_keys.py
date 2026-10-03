@@ -272,7 +272,11 @@ async def test_get_ai_settings_defaults_to_null(api_client: httpx.AsyncClient) -
 
     response = await api_client.get("/me/ai-settings")
     assert response.status_code == 200
-    assert response.json() == {"default_provider": None, "default_model": None}
+    assert response.json() == {
+        "default_provider": None,
+        "default_model": None,
+        "coach_actif": True,
+    }
 
 
 async def test_patch_ai_settings_rejects_default_provider_without_a_stored_key(
@@ -304,7 +308,11 @@ async def test_patch_ai_settings_updates_default_provider_and_model_independentl
         headers={CSRF_HEADER_NAME: csrf},
     )
     assert set_provider.status_code == 200
-    assert set_provider.json() == {"default_provider": "anthropic", "default_model": None}
+    assert set_provider.json() == {
+        "default_provider": "anthropic",
+        "default_model": None,
+        "coach_actif": True,
+    }
 
     set_model = await api_client.patch(
         "/me/ai-settings",
@@ -316,6 +324,7 @@ async def test_patch_ai_settings_updates_default_provider_and_model_independentl
     assert set_model.json() == {
         "default_provider": "anthropic",
         "default_model": "claude-haiku-4-5",
+        "coach_actif": True,
     }
 
 

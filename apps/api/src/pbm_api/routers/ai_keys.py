@@ -93,10 +93,11 @@ async def test_ai_key(
 
 @router.get("/ai-settings", response_model=AiSettingsResponse)
 async def get_ai_settings(current_user: User = Depends(get_current_user)) -> AiSettingsResponse:
-    """Renvoie le fournisseur et le modèle IA par défaut de l'utilisateur courant."""
+    """Renvoie le fournisseur, le modèle IA par défaut et l'activation du coach de l'utilisateur."""
     return AiSettingsResponse(
         default_provider=current_user.ai_default_provider,
         default_model=current_user.ai_default_model,
+        coach_actif=current_user.coach_actif,
     )
 
 
@@ -117,13 +118,17 @@ async def update_ai_settings(
             provider_set="default_provider" in fields_set,
             default_model=payload.default_model,
             model_set="default_model" in fields_set,
+            coach_actif=payload.coach_actif,
+            coach_actif_set="coach_actif" in fields_set,
         )
     except DefaultProviderWithoutKeyError:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST, DEFAULT_PROVIDER_WITHOUT_KEY_MESSAGE
         ) from None
     return AiSettingsResponse(
-        default_provider=user.ai_default_provider, default_model=user.ai_default_model
+        default_provider=user.ai_default_provider,
+        default_model=user.ai_default_model,
+        coach_actif=user.coach_actif,
     )
 
 

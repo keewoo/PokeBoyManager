@@ -112,6 +112,13 @@ class Game(Base, TimestampMixin):
     # partie sans IA (bot pur ou partie entre humains).
     ia_appels: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     ia_tokens: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    # Coach IA (lot `j-coach-ia`, DJ7) : nombre de **conseils** déjà demandés par le joueur dans
+    # CETTE partie. C'est le compteur de budget du coach (plafond `settings.coach_max_conseils`) ;
+    # il vit sur la partie (non en mémoire) pour survivre aux coups et à un F5. `0` pour une partie
+    # sans conseil (dont toute partie entre deux humains, où le conseil est refusé).
+    conseils_utilises: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
 
 
 class GamePlayer(Base, TimestampMixin):
