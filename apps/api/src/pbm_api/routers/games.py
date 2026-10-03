@@ -12,12 +12,14 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pbm_game.state.serialisation import depuis_json
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.auth.dependencies import require_game_access
 from pbm_api.db import get_session
 from pbm_api.games import horloges as _adapt_horloges
+from pbm_api.games.catalogue_jeu import construire_catalogue_jeu
 from pbm_api.games.errors import (
     ActionRefusee,
     ConflitNumero,
@@ -105,8 +107,10 @@ async def get_game_state(
         raise HTTPException(status.HTTP_404_NOT_FOUND, GAME_NOT_FOUND_MESSAGE) from exc
     etat, rng = await reprendre_partie(db, game)
     catalogue = await catalogue_pour_etat(db, etat)
+    catalogue_jeu = await construire_catalogue_jeu(db, etat)
     vue = vue_autoritaire(
-        etat, rng, user_id=current_user.id, graine_hex=game.graine, catalogue=catalogue
+        etat, rng, user_id=current_user.id, graine_hex=game.graine,
+        catalogue=catalogue, catalogue_jeu=catalogue_jeu,
     )
     vue["horloges"] = _adapt_horloges.restant_json(game.horloges, datetime.now(UTC).timestamp())
     # Numéro d'action courant (prochain attendu) : clé d'idempotence côté client pour soumettre
@@ -157,9 +161,13 @@ async def play_action(
     # renvoyé — seuls les jetons opaques en dérivent) et pour re-vérifier la participation.
     game = await _game_pour_participant(db, game_id, current_user.id)
     catalogue = await catalogue_pour_resultat(db, resultat)
-    HUB.publier(game_id, resultat, graine_hex=game.graine, catalogue=catalogue)
+    catalogue_jeu = await construire_catalogue_jeu(db, depuis_json(resultat.etat))
+    HUB.publier(
+        game_id, resultat, graine_hex=game.graine, catalogue=catalogue, catalogue_jeu=catalogue_jeu
+    )
     reponse = projeter_resultat(
-        resultat, user_id=current_user.id, graine_hex=game.graine, catalogue=catalogue
+        resultat, user_id=current_user.id, graine_hex=game.graine, catalogue=catalogue,
+        catalogue_jeu=catalogue_jeu,
     )
     # Le prochain numéro d'action attendu, pour que le client enchaîne un coup suivant sans aller
     # relire l'état (lot ``j-plateau-interactions``).
@@ -191,9 +199,13 @@ async def abandon_game(
 
     game = await _game_pour_participant(db, game_id, current_user.id)
     catalogue = await catalogue_pour_resultat(db, resultat)
-    HUB.publier(game_id, resultat, graine_hex=game.graine, catalogue=catalogue)
+    catalogue_jeu = await construire_catalogue_jeu(db, depuis_json(resultat.etat))
+    HUB.publier(
+        game_id, resultat, graine_hex=game.graine, catalogue=catalogue, catalogue_jeu=catalogue_jeu
+    )
     reponse = projeter_resultat(
-        resultat, user_id=current_user.id, graine_hex=game.graine, catalogue=catalogue
+        resultat, user_id=current_user.id, graine_hex=game.graine, catalogue=catalogue,
+        catalogue_jeu=catalogue_jeu,
     )
     # Le prochain numéro d'action attendu, pour que le client enchaîne un coup suivant sans aller
     # relire l'état (lot ``j-plateau-interactions``).

@@ -21,7 +21,8 @@ from pbm_game.state.modele import PHASE_PIOCHE, Carte, EtatPartie, Joueur, Tour
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pbm_api.jeu.catalogue import definition_depuis_card
+from pbm_api.decks.energy import is_energy
+from pbm_api.jeu.catalogue import definition_depuis_card, definition_energie_depuis_card
 from pbm_api.models import Card, DeckCard
 
 
@@ -70,7 +71,12 @@ async def resoudre_deck(
     index = 0
     for card, quantity in await _cartes_du_deck(db, deck_id):
         try:
-            definition = definition_depuis_card(card)
+            # Une carte Énergie se compile en DefinitionEnergie (seules les Énergies de base sont
+            # jouables au jalon J1) ; un Pokémon en DefinitionCarte. Les deux portent une ``ref``.
+            if is_energy(getattr(card, "supertype", None)):
+                definition = definition_energie_depuis_card(card)
+            else:
+                definition = definition_depuis_card(card)
         except ValueError as exc:
             nom = getattr(card, "name", None) or str(getattr(card, "id", "?"))
             refus.append((nom, str(exc)))

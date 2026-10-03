@@ -31,6 +31,8 @@ import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
+from pbm_game.actions import valider
+from pbm_game.actions.familles_jeu import _fiches, familles_jeu
 from pbm_game.journal import (
     JOURNAL_VERSION,
     Action,
@@ -46,14 +48,18 @@ from pbm_game.journal import (
 )
 from pbm_game.journal.modele import (
     ACTION_ABANDONNER,
+    ACTION_AVANCER_PHASE,
+    ACTION_CHECKUP,
+    ACTION_DEBUT_TOUR,
     ACTION_DESERTER,
     ACTION_EXPIRER_INACTIVITE,
+    ACTION_MISE_EN_PLACE_INITIALE,
     AUTEUR_SYSTEME,
     Entree,
     Instantane,
 )
 from pbm_game.rng import GRAINE_MIN_OCTETS, Rng, engagement
-from pbm_game.state.modele import EtatPartie
+from pbm_game.state.modele import PHASE_CHECKUP, PHASE_PIOCHE, EtatPartie
 from pbm_game.state.serialisation import vers_json as etat_vers_json
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -61,6 +67,7 @@ from sqlalchemy.orm import aliased
 
 from pbm_api.config import settings
 from pbm_api.games import horloges as _adapt_horloges
+from pbm_api.games.catalogue_jeu import construire_catalogue_jeu
 from pbm_api.games.construction import (
     construire_etat_initial,
     joueur_id_de,
@@ -429,6 +436,153 @@ def _memes_actions(stockee: dict, soumise: Action) -> bool:
     )
 
 
+def _jouable(etat: EtatPartie) -> bool:
+    """Vrai si la partie est **en cours de jeu** (mise en place entamée ou partie commencée).
+
+    Une partie « jouable » passe par le générateur de coups légaux (validation d'appartenance,
+    orchestration des coups système). Une partie **brute** — decks en pioche, aucun Actif, aucune
+    mise en place — ne l'est pas : c'est l'état juste après :func:`creer_partie`, avant
+    :func:`demarrer_partie`. Le critère est observable sur l'état seul.
+    """
+    if etat.mise_en_place is not None:
+        return True
+    return any(j.actif is not None for j in etat.joueurs)
+
+
+def _persister_coup(
+    db: AsyncSession,
+    game: Game,
+    action: Action,
+    etat_avant: EtatPartie,
+    etat_apres: EtatPartie,
+    evenements,
+    maintenant: datetime,
+    rng: Rng,
+    intervalle: int,
+) -> list[dict]:
+    """Écrit un coup au journal et met à jour le cache de la partie — **sans commit**.
+
+    Mutualise l'écriture d'un coup (joueur ou système) : entrée numérotée, avancée du cache (numéro,
+    empreinte, échéance), statut terminal, horloges, et instantané de compaction périodique.
+    L'appelant commit une fois tous les coups écrits. Renvoie les événements en JSON.
+    """
+    empr = empreinte(etat_apres)
+    entree = Entree(
+        numero=game.current_numero,
+        auteur=action.auteur,
+        action=action,
+        evenements=evenements,
+        horodatage=maintenant.isoformat(),
+        empreinte=empr,
+    )
+    brut = entree_vers_json(entree)
+    db.add(
+        GameEvent(
+            game_id=game.id,
+            numero=brut["numero"],
+            auteur=brut["auteur"],
+            action=brut["action"],
+            evenements=brut["evenements"],
+            horodatage=brut["horodatage"],
+            empreinte=brut["empreinte"],
+        )
+    )
+    game.current_numero += 1
+    game.current_empreinte = empr
+    game.last_action_at = maintenant
+    game.expires_at = maintenant + _delai_inactivite()
+    if etat_apres.terminee:
+        game.status = GAME_STATUS_TERMINEE
+        game.vainqueur_user_id = uuid.UUID(etat_apres.vainqueur) if etat_apres.vainqueur else None
+        game.raison_fin = etat_apres.raison_fin
+    if game.horloges is not None:
+        game.horloges = _adapt_horloges.transition_json(
+            game.horloges, etat_avant, etat_apres, maintenant.timestamp()
+        )
+    if intervalle > 0 and game.current_numero % intervalle == 0:
+        db.add(
+            _snapshot_row(
+                game.id,
+                Instantane(
+                    numero_entrees=game.current_numero,
+                    etat=etat_apres,
+                    rng_etat=rng.etat(),
+                    empreinte=empr,
+                ),
+            )
+        )
+    return [dict(e) for e in brut["evenements"]]
+
+
+async def _piloter(
+    db: AsyncSession,
+    game: Game,
+    etat: EtatPartie,
+    rng: Rng,
+    maintenant: datetime,
+    catalogue,
+    intervalle: int,
+) -> tuple[EtatPartie, list[dict]]:
+    """Enchaîne les coups **système** dus jusqu'à ce que la partie attende un joueur.
+
+    Entre les tours, le serveur fait seul : la **pioche de début de tour** (``debut_tour``) en phase
+    de pioche, le **Pokémon Checkup** puis le tour suivant (``checkup`` → ``avancer_phase``)
+    en phase de checkup. Il s'arrête dès qu'un joueur doit agir (phase principale/attaque), qu'un
+    placement est attendu (mise en place), ou que la partie est finie. Un garde-fou borne les
+    enchaînements (jamais de boucle infinie).
+    """
+    evts: list[dict] = []
+    for _ in range(100):
+        if etat.terminee or etat.mise_en_place is not None:
+            break
+        phase = etat.tour.phase
+        if phase == PHASE_PIOCHE:
+            action = Action(ACTION_DEBUT_TOUR, AUTEUR_SYSTEME)
+        elif phase == PHASE_CHECKUP:
+            action = Action(ACTION_CHECKUP, AUTEUR_SYSTEME, {"fiches": _fiches(catalogue, etat)})
+        else:
+            break  # phase principale / attaque : au joueur de jouer.
+        etat2, evenements = appliquer(etat, action, rng)
+        evts += _persister_coup(
+            db, game, action, etat, etat2, evenements, maintenant, rng, intervalle
+        )
+        etat = etat2
+        # Après le Checkup, passer au tour suivant si la partie continue (checkup → pioche).
+        if phase == PHASE_CHECKUP and not etat.terminee:
+            av = Action(ACTION_AVANCER_PHASE, AUTEUR_SYSTEME)
+            etat2, evenements = appliquer(etat, av, rng)
+            evts += _persister_coup(
+                db, game, av, etat, etat2, evenements, maintenant, rng, intervalle
+            )
+            etat = etat2
+    return etat, evts
+
+
+async def demarrer_partie(
+    db: AsyncSession, game: Game, maintenant: datetime | None = None
+) -> None:
+    """Lance la **mise en place** d'une partie fraîchement créée (R-4) — coup système journalisé.
+
+    Appelée par le lancement après :func:`creer_partie` : applique ``mise_en_place_initiale``
+    (mélange, pioche de sept, mulligans) depuis le catalogue de la partie, ce qui met l'état en
+    attente du **placement** des joueurs (Actif + banc face cachée). Idempotente : rien si la
+    mise en place est déjà entamée ou la partie commencée (``_jouable``).
+    """
+    maintenant = maintenant or _maintenant()
+    etat, rng = await _reconstruire(db, game)
+    if _jouable(etat):
+        return
+    catalogue = await construire_catalogue_jeu(db, etat)
+    action = Action(
+        ACTION_MISE_EN_PLACE_INITIALE, AUTEUR_SYSTEME, {"definitions": catalogue.definitions()}
+    )
+    etat2, evenements = appliquer(etat, action, rng)
+    _persister_coup(
+        db, game, action, etat, etat2, evenements, maintenant, rng, INTERVALLE_INSTANTANE
+    )
+    await db.commit()
+
+
 async def appliquer_action(
     db: AsyncSession,
     *,
@@ -503,78 +657,56 @@ async def appliquer_action(
             f"Partie {game_id} au statut « {game.status} » : elle n'accepte plus d'action."
         )
 
-    # (3) Reconstruire, valider par le moteur, journaliser.
+    # (3) Reconstruire l'état courant et le Rng vivant.
     etat_courant, rng = await _reconstruire(db, game)
+
+    # Une partie JOUABLE (mise en place en cours ou commencée) passe par le générateur de coups
+    # légaux : le coup soumis DOIT appartenir à la liste que le moteur déclare (une seule source de
+    # vérité), ce qui vaut anti-triche — un paramètre falsifié ne correspond à aucun coup légal. Une
+    # partie « brute » (decks en pioche, avant mise en place) garde la voie mécanique directe, celle
+    # qu'exercent les tests de plumberie (idempotence, reprise) avec des coups système.
+    catalogue = None
+    if _jouable(etat_courant):
+        catalogue = await construire_catalogue_jeu(db, etat_courant)
+        verdict = valider(etat_courant, action, familles=familles_jeu(catalogue))
+        if verdict.refuse:
+            motif = f"{verdict.message} ({verdict.regle})"
+            _journaliser_refus(game_id, user_id, type, motif, maintenant)
+            raise ActionRefusee(motif)
+
     try:
         etat2, evenements = appliquer(etat_courant, action, rng)
     except ValueError as exc:
-        # Le serveur fait autorité : un coup illégal est refusé, l'état n'a pas bougé (rien n'a été
-        # écrit, le `commit` est plus bas). On le trace, et on alerte si c'est une rafale.
+        # Le serveur fait autorité : un coup illégal est refusé, l'état n'a pas bougé (rien n'est
+        # écrit, le commit est plus bas). On le trace, et on alerte si c'est une rafale.
         _journaliser_refus(game_id, user_id, type, str(exc), maintenant)
         raise ActionRefusee(str(exc)) from exc
 
-    empr = empreinte(etat2)
-    horodatage = maintenant.isoformat()
-    entree = Entree(
-        numero=game.current_numero,
-        auteur=auteur,
-        action=action,
-        evenements=evenements,
-        horodatage=horodatage,
-        empreinte=empr,
+    numero_joueur = game.current_numero
+    evts_json = _persister_coup(
+        db, game, action, etat_courant, etat2, evenements, maintenant, rng, intervalle_instantane
     )
-    brut = entree_vers_json(entree)
-    db.add(
-        GameEvent(
-            game_id=game.id,
-            numero=brut["numero"],
-            auteur=brut["auteur"],
-            action=brut["action"],
-            evenements=brut["evenements"],
-            horodatage=brut["horodatage"],
-            empreinte=brut["empreinte"],
-        )
-    )
+    etat_courant = etat2
 
-    game.current_numero += 1
-    game.current_empreinte = empr
-    game.last_action_at = maintenant
-    game.expires_at = maintenant + _delai_inactivite()
-    if etat2.terminee:
-        game.status = GAME_STATUS_TERMINEE
-        game.vainqueur_user_id = uuid.UUID(etat2.vainqueur) if etat2.vainqueur else None
-        game.raison_fin = etat2.raison_fin
-
-    # Horloges (lot j-timer) : mises à jour selon la transition d'état observée, dans la même
-    # transaction que le coup — donc reprises après un F5 (dans la partie, pas en mémoire).
-    if game.horloges is not None:
-        game.horloges = _adapt_horloges.transition_json(
-            game.horloges, etat_courant, etat2, maintenant.timestamp()
+    # Orchestration : après le coup d'un joueur, le serveur enchaîne les coups SYSTÈME dus
+    # début de tour, Pokémon Checkup, passage au tour suivant) jusqu'à ce que la partie attende de
+    # (pioche de début de tour, Checkup, tour suivant) jusqu'à ce qu'elle attende un joueur — tout
+    # par le journal (lot ``j-coups-joueur``). Seules les parties jouables en ont besoin.
+    if catalogue is not None and not etat_courant.terminee:
+        etat_courant, evts_sys = await _piloter(
+            db, game, etat_courant, rng, maintenant, catalogue, intervalle_instantane
         )
-
-    # Compaction périodique : un instantané borne la queue à rejouer à la reprise.
-    if intervalle_instantane > 0 and game.current_numero % intervalle_instantane == 0:
-        db.add(
-            _snapshot_row(
-                game.id,
-                Instantane(
-                    numero_entrees=game.current_numero,
-                    etat=etat2,
-                    rng_etat=rng.etat(),
-                    empreinte=empr,
-                ),
-            )
-        )
+        evts_json += evts_sys
 
     await db.commit()
     return ResultatAction(
-        numero=entree.numero,
-        evenements=[dict(e) for e in brut["evenements"]],
-        empreinte=empr,
-        terminee=etat2.terminee,
+        numero=numero_joueur,
+        evenements=evts_json,
+        empreinte=game.current_empreinte,
+        terminee=etat_courant.terminee,
         vainqueur_user_id=game.vainqueur_user_id,
-        raison_fin=etat2.raison_fin,
-        etat=etat_vers_json(etat2),
+        raison_fin=etat_courant.raison_fin,
+        etat=etat_vers_json(etat_courant),
         rejoue=False,
         rng_compteurs=rng.compteurs(),
         horloges=_adapt_horloges.restant_json(game.horloges, maintenant.timestamp()),

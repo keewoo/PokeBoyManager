@@ -73,7 +73,9 @@ async def _make_user(db, *, pseudo=None) -> User:
     return user
 
 
-async def _make_deck_possede(db, user_id: uuid.UUID, *, quantity: int = 6, name="Carapuce") -> Deck:
+async def _make_deck_possede(
+    db, user_id: uuid.UUID, *, quantity: int = 20, name="Carapuce"
+) -> Deck:
     """Un deck jouable (carte scriptée) ET **possédé** : quantity exemplaires en collection."""
     set_row = Set(code=f"lp-{uuid.uuid4().hex[:8]}", name="Set jeu", series="Série test")
     db.add(set_row)

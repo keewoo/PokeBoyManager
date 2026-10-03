@@ -72,7 +72,7 @@ async def _preparer_compte(db, user_id: uuid.UUID, *, pseudo: str) -> None:
     await db.flush()
 
 
-async def _deck_possede(db, user_id: uuid.UUID, *, name="Carapuce", quantity=6) -> Deck:
+async def _deck_possede(db, user_id: uuid.UUID, *, name="Carapuce", quantity=20) -> Deck:
     set_row = Set(code=f"lr-{uuid.uuid4().hex[:8]}", name="Set jeu", series="Série test")
     db.add(set_row)
     await db.flush()

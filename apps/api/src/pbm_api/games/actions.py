@@ -22,6 +22,7 @@ l'état côté serveur (jamais une règle rejouée par le client) : l'écran ne 
 from __future__ import annotations
 
 from pbm_game.actions import actions_legales, valider
+from pbm_game.actions.familles_jeu import CatalogueJeu, familles_jeu
 from pbm_game.actions.modele import ActionLegale, Cible
 from pbm_game.journal.modele import ACTION_ABANDONNER, ACTION_AVANCER_PHASE, Action
 from pbm_game.state.modele import PHASE_CHECKUP, EtatPartie
@@ -82,14 +83,16 @@ def _est_legale(action: Action, legales: tuple[ActionLegale, ...]) -> bool:
     return any(coup.action == action for coup in legales)
 
 
-def actions_pour(etat: EtatPartie, joueur: str) -> dict:
+def actions_pour(etat: EtatPartie, joueur: str, catalogue_jeu: CatalogueJeu | None = None) -> dict:
     """Les actions d'un joueur pour la vue : ``{"legales": [...], "refusees": [...]}``.
 
-    ``legales`` vient de `pbm_game.actions.actions_legales` (source de vérité). ``refusees``
-    interroge le moteur (`valider`) sur les commandes de :data:`PALETTE_COMMANDES` non légales,
-    pour en donner le motif cité — jamais un refus muet, jamais un motif inventé.
+    ``legales`` vient de `pbm_game.actions.actions_legales` (source de vérité), avec les **familles
+    du jeu** (``familles_jeu``) dès qu'un ``catalogue_jeu`` est fourni : poser, évoluer, attacher,
+    attaquer, battre en retraite, promouvoir, placer. Sans catalogue (partie brute), seules les
+    familles sans données de carte s'appliquent. ``refusees`` donne le motif cité d'un refus.
     """
-    legales = actions_legales(etat, joueur)
+    familles = familles_jeu(catalogue_jeu or CatalogueJeu())
+    legales = actions_legales(etat, joueur, familles=familles)
     legales_json = [_legale_json(coup, etat) for coup in legales]
 
     refusees_json: list[dict] = []
@@ -97,7 +100,7 @@ def actions_pour(etat: EtatPartie, joueur: str) -> dict:
         action = Action(type=type_, auteur=joueur, params=dict(params))
         if _est_legale(action, legales):
             continue
-        verdict = valider(etat, action)
+        verdict = valider(etat, action, familles=familles)
         if verdict.refuse:
             refusees_json.append(
                 {

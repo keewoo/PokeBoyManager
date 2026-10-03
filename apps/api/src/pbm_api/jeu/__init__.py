@@ -9,6 +9,6 @@ weaknesses, resistances, retreat_cost, prize_marker…).
 
 from __future__ import annotations
 
-from pbm_api.jeu.catalogue import definition_depuis_card
+from pbm_api.jeu.catalogue import definition_depuis_card, definition_energie_depuis_card
 
-__all__ = ["definition_depuis_card"]
+__all__ = ["definition_depuis_card", "definition_energie_depuis_card"]

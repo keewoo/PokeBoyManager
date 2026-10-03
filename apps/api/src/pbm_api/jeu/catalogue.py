@@ -29,6 +29,7 @@ import re
 from collections.abc import Mapping
 
 from pbm_game.cartes import AttaqueDef, DefinitionCarte
+from pbm_game.cartes.energie import DefinitionEnergie
 from pbm_game.combat.modele import (
     FAIBLESSE_FACTEUR_DEFAUT,
     RESISTANCE_REDUCTION_DEFAUT,
@@ -38,6 +39,7 @@ from pbm_game.combat.modele import (
 )
 
 from pbm_api.catalog.prize_marker import MARQUEUR_INCONNU, POKEMON_SUPERTYPES
+from pbm_api.decks.energy import is_basic_energy, is_energy, normalize
 
 #: Correspondance des stades TCGdex (localisés) vers le vocabulaire du moteur (R-7). Un stade
 #: absent de cette table **bloque** la carte (on ne devine pas le stade d'un Pokémon).
@@ -210,4 +212,50 @@ def definition_depuis_card(card: object, *, evolue_depuis: str | None = None) ->
     )
 
 
-__all__ = ["definition_depuis_card"]
+def _type_energie_depuis_nom(nom: str | None) -> str:
+    """Déduit le type d'une Énergie de base de son **nom** quand ``element_type`` manque.
+
+    « Énergie Feu » → ``feu`` ; « Water Energy » → ``water``. On retire le préfixe/suffixe
+    « énergie »/« energy » et on garde le reste (vocabulaire **brut**, comme les coûts d'attaque :
+    ``_cout`` met les symboles en minuscules sans les normaliser — fournitures et coûts doivent
+    parler la même langue). Vide si indéterminé (D9 : jamais deviné).
+    """
+    n = normalize(nom)
+    for prefixe in ("energie ", "energy "):
+        if n.startswith(prefixe):
+            n = n[len(prefixe):]
+    for suffixe in (" energie", " energy"):
+        if n.endswith(suffixe):
+            n = n[: -len(suffixe)]
+    return n.strip()
+
+
+def definition_energie_depuis_card(card: object) -> DefinitionEnergie:
+    """Construit une :class:`DefinitionEnergie` depuis une carte Énergie **de base**, ou **bloque**.
+
+    Au jalon J1, seules les Énergies **de base** sont jouables : une Énergie **spéciale** porte un
+    effet non scripté (D9) et est refusée — jamais jouée de travers. La **fourniture** d'une énergie
+    de base est son type (``{type: 1}``), dans le **même vocabulaire brut** que les coûts d'attaque
+    (``element_type`` en minuscules, ou déduit du nom à défaut). Lève ``ValueError`` si la carte
+    n'est pas une Énergie de base ou si son type reste indéterminé.
+    """
+    nom = getattr(card, "name", None)
+    supertype = getattr(card, "supertype", None)
+    energy_type = getattr(card, "energy_type", None)
+    if not is_energy(supertype):
+        raise ValueError(f"« {nom} » n'est pas une carte Énergie (supertype {supertype!r}).")
+    if not is_basic_energy(supertype, nom, energy_type):
+        raise ValueError(
+            f"« {nom} » : Énergie spéciale non scriptée au jalon J1 — un effet non implémenté "
+            "n'est jamais approximé (D9)."
+        )
+    element = getattr(card, "element_type", None)
+    type_ = str(element).strip().lower() if element else _type_energie_depuis_nom(nom)
+    if not type_:
+        raise ValueError(
+            f"« {nom} » : type d'Énergie de base indéterminé — carte bloquée, jamais deviné (D9)."
+        )
+    return DefinitionEnergie(ref=_ref(card), nom=nom or "", fournit={type_: 1})
+
+
+__all__ = ["definition_depuis_card", "definition_energie_depuis_card"]
