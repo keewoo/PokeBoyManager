@@ -445,15 +445,15 @@ export const TRADUCTEURS: Record<string, Traducteur> = {
   mulligan: {
     automatique: true,
     traduire: (d, pour) => {
-      // R-4.4/R-4.5 : numéro de mulligan, et à qui revient l'éventuelle carte bonus. Aucune carte.
+      // R-4.4/R-4.5 : numéro de reprise, et à qui revient l'éventuelle carte bonus. Aucune carte.
       const num = nombre(d, "numero");
-      const suffixe = typeof num === "number" ? ` (mulligan n°${num})` : "";
+      const suffixe = typeof num === "number" ? ` (reprise n°${num})` : "";
       const bonusPour = chaine(d, "bonus_pour");
       const bonus = bonusPour
         ? ` — carte bonus pour ${bonusPour === pour ? "toi" : "l'adversaire"}`
         : "";
       return {
-        texte: `${sujet(d, pour)} ${estMoi(d, pour) ? "repioches" : "repioche"} : aucune base en main${suffixe}${bonus}.`,
+        texte: `${sujet(d, pour)} ${estMoi(d, pour) ? "repioches" : "repioche"} : main sans Pokémon de base${suffixe}${bonus}.`,
       };
     },
   },

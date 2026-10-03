@@ -37,6 +37,22 @@ describe("traduction des événements du journal", () => {
       promotion_requise: { joueur: MOI },
       pokemon_pose: { joueur: MOI, pokemon: "p-10", zone: "banc", ref: "base1-12" },
       evolution: { joueur: MOI, base: "p-10", vers: "ev1-5", nom: "Dracaufeu", etats_soignes: [] },
+      // Mise en place et horloges (lots j-initialisation / j-coups-joueur / j-timer).
+      energie_attachee: { joueur: MOI, energie: "e-1", ref: "base1-energy", cible: "p-1", fournit: { electrique: 1 } },
+      placement_cache: { joueur: MOI },
+      mulligan: { joueur: MOI, numero: 1, simultane: false, bonus_pour: ADV },
+      main_revelee: { joueur: MOI, cartes: [{ instance_id: "c-1", ref: "base1-1" }] },
+      mise_en_place_prete: { joueurs: [{ id: MOI, mulligans: 1, bonus: 0 }] },
+      mise_en_place_revelee: { joueurs: [{ joueur: MOI, actif: "base1-1", banc: ["base1-2"], recompenses_nombre: 6, bonus_pioches: 0 }] },
+      fin_tour: { joueur: MOI, de: "principale" },
+      // Combat et effets de carte (lots j-attaque / effets de carte).
+      cout_paye: { cout: { types: { electrique: 1 }, incolore: 0 }, detail: "Coût payé : ⚡ par énergie électrique", affectations: [] },
+      effet_resolu: { source: { libelle: "Bandeau Musclé", ref: "tool-1", instance_id: "t-1" }, type_effet: "degats", regle: "R-10", libelle: "dégâts +20" },
+      effet_sans_cible: { source: { libelle: "Gardevoir", ref: "ev2-7", instance_id: "p-20" }, type_effet: "soin", regle: "R-11", libelle: "soin", raison: "aucune cible valide" },
+      verrou_pose: { nom: "attaque_interdite", portee: "ce_tour", source: { libelle: "Carte Piège" }, regle: "R-12", cible: null, pose_au_tour: 1 },
+      verrou_leve: { nom: "attaque_interdite", portee: "ce_tour", source: { libelle: "Carte Piège" }, regle: "R-12", cible: null, au_tour: 2 },
+      dsl_pile_ou_face: { pieces: 2, faces: 1 },
+      dsl_cout_impayable: { source: { libelle: "Carte Effet" }, raison: "coût non payable" },
     };
 
     for (const type of TYPES_EVENEMENT_CONNUS) {
