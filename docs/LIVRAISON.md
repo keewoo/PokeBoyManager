@@ -441,6 +441,51 @@ d'`Evenement` produit par le moteur doit avoir une entrée dans `PROJECTEURS`.
 La release non déployée `20261003-125043` (commit eb0ecfc) reste dans `releases/` (non pointée) ;
 `graphify update` non exécuté (trace doc seule, depuis un worktree transitoire).
 
+## Coups du joueur — 2ᵉ tentative, 03/10/2026 — **toujours BLOQUÉE**, cette fois **sans toucher à la PROD**
+
+Le lot `livraison-jeu-coups` a été relancé (file B). Rien n'a changé dans `main` depuis le blocage de
+13:07 : le HEAD est `a12b106` (trace doc seule), `j-coups-joueur` est toujours `integre` à `eb0ecfc`,
+et **aucun correctif de projection n'a été fusionné**. Le défaut décrit ci-dessus est donc intact —
+vérifié dans le code de `eb0ecfc`/`a12b106`, pas supposé :
+
+- `apps/game/src/pbm_game/sortie/evenements.py` : `PROJECTEURS` ne contient toujours que 17 types ;
+- `apps/game/src/pbm_game/journal/modele.py` définit bien `EVT_ENERGIE_ATTACHEE`, `EVT_MAIN_REVELEE`,
+  `EVT_MULLIGAN`, `EVT_MISE_EN_PLACE_PRETE`, `EVT_PLACEMENT_CACHE`, `EVT_MISE_EN_PLACE_REVELEE`,
+  `EVT_FIN_TOUR` — les sept absents du registre. La preuve de jeu exigée (poser, **attacher une
+  énergie**, attaquer) émet dès `attacher_energie` l'`EVT_ENERGIE_ATTACHEE` → `ValueError` → 500.
+
+**Décision de cette passe : ne PAS re-déployer.** Re-livrer `eb0ecfc` referait exactement la bascule
+de 13:07 — santé verte, puis échec de la preuve de jeu, puis retour arrière nº 2 : une perturbation de
+PROD pour un résultat connu d'avance. « Une PROD debout vaut mieux qu'une PROD cassée » : on ne touche
+pas au serveur. **État PROD vérifié (lecture seule)** : `app/` → `releases/20261003-033245` (J1,
+`12bfadd`), les 3 unités `pokeboy-prod-{api,web,worker}` `active`, `pokeboy.lol` 200, `/api/health` ok,
+`pokeboy.acx-connect.com` redirige 308 ; voisins canoniques `200 200 308 200 307`. Accès jeu inchangé
+(privé, D11). Public non concerné.
+
+**Correctif, précisé (allège la crainte « décision sensible » de la 1ʳᵉ passe).** La relecture des
+docstrings de `journal/modele.py` **et des sites d'émission** montre que les sept sont **publics par
+construction** — le correctif est donc bien défini, pas un arbitrage de non-fuite ouvert :
+
+| Événement | Pourquoi public | Projecteur |
+|---|---|---|
+| `energie_attachee` | la carte quitte la main (cachée) pour une zone publique (attachée) | `_public` |
+| `main_revelee` | R-4.4 : seul moment où une main est **volontairement** montrée à l'adversaire | `_public` |
+| `mulligan` | nombre de mulligans + carte bonus due = faits publics | `_public` |
+| `mise_en_place_prete` | résumé public de la phase (compteurs) | `_public` |
+| `placement_cache` | n'émet **que** `{"joueur": jid}` — aucun contenu (vérifié `mise_en_place/transitions.py:327`) | `_public` |
+| `mise_en_place_revelee` | R-4.2/R-4.3 : révélation **simultanée** publique des deux placements | `_public` |
+| `fin_tour` | joueur + phase quittée | `_public` |
+
+Mais cela **reste un changement du moteur** (`apps/game`), donc un **lot de code gaté** (worktree +
+branche `roadmap/*` + PR + CI + intégration par l'ordonnanceur) — pas un correctif posé depuis une
+session de livraison, et de toute façon la livraison ne pourrait pas se conclure ici (devAI ne fusionne
+pas lui-même). Le lot de suite doit : (1) ajouter les sept entrées à `PROJECTEURS` ; (2) poser un
+**test de parité** qui échoue si **un** type d'`Evenement` journalisé par le moteur n'a pas d'entrée
+dans `PROJECTEURS` (c'est lui qui couvre l'exhaustif — d'autres types internes existent côté effets/DSL,
+à vérifier qu'ils ne transitent pas par la projection) ; (3) un test qui **exerce le chemin de sortie**
+(`projeter_resultat`/`resynchroniser`) sur une partie jouée, pas seulement `appliquer_action` — c'est le
+trou de CI qui a laissé passer le bug. Une fois ce lot `integre`, relancer `livraison-jeu-coups`.
+
 ## Conclure « déployé » — jamais sur une ligne de journal
 
 Un build qui échoue laisse la plateforme **debout sur l'ancienne version** : tout a l'air normal et
