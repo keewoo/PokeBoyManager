@@ -91,6 +91,7 @@ Si le serveur MCP `graphify` est chargé dans ta session, `query_graph`, `get_ne
 
 **Débloque :**
 - `j-charge-temps-reel` — Tenue en charge : combien de parties simultanées sur deux cœurs
+- `j-coups-joueur` — Coups du joueur : la partie se joue vraiment, de la mise en place à la victoire
 - `j-echanges-emotes` — Emotes prédéfinies : se parler sans chat libre
 - `j-plateau-layout` — Plateau : la table de jeu, du grand écran au téléphone
 - `j-timer` — Horloges : par tour, par partie, par décision — et ce qui se passe à l'expiration

@@ -90,7 +90,7 @@ Si le serveur MCP `graphify` est chargé dans ta session, `query_graph`, `get_ne
 - `j-cartes-pokemon` — Cartes Pokémon : base, évolutions, marqueurs de règle
 
 **Débloque :**
-- aucun lot n'en dépend
+- `j-coups-joueur` — Coups du joueur : la partie se joue vraiment, de la mise en place à la victoire
 
 ## 3. Mission
 

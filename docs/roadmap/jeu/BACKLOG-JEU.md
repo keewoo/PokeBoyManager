@@ -1,7 +1,7 @@
 # Backlog du jeu — plateau, moteur de règles et parties
 
 > GÉNÉRÉ par `docs/roadmap/jeu/build-jeu.py` depuis `docs/roadmap/jeu/plan/`. Ne pas éditer à la main.
-> Version 1.0 — 2026-09-21 — 67 lots.
+> Version 1.0 — 2026-09-21 — 68 lots.
 
 **Objet.** Deux joueurs s'affrontent en ligne avec les cartes qu'ils possèdent vraiment : recherche d'un adversaire, choix du deck, mise en place, partie au tour par tour sur un plateau animé, puis une fin de partie qui laisse une trace sur le compte. Le moteur applique les règles officielles et sait jouer les cartes — attaques, défense, appâts, Dresseurs, talents, états spéciaux — sans jamais approximer un effet qu'il ne connaît pas.
 
@@ -50,7 +50,7 @@ _Une partie complète se joue de bout en bout entre deux navigateurs, avec des P
 
 **Preuve attendue.** Une partie test jouée en entier à deux navigateurs, rejouable depuis son journal, gagnée par les six récompenses.
 
-**28 lots**, poids 50 (S=1, M=2, L=3), paliers 0 → 14. Les jalons se chevauchent : pendant que l'interface se construit, les cartes se scriptent dans un autre couloir. Un jalon est atteint quand son dernier lot est livré.
+**29 lots**, poids 53 (S=1, M=2, L=3), paliers 0 → 14. Les jalons se chevauchent : pendant que l'interface se construit, les cartes se scriptent dans un autre couloir. Un jalon est atteint quand son dernier lot est livré.
 
 | Palier | Lot | Titre | Piste | Couloir | Prio | Taille | Après |
 |---|---|---|---|---|---|---|---|
@@ -81,6 +81,7 @@ _Une partie complète se joue de bout en bout entre deux navigateurs, avec des P
 | 12 | [`j-plateau-layout`](#j-plateau-layout) | Plateau : la table de jeu, du grand écran au téléphone | U | `J-UI` | P0 | L | `j-temps-reel`, `j-salon-partie` |
 | 13 | [`j-plateau-etat-visuel`](#j-plateau-etat-visuel) | Lire le plateau d'un coup d'œil : dégâts, énergies, états, récompenses | U | `J-UI` | P0 | M | `j-plateau-layout` |
 | 13 | [`j-plateau-interactions`](#j-plateau-interactions) | Jouer un coup : cibles valides, annulation, confirmation | U | `J-UI` | P0 | M | `j-plateau-layout`, `j-actions-legales` |
+| 14 | [`j-coups-joueur`](#j-coups-joueur) | Coups du joueur : la partie se joue vraiment, de la mise en place à la victoire | S | `J-SRV` | P0 | L | `j-plateau-interactions`, `j-initialisation`, `j-effets-choix`, `j-cartes-energies`, `j-cartes-pokemon`, `j-degats-resolution`, `j-retraite-banc`, `j-ko-recompenses`, `j-temps-reel` |
 | 14 | [`j-plateau-journal`](#j-plateau-journal) | Journal de partie : ce qui vient de se passer, en français | U | `J-UI` | P0 | S | `j-plateau-etat-visuel` |
 
 ### J2 — Toutes les cartes du deck sont vraiment jouées
@@ -186,7 +187,7 @@ Un palier ne peut commencer que quand tout ce dont il dépend est livré. À l'i
 | **11** | [`j-cartes-objets`](#j-cartes-objets), [`j-cartes-supporters`](#j-cartes-supporters), [`j-cartes-talents`](#j-cartes-talents), [`j-charge-temps-reel`](#j-charge-temps-reel), [`j-echanges-emotes`](#j-echanges-emotes), [`j-effets-assistance-ia`](#j-effets-assistance-ia), [`j-effets-couverture-outil`](#j-effets-couverture-outil), [`j-lancement-partie`](#j-lancement-partie), [`j-mode-solo`](#j-mode-solo), [`j-salon-partie`](#j-salon-partie), [`j-timer`](#j-timer) | `J-EFF`, `J-MOT`, `J-QUA`, `J-SRV`, `J-UI` |
 | **12** | [`j-deconnexion-abandon`](#j-deconnexion-abandon), [`j-initialisation`](#j-initialisation), [`j-notifications-jeu`](#j-notifications-jeu), [`j-plateau-layout`](#j-plateau-layout) | `J-MOT`, `J-SRV`, `J-UI` |
 | **13** | [`j-fin-effets-compte`](#j-fin-effets-compte), [`j-plateau-etat-visuel`](#j-plateau-etat-visuel), [`j-plateau-interactions`](#j-plateau-interactions), [`j-rendu-carte`](#j-rendu-carte) | `J-GFX`, `J-SRV`, `J-UI` |
-| **14** | [`j-anim-socle`](#j-anim-socle), [`j-assets-pipeline`](#j-assets-pipeline), [`j-classement-prive`](#j-classement-prive), [`j-plateau-decisions`](#j-plateau-decisions), [`j-plateau-journal`](#j-plateau-journal) | `J-GFX`, `J-SRV`, `J-UI` |
+| **14** | [`j-anim-socle`](#j-anim-socle), [`j-assets-pipeline`](#j-assets-pipeline), [`j-classement-prive`](#j-classement-prive), [`j-coups-joueur`](#j-coups-joueur), [`j-plateau-decisions`](#j-plateau-decisions), [`j-plateau-journal`](#j-plateau-journal) | `J-GFX`, `J-SRV`, `J-UI` |
 | **15** | [`j-accessibilite-jeu`](#j-accessibilite-jeu), [`j-anim-attaques-typees`](#j-anim-attaques-typees), [`j-anim-evolution-ko`](#j-anim-evolution-ko), [`j-anim-pokemon-apparition`](#j-anim-pokemon-apparition), [`j-arene-decors`](#j-arene-decors), [`j-partie-fin-ui`](#j-partie-fin-ui), [`j-plateau-aide`](#j-plateau-aide), [`j-son`](#j-son) | `J-GFX`, `J-UI` |
 | **16** | [`j-e2e-deux-navigateurs`](#j-e2e-deux-navigateurs), [`j-stats-joueur`](#j-stats-joueur) | `J-QUA`, `J-UI` |
 | **17** | [`j-profil-jeu`](#j-profil-jeu), [`j-securite-jeu`](#j-securite-jeu) | `J-SRV`, `J-UI` |
@@ -524,7 +525,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 **Risque à surveiller.** Appliquer la faiblesse après les réductions, ou soustraire des PV : les deux erreurs sont invisibles jusqu'au jour où un joueur compte et découvre qu'il a perdu à tort.
 
 **Vient après** : [`j-machine-tour`](#j-machine-tour)  
-**Débloque** : [`j-cartes-pokemon`](#j-cartes-pokemon), [`j-ko-recompenses`](#j-ko-recompenses)
+**Débloque** : [`j-cartes-pokemon`](#j-cartes-pokemon), [`j-coups-joueur`](#j-coups-joueur), [`j-ko-recompenses`](#j-ko-recompenses)
 
 <a id="j-retraite-banc"></a>
 ### `j-retraite-banc` — Banc, retraite et promotion : le Pokémon actif change de place
@@ -553,7 +554,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 **Risque à surveiller.** Confondre échange forcé et retraite : les cartes d'appât deviendraient injouables sous paralysie, ou consommeraient la retraite du tour.
 
 **Vient après** : [`j-machine-tour`](#j-machine-tour)  
-**Débloque** : [`j-cartes-pokemon`](#j-cartes-pokemon), [`j-etats-speciaux`](#j-etats-speciaux)
+**Débloque** : [`j-cartes-pokemon`](#j-cartes-pokemon), [`j-coups-joueur`](#j-coups-joueur), [`j-etats-speciaux`](#j-etats-speciaux)
 
 <a id="j-cartes-pokemon"></a>
 ### `j-cartes-pokemon` — Cartes Pokémon : base, évolutions, marqueurs de règle
@@ -583,7 +584,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 **Risque à surveiller.** Les données du catalogue sont hétérogènes selon la source (TCGdex / Pokémon TCG API) : les champs manquants doivent bloquer la carte, pas être devinés.
 
 **Vient après** : [`j-degats-resolution`](#j-degats-resolution), [`j-retraite-banc`](#j-retraite-banc)  
-**Débloque** : [`j-cartes-energies`](#j-cartes-energies), [`j-effets-catalogue-compilation`](#j-effets-catalogue-compilation), [`j-initialisation`](#j-initialisation), [`j-partie-service`](#j-partie-service)
+**Débloque** : [`j-cartes-energies`](#j-cartes-energies), [`j-coups-joueur`](#j-coups-joueur), [`j-effets-catalogue-compilation`](#j-effets-catalogue-compilation), [`j-initialisation`](#j-initialisation), [`j-partie-service`](#j-partie-service)
 
 <a id="j-etats-speciaux"></a>
 ### `j-etats-speciaux` — États spéciaux : Empoisonné, Brûlé, Endormi, Paralysé, Confus
@@ -643,7 +644,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 **Risque à surveiller.** Le repli silencieux « marqueur inconnu → 1 récompense » : c'est exactement la panne muette que ce dépôt a déjà payée quatre fois. Un marqueur inconnu est une erreur qui remonte.
 
 **Vient après** : [`j-degats-resolution`](#j-degats-resolution)  
-**Débloque** : [`j-cartes-regles-speciales`](#j-cartes-regles-speciales), [`j-effets-architecture`](#j-effets-architecture), [`j-fin-effets-compte`](#j-fin-effets-compte), [`j-partie-fin-ui`](#j-partie-fin-ui), [`j-tests-regles`](#j-tests-regles)
+**Débloque** : [`j-cartes-regles-speciales`](#j-cartes-regles-speciales), [`j-coups-joueur`](#j-coups-joueur), [`j-effets-architecture`](#j-effets-architecture), [`j-fin-effets-compte`](#j-fin-effets-compte), [`j-partie-fin-ui`](#j-partie-fin-ui), [`j-tests-regles`](#j-tests-regles)
 
 <a id="j-cartes-energies"></a>
 ### `j-cartes-energies` — Énergies : de base fournies, spéciales possédées
@@ -672,7 +673,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 **Risque à surveiller.** Coder le paiement comme une simple comparaison de compteurs : les énergies multi-types rendent le problème combinatoire, et une mauvaise combinaison refuse une attaque parfaitement légale.
 
 **Vient après** : [`j-cartes-pokemon`](#j-cartes-pokemon)  
-**Débloque** : — (rien n'en dépend)
+**Débloque** : [`j-coups-joueur`](#j-coups-joueur)
 
 <a id="j-partie-service"></a>
 ### `j-partie-service` — Service de parties : créer, persister, reprendre, expirer
@@ -1028,7 +1029,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 **Risque à surveiller.** Compter sur l'ordre d'arrivée des messages : il n'est pas garanti. Le numéro de séquence est ce qui rend la reprise possible, et il coûte trois lignes au départ.
 
 **Vient après** : [`j-autorite-vues`](#j-autorite-vues)  
-**Débloque** : [`j-charge-temps-reel`](#j-charge-temps-reel), [`j-echanges-emotes`](#j-echanges-emotes), [`j-plateau-layout`](#j-plateau-layout), [`j-timer`](#j-timer)
+**Débloque** : [`j-charge-temps-reel`](#j-charge-temps-reel), [`j-coups-joueur`](#j-coups-joueur), [`j-echanges-emotes`](#j-echanges-emotes), [`j-plateau-layout`](#j-plateau-layout), [`j-timer`](#j-timer)
 
 <a id="j-cartes-attaques-effets"></a>
 ### `j-cartes-attaques-effets` — Attaques à effet : pile ou face, dégâts variables, blocages, états infligés
@@ -1146,7 +1147,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 **Risque à surveiller.** Implémenter les demandes en bloquant un fil d'exécution côté serveur : une partie sur deux reste bloquée à la première déconnexion. La demande est une donnée, pas une attente de code.
 
 **Vient après** : [`j-effets-dsl`](#j-effets-dsl)  
-**Débloque** : [`j-cartes-objets`](#j-cartes-objets), [`j-cartes-supporters`](#j-cartes-supporters), [`j-cartes-talents`](#j-cartes-talents), [`j-plateau-decisions`](#j-plateau-decisions), [`j-timer`](#j-timer)
+**Débloque** : [`j-cartes-objets`](#j-cartes-objets), [`j-cartes-supporters`](#j-cartes-supporters), [`j-cartes-talents`](#j-cartes-talents), [`j-coups-joueur`](#j-coups-joueur), [`j-plateau-decisions`](#j-plateau-decisions), [`j-timer`](#j-timer)
 
 <a id="j-simulation-bots"></a>
 ### `j-simulation-bots` — Bots de simulation : des milliers de parties pour débusquer les blocages
@@ -1559,7 +1560,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 **Risque à surveiller.** Simplifier le placement face cachée « parce que c'est plus simple en ligne » : c'est une information de jeu réelle, et la révélation est un des rares moments spectaculaires du jeu.
 
 **Vient après** : [`j-lancement-partie`](#j-lancement-partie), [`j-cartes-pokemon`](#j-cartes-pokemon)  
-**Débloque** : — (rien n'en dépend)
+**Débloque** : [`j-coups-joueur`](#j-coups-joueur)
 
 <a id="j-plateau-layout"></a>
 ### `j-plateau-layout` — Plateau : la table de jeu, du grand écran au téléphone
@@ -1676,7 +1677,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 **Risque à surveiller.** Recopier « juste une petite règle » côté client pour éviter un aller-retour : c'est le début de deux moteurs divergents, et le client finit par proposer des coups que le serveur refuse.
 
 **Vient après** : [`j-plateau-layout`](#j-plateau-layout), [`j-actions-legales`](#j-actions-legales)  
-**Débloque** : [`j-plateau-decisions`](#j-plateau-decisions)
+**Débloque** : [`j-coups-joueur`](#j-coups-joueur), [`j-plateau-decisions`](#j-plateau-decisions)
 
 <a id="j-rendu-carte"></a>
 ### `j-rendu-carte` — Ma photo ou l'image officielle : la carte telle qu'elle est jouée
@@ -1736,6 +1737,37 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 
 **Vient après** : [`j-ko-recompenses`](#j-ko-recompenses), [`j-deconnexion-abandon`](#j-deconnexion-abandon)  
 **Débloque** : [`j-classement-prive`](#j-classement-prive), [`j-mise-en-ligne-jeu`](#j-mise-en-ligne-jeu), [`j-stats-joueur`](#j-stats-joueur)
+
+<a id="j-coups-joueur"></a>
+### `j-coups-joueur` — Coups du joueur : la partie se joue vraiment, de la mise en place à la victoire
+
+**Palier 14** · jalon **J1** · piste S (Serveur de parties) · couloir `J-SRV` (chimera) · P0 · taille L · complexité 4/5 · difficulté 4/5
+
+**Pourquoi ce lot.** Constat de la livraison du 03/10/2026 : salon, invitations, plateau et temps réel sont en PROD, mais le générateur d'actions légales ne connaît que « avancer la phase » et « abandonner » (`FAMILLES_DEFAUT`). Chaque lot a livré sa brique en renvoyant le branchement des coups au suivant, et aucun ne le portait : on ne peut ni poser un Pokémon, ni attacher une énergie, ni attaquer. Ce lot est celui qui rend le jeu jouable.
+
+**Ce qu'il fait.** Familles de coups construites depuis les définitions de cartes résolues à la création de la partie (catalogue) : poser un Pokémon de base au banc, faire évoluer, attacher une énergie (une par tour), déclarer une attaque dont le coût est payé, battre en retraite (coût payé), passer le tour, promouvoir après un K.O. ; mise en place interactive (actif et banc face cachée, mulligans) par les fenêtres de décision ; enchaînement des tours par le serveur (pioche de début de tour, phase entre les tours, fin de partie) ; exposition des coups légaux de chaque joueur par l'API et le canal temps réel ; le plateau les propose et les joue.
+
+**Mission**
+
+- Écrire les familles manquantes dans le moteur (`apps/game`, paquet pur) à partir des transitions déjà livrées (`j-cartes-pokemon`, `j-cartes-energies`, `j-degats-resolution`, `j-retraite-banc`, `j-ko-recompenses`) et des définitions de cartes chargées du catalogue — sans dupliquer une règle : la famille liste, la transition applique, la validation vérifie l'appartenance.
+- Brancher ces familles dans le service de parties (`apps/api`, `games/`) : la partie connaît les définitions de cartes de ses deux decks, et `actions_legales` / `valider` les reçoivent.
+- Orchestrer la partie côté serveur : mise en place (coup système + décisions des joueurs par `j-effets-choix`), pioche de début de tour, phase entre les tours, passage de tour, fin de partie par récompenses, banc vide ou pioche impossible — tout par le journal, rien hors journal.
+- Exposer à chaque joueur ses coups légaux (avec leurs cibles et une étiquette lisible) dans sa vue et sur le WebSocket ; le plateau (`j-plateau-interactions`) les affiche et les envoie, sans aucune règle côté écran.
+- Prouver le jalon J1 : un test d'intégration qui joue **une partie complète** par l'API entre deux comptes, avec deux decks Pokémon + Énergies de base, jusqu'à la victoire par les six récompenses ; la partie se rejoue depuis son journal à l'identique ; et un e2e Playwright à deux contextes de navigateur qui joue au moins une mise en place, une énergie attachée et une attaque.
+
+**Critères d'acceptation**
+
+- `actions_legales` propose poser, évoluer, attacher une énergie, attaquer, battre en retraite, passer et promouvoir quand c'est légal, et jamais sinon — vérifié sur des états tirés de parties jouées.
+- Une partie complète se joue par l'API jusqu'à la victoire par les récompenses, et `rejouer(journal)` redonne l'état final à l'identique.
+- Le plateau joue ces coups dans un navigateur (e2e à deux contextes, vert en CI).
+- Aucune règle n'est réécrite côté écran ; aucun coup hors de la liste n'est accepté par le serveur.
+
+**Livrables** : familles de coups du moteur, orchestration de la partie côté serveur, coups exposés à l'API et au temps réel, joués par le plateau, partie complète testée jusqu'à la victoire.
+
+**Risque à surveiller.** Réécrire une règle dans la famille au lieu de réutiliser la transition livrée : les deux divergent, et le refus ne cite plus la bonne règle. Et repousser encore le branchement « au lot suivant » : il n'y en a pas.
+
+**Vient après** : [`j-plateau-interactions`](#j-plateau-interactions), [`j-initialisation`](#j-initialisation), [`j-effets-choix`](#j-effets-choix), [`j-cartes-energies`](#j-cartes-energies), [`j-cartes-pokemon`](#j-cartes-pokemon), [`j-degats-resolution`](#j-degats-resolution), [`j-retraite-banc`](#j-retraite-banc), [`j-ko-recompenses`](#j-ko-recompenses), [`j-temps-reel`](#j-temps-reel)  
+**Débloque** : — (rien n'en dépend)
 
 <a id="j-plateau-journal"></a>
 ### `j-plateau-journal` — Journal de partie : ce qui vient de se passer, en français
@@ -2292,6 +2324,7 @@ Ce sont les manques que le découpage grossier cachait : sans eux, le jeu se liv
 | Lot | Titre |
 |---|---|
 | [`j-accessibilite-jeu`](#j-accessibilite-jeu) | Confort et accessibilité : jouable par un enfant, lisible par tous |
+| [`j-coups-joueur`](#j-coups-joueur) | Coups du joueur : la partie se joue vraiment, de la mise en place à la victoire |
 | [`j-echanges-emotes`](#j-echanges-emotes) | Emotes prédéfinies : se parler sans chat libre |
 | [`j-mise-en-ligne-jeu`](#j-mise-en-ligne-jeu) | Mettre le jeu en ligne sur le serveur partagé |
 | [`j-mode-solo`](#j-mode-solo) | Partie d'entraînement contre un bot |

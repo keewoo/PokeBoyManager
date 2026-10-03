@@ -91,6 +91,7 @@ Si le serveur MCP `graphify` est chargé dans ta session, `query_graph`, `get_ne
 
 **Débloque :**
 - `j-cartes-pokemon` — Cartes Pokémon : base, évolutions, marqueurs de règle
+- `j-coups-joueur` — Coups du joueur : la partie se joue vraiment, de la mise en place à la victoire
 - `j-etats-speciaux` — États spéciaux : Empoisonné, Brûlé, Endormi, Paralysé, Confus
 
 ## 3. Mission

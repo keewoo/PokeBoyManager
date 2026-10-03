@@ -1619,6 +1619,51 @@
       "palier": 11
     },
     {
+      "id": "j-coups-joueur",
+      "titre": "Coups du joueur : la partie se joue vraiment, de la mise en place à la victoire",
+      "piste": "S",
+      "couloir": "J-SRV",
+      "jalon": "J1",
+      "priorite": "P0",
+      "taille": "L",
+      "complexite": 4,
+      "difficulte": 4,
+      "apres": [
+        "j-plateau-interactions",
+        "j-initialisation",
+        "j-effets-choix",
+        "j-cartes-energies",
+        "j-cartes-pokemon",
+        "j-degats-resolution",
+        "j-retraite-banc",
+        "j-ko-recompenses",
+        "j-temps-reel"
+      ],
+      "gain": "Constat de la livraison du 03/10/2026 : salon, invitations, plateau et temps réel sont en PROD, mais le générateur d'actions légales ne connaît que « avancer la phase » et « abandonner » (`FAMILLES_DEFAUT`). Chaque lot a livré sa brique en renvoyant le branchement des coups au suivant, et aucun ne le portait : on ne peut ni poser un Pokémon, ni attacher une énergie, ni attaquer. Ce lot est celui qui rend le jeu jouable.",
+      "fonctionnalites": "Familles de coups construites depuis les définitions de cartes résolues à la création de la partie (catalogue) : poser un Pokémon de base au banc, faire évoluer, attacher une énergie (une par tour), déclarer une attaque dont le coût est payé, battre en retraite (coût payé), passer le tour, promouvoir après un K.O. ; mise en place interactive (actif et banc face cachée, mulligans) par les fenêtres de décision ; enchaînement des tours par le serveur (pioche de début de tour, phase entre les tours, fin de partie) ; exposition des coups légaux de chaque joueur par l'API et le canal temps réel ; le plateau les propose et les joue.",
+      "mission": [
+        "Écrire les familles manquantes dans le moteur (`apps/game`, paquet pur) à partir des transitions déjà livrées (`j-cartes-pokemon`, `j-cartes-energies`, `j-degats-resolution`, `j-retraite-banc`, `j-ko-recompenses`) et des définitions de cartes chargées du catalogue — sans dupliquer une règle : la famille liste, la transition applique, la validation vérifie l'appartenance.",
+        "Brancher ces familles dans le service de parties (`apps/api`, `games/`) : la partie connaît les définitions de cartes de ses deux decks, et `actions_legales` / `valider` les reçoivent.",
+        "Orchestrer la partie côté serveur : mise en place (coup système + décisions des joueurs par `j-effets-choix`), pioche de début de tour, phase entre les tours, passage de tour, fin de partie par récompenses, banc vide ou pioche impossible — tout par le journal, rien hors journal.",
+        "Exposer à chaque joueur ses coups légaux (avec leurs cibles et une étiquette lisible) dans sa vue et sur le WebSocket ; le plateau (`j-plateau-interactions`) les affiche et les envoie, sans aucune règle côté écran.",
+        "Prouver le jalon J1 : un test d'intégration qui joue **une partie complète** par l'API entre deux comptes, avec deux decks Pokémon + Énergies de base, jusqu'à la victoire par les six récompenses ; la partie se rejoue depuis son journal à l'identique ; et un e2e Playwright à deux contextes de navigateur qui joue au moins une mise en place, une énergie attachée et une attaque."
+      ],
+      "acceptation": [
+        "`actions_legales` propose poser, évoluer, attacher une énergie, attaquer, battre en retraite, passer et promouvoir quand c'est légal, et jamais sinon — vérifié sur des états tirés de parties jouées.",
+        "Une partie complète se joue par l'API jusqu'à la victoire par les récompenses, et `rejouer(journal)` redonne l'état final à l'identique.",
+        "Le plateau joue ces coups dans un navigateur (e2e à deux contextes, vert en CI).",
+        "Aucune règle n'est réécrite côté écran ; aucun coup hors de la liste n'est accepté par le serveur."
+      ],
+      "livrables": [
+        "familles de coups du moteur",
+        "orchestration de la partie côté serveur",
+        "coups exposés à l'API et au temps réel, joués par le plateau",
+        "partie complète testée jusqu'à la victoire"
+      ],
+      "risques": "Réécrire une règle dans la famille au lieu de réutiliser la transition livrée : les deux divergent, et le refus ne cite plus la bonne règle. Et repousser encore le branchement « au lot suivant » : il n'y en a pas.",
+      "palier": 14
+    },
+    {
       "id": "j-salon-partie",
       "titre": "Salon de jeu : jouer, inviter, reprendre, s'entraîner",
       "piste": "U",

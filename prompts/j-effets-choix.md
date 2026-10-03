@@ -93,6 +93,7 @@ Si le serveur MCP `graphify` est chargé dans ta session, `query_graph`, `get_ne
 - `j-cartes-objets` — Cartes Objet, dont les appâts qui forcent l'échange de l'actif adverse
 - `j-cartes-supporters` — Supporters : un par tour, et les effets qui perturbent l'adversaire
 - `j-cartes-talents` — Talents : passifs, activés une fois par tour, déclenchés — et annulables
+- `j-coups-joueur` — Coups du joueur : la partie se joue vraiment, de la mise en place à la victoire
 - `j-plateau-decisions` — Fenêtres de décision : choisir des cartes, ordonner, répondre pendant le tour adverse
 - `j-timer` — Horloges : par tour, par partie, par décision — et ce qui se passe à l'expiration
 

@@ -91,6 +91,7 @@ Si le serveur MCP `graphify` est chargé dans ta session, `query_graph`, `get_ne
 
 **Débloque :**
 - `j-cartes-regles-speciales` — Règles de cartes particulières : ACE SPEC, Radiant, VSTAR, GX, Prism Star
+- `j-coups-joueur` — Coups du joueur : la partie se joue vraiment, de la mise en place à la victoire
 - `j-effets-architecture` — Pile d'effets et déclencheurs : l'architecture qui accueille toutes les cartes
 - `j-fin-effets-compte` — Ce qu'une partie laisse sur le compte : écriture unique et exacte
 - `j-partie-fin-ui` — Fin de partie : qui a gagné, pourquoi, et ce qu'on en retient

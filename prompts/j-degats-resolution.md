@@ -91,6 +91,7 @@ Si le serveur MCP `graphify` est chargé dans ta session, `query_graph`, `get_ne
 
 **Débloque :**
 - `j-cartes-pokemon` — Cartes Pokémon : base, évolutions, marqueurs de règle
+- `j-coups-joueur` — Coups du joueur : la partie se joue vraiment, de la mise en place à la victoire
 - `j-ko-recompenses` — Mises K.O., récompenses et conditions de victoire
 
 **Décision DJ1** — Quelle version des règles fait foi ? Standard actuel (rotation), Étendu, ou un format « maison » sans rotation acceptant toute carte de la collection ? Lis la décision prise dans `docs/roadmap/etat.json` (`decisions_prises.DJ1`) et applique-la à la lettre ; la proposition du pilote n'est qu'un contexte : _Format maison sans rotation (on joue ce qu'on possède), mais avec le corpus de règles ACTUEL (faiblesse ×2, résistance −30, 6 récompenses, banc de 5, le joueur qui commence n'attaque pas à son premier tour). Une carte ancienne est jouée avec les règles actuelles._

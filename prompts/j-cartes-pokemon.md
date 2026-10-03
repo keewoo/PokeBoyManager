@@ -92,6 +92,7 @@ Si le serveur MCP `graphify` est chargé dans ta session, `query_graph`, `get_ne
 
 **Débloque :**
 - `j-cartes-energies` — Énergies : de base fournies, spéciales possédées
+- `j-coups-joueur` — Coups du joueur : la partie se joue vraiment, de la mise en place à la victoire
 - `j-effets-catalogue-compilation` — Du catalogue aux cartes jouables : compilation, versions et errata
 - `j-initialisation` — Mise en place : mélange, main de sept, mulligans, actif et banc face cachée, six récompenses
 - `j-partie-service` — Service de parties : créer, persister, reprendre, expirer
