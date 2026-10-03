@@ -353,6 +353,94 @@ livrés ; ce qui manque est la couche d'orchestration qui joue la mise en place 
 les `definitions` du catalogue) et expose les coups ciblés. Une partie se crée, se visualise à deux en
 temps réel sans fuite, et se termine par abandon — c'est le périmètre réellement jouable aujourd'hui.
 
+## Tentative de livraison des coups du joueur — 03/10/2026 — **BLOQUÉE** (bug de projection, retour arrière)
+
+Lot `livraison-jeu-coups`, pour mettre en PROD `j-coups-joueur` (les vrais coups : mise en place
+interactive, attacher une énergie, attaquer, enchaînement des tours). Commit figé
+**`eb0ecfcf22b5d6755c3f2dda104fcf7218718242`** (`integre` dans `etat.json`, CI « CI » verte au
+passage push). La bascule a **réussi** et la plateforme était saine, mais la **preuve de
+fonctionnement a échoué** : un bug de la couche de projection rend le jeu injouable par l'API/le
+temps réel. **Retour arrière immédiat sur la release J1** (`20261003-033245`, `12bfadd`). Aucun
+changement d'accès. PROD debout sur J1.
+
+### Ce qui a réellement été exécuté
+
+```bash
+# 0. Portes : CI « CI » verte sur eb0ecfc (push, success) ; voisins AVANT 200 200 308 200 307 ;
+#    serveur sain (charge 0.09, 2461 Mo). Besoins relevés AVANT : AUCUNE migration (diff vide côté
+#    versions/), AUCUNE variable d'environnement nouvelle (aucun getenv/settings ajouté dans
+#    apps/api|apps/game), AUCUN nouveau processus, Caddy NON concerné (le WebSocket passe déjà par
+#    le reverse_proxy /api existant). Seuls apps/api + apps/game changent (code pur) + doc-web.
+# 1. chimera : worktree de build (dépôt relais) checkout --detach eb0ecfc, HEAD vérifié (eb0ecfc) ;
+#    apps/game présent, dép. editable ../game déclarée ; pbm-build-lol.sh (game-aware) ; build
+#    détaché (setsid), sondé → BUILD_DONE. TS=20261003-125043. Artefact web : 4 .woff2, 0 googleapis,
+#    15 pokeboy.lol, 0 acx-connect.
+# 2. transfert chimera → devAI → kailo-srv, SHA-256 IDENTIQUES aux TROIS étapes :
+#    web 632421c3…f9c1 · api 04d2a582…3952 · game f5f1e104…b855
+# 3. point de restauration frais AVANT toute écriture :
+ssh kailo-srv 'sudo -n -u pokeboy bash /srv/pokeboy/prod/backups/backup.sh'  # pokeboy_prod-20261003-105435.dump (46,5 Mo / 32 tables), photos 1053
+# 4. préparation (extrait web+api+game, uv sync ; `alembic upgrade head` = NO-OP, tête inchangée) :
+ssh kailo-srv 'TS=20261003-125043 COMMIT=eb0ecfc… LOT=livraison-jeu-coups bash /tmp/prep-lol.sh'  # → PREPARATION_OK, tête d4e1f2a3b5c6 avant ET après
+# 5. bascule, retour arrière automatique sur échec de santé :
+ssh kailo-srv 'TS=20261003-125043 bash /tmp/deploy-switch.sh'  # → BASCULE_OK (api=200 web=200)
+# — bascule en ligne vérifiée : app/ -> 20261003-125043, RELEASE_INFO commit=eb0ecfc, 3 unités active,
+#   /api/health 200, / 200, voisins 200 200 308 200 307. Puis PREUVE DE JEU → échec (ci-dessous).
+# 6. RETOUR ARRIÈRE délibéré sur J1 :
+ssh kailo-srv 'TS=20261003-033245 bash /tmp/deploy-switch.sh'  # → BASCULE_OK release=20261003-033245
+#   Vérifié : app/ -> 20261003-033245, commit=12bfadd, 3 unités active, health 200, voisins inchangés.
+```
+
+### Le bug : 7 types d'événements sans projecteur → 500 sur le premier vrai coup
+
+La preuve a été menée par un script dans le venv déployé (2 comptes jetables avec accès + decks
+jouables réels — attaquant Pikachu « Charge » 60 dégâts + énergies ; cibles Duo Tag 60 PV à 3
+récompenses — 1 compte sans accès). **Fermeture, accès, non-fuite et suppression : PASS.** Mais dès
+le premier coup réel de mise en place :
+
+```
+POST /games/{id}/actions (placer_mise_en_place) → HTTP 500
+ValueError: Événement « placement_cache » sans projecteur … (pbm_game/sortie/evenements.py:111)
+  ← projeter_resultat (projection.py:96) ← play_action (routers/games.py:168)
+```
+
+**Cause.** `pbm_game.sortie.evenements.PROJECTEURS` déclare un projecteur par type d'événement, et
+`projeter_evenement` **refuse** (garde D9, « aucun repli silencieux ») tout type absent. Or le lot
+`j-coups-joueur` (et la mise en place) émettent **sept** types qui ne sont **pas** dans ce registre :
+`energie_attachee` (nouveau, `cartes/attache.py`), `placement_cache`, `mulligan`, `main_revelee`,
+`mise_en_place_prete`, `mise_en_place_revelee`, `fin_tour`. Tout coup ou toute resync qui en émet un
+passe par `projeter_resultat` (réponse HTTP de `POST /actions` **et** diffusion `HUB.publier` du
+canal temps réel) ou par `resynchroniser` (resync WebSocket depuis 0), et **lève → 500**. Observé :
+WebSocket A/B n'ont reçu **aucune** resync (0), la mise en place émettant ces événements au
+`demarrer_partie`.
+
+**Pourquoi la CI est verte quand même.** `test_games_partie_complete.py` et `test_partie_complete.py`
+jouent la partie via `appliquer_action`/`reprendre_partie` — qui **ne passent pas** par
+`projeter_resultat`/`projeter(evenements)`. Le chemin de **sortie autoritaire** (projection des
+événements vers un client HTTP ou WebSocket) n'est donc **jamais exercé** pour ces événements. Le
+compte rendu du lot le signalait à demi-mot : le critère « le plateau joue ces coups dans un
+navigateur (e2e à deux contextes) » était coché « Reste à faire », faute de navigateur Playwright sur
+la flotte.
+
+### Décision
+
+Le défaut est **systémique** (7 types d'événements) et **sensible à la sécurité** : plusieurs de ces
+projecteurs décident d'une **non-fuite** (un mulligan ou `main_revelee` **révèle une main**, R-4.4 ;
+le contenu d'un `placement_cache` doit rester **caché** à l'adversaire). Les écrire correctement est
+une **décision de conception** du moteur, pas un correctif anodin à poser en autonomie sur un chemin
+sécurité. Conformément aux règles (« au moindre doute, tu ne livres pas et tu l'écris » ; « une PROD
+debout vaut mieux qu'une PROD cassée »), **retour arrière sur J1** et lot bloqué. Le public n'est pas
+concerné (le jeu est privé, D11 — JF/Aymeric) ; J1 reste jouable jusqu'à l'abandon, comme avant.
+
+**Correctif à faire dans un lot de suite (moteur + CI) :** déclarer les sept projecteurs manquants
+dans `PROJECTEURS`, en tranchant la non-fuite de chacun (public, propriétaire-seul, ou retrait des
+`instance_id`), **et** poser un test qui **exerce la projection** (`projeter_resultat` /
+`resynchroniser`) sur une partie jouée — pas seulement `appliquer_action` — pour qu'un futur
+événement sans projecteur casse en CI, pas en PROD. Idéalement un test de **parité** : tout type
+d'`Evenement` produit par le moteur doit avoir une entrée dans `PROJECTEURS`.
+
+La release non déployée `20261003-125043` (commit eb0ecfc) reste dans `releases/` (non pointée) ;
+`graphify update` non exécuté (trace doc seule, depuis un worktree transitoire).
+
 ## Conclure « déployé » — jamais sur une ligne de journal
 
 Un build qui échoue laisse la plateforme **debout sur l'ancienne version** : tout a l'air normal et
