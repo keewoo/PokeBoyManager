@@ -28,7 +28,7 @@ from __future__ import annotations
 import logging
 import os
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
 from pbm_game.actions import valider
@@ -206,6 +206,11 @@ class ResultatAction:
     #: Temps restant affichable (vérité serveur au moment du coup), ou None si la partie n'a
     #: pas d'horloges (créée avant j-timer). Le client en fait une estimation recalée (j-timer).
     horloges: dict | None = None
+    #: Commentaires d'affichage attachés à des coups de ce lot (lot `j-adversaire-ia`) :
+    #: ``[{"numero", "texte"}]`` — l'explication de l'IA adverse, ou la note de repli quand le bot
+    #: a joué à sa place. Vide sans joueur automatique IA. Passe tel quel par le point de sortie
+    #: (``projeter_resultat``) jusqu'au journal du client.
+    commentaires: list[dict] = field(default_factory=list)
 
 
 # --- Création ----------------------------------------------------------------
@@ -220,6 +225,7 @@ async def creer_partie(
     maintenant: datetime | None = None,
     entrainement: bool = False,
     bot_niveau: str | None = None,
+    adversaire_ia: bool = False,
 ) -> Game:
     """Crée une partie entre deux joueurs (chacun `(user_id, deck_id)`), ou **refuse**.
 
@@ -232,6 +238,8 @@ async def creer_partie(
     ``entrainement`` marque une partie d'**entraînement contre un bot** (lot `j-mode-solo`,
     DJ7) : elle entre dans l'historique mais ne compte pas. ``bot_niveau``, s'il est fourni,
     est posé sur le **siège 1** (``joueur_b``) : c'est lui, et lui seul, que le bot tient.
+    ``adversaire_ia`` (lot `j-adversaire-ia`) marque ce même siège comme tenu par l'**IA du
+    joueur** ; ``bot_niveau`` sert alors de repli quand l'IA échoue.
     """
     maintenant = maintenant or _maintenant()
     user_a, deck_a = joueur_a
@@ -275,7 +283,12 @@ async def creer_partie(
         [
             GamePlayer(game_id=game.id, user_id=user_a, deck_id=deck_a, seat=0),
             GamePlayer(
-                game_id=game.id, user_id=user_b, deck_id=deck_b, seat=1, bot_niveau=bot_niveau
+                game_id=game.id,
+                user_id=user_b,
+                deck_id=deck_b,
+                seat=1,
+                bot_niveau=bot_niveau,
+                adversaire_ia=adversaire_ia,
             ),
         ]
     )
@@ -468,12 +481,17 @@ def _persister_coup(
     maintenant: datetime,
     rng: Rng,
     intervalle: int,
+    commentaire: str | None = None,
 ) -> list[dict]:
     """Écrit un coup au journal et met à jour le cache de la partie — **sans commit**.
 
     Mutualise l'écriture d'un coup (joueur ou système) : entrée numérotée, avancée du cache (numéro,
     empreinte, échéance), statut terminal, horloges, et instantané de compaction périodique.
     L'appelant commit une fois tous les coups écrits. Renvoie les événements en JSON.
+
+    ``commentaire`` est une métadonnée d'affichage (lot `j-adversaire-ia`) : l'explication de l'IA
+    adverse ou la note de repli du bot, écrite sur l'entrée de journal (jalon J4 « la partie laisse
+    une trace »). ``None`` pour un coup ordinaire — ce qui est le cas de tous les autres appelants.
     """
     empr = empreinte(etat_apres)
     entree = Entree(
@@ -494,6 +512,7 @@ def _persister_coup(
             evenements=brut["evenements"],
             horodatage=brut["horodatage"],
             empreinte=brut["empreinte"],
+            commentaire=commentaire,
         )
     )
     game.current_numero += 1
@@ -710,10 +729,11 @@ async def appliquer_action(
     # Mode solo : après le coup de l'humain, le bot d'entraînement joue son tour — il ne voit
     # que sa vue projetée, jamais l'état complet (lot `j-mode-solo`). Import local : le module
     # `bot` importe ce service, l'importer au chargement créerait un cycle.
+    commentaires: list[dict] = []
     if game.entrainement and catalogue is not None and not etat_courant.terminee:
         from pbm_api.games.bot import boucle_bot_pour_partie
 
-        etat_courant, evts_bot = await boucle_bot_pour_partie(
+        etat_courant, evts_bot, commentaires = await boucle_bot_pour_partie(
             db, game, etat_courant, rng, maintenant, catalogue, intervalle_instantane
         )
         evts_json += evts_bot
@@ -730,6 +750,7 @@ async def appliquer_action(
         rejoue=False,
         rng_compteurs=rng.compteurs(),
         horloges=_adapt_horloges.restant_json(game.horloges, maintenant.timestamp()),
+        commentaires=commentaires,
     )
 
 

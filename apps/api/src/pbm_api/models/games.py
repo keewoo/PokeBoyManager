@@ -105,6 +105,13 @@ class Game(Base, TimestampMixin):
     # déduit du siège bot) pour que la liste « mes parties » le lise sans charger les sièges, et
     # pour que la boucle d'application sache piloter le bot sans requête supplémentaire.
     entrainement: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
+    # Adversaire IA (lot `j-adversaire-ia`, DJ7) : nombre d'appels déjà faits à l'IA du joueur dans
+    # CETTE partie, et total de jetons consommés. Ce sont le compteur de **budget** (plafond
+    # `pbm_api.games.adversaire_ia.MAX_APPELS_PAR_PARTIE`) et la base du **coût estimé affiché** :
+    # ils vivent sur la partie (non en mémoire) pour survivre aux coups et à un F5. `0` pour une
+    # partie sans IA (bot pur ou partie entre humains).
+    ia_appels: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    ia_tokens: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
 
 
 class GamePlayer(Base, TimestampMixin):
@@ -141,6 +148,10 @@ class GamePlayer(Base, TimestampMixin):
     # un siège dont `bot_niveau` est renseigné est donc, et seulement dans ce cas, celui du bot.
     # Le bot joue côté serveur (il ne passe jamais par HTTP) ; `user_id` pointe le compte réservé.
     bot_niveau: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    # Siège tenu par l'**IA du joueur** (lot `j-adversaire-ia`, DJ7) : quand il est vrai, le joueur
+    # automatique de ce siège est l'IA branchée sur la clé de l'humain, et `bot_niveau` sert de
+    # **repli** quand l'IA échoue (réponse invalide, délai, plafond). Faux (le défaut) = bot pur.
+    adversaire_ia: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
 
 
 class GameEvent(Base):
@@ -170,6 +181,12 @@ class GameEvent(Base):
     auteur: Mapped[str] = mapped_column(String(64), nullable=False)
     action: Mapped[dict] = mapped_column(JSONB, nullable=False)
     evenements: Mapped[list] = mapped_column(JSONB, nullable=False)
+    # Commentaire **d'affichage** attaché à ce coup (lot `j-adversaire-ia`) : l'explication en
+    # français de l'IA qui a joué, ou la note de repli quand le bot a joué à sa place. C'est une
+    # métadonnée du journal (jalon J4 « la partie laisse une trace »), pas un événement du moteur :
+    # elle ne participe donc pas au rejeu (l'empreinte reste calculée sur l'état, les `evenements`
+    # restent la sortie pure du moteur). `NULL` pour un coup ordinaire (humain, système, bot muet).
+    commentaire: Mapped[str | None] = mapped_column(String(512), nullable=True)
     horodatage: Mapped[str] = mapped_column(String(64), nullable=False)
     empreinte: Mapped[str] = mapped_column(String(64), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
