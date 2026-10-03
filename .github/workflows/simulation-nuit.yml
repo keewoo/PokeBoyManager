@@ -1,0 +1,49 @@
+name: Simulation (nuit)
+
+# Campagne LONGUE de bots de simulation, chaque nuit (lot j-simulation-bots, mission point 4).
+# La campagne RÉDUITE, elle, tourne à chaque poussée dans le job `game` de ci.yml
+# (tests/test_simulation_campagne_ci.py) : ici on va beaucoup plus loin, hors du chemin critique
+# de CI. Un échec = au moins une partie a produit une anomalie ; sa graine est dans le journal du
+# job, rejouable par `python -m pbm_sim reproduire <graine>`.
+
+on:
+  schedule:
+    # 03:17 UTC chaque nuit (heure creuse ; minute non ronde pour ne pas bousculer la file GitHub).
+    - cron: "17 3 * * *"
+  # Déclenchable à la main depuis l'onglet Actions, avec un nombre de parties ajustable.
+  workflow_dispatch:
+    inputs:
+      nombre:
+        description: "Nombre de parties à simuler"
+        required: false
+        default: "20000"
+
+concurrency:
+  group: simulation-nuit
+  cancel-in-progress: true
+
+jobs:
+  campagne:
+    name: campagne longue de bots
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: "0.12.13"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - working-directory: apps/game
+        run: uv sync --locked
+
+      - name: Campagne de masse (échoue sur toute anomalie)
+        working-directory: apps/game
+        env:
+          NOMBRE: ${{ github.event.inputs.nombre || '20000' }}
+        # `python -m pbm_sim campagne` sort en 1 s'il reste la moindre anomalie : le job échoue
+        # alors, et la sortie liste chaque graine fautive (reproductible en une commande).
+        run: uv run python -m pbm_sim campagne --prefixe nuit-$(date +%F) --nombre "$NOMBRE"
