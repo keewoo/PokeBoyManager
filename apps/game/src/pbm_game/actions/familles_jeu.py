@@ -40,6 +40,7 @@ from ..journal.modele import (
     ACTION_ATTACHER_ENERGIE,
     ACTION_DECLARER_ATTAQUE,
     ACTION_EVOLUER,
+    ACTION_PLACER_MISE_EN_PLACE,
     ACTION_POSER,
     ACTION_PROMOUVOIR,
     ACTION_RETRAITE,
@@ -75,6 +76,10 @@ from .modele import (
 # directe en Actif est un cas d'effet, hors périmètre). Même constante que ``cartes.transitions``.
 ZONE_BANC = "banc"
 
+#: Marqueur de « stade » d'une carte non-Pokémon (énergie, Dresseur) dans les fiches de mise en
+#: place : tout sauf ``base``, pour que ``_est_base`` la reconnaisse comme non-base (R-4.2).
+_STADE_NON_POKEMON = "non_pokemon"
+
 
 @dataclass(frozen=True)
 class CatalogueJeu:
@@ -96,6 +101,17 @@ class CatalogueJeu:
 
     def energie_de(self, ref: str) -> DefinitionEnergie | None:
         return self.energies.get(ref)
+
+    def definitions(self) -> dict[str, dict]:
+        """Le mapping ``ref → fiche`` attendu par la mise en place (R-4.2).
+
+        Pour un Pokémon, la fiche complète (porte son ``stade``) ; pour une énergie, un marqueur de
+        stade **non-base** suffit (la mise en place n'a besoin que de « est-ce une base ? »).
+        """
+        fiches: dict[str, dict] = {ref: definition_vers_dict(d) for ref, d in self.pokemon.items()}
+        for ref in self.energies:
+            fiches[ref] = {"stade": _STADE_NON_POKEMON}
+        return fiches
 
 
 def _energie_vers_dict(ef: DefinitionEnergie) -> dict:
@@ -120,6 +136,13 @@ def _joueur_de(etat: EtatPartie, jid: str) -> Joueur | None:
     for j in etat.joueurs:
         if j.id == jid:
             return j
+    return None
+
+
+def _index_de(etat: EtatPartie, jid: str) -> int | None:
+    for i, j in enumerate(etat.joueurs):
+        if j.id == jid:
+            return i
     return None
 
 
@@ -473,6 +496,55 @@ class FamillePromouvoir(Famille):
         return refus("R-8.7", "La promotion ne s'applique qu'après un K.O. (Actif absent, R-8.7).")
 
 
+class FamillePlacer(_FamilleCatalogue):
+    """Placer son Actif et son banc face cachée à la mise en place (R-4.2) — avant le premier tour.
+
+    Un coup par Pokémon de **base** de la main qu'on peut poser comme **Actif** ; le reste des bases
+    de la main part au **banc** (au plus cinq). Ce banc automatique est une simplification du jalon
+    J1 : le joueur choisit son Actif, les autres bases le suivent au banc. Le choix fin du banc est
+    une finition d'interface ultérieure.
+    """
+
+    nom = "placer"
+
+    def gouverne(self, action: Action) -> bool:
+        return action.type == ACTION_PLACER_MISE_EN_PLACE
+
+    def generer(self, etat: EtatPartie, joueur: str) -> list[ActionLegale]:
+        mep = etat.mise_en_place
+        if mep is None:
+            return []
+        idx = _index_de(etat, joueur)
+        if idx is None or mep.placements[idx] is not None:
+            return []  # pas de mise en place en cours pour lui, ou il a déjà placé.
+        j = etat.joueurs[idx]
+        bases = [
+            c for c in j.main
+            if (d := self.catalogue.pokemon_de(c.ref)) is not None and d.stade == "base"
+        ]
+        if not bases:
+            return []
+        fiches = self.catalogue.definitions()
+        coups: list[ActionLegale] = []
+        for carte in bases:
+            banc = [b.instance_id for b in bases if b.instance_id != carte.instance_id][:5]
+            nom = self.catalogue.pokemon_de(carte.ref).nom
+            coups.append(
+                ActionLegale(
+                    action=Action(
+                        ACTION_PLACER_MISE_EN_PLACE,
+                        joueur,
+                        {"actif": carte.instance_id, "banc": banc, "definitions": fiches},
+                    ),
+                    etiquette=f"Placer {nom} comme Actif (banc : {len(banc)})",
+                )
+            )
+        return coups
+
+    def refuser(self, etat: EtatPartie, action: Action) -> Verdict:
+        return refus("R-4.2", "Ce placement n'est pas possible dans cet état (R-4.2).")
+
+
 class FamilleAvancerPhaseJeu(FamilleAvancerPhase):
     """``avancer_phase`` du jeu : comme la famille de base, mais interdite tant qu'un Actif manque.
 
@@ -498,6 +570,7 @@ def familles_jeu(catalogue: CatalogueJeu) -> tuple[Famille, ...]:
     ``valider(...)`` restent **cohérents** (une seule source : la liste).
     """
     return (
+        FamillePlacer(catalogue),
         FamilleAvancerPhaseJeu(),
         FamillePoser(catalogue),
         FamilleEvoluer(catalogue),
@@ -517,6 +590,7 @@ __all__ = [
     "FamilleAttaquer",
     "FamilleRetraite",
     "FamillePromouvoir",
+    "FamillePlacer",
     "FamilleAvancerPhaseJeu",
     "familles_jeu",
 ]
