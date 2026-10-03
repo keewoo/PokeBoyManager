@@ -54,7 +54,7 @@ from pbm_api.games.construction import (  # noqa: F401 (joueur_id_de documenté)
 )
 from pbm_api.games.entry import DeckInjouable, DeckIntrouvable, verifier_deck
 from pbm_api.games.errors import GameError
-from pbm_api.games.service import creer_partie
+from pbm_api.games.service import creer_partie, demarrer_partie
 from pbm_api.models import (
     Card,
     CollectionItem,
@@ -485,6 +485,10 @@ async def _lancer(
     game = await creer_partie(
         db, joueur_a=joueur_a, joueur_b=joueur_b, graine_hex=launch.graine, maintenant=maintenant
     )
+    # Lancer la mise en place (R-4) : mélange, pioche de sept, mulligans — la partie attend alors le
+    # placement des joueurs (lot ``j-coups-joueur``). Sans ce coup système, une partie lancée
+    # restait decks en pioche, injouable.
+    await demarrer_partie(db, game, maintenant)
 
     launch.choix_commencer = commencer
     launch.premier_joueur_user_id = premier

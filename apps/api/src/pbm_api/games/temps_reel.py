@@ -47,6 +47,8 @@ from pbm_game.state.modele import EtatPartie
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.games import horloges as _adapt_horloges
+from pbm_api.games.actions import actions_pour
+from pbm_api.games.catalogue_jeu import construire_catalogue_jeu
 from pbm_api.games.construction import joueur_id_de
 from pbm_api.games.indicateurs import (
     CatalogueAffichage,
@@ -151,6 +153,12 @@ async def resynchroniser(
         types=catalogue.types,
         registre=catalogue.registre,
     )
+    # Coups légaux sur la vue de resynchronisation : après un F5, le plateau doit pouvoir rejouer
+    # (le /state les porte déjà ; sans eux ici, une reprise par le canal temps réel serait muette).
+    catalogue_jeu = await construire_catalogue_jeu(db, etat_final)
+    actions = actions_pour(etat_final, joueur_id, catalogue_jeu)
+    vue["actions_legales"] = actions["legales"]
+    vue["actions_refusees"] = actions["refusees"]
 
     return {
         "type": "resync",
@@ -227,6 +235,7 @@ class Hub:
         *,
         graine_hex: str,
         catalogue: CatalogueAffichage,
+        catalogue_jeu=None,
     ) -> None:
         """Diffuse un coup appliqué à tous les abonnés d'une partie, projeté pour chacun.
 
@@ -242,6 +251,7 @@ class Hub:
                 user_id=abonne.user_id,
                 graine_hex=graine_hex,
                 catalogue=catalogue,
+                catalogue_jeu=catalogue_jeu,
             )
             message = {
                 "type": "evenement",

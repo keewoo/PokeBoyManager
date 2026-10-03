@@ -26,6 +26,7 @@ from .debogage import decrire_entree, decrire_journal, resoudre_id
 from .empreinte import empreinte
 from .modele import (
     ACTION_ABANDONNER,
+    ACTION_ATTACHER_ENERGIE,
     ACTION_AVANCER_PHASE,
     ACTION_CHECKUP,
     ACTION_DEBUT_TOUR,
@@ -42,6 +43,7 @@ from .modele import (
     EVT_DEGATS,
     EVT_ECHANGE_FORCE,
     EVT_EFFET_EXPIRE,
+    EVT_ENERGIE_ATTACHEE,
     EVT_ETAT_CHECKUP,
     EVT_KO,
     EVT_PARTIE_TERMINEE,
@@ -101,6 +103,7 @@ __all__ = [
     "ACTION_MELANGER_PIOCHE",
     "ACTION_PIOCHER",
     "ACTION_AVANCER_PHASE",
+    "ACTION_ATTACHER_ENERGIE",
     "ACTION_ABANDONNER",
     "ACTION_DEBUT_TOUR",
     "ACTION_DECLARER_ATTAQUE",
@@ -113,6 +116,7 @@ __all__ = [
     "EVT_PHASE_AVANCEE",
     "EVT_TOUR_COMMENCE",
     "EVT_ATTAQUE_DECLAREE",
+    "EVT_ENERGIE_ATTACHEE",
     "EVT_CONFUSION",
     "EVT_DEGATS",
     "EVT_PARTIE_TERMINEE",

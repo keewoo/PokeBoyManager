@@ -47,6 +47,7 @@ def vue_autoritaire(
     user_id: uuid.UUID,
     graine_hex: str,
     catalogue: CatalogueAffichage,
+    catalogue_jeu=None,
 ) -> dict:
     """La vue projetée de l'état courant pour `user_id`, sans événement (objets purs en entrée).
 
@@ -68,7 +69,7 @@ def vue_autoritaire(
     )
     # Actions légales du destinataire + commandes refusées motivées (lot j-plateau-interactions) :
     # l'écran illumine les cibles et grise les refus sans réécrire aucune règle.
-    actions = actions_pour(etat, joueur_id)
+    actions = actions_pour(etat, joueur_id, catalogue_jeu)
     sortie["vue"]["actions_legales"] = actions["legales"]
     sortie["vue"]["actions_refusees"] = actions["refusees"]
     return sortie
@@ -80,6 +81,7 @@ def projeter_resultat(
     user_id: uuid.UUID,
     graine_hex: str,
     catalogue: CatalogueAffichage,
+    catalogue_jeu=None,
 ) -> dict:
     """La vue projetée **après** un coup + les événements de ce coup, pour `user_id`.
 
@@ -101,7 +103,7 @@ def projeter_resultat(
     )
     # Actions légales du destinataire + commandes refusées motivées (lot j-plateau-interactions) :
     # l'écran illumine les cibles et grise les refus sans réécrire aucune règle.
-    actions = actions_pour(etat, joueur_id)
+    actions = actions_pour(etat, joueur_id, catalogue_jeu)
     sortie["vue"]["actions_legales"] = actions["legales"]
     sortie["vue"]["actions_refusees"] = actions["refusees"]
     return sortie

@@ -137,3 +137,33 @@ rejouée par le client) : l'écran demande confirmation d'un coup qui ne s'annul
 L'enveloppe de réponse (`/state` et un coup joué) porte aussi `numero` : le prochain numéro d'action
 attendu, clé d'**idempotence** quand le client soumet un coup (`POST /games/{id}/actions`, champ
 `numero_attendu`) — renvoyer deux fois le même coup au même numéro ne le joue qu'une fois.
+
+## Mise à jour `j-coups-joueur` — les familles du jeu sont livrées
+
+Le périmètre ci-dessus décrivait le **cadre** (palier 4) : seules `avancer_phase` et `abandonner`
+étaient générées, et poser / évoluer / attacher / attaquer / retraite / promotion attendaient leur
+lot. **`j-coups-joueur` les livre**, dans un module séparé — `pbm_game.actions.familles_jeu` — qui
+ne touche pas `FAMILLES_DEFAUT` (le générateur garde son comportement sans catalogue, celui que
+testent les milliers d'états de `test_actions_legales`).
+
+| Famille | Action | Règle | Cibles |
+|---|---|---|---|
+| `FamillePlacer` | `placer_mise_en_place` | R-4.2 | — (choix de l'Actif ; banc auto, J1) |
+| `FamillePoser` | `poser` | R-5.3 | — (carte de main) |
+| `FamilleEvoluer` | `evoluer` | R-7.1 | le Pokémon à faire évoluer |
+| `FamilleAttacherEnergie` | `attacher_energie` | R-5.4 | le Pokémon qui reçoit l'énergie |
+| `FamilleAttaquer` | `declarer_attaque` | R-9/R-10/R-13 | l'Actif adverse |
+| `FamilleRetraite` | `retraite` | R-8.2 | le Pokémon du banc qui monte |
+| `FamillePromouvoir` | `promouvoir` | R-8.7 | le Pokémon du banc à promouvoir |
+
+Ces familles **ont besoin du catalogue** : un `CatalogueJeu` (`ref → DefinitionCarte` /
+`DefinitionEnergie`) construit à la création de la partie et passé par le service — le moteur reste
+pur. Une carte dont la définition manque **ne produit aucun coup** (D9). Le service les assemble par
+`familles_jeu(catalogue)` et les passe à `actions_legales` / `valider` : `actions_pour` sert alors la
+liste **complète** dans la vue (`GET /state` et temps réel).
+
+**Côté serveur (autorité).** Une partie *jouable* (mise en place entamée ou commencée) valide tout
+coup soumis par **appartenance** à `actions_legales` recalculée depuis l'état : un coup hors liste —
+ou aux paramètres falsifiés — est refusé (anti-triche). L'enchaînement entre les tours (pioche de
+début de tour, Pokémon Checkup, passage au tour suivant) est joué **par le serveur**, tout par le
+journal. Détail : `docs/roadmap/comptes-rendus/j-coups-joueur.md`.

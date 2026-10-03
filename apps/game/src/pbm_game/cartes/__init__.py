@@ -19,6 +19,7 @@ chargement, comme pour ``banc`` et ``checkup``.
 
 from __future__ import annotations
 
+from . import attache as _attache  # noqa: F401  (import pour effet d'enregistrement)
 from . import transitions as _transitions  # noqa: F401  (import pour effet d'enregistrement)
 from .energie import (
     DefinitionEnergie,

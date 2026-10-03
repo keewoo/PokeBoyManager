@@ -96,6 +96,12 @@ ACTION_POSER = "poser"
 #: ``nom_base`` (nom du sommet actuel, pour la chaîne R-7.1). Conserve énergies/Outil/compteurs
 #: (R-7.1), retire les états (R-7.2). Ajoutée par ``j-cartes-pokemon``.
 ACTION_EVOLUER = "evoluer"
+#: **Attacher une énergie** à un Pokémon en jeu (R-5.4) — coup de la phase principale du joueur
+#: actif, **une seule fois par tour** (R-5.4). ``params`` : ``carte_main`` (instance_id de la carte
+#: Énergie dans la main), ``cible`` (identité du Pokémon en jeu qui la reçoit) et ``definition``
+#: (fiche catalogue de l'énergie — sa fourniture, D9 ; le journal la transporte, donc le rejeu
+#: n'a pas besoin du catalogue). Ajoutée par ``j-coups-joueur``.
+ACTION_ATTACHER_ENERGIE = "attacher_energie"
 #: **Répondre à une demande de décision** (R-9.3 étape D, et tout effet qui fait choisir un joueur)
 #: — coup d'un joueur quand une résolution est **suspendue** sur une demande. ``params`` : ``choix``
 #: (la liste des identifiants d'option retenus ; vide = abandon d'un effet facultatif). L'``auteur``
@@ -203,6 +209,10 @@ EVT_POKEMON_POSE = "pokemon_pose"
 #: ``j-cartes-pokemon``) : porte le joueur, l'identité (base) du Pokémon, la ref de la carte
 #: d'évolution, son nom et les états spéciaux retirés par l'évolution (R-7.2).
 EVT_EVOLUTION = "evolution"
+#: Une **énergie a été attachée** à un Pokémon (R-5.4). Produit par la transition
+#: ``attacher_energie`` (lot ``j-coups-joueur``) : porte le joueur, l'énergie (instance_id, ref),
+#: l'identité du Pokémon qui la reçoit et ce qu'elle fournit.
+EVT_ENERGIE_ATTACHEE = "energie_attachee"
 #: La main d'ouverture d'un joueur est **révélée** (R-4.4) : elle n'a aucun Pokémon de base, donc
 #: elle est montrée à l'adversaire avant d'être remélangée. Produit par ``mise_en_place_initiale``
 #: (lot ``j-initialisation``) : porte le joueur et le **contenu révélé** (``instance_id`` + ``ref``

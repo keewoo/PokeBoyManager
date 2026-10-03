@@ -396,11 +396,24 @@ def _declarer_attaque(
 
     etat, attaque_a_lieu, evenements = resoudre_etats_avant_attaque(etat, jid, rng)
 
-    # R-5.8 : déclarer une attaque **termine le tour**, qu'elle ait eu lieu ou non (confusion
-    # tombée sur pile). Au jalon J1, « degats: 0 » est la seule vérité disponible pour une attaque
-    # qui a lieu — le calcul réel arrive avec ``j-degats-resolution``.
-    if attaque_a_lieu:
+    # Coup complet (lot ``j-coups-joueur``) : l'action porte les données de carte (``attaque``) —
+    # coût, dégâts, faiblesse/résistance, fiches PV. On branche alors la résolution réelle
+    # (R-9/R-10/R-13). Import local pour casser le cycle d'import avec ``combat.attaque``.
+    if "attaque" in action.params:
+        from ..combat.attaque import resoudre_attaque_declaree
+
+        etat, evts_attaque = resoudre_attaque_declaree(etat, action, jid, attaque_a_lieu, rng)
+        evenements.extend(evts_attaque)
+    elif attaque_a_lieu:
+        # Chemin historique (``j-machine-tour``) : sans données de carte, l'attaque ne fait aucun
+        # dégât. Conservé pour les tests de la machine à tours et les appels sans catalogue.
         evenements.append(Evenement(EVT_ATTAQUE_DECLAREE, {"joueur": jid, "degats": 0}))
+
+    # R-5.8 : déclarer une attaque **termine le tour** — sauf si l'attaque vient de terminer la
+    # partie (K.O. gagnant / adversaire sans Pokémon, R-14.6) : une partie figée n'entre pas en
+    # Checkup.
+    if etat.terminee:
+        return etat, evenements
     etat2, evts_checkup = _entrer_checkup(etat, rng, de=etat.tour.phase)
     evenements.extend(evts_checkup)
     return etat2, evenements
