@@ -80,7 +80,8 @@
 - **R-4.3** — On place les **6 récompenses** face cachée.
 - **R-4.4** — **Mulligan** : un joueur **sans Pokémon de base** dans sa main d'ouverture révèle sa
   main et la remélange, puis repioche — il recommence jusqu'à obtenir une main avec un Pokémon de
-  base.
+  base. *Projection* : la main révélée est montrée à l'adversaire par ses **`ref`** seulement,
+  jamais ses `instance_id` (elle retourne dans la pioche cachée) — voir `AUTORITE-VUES.md`.
 - **R-4.5** — Pour **chaque mulligan supplémentaire** pris par un adversaire, l'autre joueur peut
   **piocher 1 carte de plus** (après que l'adversaire a fini sa mise en place).
 - **R-4.6** — Si **les deux** joueurs n'ont aucun Pokémon de base, les deux **révèlent et

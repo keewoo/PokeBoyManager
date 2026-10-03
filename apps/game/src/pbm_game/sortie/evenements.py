@@ -17,6 +17,10 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from ..combat.cout import EVT_COUT_PAYE
+from ..effets.dsl.interprete import EVT_COUT_IMPAYABLE, EVT_DSL_PILE
+from ..effets.pile import EVT_EFFET_RESOLU, EVT_EFFET_SANS_CIBLE
+from ..effets.verrous import EVT_VERROU_LEVE, EVT_VERROU_POSE
 from ..journal.modele import (
     EVT_ATTAQUE_DECLAREE,
     EVT_CARTES_PIOCHEES,
@@ -24,12 +28,19 @@ from ..journal.modele import (
     EVT_DEGATS,
     EVT_ECHANGE_FORCE,
     EVT_EFFET_EXPIRE,
+    EVT_ENERGIE_ATTACHEE,
     EVT_ETAT_CHECKUP,
     EVT_EVOLUTION,
+    EVT_FIN_TOUR,
     EVT_KO,
+    EVT_MAIN_REVELEE,
+    EVT_MISE_EN_PLACE_PRETE,
+    EVT_MISE_EN_PLACE_REVELEE,
+    EVT_MULLIGAN,
     EVT_PARTIE_TERMINEE,
     EVT_PHASE_AVANCEE,
     EVT_PIOCHE_MELANGEE,
+    EVT_PLACEMENT_CACHE,
     EVT_POKEMON_POSE,
     EVT_PROMOTION,
     EVT_PROMOTION_REQUISE,
@@ -71,10 +82,35 @@ def _cartes_piochees(evt: Evenement, pour: str, jetonneur: Jetonneur | None) -> 
     return Evenement(evt.type, donnees)
 
 
+def _main_revelee(evt: Evenement, pour: str, jetonneur: Jetonneur | None) -> Evenement:
+    """Main d'ouverture révélée après un mulligan (R-4.4) : l'adversaire voit **quelles** cartes
+    (leurs ``ref``), jamais leurs ``instance_id``.
+
+    R-4.4 tranche que la main d'un mulligan est **révélée à l'adversaire** — c'est le seul moment où
+    une main est publique. L'adversaire a donc droit aux **identités** (``ref``), qui lui suffisent
+    pour constater l'absence de Pokémon de base ; il n'a pas droit aux ``instance_id``, que la règle
+    ne mentionne pas. Or ces cartes repartent aussitôt dans la pioche (zone cachée) : leur laisser
+    l'``instance_id`` donnerait un **repère de suivi** d'une carte qui redevient secrète — on
+    choisit donc le moins révélateur (D-visibilité) et on retire l'``instance_id`` pour
+    l'adversaire. Le propriétaire, lui, voit sa propre main en entier (il la connaît déjà). Le
+    journal moteur, à part, garde la trace complète avec ``instance_id`` (exigence « le contenu
+    révélé est journalisé »).
+    """
+    joueur = evt.donnees.get("joueur")
+    if pour == joueur:
+        return evt
+    cartes = evt.donnees.get("cartes", [])
+    cartes_publiques = [{"ref": c["ref"]} for c in cartes]
+    donnees = {**evt.donnees, "cartes": cartes_publiques}
+    return Evenement(evt.type, donnees)
+
+
 #: Registre des projecteurs, par type d'événement. **Tout** type produit par le moteur y figure :
-#: un type absent est refusé par :func:`projeter_evenement` (jamais diffusé brut). Les événements
-#: qui n'exposent que de l'information publique pointent sur :func:`_public` ; ceux qui portent une
-#: information cachée (aujourd'hui la seule pioche) ont leur projecteur dédié.
+#: un type absent est refusé par :func:`projeter_evenement` (jamais diffusé brut), et le test de
+#: parité ``test_parite_evenements_projecteurs`` casse en CI si un ``EVT_*`` du moteur n'y est pas.
+#: Les événements qui n'exposent que de l'information publique pointent sur :func:`_public` ; ceux
+#: qui portent une information cachée (la pioche, la main révélée d'un mulligan) ont leur projecteur
+#: dédié.
 PROJECTEURS: dict[str, Projecteur] = {
     EVT_PIOCHE_MELANGEE: _public,
     EVT_CARTES_PIOCHEES: _cartes_piochees,
@@ -93,6 +129,26 @@ PROJECTEURS: dict[str, Projecteur] = {
     EVT_PROMOTION_REQUISE: _public,
     EVT_POKEMON_POSE: _public,
     EVT_EVOLUTION: _public,
+    # Mise en place (lots j-initialisation / j-coups-joueur) et horloges (lot j-timer) : les sept
+    # types qui manquaient au registre et faisaient répondre 500 à POST /actions (fix-projection).
+    EVT_ENERGIE_ATTACHEE: _public,  # R-5.4 : attacher une énergie est un geste public
+    EVT_PLACEMENT_CACHE: _public,  # R-4.2 : ne porte que le joueur, jamais le contenu face cachée
+    EVT_MULLIGAN: _public,  # R-4.5 : numéro de mulligan et carte bonus, aucune identité de carte
+    EVT_MAIN_REVELEE: _main_revelee,  # R-4.4 : refs révélés à l'adversaire, instance_id retirés
+    EVT_MISE_EN_PLACE_PRETE: _public,  # R-4.5 : résumé public (mulligans, bonus par joueur)
+    EVT_MISE_EN_PLACE_REVELEE: _public,  # R-4.2/R-4.3 : Actif et banc rendus publics (refs)
+    EVT_FIN_TOUR: _public,  # R-5.8 : fin de tour, joueur et phase quittée — aucun secret
+    # Combat et effets (lots j-attaque / effets de carte) : ces types **ne portent que de
+    # l'information publique** — cartes en jeu, énergies attachées (publiques), pile ou face.
+    # Le reste du système d'effets (demandes, choix, primitives) peut porter des identités cachées :
+    # il est tenu HORS de ce registre, voir DIFFERES_SYSTEME_EFFETS dans le test de parité.
+    EVT_COUT_PAYE: _public,  # R-9.2 : coût payé par des énergies attachées (donc publiques)
+    EVT_EFFET_RESOLU: _public,  # source (carte en jeu) + règle — aucun secret
+    EVT_EFFET_SANS_CIBLE: _public,  # effet sans cible : source + raison, aucun secret
+    EVT_VERROU_POSE: _public,  # R-12 : verrou posé par une carte (nom, portée, source publique)
+    EVT_VERROU_LEVE: _public,  # R-12.5 : verrou expiré — aucun secret
+    EVT_DSL_PILE: _public,  # pile ou face : nombre de pièces et de faces, public par nature
+    EVT_COUT_IMPAYABLE: _public,  # un coût d'effet n'a pas pu être payé — fait public
 }
 
 

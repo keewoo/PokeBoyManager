@@ -19,7 +19,17 @@ import json
 import pytest
 from fabrique_etats import fabrique_etat
 
-from pbm_game.journal.modele import EVT_CARTES_PIOCHEES, Evenement
+from pbm_game.journal.modele import (
+    EVT_CARTES_PIOCHEES,
+    EVT_ENERGIE_ATTACHEE,
+    EVT_FIN_TOUR,
+    EVT_MAIN_REVELEE,
+    EVT_MISE_EN_PLACE_PRETE,
+    EVT_MISE_EN_PLACE_REVELEE,
+    EVT_MULLIGAN,
+    EVT_PLACEMENT_CACHE,
+    Evenement,
+)
 from pbm_game.sortie import projeter, projeter_evenement
 from pbm_game.sortie.jetons import Jetonneur, secret_jetons
 
@@ -107,3 +117,52 @@ def test_pioche_dans_projeter_ne_fuit_pas_vers_l_adversaire():
     )
     sortie_bob = projeter(etat, (evt,), pour="bob", jetonneur=Jetonneur(SECRET, 0))
     assert "alice-pioche-secrete" not in json.dumps(sortie_bob)
+
+
+# --- Les sept types de la mise en place et du timer (lot fix-projection-evenements) ------------
+
+
+def test_main_revelee_donne_les_refs_mais_pas_les_instance_id_a_l_adversaire():
+    """R-4.4 : l'adversaire voit **quelles** cartes (refs) mais pas leurs instance_id."""
+    evt = Evenement(
+        EVT_MAIN_REVELEE,
+        {
+            "joueur": "alice",
+            "cartes": [
+                {"instance_id": "alice-main-1", "ref": "base1-1"},
+                {"instance_id": "alice-main-2", "ref": "base1-2"},
+            ],
+        },
+    )
+    pour_alice = projeter_evenement(evt, pour="alice")
+    pour_bob = projeter_evenement(evt, pour="bob")
+    # Le propriétaire voit sa main en entier (il la connaît déjà).
+    assert pour_alice.donnees["cartes"][0]["instance_id"] == "alice-main-1"
+    # L'adversaire a les identités (refs) mais aucun instance_id de suivi.
+    refs_bob = [c["ref"] for c in pour_bob.donnees["cartes"]]
+    assert refs_bob == ["base1-1", "base1-2"]
+    assert all("instance_id" not in c for c in pour_bob.donnees["cartes"])
+    assert "alice-main-1" not in json.dumps({"type": pour_bob.type, "donnees": pour_bob.donnees})
+
+
+def test_les_sept_types_de_mise_en_place_se_projettent_sans_erreur():
+    """Aucun des sept types jadis absents ne fait lever projeter_evenement (plus de 500)."""
+    exemples = [
+        Evenement(EVT_ENERGIE_ATTACHEE, {"joueur": "alice", "energie": "e1", "ref": "energy-grass",
+                                         "cible": "p1", "fournit": {"Grass": 1}}),
+        Evenement(EVT_PLACEMENT_CACHE, {"joueur": "alice"}),
+        Evenement(EVT_MULLIGAN, {"joueur": "alice", "numero": 1, "simultane": False,
+                                 "bonus_pour": "bob"}),
+        Evenement(EVT_MAIN_REVELEE, {"joueur": "alice",
+                                     "cartes": [{"instance_id": "x", "ref": "base1-1"}]}),
+        Evenement(EVT_MISE_EN_PLACE_PRETE,
+                  {"joueurs": [{"id": "alice", "mulligans": 1, "bonus": 0}]}),
+        Evenement(EVT_MISE_EN_PLACE_REVELEE,
+                  {"joueurs": [{"joueur": "alice", "actif": "base1-1", "banc": ["base1-2"],
+                                "recompenses_nombre": 6, "bonus_pioches": 0}]}),
+        Evenement(EVT_FIN_TOUR, {"joueur": "alice", "de": "principale"}),
+    ]
+    for evt in exemples:
+        for pour in ("alice", "bob"):
+            projete = projeter_evenement(evt, pour=pour)
+            assert projete.type == evt.type
