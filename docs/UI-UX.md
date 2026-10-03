@@ -489,3 +489,33 @@ générique.
 Au palier 4, le moteur ne déclare encore que « passer à la phase suivante / terminer le tour » et
 « abandonner » (sans cible) : la mécanique de ciblage est livrée et testée, prête pour les familles de
 coups à cibles (attacher, attaquer…) des lots de cartes, sans réécriture côté écran.
+
+## Journal de partie — le fil des coups en français (lot `j-plateau-journal`)
+
+Ce qui rend le jeu compréhensible quand on apprend : « Tu attaches une Énergie, puis tu attaques :
+60 base, ×2 faiblesse = 120 ». Sans ce fil, l'enfant subit des changements qu'il ne relie à rien.
+
+- **Traduction pure** (`apps/web/src/lib/game/journal.ts`) : un **registre** `TRADUCTEURS`, un
+  traducteur par type d'événement du moteur, transforme les événements projetés (`{type, donnees}`)
+  en lignes françaises. `construireJournal(coups, pour)` aplatit les coups diffusés en un fil. Aucun
+  `event_type` brut n'est jamais affiché : un type sans traducteur produit une ligne explicitement
+  marquée **non traduite** (montrée en rouge, jamais masquée) — et un **test de parité** côté moteur
+  (`apps/game/tests/test_parite_journal_front.py`) **casse la CI** si un événement projetable
+  (`PROJECTEURS`) n'a pas sa traduction ici. Module **pur** (aucun React), testé sans navigateur.
+- **Le panneau** (`apps/web/src/components/game/journal-panel.tsx`) affiche le fil, le plus récent en
+  tête et **mis en évidence** ; il est **escamotable** (téléphone), avec trois **filtres**
+  indépendants — *mes coups*, *ceux de l'adversaire*, *effets automatiques* (poison entre les tours,
+  expiration d'un effet, Checkup, K.O.). Le **détail du calcul des dégâts** (R-10.9) est **consultable**
+  à la demande sous chaque attaque.
+- **Reliure journal ↔ plateau** : survoler (ou focaliser au clavier) une ligne remonte au conteneur
+  l'`instance_id` du Pokémon concerné (`onSurvol`), que `GameBoard` met en évidence par le **même halo**
+  que l'agisseur (prop `surligne`, réutilise `estEnEvidence`). Le conteneur
+  (`partie-view.tsx`) accumule les coups diffusés (dédupliqués par numéro) : un F5 rouvre le canal au
+  coup 0 et **reconstruit tout le fil** (tout est rejouable).
+- **Noms et images** : le moteur ne transmet que des `instance_id`/`ref` (pas les noms de carte) ; le
+  fil nomme donc ce que l'événement porte (une `ref`, un nom d'évolution) et relie le reste au plateau
+  par la surbrillance. L'image réelle en vignette reste le lot aval `j-rendu-carte` (D9 : on ne
+  fabrique pas d'image qu'on n'a pas).
+
+Tests : `journal.test.ts` (traduction de chaque type, catégories, détail de dégâts, repli non traduit),
+`journal-panel.test.tsx` (filtres, dernier coup, survol, escamotage), et la parité côté `game`.
