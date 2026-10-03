@@ -37,7 +37,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import replace
 
-from ..cartes.modele import STADE_BASE, DefinitionCarte, definition_depuis_dict
+from ..cartes.modele import STADE_BASE
 from ..journal.modele import (
     ACTION_MISE_EN_PLACE_INITIALE,
     ACTION_PLACER_MISE_EN_PLACE,
@@ -72,12 +72,15 @@ def _remplacer_joueur(etat: EtatPartie, index: int, joueur: Joueur) -> EtatParti
     return replace(etat, joueurs=(joueurs[0], joueurs[1]))
 
 
-def _definitions(params: dict) -> dict[str, DefinitionCarte]:
-    """Parse ``params["definitions"]`` (mapping ``ref → fiche``) en :class:`DefinitionCarte`.
+def _definitions(params: dict) -> dict[str, Mapping]:
+    """Lit ``params["definitions"]`` (mapping ``ref → fiche``) sans :class:`DefinitionCarte`.
 
-    Le service fournit ces fiches depuis le catalogue (le moteur est pur, D9). Un mapping absent ou
-    vide **bloque** : sans elles, on ne pourrait pas savoir si une carte est un Pokémon de base, et
-    on ne devine jamais un stade (R-4.2/R-4.4).
+    Le service fournit ces fiches depuis le catalogue (le moteur est pur, D9). Une carte
+    **non-Pokémon**
+    (énergie, Dresseur) n'a pas de ``DefinitionCarte`` : sa fiche porte seulement un ``stade``.
+    Ici, la mise en place n'a besoin que de « est-ce un Pokémon de **base** ? » (R-4.2/R-4.4) —
+    on garde les fiches brutes et on ne lit que leur ``stade``. Un mapping absent/vide **bloque**
+    (sans lui, le stade d'une carte est inconnu, jamais deviné — D9).
     """
     brut = params.get("definitions")
     if not isinstance(brut, Mapping) or not brut:
@@ -85,24 +88,25 @@ def _definitions(params: dict) -> dict[str, DefinitionCarte]:
             "« definitions » (mapping ref→fiche catalogue) requis pour la mise en place — sans lui "
             "le stade d'une carte est inconnu, jamais deviné (D9, R-4.2/R-4.4)."
         )
-    return {ref: definition_depuis_dict(fiche) for ref, fiche in brut.items()}
+    return dict(brut)
 
 
-def _est_base(defs: dict[str, DefinitionCarte], ref: str) -> bool:
+def _est_base(defs: dict[str, Mapping], ref: str) -> bool:
     """Vrai si la carte de référence ``ref`` est un Pokémon de **base** (R-4.2), sinon faux.
 
     Lève si ``ref`` n'a aucune fiche : un stade inconnu **bloque** (D9), il n'est jamais supposé
-    « pas une base » par défaut — l'absence est une panne de données, pas une réponse.
+    « pas une base » par défaut — l'absence est une panne de données, pas une réponse. Une carte
+    non-Pokémon (énergie, Dresseur) porte un ``stade`` non-base : elle n'est pas une base.
     """
-    definition = defs.get(ref)
-    if definition is None:
+    fiche = defs.get(ref)
+    if fiche is None or not isinstance(fiche, Mapping):
         raise ValueError(
             f"Fiche de catalogue absente pour « {ref} » : stade inconnu, jamais deviné (D9)."
         )
-    return definition.stade == STADE_BASE
+    return fiche.get("stade") == STADE_BASE
 
 
-def _main_a_une_base(joueur: Joueur, defs: dict[str, DefinitionCarte]) -> bool:
+def _main_a_une_base(joueur: Joueur, defs: dict[str, Mapping]) -> bool:
     """Vrai si la main du joueur a au moins un Pokémon de base (R-4.2, condition de R-4.4)."""
     return any(_est_base(defs, carte.ref) for carte in joueur.main)
 
