@@ -10237,7 +10237,7 @@
       }
     },
     "j-simulation-bots": {
-      "statut": "a_faire",
+      "statut": "integre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
@@ -10289,8 +10289,21 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-10-03T17:50+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": "branche roadmap/j-simulation-bots fusionnee dans main (verifie par git merge-base)"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": {
+        "quand": "2026-10-03T17:50+0200",
+        "raisons": [
+          "branche roadmap/j-simulation-bots fusionnee dans main (verifie par git merge-base)"
+        ]
+      }
     },
     "j-e2e-deux-navigateurs": {
       "statut": "a_faire",
