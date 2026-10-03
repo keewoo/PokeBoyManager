@@ -64,6 +64,11 @@ class Settings(BaseSettings):
     # est l'ancienneté au-delà de laquelle une partie morte (terminée/expirée) est purgée.
     jeu_inactivite_plafond_h: float = 72.0
     jeu_purge_anciennete_j: float = 30.0
+    # Coach IA (lot `j-coach-ia`, DJ7) — nombre maximal de conseils demandés par partie, réglable
+    # par l'environnement (`COACH_MAX_CONSEILS`) : un conseil consomme la clé IA du joueur, donc on
+    # le borne, sans redéployer. Le bilan de fin de partie, lui, n'est pas compté (une fois par
+    # partie finie). `users.coach_actif` permet au joueur de désactiver entièrement le coach.
+    coach_max_conseils: int = 3
     csrf_cookie_name: str = "pbm_csrf"
     session_ttl_days: int = 30
     email_token_ttl_minutes: int = 60

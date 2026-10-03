@@ -87,10 +87,14 @@ async def update_settings(
     provider_set: bool,
     default_model: str | None,
     model_set: bool,
+    coach_actif: bool | None = None,
+    coach_actif_set: bool = False,
 ) -> User:
     """Met à jour fournisseur/modèle par défaut de `user` (`*_set` distingue champ absent de
     `None` explicite) ; lève `DefaultProviderWithoutKeyError` si le fournisseur choisi n'a pas
-    de clé enregistrée."""
+    de clé enregistrée. ``coach_actif`` (lot `j-coach-ia`) active/désactive le coach IA du joueur
+    (conseils en partie + bilan de fin) ; ``coach_actif_set`` distingue un champ absent d'une
+    valeur explicite."""
     if provider_set:
         if default_provider is not None:
             credential = await _get_credential(db, user, default_provider)
@@ -99,6 +103,8 @@ async def update_settings(
         user.ai_default_provider = default_provider
     if model_set:
         user.ai_default_model = default_model
+    if coach_actif_set and coach_actif is not None:
+        user.coach_actif = coach_actif
     await db.commit()
     await db.refresh(user)
     return user

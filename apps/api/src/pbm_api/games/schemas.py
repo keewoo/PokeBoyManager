@@ -88,3 +88,51 @@ class GameDetailOut(GameSummaryOut):
     journal_version: int
     players: list[GamePlayerOut]
     ia_cout: IaCoutOut | None = None
+
+
+class CoupConseille(BaseModel):
+    """Le coup que le coach suggère (lot `j-coach-ia`) — une **suggestion**, pas un coup appliqué.
+
+    ``index`` est la place du coup dans la liste légale (pour le surligner côté écran) ; ``type`` et
+    ``params`` décrivent l'action, de quoi pré-remplir le geste que le joueur validera lui-même. Le
+    serveur n'applique rien : c'est l'enfant qui joue.
+    """
+
+    index: int
+    etiquette: str
+    type: str
+    params: dict
+
+
+class ConseilOut(BaseModel):
+    """La réponse du coach à une demande de conseil (lot `j-coach-ia`).
+
+    ``coup`` est nul quand aucun conseil n'est possible (ce n'est pas son tour, l'IA n'a rien
+    trouvé) : ``raison`` le dit alors, jamais un coup inventé. ``conseils_utilises`` /
+    ``conseils_restants`` donnent l'état du plafond de conseils de la partie.
+    """
+
+    coup: CoupConseille | None
+    explication: str | None
+    raison: str | None
+    conseils_utilises: int
+    conseils_restants: int
+
+
+class MomentBilanOut(BaseModel):
+    """Un moment décisif du bilan (lot `j-coach-ia`) : le coup cité et le commentaire du coach.
+
+    ``numero`` et ``etiquette`` désignent un coup **réellement joué** (vérifié contre le journal) ;
+    ``commentaire`` est la phrase du coach sur ce moment.
+    """
+
+    numero: int
+    etiquette: str
+    commentaire: str
+
+
+class BilanOut(BaseModel):
+    """Le bilan de fin de partie (lot `j-coach-ia`) : un résumé et quelques moments décisifs."""
+
+    resume: str
+    moments: list[MomentBilanOut]

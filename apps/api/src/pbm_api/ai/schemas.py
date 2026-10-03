@@ -44,10 +44,12 @@ class AiKeyResponse(BaseModel):
 
 
 class AiSettingsResponse(BaseModel):
-    """Fournisseur et modèle par défaut de l'utilisateur pour l'extraction IA."""
+    """Fournisseur, modèle IA par défaut et activation du coach de l'utilisateur."""
 
     default_provider: AiProvider | None
     default_model: str | None
+    # Coach IA activé (lot `j-coach-ia`) : conseils en partie + bilan de fin. Vrai par défaut.
+    coach_actif: bool = True
 
 
 class AiSettingsUpdateRequest(BaseModel):
@@ -55,6 +57,8 @@ class AiSettingsUpdateRequest(BaseModel):
 
     default_provider: AiProvider | None = None
     default_model: str | None = None
+    # Activer/désactiver le coach IA (lot `j-coach-ia`) ; absent = inchangé.
+    coach_actif: bool | None = None
 
 
 class AiUsageEntry(BaseModel):

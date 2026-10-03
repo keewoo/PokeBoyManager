@@ -62,6 +62,13 @@ class User(Base, TimestampMixin):
     game_access: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default="false"
     )
+    # Coach IA activé (lot `j-coach-ia`, DJ7) : quand il est faux, le joueur a **désactivé** le
+    # coach dans son profil — ni conseil pendant la partie, ni bilan après (les deux routes
+    # répondent 409 en le disant). Vrai par défaut : le coach est proposé, jamais imposé (il
+    # consomme la clé IA du joueur). Réglable via `PATCH /me/ai-settings`.
+    coach_actif: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
 
 
 class Session(Base):

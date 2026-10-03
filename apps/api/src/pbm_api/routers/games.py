@@ -17,10 +17,21 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.auth.dependencies import require_game_access
+from pbm_api.config import settings
 from pbm_api.db import get_session
 from pbm_api.games import horloges as _adapt_horloges
 from pbm_api.games.adversaire_ia import MAX_APPELS_PAR_PARTIE
 from pbm_api.games.catalogue_jeu import construire_catalogue_jeu
+from pbm_api.games.coach import (
+    BilanIndisponible,
+    CleCoachIndisponible,
+    CoachDesactive,
+    ConseilHorsEntrainement,
+    PartieNonTerminee,
+    PlafondConseils,
+    bilan_de_partie,
+    conseil_pour_joueur,
+)
 from pbm_api.games.errors import (
     ActionRefusee,
     ConflitNumero,
@@ -31,10 +42,14 @@ from pbm_api.games.indicateurs import catalogue_pour_etat, catalogue_pour_result
 from pbm_api.games.projection import projeter_resultat, vue_autoritaire
 from pbm_api.games.schemas import (
     ActionIn,
+    BilanOut,
+    ConseilOut,
+    CoupConseille,
     GameDetailOut,
     GamePlayerOut,
     GameSummaryOut,
     IaCoutOut,
+    MomentBilanOut,
 )
 from pbm_api.games.service import (
     _game_pour_participant,
@@ -230,3 +245,78 @@ async def abandon_game(
     # relire l'état (lot ``j-plateau-interactions``).
     reponse["numero"] = game.current_numero
     return reponse
+
+
+@router.post("/{game_id}/conseil", response_model=ConseilOut)
+async def get_conseil(
+    game_id: uuid.UUID,
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_game_access),
+) -> ConseilOut:
+    """Un conseil de l'IA du joueur pour SON tour (lot `j-coach-ia`, DJ7) — une **suggestion**.
+
+    L'IA (sa clé) reçoit sa vue projetée et ses coups légaux, propose un coup et l'explique ; le
+    serveur n'applique **rien** — le geste reste celui du joueur. Réservé aux parties d'entraînement
+    (jamais entre deux humains), borné par un plafond de conseils par partie, et refusé sans clé IA
+    ou si le coach est désactivé. 404 si l'utilisateur ne participe pas (pas de fuite d'existence).
+    Quand aucun conseil n'est possible (ce n'est pas son tour, l'IA n'a rien trouvé), ``coup`` est
+    nul et ``raison`` le dit — jamais un coup inventé.
+    """
+    try:
+        res = await conseil_pour_joueur(
+            db, game_id=game_id, user=current_user, max_conseils=settings.coach_max_conseils
+        )
+    except PartieIntrouvable as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, GAME_NOT_FOUND_MESSAGE) from exc
+    except CleCoachIndisponible as exc:
+        raise HTTPException(422, str(exc)) from exc
+    except (CoachDesactive, ConseilHorsEntrainement, PlafondConseils, PartieNonActive) as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
+
+    conseil = res.conseil
+    coup = None
+    if conseil.coup is not None:
+        coup = CoupConseille(
+            index=conseil.index if conseil.index is not None else -1,
+            etiquette=conseil.coup.etiquette,
+            type=conseil.coup.action.type,
+            params=conseil.coup.action.params,
+        )
+    return ConseilOut(
+        coup=coup,
+        explication=conseil.explication,
+        raison=conseil.raison,
+        conseils_utilises=res.conseils_utilises,
+        conseils_restants=res.conseils_restants,
+    )
+
+
+@router.get("/{game_id}/bilan", response_model=BilanOut)
+async def get_bilan(
+    game_id: uuid.UUID,
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_game_access),
+) -> BilanOut:
+    """Le bilan de l'IA du joueur après une partie **terminée** (lot `j-coach-ia`, DJ7).
+
+    À partir du **journal** (les coups réellement joués, pas l'état complet), l'IA (sa clé) dégage
+    deux ou trois moments décisifs. Chaque moment cité est **vérifié** contre le journal : un numéro
+    inventé est écarté. Désactivable (coach éteint -> 409), refusé sans clé IA (422) ou sur une
+    partie non terminée (409). 404 si l'utilisateur ne participe pas. Si l'IA ne rend rien
+    d'exploitable, on le dit (502) plutôt qu'un bilan vide.
+    """
+    try:
+        res = await bilan_de_partie(db, game_id=game_id, user=current_user)
+    except PartieIntrouvable as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, GAME_NOT_FOUND_MESSAGE) from exc
+    except CleCoachIndisponible as exc:
+        raise HTTPException(422, str(exc)) from exc
+    except (CoachDesactive, PartieNonTerminee) as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
+    except BilanIndisponible as exc:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
+
+    return BilanOut(
+        resume=res.resume,
+        moments=[MomentBilanOut(**m) for m in res.moments],
+    )
