@@ -242,6 +242,117 @@ route IA facturée `GET /cards/{id}/in-game-study`) :
   **pas** le clone `~/dev/pokeboy` de la file de lots, supprimé juste après le push. `graphify update` non
   exécuté (doc seule ; le faire toucherait le clone de la file) — à rattraper au prochain entretien de `main`.
 
+## Livraison du jeu — 03/10/2026 — première version jouable, réservée à JF et Aymeric (lot `livraison-jeu-j1`)
+
+Mise en PROD des 13 lots du jalon J1 du jeu (`j-partie-service`, `j-autorite-vues`, `j-file-attente`,
+`j-temps-reel`, `j-invitations`, `j-lancement-partie`, `j-salon-partie`, `j-cartes-energies`,
+`j-initialisation`, `j-plateau-layout`, `j-plateau-etat-visuel`, `j-plateau-interactions`,
+`j-plateau-journal`), tous `integre` dans `etat.json`. Release **`20261003-033245`**, commit figé
+**`12bfadd`**, précédente `20261002-005119` (`124f0cd`). Livré depuis **devAI** en session autonome ;
+CI « CI » verte sur `12bfadd` (passage push, success).
+
+Le jeu est **privé** (D11) : l'inscription reste libre, mais un compte ordinaire ne voit **rien** du
+jeu (404 sur toutes les routes `/games`, `/matchmaking`, et pas d'entrée « Jouer »). L'accès s'accorde
+**hors ligne uniquement**, par la CLI d'administration — aucune route HTTP.
+
+### Besoins de la livraison, relevés AVANT de toucher au serveur
+
+- **Migrations** : 7 nouvelles, chaîne à tête unique `a3f9c2e5b1d4 → … → d4e1f2a3b5c6` (game_tables,
+  users_game_access, card_effect/trainer_type, fusion, game_invitations, game_launch, game_clocks).
+  Aucune têtes multiples — rien à fusionner. Toutes additives.
+- **Variables d'environnement** : aucune **obligatoire**. Les lots `j-timer` et `j-deconnexion-abandon`
+  ajoutent des réglages (`HORLOGE_*`, `JEU_INACTIVITE_PLAFOND_H`, `JEU_PURGE_ANCIENNETE_J`) **tous
+  pourvus de défauts** dans `pbm_api.config` (90/1500/30/10/120 s ; 72 h ; 30 j). `/srv/pokeboy/prod/config/.env`
+  **non modifié**.
+- **Nouveau processus** : aucun. Le canal temps réel est un **WebSocket servi par l'API uvicorn
+  existante** (`WS /games/{id}/ws`, repli HTTP `GET /games/{id}/sync`), pas un service séparé.
+  `uvicorn[standard]` embarque `websockets` (17.1 dans le venv construit).
+- **Caddy** : **non touché**. L'URL navigateur est `wss://pokeboy.lol/api/games/{id}/ws` ; le bloc
+  `handle_path /api/* { reverse_proxy 127.0.0.1:8100 }` existant relaie déjà le WebSocket (Caddy gère
+  l'upgrade de façon transparente) et retire le préfixe `/api` attendu par la route FastAPI.
+
+### ⚠️ Nouveau besoin de build : l'API dépend du moteur pur `pbm-game` (`apps/game`)
+
+`apps/api/pyproject.toml` déclare désormais `pbm-game = { path = "../game", editable = true }`
+(dépendance **editable**, moteur pur sans dépendance d'exécution). Les artefacts précédents ne
+packageaient **que** `apps/api` : tel quel, `uv sync --frozen` sur le serveur échouait à résoudre
+`../game`. Deux scripts d'exploitation (hors dépôt) ont été corrigés, de façon idempotente :
+
+- **`~/dev/pbm-build-lol.sh` (chimera)** : produit en plus `game-$TS.tgz` (contenu de `apps/game` à la
+  racine du tar, caches exclus), ajouté au `sha256sum` et au marqueur.
+- **`/tmp/prep-lol.sh` (kailo-srv)** : extrait `game-$TS.tgz` dans `$REL/game` (sibling de `$REL/api`)
+  **avant** `uv sync`, de sorte que `../game` résolve. Sauvegarde : `/tmp/prep-lol.sh.avant-game`.
+
+> Le `~/dev/build-pbm.sh` de devAI (variante à disposition historique, non utilisée pour les livraisons
+> `lol` — layout `web/`+`api/`, alors que `prep-lol.sh` attend le contenu à la racine) n'a **pas** été
+> modifié : s'il redevient la voie, lui ajouter aussi `apps/game`.
+
+### Ce qui a réellement été exécuté
+
+```bash
+# 0. Portes : CI verte sur 12bfadd ; voisins AVANT 200 200 308 200 307 ; serveur sain (charge 0.13, 2505 Mo).
+# 1. chimera : worktree de build (dépôt relais) checkout --detach 12bfadd, HEAD vérifié (12bfadd) ;
+#    apps/game présent ; pbm-build-lol.sh patché (game-$TS.tgz) ; build détaché (setsid), sondé → BUILD_DONE.
+#    → web/api/game-20261003-033245.tgz
+# 2. transfert chimera → devAI → kailo-srv, SHA-256 IDENTIQUES aux TROIS étapes :
+#    web 210e41b6…d2e0 · api 16b88a34…5296 · game e7ab6371…4500
+# 3. point de restauration frais : pokeboy_prod-20261003-013610.dump (43,9 Mo / 26 tables), photos 1053.
+ssh kailo-srv 'sudo -n -u pokeboy bash /srv/pokeboy/prod/backups/backup.sh'
+# 4. préparation (extrait web+api+game, uv sync, migration ; l'ancienne release sert encore) :
+ssh kailo-srv 'TS=20261003-033245 COMMIT=12bfadd… LOT=livraison-jeu-j1 bash /tmp/prep-lol.sh'  # → PREPARATION_OK
+# 5. bascule, retour arrière automatique sur échec de santé :
+ssh kailo-srv 'TS=20261003-033245 bash /tmp/deploy-switch.sh'  # → BASCULE_OK (api=200 web=200 au 1er contrôle)
+```
+
+**Migration appliquée** : `a3f9c2e5b1d4 → d4e1f2a3b5c6`. Tête après migration : `d4e1f2a3b5c6 (head)`.
+
+**Preuve de mise en ligne** : `app/ -> releases/20261003-033245` ; `RELEASE_INFO` porte
+`commit=12bfadd9379cfafd409d3b22c3920268829f149c` ; les 3 unités `active` ;
+`https://pokeboy.lol/api/health` → 200 et `/` → 200. **Voisins inchangés** du début à la fin
+(`200 200 308 200 307`). Serveur après : charge 0.18, 2488 Mo dispo.
+
+### Accès ouvert à JF et Aymeric — et à personne d'autre
+
+Commande (hors ligne, dans le venv de la release) :
+
+```bash
+cd /srv/pokeboy/prod/app/api && .venv/bin/python -m pbm_api.admin set-game-access <email> on
+```
+
+- **`aymeric.fonteray@gmail.com`** : compte présent en PROD → **accès accordé** ✔ (pseudo « bibi »).
+- **`jfonteray@gmail.com`** : **aucun compte en PROD** (la commande refuse, code 1, sur une adresse
+  inconnue — jamais de succès silencieux). JF doit **d'abord s'inscrire** sur https://pokeboy.lol,
+  puis relancer la commande ci-dessus avec son adresse.
+- Audit après coup : un **seul** compte a `game_access=true` (aymeric), sur 4 comptes au total.
+
+### Preuves de fonctionnement en PROD (deux comptes de test jetables, supprimés ensuite)
+
+Script de preuve exécuté dans le venv déployé (crée 2 comptes avec accès + deck jouable, 1 compte
+**sans** accès, une partie par le service `creer_partie`, puis supprime tout — aucun vrai compte
+touché). **17/17 contrôles PASS** :
+
+- **Fermeture** : compte sans droit → `GET /me` `game_access=false` ; `GET /games`, `/matchmaking/presence`,
+  `/games/{id}` → **404** (jamais 403 : pas de fuite d'existence). L'entrée « Jouer » dérive de ce
+  drapeau (`app-shell.tsx`), donc invisible pour lui.
+- **Canal temps réel** : les deux joueurs ouvrent `WS /api/games/{id}/ws` et reçoivent la
+  resynchronisation projetée (numéro 0).
+- **Non-fuite** : chaque joueur voit **sa** main comme liste de cartes ; la main adverse n'est qu'un
+  **nombre** (`main_nombre`), la clé `main` adverse est **absente**.
+- **Coup réel par l'API + diffusion temps réel** : A joue `abandonner` (`POST /games/{id}/actions`,
+  HTTP 200) → le moteur déployé l'applique (autorité serveur) → le coup est **diffusé aux DEUX
+  joueurs** sur le WebSocket → la partie bascule `terminee`, **vainqueur = B**.
+- **Suppression prouvée** : 0 compte de test, 0 partie, 0 deck, 0 carte restants.
+
+### Écart, signalé et non bloquant : l'API joueur n'expose encore que l'abandon
+
+La palette de coups du jalon J1 (`pbm_api.games.actions.PALETTE_COMMANDES`) est `avancer_phase` +
+`abandonner` ; la **mise en place interactive**, **attacher une énergie**, **attaquer** et
+**l'enchaînement des tours** ne sont **pas encore câblés sur l'API joueur**. Le moteur pur (`apps/game`),
+le plateau, le canal temps réel, le cycle de vie des parties et le droit d'accès **sont** en place et
+livrés ; ce qui manque est la couche d'orchestration qui joue la mise en place (coup système portant
+les `definitions` du catalogue) et expose les coups ciblés. Une partie se crée, se visualise à deux en
+temps réel sans fuite, et se termine par abandon — c'est le périmètre réellement jouable aujourd'hui.
+
 ## Conclure « déployé » — jamais sur une ligne de journal
 
 Un build qui échoue laisse la plateforme **debout sur l'ancienne version** : tout a l'air normal et
