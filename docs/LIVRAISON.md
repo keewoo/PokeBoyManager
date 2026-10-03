@@ -486,6 +486,119 @@ dans `PROJECTEURS` (c'est lui qui couvre l'exhaustif — d'autres types internes
 (`projeter_resultat`/`resynchroniser`) sur une partie jouée, pas seulement `appliquer_action` — c'est le
 trou de CI qui a laissé passer le bug. Une fois ce lot `integre`, relancer `livraison-jeu-coups`.
 
+## Livraison des coups du joueur — 03/10/2026 — **RÉUSSIE** (la partie se joue vraiment en PROD)
+
+Troisième passe de `livraison-jeu-coups`, cette fois le correctif est en place. Mise en PROD de
+`j-coups-joueur` (mise en place interactive, poser, attacher une énergie, attaquer, enchaînement des
+tours, victoire par les récompenses) **plus** le correctif `fix-projection-evenements` qui débouche
+les deux tentatives bloquées du 03/10 (13:07, 13:22) : les sept (puis quatorze) projecteurs manquants
+qui faisaient répondre 500 au premier vrai coup. Release **`20261003-182045`**, commit figé
+**`733aff8adf287feb1b9f2c019996dd2ffb85e198`**, précédente `20261003-033245` (`12bfadd`, J1). Livré
+depuis **devAI** en session autonome ; CI « CI » verte sur `733aff8` (passage push, success, 15:56Z).
+Le jeu reste **privé** (D11) : JF et Aymeric uniquement.
+
+### Besoins de la livraison, relevés AVANT de toucher au serveur (`git diff 12bfadd..733aff8`)
+
+- **Migrations** : **aucune**. Aucun fichier sous `apps/api/migrations/versions/` ne change ; la tête
+  reste `d4e1f2a3b5c6`. `alembic upgrade head` à la préparation = **NO-OP** (tête identique avant/après).
+- **Variables d'environnement** : **aucune** ajoutée (aucun `getenv`/`Settings` nouveau dans `apps/api`
+  ni `apps/game`). `/srv/pokeboy/prod/config/.env` **non modifié**.
+- **Nouveau processus** : **aucun**. Le temps réel reste le WebSocket servi par l'API uvicorn existante.
+  Le lot `j-simulation-bots` (présent dans `733aff8`) ajoute le paquet `apps/game/src/pbm_sim` — un
+  **outil CLI** de campagnes de masse (vue seule), **pas un service** : aucune unité, aucune dépendance
+  d'exécution nouvelle (diff `pyproject` vide).
+- **Caddy** : **non touché**. Le WebSocket `wss://pokeboy.lol/api/games/{id}/ws` passe par le
+  `reverse_proxy` `/api` existant (upgrade transparent), déjà prouvé en J1.
+- Changent : `apps/api` + `apps/game` (code pur), `apps/web` (commentaires `doc-web` + fixtures de test,
+  **aucun changement de comportement**), et de la doc/roadmap.
+
+### Ce qui a réellement été exécuté
+
+```bash
+# 0. Portes : CI « CI » verte sur 733aff8 (push, success) ; voisins AVANT 200 200 308 200 307 ;
+#    serveur sain (charge 0.12, 2403 Mo dispo). PROD de départ : J1 20261003-033245 (12bfadd), tête d4e1f2a3b5c6.
+# 1. chimera : worktree de build (dépôt relais) checkout --detach 733aff8, HEAD vérifié (733aff8) ;
+#    apps/game présent, dép. editable ../game déclarée ; pbm-build-lol.sh (game-aware) ; build détaché
+#    (setsid), sondé → BUILD_DONE. TS=20261003-182045. Artefact web : 4 .woff2, 0 googleapis/gstatic
+#    dans le CSS servi (les 2 occurrences de l'artefact sont l'outillage @next/font de node_modules,
+#    jamais chargé par le navigateur — vérifié sur la page LIVE), 15 pokeboy.lol, 0 acx-connect.
+# 2. transfert chimera → devAI → kailo-srv, SHA-256 IDENTIQUES aux TROIS étapes :
+#    web 3cd72aaa…b5bcf8 · api c44c8d3f…14c0c4e · game 1629f378…bd45f6
+# 3. point de restauration frais AVANT toute écriture :
+ssh kailo-srv 'sudo -n -u pokeboy bash /srv/pokeboy/prod/backups/backup.sh'  # pokeboy_prod-20261003-162435.dump (46,5 Mo / 32 tables), photos 1053
+# 4. préparation (extrait web+api+game, uv sync, alembic = NO-OP ; l'ancienne release sert encore) :
+ssh kailo-srv 'TS=20261003-182045 COMMIT=733aff8… LOT=livraison-jeu-coups bash /tmp/prep-lol.sh'  # → PREPARATION_OK, tête d4e1f2a3b5c6 avant ET après
+# 4b. contrôle AVANT bascule (venv de la release, l'ancienne sert encore) : parité des projecteurs
+#     — les 7 types qui faisaient 500 (placement_cache, energie_attachee, mulligan, main_revelee,
+#     mise_en_place_prete, mise_en_place_revelee, fin_tour) ont tous un projecteur ; seuls dsl_choix
+#     et dsl_primitive restent nommément DIFFÉRÉS (effets de carte, aucune partie J1 ne les émet).
+# 5. bascule, retour arrière automatique sur échec de santé :
+ssh kailo-srv 'TS=20261003-182045 bash /tmp/deploy-switch.sh'  # → BASCULE_OK (api=200 web=200 au 1er contrôle)
+```
+
+**Preuve de mise en ligne** : `app/ -> releases/20261003-182045` ; `RELEASE_INFO` porte
+`commit=733aff8adf287feb1b9f2c019996dd2ffb85e198`, `lot=livraison-jeu-coups` ; les 3 unités `active` ;
+`https://pokeboy.lol/api/health` → 200 et `/` → 200. **Voisins inchangés** du début à la fin
+(`200 200 308 200 307`). Serveur après : charge 0.06, 2478 Mo dispo, 3 unités `active`. CSS servi :
+**0** `fonts.googleapis`/`gstatic`, **4** `.woff2` locaux en 200 (polices embarquées).
+
+### Accès ouvert à JF et Aymeric — et à personne d'autre
+
+Commande (hors ligne, venv de la release) :
+`cd /srv/pokeboy/prod/app/api && .venv/bin/python -m pbm_api.admin set-game-access <email> on`.
+
+- **`aymeric.fonteray@gmail.com`** : `game_access=true` déjà en place → **laissé tel quel** ✔.
+- **`jfonteray@gmail.com`** : **aucun compte en PROD** (4 comptes au total, lu en base) → **rien créé**,
+  conformément à la règle (jamais de succès silencieux). JF doit **d'abord s'inscrire** sur
+  https://pokeboy.lol, puis on lancera la commande ci-dessus avec son adresse.
+- Audit après livraison : un **seul** compte a `game_access=true` (aymeric).
+
+### Preuves de fonctionnement en PROD — partie complète par HTTP + WebSocket (27/27 PASS)
+
+Script de preuve exécuté dans le venv déployé, dirigé contre le **serveur uvicorn LIVE**
+(`127.0.0.1:8100`) : 2 comptes jetables **avec** accès + decks jouables réels (attaquant « Charge »
+60 dégâts + énergies ; cibles Duo Tag 60 PV à 3 récompenses, graine et UUID fixes → mulligan
+reproductible), 1 compte jetable **sans** accès. Puis **suppression de tout** (aucun vrai compte
+touché).
+
+- **Fermeture** (compte sans droit) : `GET /me` `game_access=false` ; `GET /games`,
+  `GET /games/{id}`, `GET /matchmaking/presence` → **404** (jamais 403 : pas de fuite d'existence).
+- **WebSocket** : les deux joueurs ouvrent `WS /api/games/{id}/ws` (Origin exigé — un canal **sans
+  Origin est refusé**, anti-CSWSH) et reçoivent la **resync du coup #0**, qui projette précisément les
+  événements de mise en place (`mulligan`, `main_revelee`, `mise_en_place_prete`, `cartes_piochees`,
+  `pioche_melangee`) — **le chemin qui répondait 500** aux deux tentatives bloquées : plus de 500.
+- **Partie complète jouée par l'API** : `placer_mise_en_place` (le coup même qui faisait 500),
+  `attacher_energie` (émet `energie_attachee`, naguère 500), `declarer_attaque`, `poser`, `promouvoir`,
+  `avancer_phase` — **tous HTTP 200** — jusqu'à la **victoire par les six récompenses**
+  (`raison_fin=derniere_recompense`, vainqueur = A). Chaque coup **diffusé aux DEUX joueurs** sur le
+  WebSocket (13 diffusions).
+- **Non-fuite**, contrôlée par destinataire sur des vues post-coup simultanées : aucun joueur ne voit
+  la main courante de l'autre (dans sa réponse HTTP, son état, sa diffusion WS) ; la main adverse n'est
+  qu'un **nombre** ; la **graine** ne sort jamais (`/sync`).
+- **Rejeu depuis le journal** : `GET /games/{id}/sync?depuis=0` (200) pour chaque joueur, et
+  `reprendre_partie` reconstruit l'état final (terminée, vainqueur A) avec vérification d'empreinte.
+- **Suppression prouvée** : 0 compte de test, 0 partie, 0 deck, 0 carte/set restants.
+
+### Périmètre réellement jouable aujourd'hui
+
+Une partie se crée, se joue **vraiment** à deux (mise en place, poser, attacher, attaquer,
+enchaînement des tours) jusqu'à la victoire par récompenses, en temps réel et sans fuite, et se rejoue
+depuis son journal. **Pas encore** : les cartes **Dresseur** et les **talents/effets de carte** (le
+système d'effets — `dsl_choix`, `dsl_primitive`, `demande_*` — est nommément **différé** au lot des
+effets ; aucune partie J1 ne les émet, et le moteur refuse — 500 bruyant, jamais une fuite — tout
+événement d'effet tant que leur projection par destinataire n'est pas livrée).
+
+### Pièges rejoués / notés
+
+- **Worktree de build (dépôt relais) resté sur `eb0ecfc`** : `checkout --detach 733aff8` +
+  vérification du HEAD avant le build — piège n°1, toujours réel.
+- **PATH non-interactif de chimera** : `~/.local/node/bin`, `~/.local/bin` ajoutés au lancement du build.
+- **Cookie de session PROD `Secure`** : un client HTTP sur `http://127.0.0.1:8100` ne le renvoie pas
+  tout seul — la preuve porte le jeton en en-tête `Cookie` explicite (sinon 401 au lieu de 404/200).
+- **Trace** écrite dans un worktree **transitoire** `~/dev/wt-livraison-coups` (disque système),
+  **pas** le clone `~/dev/pokeboy` de la file de lots, supprimé juste après le push. `graphify update`
+  non exécuté (doc seule ; le code `733aff8` est déjà graphifié sur `main` par son lot de fusion).
+
 ## Conclure « déployé » — jamais sur une ligne de journal
 
 Un build qui échoue laisse la plateforme **debout sur l'ancienne version** : tout a l'air normal et
