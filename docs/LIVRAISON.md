@@ -599,6 +599,126 @@ effets ; aucune partie J1 ne les émet, et le moteur refuse — 500 bruyant, jam
   **pas** le clone `~/dev/pokeboy` de la file de lots, supprimé juste après le push. `graphify update`
   non exécuté (doc seule ; le code `733aff8` est déjà graphifié sur `main` par son lot de fusion).
 
+## Livraison de l'entraînement et de l'IA — 03/10/2026 — **RÉUSSIE** (on joue contre le bot en PROD)
+
+Mise en PROD de `livraison-jeu-solo-ia` : quatre lots du jeu solo/IA fusionnés dans `main` —
+`j-simulation-bots`, `j-mode-solo` (entraînement contre un bot), `j-adversaire-ia` (l'IA du joueur
+comme adversaire, sur **sa** clé), `j-coach-ia` (conseil sur demande + bilan de fin de partie).
+Release **`20261003-204554`**, commit figé **`c5084ad0dd0a78250d6954bb0f84eda7fc2fb4f5`**,
+précédente `20261003-182045` (`733aff8`, coups du joueur). Livré depuis **devAI** en session
+autonome ; CI « CI » verte sur `c5084ad` (passage push, success). Le jeu reste **privé** (D11) :
+JF et Aymeric uniquement.
+
+### Besoins de la livraison, relevés AVANT de toucher au serveur (`git diff 733aff8..c5084ad`)
+
+- **Migrations** : **trois**, toutes **additives**, chaîne linéaire → tête unique **`b2c3d4e5f6a7`**
+  (`d4e1f2a3b5c6` → `f1c0b07a1d02` mode-solo → `a1b2c3d4e5f6` adversaire-ia → `b2c3d4e5f6a7`
+  coach-ia). Colonnes avec `server_default` (`games.entrainement`, `game_players.bot_niveau`/
+  `adversaire_ia`, `games.ia_appels`/`ia_tokens`/`conseils_utilises`, `users.coach_actif`,
+  `game_events.commentaire`) + **un compte bot réservé** inséré par `f1c0b07a1d02`
+  (`pokebot@system.pokeboy.invalid`, `password_hash='!'` inconnectable, `game_access=false`,
+  `ON CONFLICT DO NOTHING`). `alembic upgrade head` à la préparation : **appliqué** (NO-OP la fois
+  précédente, cette fois trois révisions jouées), rollback sûr (additif).
+- **Variable d'environnement** : **une** nouvelle, optionnelle — `COACH_MAX_CONSEILS` (défaut `3`,
+  plafond de conseils par partie). **Non ajoutée** à `/srv/pokeboy/prod/config/.env` : le défaut
+  convient, `.env` **non modifié**.
+- **Nouveau processus** : **aucun**. Le temps réel reste le WebSocket servi par l'API uvicorn.
+  `pbm_sim` (lot `j-simulation-bots`) est un **outil CLI** de campagnes de masse, pas un service.
+- **Routes nouvelles** (toutes sous `/api`, aucun changement Caddy) : `POST /matchmaking/entrainement`
+  (choix `adversaire` bot/ia + `niveau`), `GET /matchmaking/presence` (champ `ia_disponible`),
+  `POST /games/{id}/conseil`, `GET /games/{id}/bilan`, et `GET /games/{id}` enrichi
+  (`entrainement`, `bot_niveau` au siège, `ia_cout`). Vérifiées **présentes dans le schéma servi**.
+- **Caddy** : **non touché** (le `reverse_proxy /api` relaie déjà le WebSocket, prouvé en J1).
+- **front `apps/web`** : aucun changement de comportement (les lots J-SRV n'ont pas câblé le front ;
+  le bundle ne cite que `pokeboy.lol`, 0 ancien domaine).
+
+### Ce qui a réellement été exécuté
+
+```bash
+# 0. Portes : CI verte sur c5084ad (push) ; voisins AVANT 200 200 308 200 307 ; serveur sain
+#    (charge 0.02, 2480 Mo dispo). PROD de départ : 20261003-182045 (733aff8), tête d4e1f2a3b5c6.
+# 1. chimera : worktree de build (dépôt relais) checkout --detach c5084ad, HEAD vérifié ; apps/game
+#    présent, dép. editable ../game ; pbm-build-lol.sh (game-aware) ; build détaché (setsid), sondé →
+#    BUILD_DONE. TS=20261003-204554. Bundle : 15 fichiers pokeboy.lol, 0 ancien domaine.
+# 2. transfert chimera → devAI → kailo-srv, SHA-256 IDENTIQUES aux TROIS étapes :
+#    web 0bbd2874…11ea80 · api 77e26e19…d542da · game 041daf70…1beef4
+#    (⚠ décodage base64 sur macOS : `base64 -D`, pas `-d` — `-d` rend un fichier vide en silence)
+# 3. point de restauration frais AVANT toute écriture :
+ssh kailo-srv 'sudo -n -u pokeboy bash /srv/pokeboy/prod/backups/backup.sh'  # 20261003-184940.dump (46,5 Mo / 32 tables), photos 1053
+# 4. préparation (extrait web+api+game, uv sync, alembic upgrade head → 3 révisions jouées) :
+ssh kailo-srv 'TS=20261003-204554 COMMIT=c5084ad… LOT=livraison-jeu-solo-ia bash /tmp/prep-lol.sh'  # → PREPARATION_OK, tête d4e1f2a3b5c6 → b2c3d4e5f6a7
+# 5. bascule, retour arrière automatique sur échec de santé :
+ssh kailo-srv 'TS=20261003-204554 bash /tmp/deploy-switch.sh'  # → BASCULE_OK (api=200 web=200 au 1er contrôle)
+```
+
+**Preuve de mise en ligne** : `app/ -> releases/20261003-204554` ; `RELEASE_INFO` porte
+`commit=c5084ad…`, `lot=livraison-jeu-solo-ia` ; les 3 unités `active` ; `https://pokeboy.lol/api/health`
+→ 200 et `/` → 200 ; tête Alembic **LIVE** = `b2c3d4e5f6a7`. **Voisins inchangés** du début à la fin
+(`200 200 308 200 307`). Serveur après : charge 0.18, 2472 Mo dispo.
+
+### Accès ouvert à JF et Aymeric — et à personne d'autre
+
+Commande (hors ligne, venv de la release) :
+`cd /srv/pokeboy/prod/app/api && .venv/bin/python -m pbm_api.admin set-game-access <email> on`.
+
+- **`aymeric.fonteray@gmail.com`** : `game_access=true` déjà en place ; commande rejouée (idempotente) → **reste ouvert** ✔.
+- **`jfonteray@gmail.com`** : **aucun compte en PROD** (5 comptes au total, dont le bot réservé) → la
+  commande **refuse** (`Erreur : Aucun compte pour jfonteray@gmail.com.`, rc=1 — jamais de succès
+  silencieux). **Rien créé** : JF doit d'abord s'inscrire sur https://pokeboy.lol, puis on lancera
+  la commande avec son adresse.
+- Audit après livraison : **un seul** compte humain a `game_access=true` (aymeric).
+
+### Preuves de fonctionnement en PROD — 14/14 PASS, puis suppression de tout
+
+Script de preuve exécuté dans le venv déployé, dirigé contre le serveur uvicorn **LIVE**
+(`127.0.0.1:8100`) : comptes jetables (A avec accès + deck possédé jouable « Charge » 60 ; B **sans**
+accès ; C 2ᵉ humain), sessions forgées en base (l'e-mail de vérification part par Resend en PROD,
+illisible ici — on ne passe donc pas par `register/verify`), jeton de session en cookie explicite +
+CSRF. Puis **suppression de tout**.
+
+- **Fermeture** (B, sans droit) : `/me` `game_access=false` ; `GET /games`, `GET /games/{id}`,
+  `GET /matchmaking/presence` → **404** (jamais 403 : pas de fuite d'existence).
+- **Présence** (A, sans clé IA) : `ia_disponible=false`.
+- **Adversaire IA sans clé** : `POST /matchmaking/entrainement {adversaire:"ia"}` → **422** nommant
+  la clé **et** le bot (« … pour jouer contre ton IA. Tu peux jouer contre le bot en attendant »).
+- **Partie d'entraînement contre le bot, jouée jusqu'au bout** : `POST /matchmaking/entrainement`
+  (201, bot au siège 1, `bot_delai_ms=800`), marquée `entrainement=true` ; jouée par HTTP
+  (`/games/{id}/state` → coups légaux → `/games/{id}/actions`, tous 200), le bot répond côté serveur,
+  jusqu'à une **fin méritée** (`raison_fin=plus_de_pokemon`, jamais `abandon`). **WebSocket** :
+  resync du coup #0 reçue, **9 trames** reçues (resync + diffusions des coups).
+- **Non-fuite** : la main adverse n'est qu'un nombre, la graine n'apparaît jamais dans `/state`.
+- **Anti-CSWSH** : un WebSocket **sans en-tête `Origin`** est **refusé** (`InvalidStatus`).
+- **Coach** : `GET /games/{id}/bilan` sans clé → **422** (nomme la clé) ; `POST /games/{id}/conseil`
+  en partie d'entraînement sans clé → **422** (nomme la clé) ; `POST /games/{id}/conseil` dans une
+  partie **entre deux humains** → **409** (« un conseil n'est disponible qu'en partie d'entraînement »)
+  — la garde « hors entraînement » tombe **avant** la garde de clé (prouvé même sans clé).
+- **Suppression prouvée** : `comptes_restants=0 parties_restantes=0 cartes_restantes=0` ;
+  `COMPTES_TOTAL_APRES=5` (les comptes réels + le bot réservé, intacts). Voisins inchangés après.
+
+### Périmètre réellement jouable aujourd'hui
+
+On lance « S'entraîner » et on joue **vraiment** une partie contre le **bot** (mise en place, poser,
+attacher, attaquer, enchaînement des tours) jusqu'à la victoire, en temps réel et sans fuite. L'IA
+adversaire et le coach sont **branchés et gardés** ; **sans clé IA de plateforme sur devAI**
+(`~/.pokeboy-secrets/platform-anthropic-key` **absente** ; la clé d'Aymeric **jamais** utilisée), on
+a prouvé le **chemin sans clé** (422 qui nomme la clé et renvoie au bot) plutôt que de dépenser la
+clé d'un tiers. **Pas encore** : les cartes **Dresseur** ni les **talents/effets** (différés) ; le
+**front du salon** (bouton « S'entraîner », choix bot/IA, rendu des conseils) n'est pas câblé — les
+quatre lots étaient couloir serveur (J-SRV).
+
+### Pièges rejoués / notés
+
+- **Worktree de build resté sur `733aff8`** : `fetch github` + `checkout --detach c5084ad` +
+  vérification du HEAD avant le build — piège n°1, toujours réel.
+- **chimera en WSL/PowerShell** : lancer le build via `wsl -u upgreg -- bash -l -s` sur **stdin**
+  (jamais la ligne de commande, que PowerShell mâche) ; handshake SSH qui `reset` → réessayer.
+- **Décodage base64 sur macOS** : `base64 -D` (pas `-d`, qui rend un fichier **vide sans erreur** —
+  le SHA-256 trahit alors un fichier vide `e3b0c442…`). Le `.b64` était intact ; seul le décodage
+  local était faux — inutile de retransférer.
+- **Trace** écrite dans un worktree **transitoire** `~/dev/wt-livraison-solo-ia` (disque système),
+  **pas** le clone `~/dev/pokeboy` de la file de lots, supprimé juste après le push. `graphify update`
+  non exécuté (doc seule ; le code `c5084ad` est déjà graphifié sur `main` par ses lots de fusion).
+
 ## Conclure « déployé » — jamais sur une ligne de journal
 
 Un build qui échoue laisse la plateforme **debout sur l'ancienne version** : tout a l'air normal et
