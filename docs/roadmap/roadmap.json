@@ -283,6 +283,14 @@
       "fin": "2027-03-05",
       "these": "Une collection ne grandit pas qu'en achetant : elle grandit en échangeant ses doublons. PokeBoy sait déjà qui possède quoi, ce qui manque à chacun, ce que ça vaut et dans quel état c'est — il est le seul à pouvoir proposer un échange juste et à en garder la preuve.",
       "gain": "Deux collectionneurs trouvent l'échange qui leur convient, l'exécutent sans se faire avoir, et leurs deux collections se mettent à jour toutes seules."
+    },
+    {
+      "id": "G1",
+      "nom": "Pokémon GO dans la collection",
+      "debut": "2026-10-12",
+      "fin": "2026-10-23",
+      "these": "Idée de JF (03/10/2026) : les Pokémon qu'on a attrapés dans Pokémon GO — shiny compris — rejoignent la collection depuis de simples captures d'écran, et se jouent dans les decks. Activable par une case à cocher : c'est aussi la première fonctionnalité pensée pour devenir payante.",
+      "gain": "Un enfant qui joue à Pokémon GO retrouve ses captures dans ses decks sans rien acheter, et le produit gagne une option qu'on pourra facturer plus tard."
     }
   ],
   "echeances": [
@@ -453,6 +461,15 @@
       "quoi": "Circulation de l'argent, si le mode garant est retenu. PokeBoy n'encaisse jamais pour le compte d'un tiers sur son propre compte : retenir les fonds d'autrui est un service de paiement. Proposition : séquestre porté par un prestataire agréé (Stripe Connect ou Mangopay), vérification d'identité des deux parties, commission facturée par PokeBoy avec TVA. À faire confirmer par un conseil avant toute ligne de code.",
       "debloque": [
         "v8-mode-garant"
+      ]
+    },
+    {
+      "id": "D16",
+      "date": "2026-10-09",
+      "quoi": "Pokémon GO : à quelle carte correspond un Pokémon capturé, et ce qu'on peut en faire. Proposition : une capture devient un exemplaire « Pokémon GO » d'une carte de référence de son espèce — l'impression de la série TCG « Pokémon GO » (2022) si elle existe, sinon l'impression de base jouable la plus récente ; shiny → badge « chromatique » ; valeur de collection 0 (exclue de la valeur, des classements et des statistiques de valeur) ; utilisable en deck et en partie seulement (ni échange, ni export comme carte réelle) ; une case à cocher dans le profil, désactivée par défaut, pensée pour devenir payante. À confirmer par JF, ainsi que ce qu'on fait d'une espèce sans aucune carte jouable.",
+      "debloque": [
+        "go-captures",
+        "go-collection-jeu"
       ]
     }
   ],
@@ -3471,6 +3488,78 @@
       "dependances": [],
       "vague": "H1",
       "piste": "F"
+    },
+    {
+      "vague": "G1",
+      "piste": "C",
+      "couloir": "CH2",
+      "decision": "D16",
+      "refs": [],
+      "taches_na": {},
+      "id": "go-captures",
+      "debut": "2026-10-12",
+      "fin": "2026-10-16",
+      "priorite": "P1",
+      "taille": "M",
+      "complexite": 3,
+      "difficulte": 3,
+      "titre": "Pokémon GO : lire les captures d'écran et proposer les Pokémon à ajouter",
+      "gain": "Les captures d'écran de la fiche d'un Pokémon dans Pokémon GO deviennent des propositions d'ajout à la collection, shiny repéré — sans ressaisie.",
+      "fonctionnalites": "Case à cocher « Pokémon GO » dans le profil (désactivée par défaut ; tant qu'elle l'est, rien de la fonctionnalité n'apparaît). Sélection de plusieurs captures depuis la bibliothèque d'images du téléphone. Reconnaissance par l'IA **du joueur** (sa clé, un appel par capture) : espèce, forme, shiny, et ce qui est lisible (PC, attaques). Écran de validation avant ajout, comme pour les photos de cartes : chaque capture propose la carte de référence de son espèce (D16), le joueur confirme, corrige ou écarte.",
+      "risques": "Prendre une capture pour une carte réelle : un exemplaire Pokémon GO n'a pas de valeur et ne s'échange pas — la frontière doit être visible partout (badge, filtre, exclusion des valeurs). Et l'IA qui invente une espèce : on propose, le joueur valide, jamais d'ajout automatique.",
+      "tenants": "Comptes, coffre de clés IA, reconnaissance (pipeline photo), catalogue ; D16.",
+      "aboutissants": "Captures Pokémon GO jouables en deck (go-collection-jeu).",
+      "dependances": [
+        "v3-validation",
+        "v1-byok"
+      ],
+      "mission": [
+        "Drapeau par compte `pokemon_go_enabled` (profil, case à cocher, faux par défaut), et un point d'accroche unique pour le rendre payant plus tard (sans facturation dans ce lot).",
+        "Envoi de plusieurs captures depuis la bibliothèque d'images ; stockage comme les photos (D7), jamais servi à un autre compte.",
+        "Reconnaissance par l'IA du joueur (un appel par capture, prompt et schéma de réponse versionnés) : espèce, forme, shiny ; échec ou réponse illisible → la capture reste « à vérifier », jamais un ajout deviné.",
+        "Correspondance espèce → carte de référence selon D16, testée sur un jeu de captures réelles (anonymisées).",
+        "Écran de validation : confirmer, corriger l'espèce, écarter ; test d'accès croisé ; aucun ajout sans geste du joueur."
+      ],
+      "livrables": [
+        "case à cocher Pokémon GO",
+        "envoi et reconnaissance des captures",
+        "écran de validation"
+      ]
+    },
+    {
+      "vague": "G1",
+      "piste": "C",
+      "couloir": "CH2",
+      "decision": "D16",
+      "refs": [],
+      "taches_na": {},
+      "id": "go-collection-jeu",
+      "debut": "2026-10-19",
+      "fin": "2026-10-23",
+      "priorite": "P1",
+      "taille": "S",
+      "complexite": 2,
+      "difficulte": 2,
+      "titre": "Pokémon GO : des exemplaires à part dans la collection, jouables en deck et en partie",
+      "gain": "Les captures validées vivent dans la collection avec leur badge, comptent pour construire un deck et se jouent — sans fausser la valeur de la collection.",
+      "fonctionnalites": "Exemplaire de collection de source « Pokémon GO » (badge, badge « chromatique » pour un shiny), filtre dédié, valeur 0 et exclu des valeurs, classements et statistiques de valeur ; accepté par la légalité de deck comme un exemplaire possédé (règle des 4 inchangée) ; affiché en partie avec son badge ; ni échange, ni export comme carte réelle.",
+      "risques": "Une valeur de collection qui gonfle en silence parce qu'un exemplaire GO a pris le prix de la carte de référence : test explicite sur la valeur et les classements.",
+      "tenants": "go-captures, gestionnaire de decks, jeu ; D16.",
+      "aboutissants": "Option facturable plus tard.",
+      "dependances": [
+        "go-captures",
+        "v7-decks-api"
+      ],
+      "mission": [
+        "Source d'exemplaire « pokemon_go » (migration additive), badge et filtre dans la collection.",
+        "Exclusion des valeurs, classements et statistiques de valeur, testée.",
+        "Légalité de deck et partie : un exemplaire GO compte comme possédé ; rendu en partie avec badge.",
+        "Interdire échange et export comme carte réelle ; test d'accès croisé."
+      ],
+      "livrables": [
+        "exemplaires Pokémon GO dans la collection",
+        "jouables en deck et en partie, valeur 0"
+      ]
     }
   ]
 }

@@ -168,6 +168,15 @@ _Une collection ne grandit pas qu'en achetant : elle grandit en échangeant ses 
 | `v8-e2e-echange` | P1 | Un échange complet, joué tout seul | CH6 (chimera) | 22 févr. → 26 févr. | v8-litiges, v8-suivi-ecran | — | À faire | [prompt](prompts/v8-e2e-echange.md) |
 | `v8-hub-etude` | P3 | Centre de tri PokeBoy : l'étude avant la moindre ligne de code (conditionnel) | CH6 (chimera) | 1 mars → 5 mars | v8-litiges | D12 | À faire | [prompt](prompts/v8-hub-etude.md) |
 
+## G1 — Pokémon GO dans la collection (12 oct. → 23 oct.)
+
+_Idée de JF (03/10/2026) : les Pokémon qu'on a attrapés dans Pokémon GO — shiny compris — rejoignent la collection depuis de simples captures d'écran, et se jouent dans les decks. Activable par une case à cocher : c'est aussi la première fonctionnalité pensée pour devenir payante._
+
+| Lot | Prio | Titre | Couloir | Prévu | Dépend de | Décision | Statut | Prompt |
+|---|---|---|---|---|---|---|---|---|
+| `go-captures` | P1 | Pokémon GO : lire les captures d'écran et proposer les Pokémon à ajouter | CH2 (chimera) | 12 oct. → 16 oct. | v3-validation, v1-byok | D16 | À faire | [prompt](prompts/go-captures.md) |
+| `go-collection-jeu` | P1 | Pokémon GO : des exemplaires à part dans la collection, jouables en deck et en partie | CH2 (chimera) | 19 oct. → 23 oct. | go-captures, v7-decks-api | D16 | À faire | [prompt](prompts/go-collection-jeu.md) |
+
 ## Décisions de JF
 
 | # | Avant le | Décision | Prise | Débloque |
@@ -187,3 +196,4 @@ _Une collection ne grandit pas qu'en achetant : elle grandit en échangeant ses 
 | D13 | 2026-12-14 | Âge minimum pour échanger et accord parental. Le public de départ est majoritairement mineur, et aucun mode où l'utilisateur avance de l'argent ne lui est ouvert. Proposition : échange direct dès 13 ans avec accord parental enregistré ; tout mode avec caution ou commission réservé aux 18 ans et plus. | en attente | v8-mineurs, v8-mode-garant |
 | D14 | 2027-01-22 | Expédition : transporteur, seuil de valeur au-dessus duquel le suivi est obligatoire, qui paie le port, quelle assurance. Proposition : l'adresse n'est jamais affichée — c'est l'étiquette générée qui la porte ; suivi obligatoire au-delà de 30 € de valeur figée ; port à la charge de chaque expéditeur ; aucune assurance promise tant qu'aucune n'est souscrite. | en attente | v8-expedition |
 | D15 | 2027-02-05 | Circulation de l'argent, si le mode garant est retenu. PokeBoy n'encaisse jamais pour le compte d'un tiers sur son propre compte : retenir les fonds d'autrui est un service de paiement. Proposition : séquestre porté par un prestataire agréé (Stripe Connect ou Mangopay), vérification d'identité des deux parties, commission facturée par PokeBoy avec TVA. À faire confirmer par un conseil avant toute ligne de code. | en attente | v8-mode-garant |
+| D16 | 2026-10-09 | Pokémon GO : à quelle carte correspond un Pokémon capturé, et ce qu'on peut en faire. Proposition : une capture devient un exemplaire « Pokémon GO » d'une carte de référence de son espèce — l'impression de la série TCG « Pokémon GO » (2022) si elle existe, sinon l'impression de base jouable la plus récente ; shiny → badge « chromatique » ; valeur de collection 0 (exclue de la valeur, des classements et des statistiques de valeur) ; utilisable en deck et en partie seulement (ni échange, ni export comme carte réelle) ; une case à cocher dans le profil, désactivée par défaut, pensée pour devenir payante. À confirmer par JF, ainsi que ce qu'on fait d'une espèce sans aucune carte jouable. | en attente | go-captures, go-collection-jeu |
