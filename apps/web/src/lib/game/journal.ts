@@ -116,6 +116,24 @@ function actifDe(joueur: string | undefined, pour: string): string {
   return joueur === pour ? "ton Actif" : "l'Actif adverse";
 }
 
+/** La `source` d'un événement d'effet (`{libelle, ref, instance_id}`), ou `undefined`. */
+function source(d: Record<string, unknown>): Record<string, unknown> | undefined {
+  const s = d.source;
+  return s && typeof s === "object" ? (s as Record<string, unknown>) : undefined;
+}
+
+/** Le libellé lisible de la carte responsable d'un effet (« Bandeau Musclé »), ou `undefined`. */
+function sourceLibelle(d: Record<string, unknown>): string | undefined {
+  const s = source(d);
+  return s && typeof s.libelle === "string" ? s.libelle : undefined;
+}
+
+/** L'`instance_id` de la carte source d'un effet, à surligner sur le plateau (ou `null`). */
+function sourceInstance(d: Record<string, unknown>): string | null {
+  const s = source(d);
+  return s && typeof s.instance_id === "string" ? s.instance_id : null;
+}
+
 /** Nom français d'une phase du tour (codes du moteur), ou le code tel quel s'il est inconnu. */
 function frPhase(code: string | undefined): string {
   const phases: Record<string, string> = {
@@ -395,6 +413,153 @@ export const TRADUCTEURS: Record<string, Traducteur> = {
         surligne: base,
         refs: base ? [base] : [],
       };
+    },
+  },
+
+  // --- Mise en place et horloges (lots j-initialisation / j-coups-joueur / j-timer) ------------
+
+  energie_attachee: {
+    automatique: false,
+    traduire: (d, pour) => {
+      const ref = chaine(d, "ref");
+      const cible = chaine(d, "cible") ?? null;
+      const nom = ref ? ` ${ref}` : " une énergie";
+      return {
+        texte: `${sujet(d, pour)} ${estMoi(d, pour) ? "attaches" : "attache"}${nom} (R-5.4).`,
+        surligne: cible,
+        refs: cible ? [cible] : [],
+      };
+    },
+  },
+
+  placement_cache: {
+    automatique: false,
+    traduire: (d, pour) => ({
+      // R-4.2 : le contenu posé reste secret ; on annonce seulement que le joueur a terminé.
+      texte: estMoi(d, pour)
+        ? "Tu places ton Actif et ton banc face cachée."
+        : "L'adversaire place son Actif et son banc face cachée.",
+    }),
+  },
+
+  mulligan: {
+    automatique: true,
+    traduire: (d, pour) => {
+      // R-4.4/R-4.5 : numéro de mulligan, et à qui revient l'éventuelle carte bonus. Aucune carte.
+      const num = nombre(d, "numero");
+      const suffixe = typeof num === "number" ? ` (mulligan n°${num})` : "";
+      const bonusPour = chaine(d, "bonus_pour");
+      const bonus = bonusPour
+        ? ` — carte bonus pour ${bonusPour === pour ? "toi" : "l'adversaire"}`
+        : "";
+      return {
+        texte: `${sujet(d, pour)} ${estMoi(d, pour) ? "repioches" : "repioche"} : aucune base en main${suffixe}${bonus}.`,
+      };
+    },
+  },
+
+  main_revelee: {
+    automatique: true,
+    traduire: (d, pour) => {
+      // R-4.4 : la main d'un mulligan est montrée ; l'adversaire a les refs, pas les instance_id.
+      const cartes = Array.isArray(d.cartes) ? d.cartes : [];
+      const refs = cartes
+        .map((c) => (c && typeof c === "object" ? (c as Record<string, unknown>).ref : undefined))
+        .filter((x): x is string => typeof x === "string");
+      return {
+        texte: estMoi(d, pour)
+          ? `Ta main est révélée avant remélange (${refs.length} carte${refs.length > 1 ? "s" : ""}).`
+          : `La main de l'adversaire est révélée : ${refs.length} carte${refs.length > 1 ? "s" : ""}, sans base.`,
+        refs,
+      };
+    },
+  },
+
+  mise_en_place_prete: {
+    automatique: true,
+    traduire: () => ({
+      // R-4.5 : résumé public de la phase de mulligan ; les deux mains valides sont en place.
+      texte: "Mise en place prête : les deux mains sont valides, place ton Actif et ton banc.",
+    }),
+  },
+
+  mise_en_place_revelee: {
+    automatique: true,
+    traduire: () => ({
+      // R-4.2/R-4.3 : révélation simultanée — Actif et banc des deux joueurs deviennent publics.
+      texte: "Révélation simultanée : les placements sont dévoilés et les récompenses posées.",
+    }),
+  },
+
+  fin_tour: {
+    automatique: true,
+    traduire: (d, pour) => ({
+      // R-5.8 : fin de tour (horloge épuisée ou passage volontaire).
+      texte: `${estMoi(d, pour) ? "Ton" : "Le"} tour se termine (${frPhase(chaine(d, "de"))}).`,
+    }),
+  },
+
+  // --- Combat et effets de carte (lots j-attaque / effets de carte) ---------------------------
+  // Tous publics : ils ne portent que des faits visibles (cartes en jeu, énergies attachées, pile
+  // ou face, règles). Les événements d'effet porteurs d'identités cachées (choix, primitives,
+  // demandes) ne passent pas encore par le journal — voir DIFFERES_SYSTEME_EFFETS côté moteur.
+
+  cout_paye: {
+    automatique: false,
+    traduire: (d) => ({
+      // R-9.2 : le moteur fournit déjà le détail lisible (« Coût payé : ⚡ par énergie électrique »).
+      texte: chaine(d, "detail") ?? "Coût de l'attaque payé.",
+    }),
+  },
+
+  effet_resolu: {
+    automatique: true,
+    traduire: (d) => {
+      const libelle = chaine(d, "libelle") ?? sourceLibelle(d) ?? "un effet";
+      return { texte: `Effet résolu : ${libelle}.`, surligne: sourceInstance(d) };
+    },
+  },
+
+  effet_sans_cible: {
+    automatique: true,
+    traduire: (d) => {
+      const libelle = chaine(d, "libelle") ?? sourceLibelle(d) ?? "un effet";
+      const raison = chaine(d, "raison");
+      return { texte: `Sans cible : ${libelle}${raison ? ` (${raison})` : ""}.` };
+    },
+  },
+
+  verrou_pose: {
+    automatique: true,
+    traduire: (d) => {
+      const nom = chaine(d, "nom") ?? "verrou";
+      const source = sourceLibelle(d);
+      return { texte: `Interdiction posée : ${nom}${source ? ` (par ${source})` : ""}.` };
+    },
+  },
+
+  verrou_leve: {
+    automatique: true,
+    traduire: (d) => {
+      const nom = chaine(d, "nom") ?? "verrou";
+      return { texte: `Interdiction levée : ${nom}.` };
+    },
+  },
+
+  dsl_pile_ou_face: {
+    automatique: true,
+    traduire: (d) => {
+      const pieces = nombre(d, "pieces") ?? 0;
+      const faces = nombre(d, "faces") ?? 0;
+      return { texte: `Pile ou face : ${faces} face${faces > 1 ? "s" : ""} sur ${pieces}.` };
+    },
+  },
+
+  dsl_cout_impayable: {
+    automatique: true,
+    traduire: (d) => {
+      const raison = chaine(d, "raison");
+      return { texte: `Coût de l'effet impayable${raison ? ` : ${raison}` : ""}.` };
     },
   },
 };

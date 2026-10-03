@@ -51,14 +51,64 @@ Un même coup n'est pas **décrit pareil** aux deux joueurs quand une informatio
 filtrage est **structurel** : chaque type d'événement a son projecteur dans le registre
 `PROJECTEURS`. Un type **absent du registre est refusé** (`ValueError`), jamais diffusé brut —
 c'est la garde qui fait qu'un futur événement ajouté sans projecteur **casse bruyamment** au lieu de
-fuir en silence (D9). Aujourd'hui, un seul événement porte de l'information cachée :
+fuir en silence (D9).
+
+Deux événements portent de l'information cachée et ont un **projecteur dédié** :
 
 - `cartes_piochees` (R-5.2) — le **piocheur** voit les `instance_id` tirés (ils entrent dans sa
   main, qu'il voit) ; l'adversaire n'apprend que le **nombre**. Les identités sont **retirées**,
   pas remplacées par un jeton (une carte en main n'a pas à être désignée par l'adversaire).
+- `main_revelee` (R-4.4) — la main d'un **mulligan** est **révélée à l'adversaire** (seul moment où
+  une main est publique). L'adversaire reçoit les **`ref`** (il constate l'absence de base), jamais
+  les **`instance_id`** : ces cartes retournent aussitôt dans la pioche cachée, et leur laisser un
+  `instance_id` donnerait un repère de suivi (on choisit le **moins révélateur**). Le propriétaire
+  voit sa propre main en entier.
 
-Tous les autres événements n'exposent que des zones publiques ou des faits publics (phase, pile ou
-face, dégâts, K.O., fin) : ils passent par le registre (projecteur `_public`) mais sont inchangés.
+Les autres événements du jeu sont **publics** (projecteur `_public`), inchangés — mais déclarés, car
+chacun **doit** figurer au registre. Leur décision de visibilité, citée à `REGLES.md` :
+
+| Événement | Règle | Pourquoi public |
+|---|---|---|
+| `placement_cache` | R-4.2 | ne porte **que** le joueur — le contenu posé face cachée n'y est jamais |
+| `mise_en_place_prete` | R-4.5 | résumé public : mulligans et cartes bonus par joueur |
+| `mise_en_place_revelee` | R-4.2/R-4.3 | la révélation **rend** Actif et banc publics (refs, nombres) |
+| `mulligan` | R-4.5 | numéro de mulligan et à qui revient la carte bonus — aucune identité |
+| `energie_attachee` | R-5.4 | attacher une énergie est un geste public (zone en jeu) |
+| `fin_tour` | R-5.8 | joueur et phase quittée |
+| `cout_paye` | R-9.2 | coût payé par des énergies **attachées** (donc publiques) |
+| `effet_resolu` / `effet_sans_cible` | — | source (carte en jeu) + règle |
+| `verrou_pose` / `verrou_leve` | R-12 | nom, portée, source — aucune identité cachée |
+| `dsl_pile_ou_face` | — | pile ou face (nombre de pièces et de faces) |
+| `dsl_cout_impayable` | — | un coût d'effet n'a pas pu être payé — fait public |
+
+ainsi que phase, tour, attaque, confusion, dégâts, K.O., promotion, retraite, échange, checkup,
+expiration d'effet, pose et évolution de Pokémon, mélange, fin de partie.
+
+### Le système d'effets de carte — différé, nommément
+
+Les événements du DSL et des **demandes de décision** (`demande_emise`, `demande_repondue`,
+`demande_expiree`, `dsl_choix`, `dsl_primitive`) peuvent porter des **identités cachées** — p. ex.
+une primitive `piocher`/`chercher` nomme la carte tirée, secrète à l'adversaire. Leur projection
+n'est donc **pas** publique : elle se fera **par destinataire**, et c'est le **lot des effets de
+carte** qui la livrera, le jour où une carte au script DSL entrera réellement en jeu (aucune partie
+J1 ne les émet). Ils sont tenus **hors** de `PROJECTEURS` et listés **nommément** dans
+`DIFFERES_SYSTEME_EFFETS` (test `test_parite_evenements_projecteurs`) — pas ignorés : tant qu'ils
+n'ont pas de projecteur par destinataire, `projeter_evenement` les **refuse** (500 bruyant plutôt
+que fuite), ce qui est le comportement voulu avant leur livraison.
+
+### La garde de parité (lot `fix-projection-evenements`)
+
+Deux tests ferment la faille qui avait bloqué la livraison des coups du joueur (le registre ne
+couvrait pas les événements de la mise en place / du timer, et `POST /actions` répondait 500) :
+
+- `test_parite_evenements_projecteurs` (job `game`) relève **par lecture statique** toutes les
+  constantes `EVT_*` de **tout** `pbm_game` — pas seulement `journal.modele`, car le défaut venait
+  d'un type défini ailleurs (`cout_paye` dans `combat/`) — et exige que chacune soit **projetée ou
+  nommément différée**. Un futur événement sans projecteur casse en CI, plus jamais en PROD ;
+- `apps/api/tests/test_games_http_ws_partie_complete.py` (job `api`) **joue une partie entière par
+  les routes HTTP et le canal temps réel** — le chemin que les tests de partie ne franchissaient
+  pas — et vérifie à chaque coup : 200 (plus de 500), diffusion aux deux joueurs, et aucune fuite
+  dans la vue de chacun.
 
 ## Câblage API — la vue autoritaire et le coup validé
 
