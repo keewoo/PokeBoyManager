@@ -121,6 +121,11 @@ _demandes.enregistrer(_interprete.TYPE_EFFET_DSL, _interprete.resolveur_dsl_dema
 # que ``appliquer`` la reconnaisse (la transition tire le DSL en local à l'usage).
 from .effets import objets as _objets  # noqa: E402,F401  (import pour effet d'enregistrement)
 
+# ``effets.outils`` enregistre les transitions ``attacher_outil`` / ``retirer_outil``
+# (R-3.7) dans le ``REGISTRE`` du journal à son import (lot ``j-cartes-outils``), comme
+# ``effets.objets``.
+from .effets import outils as _outils  # noqa: E402,F401  (import pour effet d'enregistrement)
+
 # ``effets.stades`` enregistre la transition ``jouer_stade`` (R-3.5/R-5.5) dans le ``REGISTRE``
 # du journal à son import (lot ``j-cartes-stades``), comme ``effets.objets``.
 from .effets import stades as _stades  # noqa: E402,F401  (import pour enregistrement)

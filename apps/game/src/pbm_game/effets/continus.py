@@ -220,6 +220,34 @@ def cout_retraite_effectif(base: int, effets: list[EffetContinu], pokemon: str) 
     return max(0, base + delta_cout_retraite(effets, pokemon))
 
 
+def fiches_avec_seuils_continus(
+    etat: EtatPartie, registre: RegistreContinus, fiches: dict
+) -> dict:
+    """Recalcule, dans fiches, le **seuil de K.O. effectif** de chaque Pokémon en jeu (R-13.1).
+
+    fiches est le mapping attendu par :func:`~pbm_game.combat.fin.resoudre_kos`
+    (instance_id du sommet → {pv, marqueur|recompenses}) où pv est le PV **imprimé**
+    (catalogue). Cette fonction renvoie une **copie** où chaque pv devient le PV imprimé
+    **plus** les deltas de PV continus (Outils, Stades, talents) qui pèsent sur ce Pokémon
+    (:func:`seuil_ko`). C'est le **seul point** où le service mélange catalogue et effets
+    continus avant de détecter un K.O. : il l'emploie pour l'attaque comme pour le retrait d'un
+    Outil (:mod:`pbm_game.effets.outils`), donc un K.O. respecte toujours les PV continus. Pur.
+    Une fiche sans pv (ou un Pokémon absent du plateau) est laissée telle quelle.
+    """
+    effets = collecter_effets_continus(etat, registre)
+    resultat = dict(fiches)
+    for joueur in etat.joueurs:
+        pokemons = ((joueur.actif,) if joueur.actif is not None else ()) + joueur.banc
+        for pokemon in pokemons:
+            cle = carte_active(pokemon).instance_id
+            fiche = resultat.get(cle)
+            if not isinstance(fiche, dict) or "pv" not in fiche:
+                continue
+            base = pokemon.cartes[0].instance_id
+            resultat[cle] = {**fiche, "pv": seuil_ko(fiche["pv"], effets, base)}
+    return resultat
+
+
 __all__ = [
     "PORTEE_OUTIL",
     "PORTEE_STADE",
@@ -237,4 +265,5 @@ __all__ = [
     "seuil_ko",
     "delta_cout_retraite",
     "cout_retraite_effectif",
+    "fiches_avec_seuils_continus",
 ]

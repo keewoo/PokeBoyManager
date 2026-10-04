@@ -35,6 +35,8 @@ describe("traduction des événements du journal", () => {
       supporter_joue: { joueur: MOI, ref: "sup-1", nom: "Hop", carte: "h-1", devient_actif: [] },
       stade_joue: { joueur: MOI, ref: "sta-1", nom: "Stade en Liesse", carte: "s-1", remplace: "s-0", proprietaire_remplace: ADV },
       talent_active: { joueur: MOI, pokemon: "p-1", nom: "Incisives Travailleuses", ref: "ev1-9", devient_actif: [] },
+      outil_attache: { joueur: MOI, outil: "t-1", ref: "B2-147", cible: "p-1", nom: "Protective Poncho" },
+      outil_retire: { joueur: MOI, outil: "t-1", ref: "B2-148", cible: "p-1", par: ADV },
       etat_checkup: { joueur: MOI, etat: "empoisonne", regle: "R-11.7", degats: 10, gueri: false },
       effet_expire: {},
       ko: { joueur: ADV, pokemon: "p-9", compteurs: 120, recompenses_prises: 1, par: MOI },
