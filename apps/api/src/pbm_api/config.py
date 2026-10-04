@@ -111,6 +111,13 @@ class Settings(BaseSettings):
     # soumettre un lot réel (fermé par défaut, jamais un envoi silencieux à vide). À fournir par
     # JF hors dépôt (variable d'environnement) avant tout passage réel.
     platform_anthropic_api_key: str = ""
+    # --- Assistance IA aux scripts d'effet (lot j-effets-assistance-ia, DJ8) ---
+    # Plafond cumulé de dépense en euros pour l'assistance IA (DJ8 : 50 €). Le passage s'arrête net
+    # au plafond, sans redemander (grand livre var/assistance_scripts/ledger.json).
+    assistance_budget_eur: float = 50.0
+    # Modèle Anthropic du proposeur et du contradicteur : Haiku 4.5 par défaut (le moins cher) ;
+    # un script d'effet ne demande pas le modèle le plus capable.
+    assistance_model: str = "claude-haiku-4-5"
     # Plafond de dépense en euros pour l'ensemble des passages cumulés (suivi dans
     # `var/insights_batch/ledger.json`, voir `pbm_api.insights_batch.ledger`) — 0 = aucun
     # passage réel autorisé (valeur de dev). À fournir par JF (décision D4, "budget à

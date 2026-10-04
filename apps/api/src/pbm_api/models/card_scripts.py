@@ -1,6 +1,6 @@
 """Le **registre des scripts d'effet** : la table `card_scripts`.
 
-Lot `j-effets-catalogue-compilation`.
+Lot `j-effets-catalogue-compilation` ; colonnes de revue ajoutées par `j-effets-assistance-ia`.
 
 Le pont entre les trente mille cartes du catalogue et les cartes réellement *jouables*. Une carte
 n'est pas scriptée carte par carte : elle l'est **par texte d'effet**. Des centaines de cartes
@@ -22,20 +22,47 @@ Chaque ligne porte :
 * ``statut`` — ``scripte`` (jouable), ``non_supporte`` (hors langage v1, refusé au deck en le
   disant — D9), ``a_revoir`` (jamais validé, ou texte modifié depuis : ne se joue plus).
 * ``author`` / ``validated_at`` — qui a validé le script, et quand (vide tant qu'il ne l'est pas).
-* ``tests`` — les cas de test associés (identifiants), la preuve qu'il fait ce que la carte dit.
+* ``tests`` — les cas de test associés (le script PROUVÉ fait ce que la carte dit).
 * ``notes`` — le *pourquoi* d'un ``non_supporte`` (quelle tournure manque), jamais un effet deviné.
 
-**D9 sans détour.** Un texte sans ligne « scriptée » lisible **bloque** la carte qui le porte à la
-construction de la partie — jamais un effet neutre deviné. C'est le chargeur
-(:mod:`pbm_api.jeu.scripts.chargeur`) qui applique ce refus, avant la mise en place.
+**Colonnes de revue (DJ8).** L'assistance IA (:mod:`pbm_api.jeu.scripts.assistance`) propose un
+script ET ses tests ; il n'entre en jeu que si ses **tests passent** ET qu'une **seconde IA** l'a
+**approuvé** (jamais une relecture humaine carte par carte). Ces faits sont rangés ici pour
+l'audit et le rapport par famille :
+
+* ``review_tests_ok`` — les essais (proposés + cohérence maison) sont-ils tous verts ;
+* ``review_contradicteur`` — le verdict de la seconde IA (``approuve``/``rejete``), ``NULL`` si
+  l'étape n'a pas eu lieu (tests déjà rouges : inutile de contredire un script faux) ;
+* ``famille`` — la famille d'effet (grain du rapport à JF, qui peut en retirer une d'un mot) ;
+* ``confidence`` — la confiance annoncée par le modèle (``haute``/``moyenne``/``basse``) — jamais le
+  critère d'activation (seuls les tests et le contradicteur le sont), gardée pour la mesure ;
+* ``cost_eur`` — le coût en euros de la génération de ce script (coût par carte, mission point 4).
+
+**D9 sans détour, et tenu PAR LA BASE.** Un texte sans ligne « scriptée » lisible **bloque** la
+carte qui le porte à la construction de la partie — jamais un effet neutre deviné. C'est le chargeur
+(:mod:`pbm_api.jeu.scripts.chargeur`) qui applique ce refus. Et la **contrainte CHECK**
+``ck_card_scripts_scripte_gate`` interdit en base qu'une ligne soit ``scripte`` sans programme, sans
+date de validation **et** sans ``review_tests_ok`` vrai : « aucun script n'entre en jeu sans tests
+verts ET validation » est ainsi vérifié par une contrainte, pas par une consigne (critère n°1).
 """
 
 from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from decimal import Decimal
 
-from sqlalchemy import DateTime, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -56,6 +83,9 @@ SCRIPT_STATUTS: frozenset[str] = frozenset(
     {SCRIPT_STATUT_SCRIPTE, SCRIPT_STATUT_NON_SUPPORTE, SCRIPT_STATUT_A_REVOIR}
 )
 
+#: Nom de la contrainte qui tient la porte D9/DJ8 en base (critère d'acceptation n°1).
+CK_SCRIPTE_GATE = "ck_card_scripts_scripte_gate"
+
 
 class CardScript(Base, TimestampMixin):
     """Un script d'effet du registre, clé par l'**empreinte du texte source** (pas par carte).
@@ -73,6 +103,15 @@ class CardScript(Base, TimestampMixin):
         UniqueConstraint("text_fingerprint", name="uq_card_scripts_fingerprint"),
         # Le rapport de couverture et la détection d'errata listent par statut : un index y aide.
         Index("ix_card_scripts_statut", "statut"),
+        # La porte D9/DJ8 EN BASE : un « scripté » exige un programme, une date de validation ET des
+        # tests verts. Impossible donc de faire entrer un script en jeu sans la preuve de la porte,
+        # même par un INSERT direct qui contournerait `enregistrer_script` (critère d'acceptation
+        # n°1 : vérifié par une contrainte, pas par une consigne).
+        CheckConstraint(
+            "statut <> 'scripte' OR "
+            "(script IS NOT NULL AND validated_at IS NOT NULL AND review_tests_ok IS TRUE)",
+            name=CK_SCRIPTE_GATE,
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -94,10 +133,20 @@ class CardScript(Base, TimestampMixin):
     author: Mapped[str | None] = mapped_column(String(128), nullable=True)
     #: Date de validation (passage en ``scripte``), ``NULL`` tant que non validé.
     validated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    #: Cas de test associés (liste d'identifiants) — la preuve que le script fait son effet.
+    #: Cas de test associés (liste d'essais) — la preuve que le script fait son effet.
     tests: Mapped[list | None] = mapped_column(JSONB(none_as_null=True), nullable=True)
     #: Le *pourquoi* d'un ``non_supporte`` (quelle tournure manque), ou toute note de relecture.
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    #: DJ8 — les essais sont-ils tous verts (porte d'assistance IA). Condition de la contrainte.
+    review_tests_ok: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    #: DJ8 — verdict de la 2ᵉ IA (``approuve``/``rejete``), ``NULL`` si l'étape n'a pas eu lieu.
+    review_contradicteur: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    #: DJ8 — la famille d'effet (grain du rapport à JF et de son droit de veto).
+    famille: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    #: DJ8 — confiance annoncée par le modèle ; jamais le critère d'activation, gardée pour mesurer.
+    confidence: Mapped[str | None] = mapped_column(String(8), nullable=True)
+    #: DJ8 — coût en euros de la génération de ce script (coût par carte, mission point 4).
+    cost_eur: Mapped[Decimal | None] = mapped_column(Numeric(10, 6), nullable=True)
 
 
 __all__ = [
@@ -106,4 +155,5 @@ __all__ = [
     "SCRIPT_STATUT_NON_SUPPORTE",
     "SCRIPT_STATUT_A_REVOIR",
     "SCRIPT_STATUTS",
+    "CK_SCRIPTE_GATE",
 ]
