@@ -102,6 +102,16 @@ ACTION_EVOLUER = "evoluer"
 #: (fiche catalogue de l'énergie — sa fourniture, D9 ; le journal la transporte, donc le rejeu
 #: n'a pas besoin du catalogue). Ajoutée par ``j-coups-joueur``.
 ACTION_ATTACHER_ENERGIE = "attacher_energie"
+#: **Jouer une carte Objet** (R-5.5) — coup de la phase principale du joueur actif, jouable **autant
+#: de fois qu'on veut** (contrairement au Supporter, R-5.5). La carte quitte la main pour la
+#: défausse, puis son **script d'effet** (langage d'effets) se résout : recherche, pioche, défausse,
+#: soin, déplacement d'énergie, changement d'Actif, **appât** (sortir du banc l'Actif adverse).
+#: ``params`` : ``carte_main`` (instance_id dans la main), ``programme`` (le script DSL en JSON),
+#: ``source`` (``{libelle, ref, instance_id}`` pour le journal), ``metadonnees`` (``ref →
+#: {categorie, stade, type}`` du catalogue, pour les sélecteurs filtrés), ``nom``. Le **service**
+#: fournit le script et les métadonnées (le moteur ne lit pas le catalogue : D9). Ajoutée par
+#: ``j-cartes-objets``.
+ACTION_JOUER_OBJET = "jouer_objet"
 #: **Répondre à une demande de décision** (R-9.3 étape D, et tout effet qui fait choisir un joueur)
 #: — coup d'un joueur quand une résolution est **suspendue** sur une demande. ``params`` : ``choix``
 #: (la liste des identifiants d'option retenus ; vide = abandon d'un effet facultatif). L'``auteur``
@@ -184,6 +194,12 @@ EVT_PROMOTION = "promotion_effectuee"
 #: ``j-retraite-banc``) : porte le joueur, l'ancien et le nouvel Actif. Ne marque **pas** la
 #: retraite du tour et ne défausse **aucune** énergie.
 EVT_ECHANGE_FORCE = "echange_force_effectue"
+#: Une **carte Objet a été jouée** (R-5.5). Produit par la transition ``jouer_objet`` : porte le
+#: joueur, la ``ref`` et le ``nom`` de l'Objet, l'``instance_id`` défaussé, et ``devient_actif`` —
+#: la liste des ``[joueur, pokemon]`` qu'il a forcés à devenir Actifs (appât, *Switch*). C'est cette
+#: liste que l'orchestrateur relit pour publier :data:`EJ_DEVIENT_ACTIF` sur le bus (les événements
+#: propres du script, eux, suivent cet événement dans le journal).
+EVT_OBJET_JOUE = "objet_joue"
 #: Un **état spécial** a été résolu au Checkup (R-12.2) sur l'Actif d'un joueur. Produit par
 #: ``j-checkup`` : porte le joueur, l'état (``empoisonne``/``brule``/``endormi``/``paralyse``),
 #: la règle citée, les dégâts posés (poison/brûlure) et, le cas échéant, le pile ou face

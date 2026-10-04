@@ -62,7 +62,11 @@ class ResultatProgramme:
       intégrer au :class:`~pbm_game.effets.verrous.JeuDeVerrous` par l'appelant : l'état de partie
       ne les porte pas) ;
     * ``degats_annules`` — un ``annuler`` a-t-il levé le drapeau de prévention des dégâts ;
-    * ``cout_paye`` — le coût a-t-il été payé (faux ⇒ le script n'a **rien** fait d'autre).
+    * ``cout_paye`` — le coût a-t-il été payé (faux ⇒ le script n'a **rien** fait d'autre) ;
+    * ``devenus_actifs`` — les ``(joueur, identité)`` des Pokémon **devenus Actifs** pendant le
+      script (appât, *Switch*), dans l'ordre : l'appelant les publie sur le bus
+      (:data:`~pbm_game.effets.evenements.EJ_DEVIENT_ACTIF`) pour réveiller les déclencheurs
+      « quand ce Pokémon devient Actif… ».
     """
 
     etat: EtatPartie
@@ -70,6 +74,7 @@ class ResultatProgramme:
     verrous: tuple[Verrou, ...]
     degats_annules: bool
     cout_paye: bool
+    devenus_actifs: tuple[tuple[str, str], ...] = ()
 
 
 # --- Conditions --------------------------------------------------------------
@@ -249,12 +254,16 @@ def _executer(ex: Execution, instr: Instruction) -> None:
 # --- Coût (atomique) ---------------------------------------------------------
 
 
-def _cout_payable(ex: Execution, cout: tuple[Instruction, ...]) -> bool:
-    """Le coût peut-il être payé *en entier* ? — contrôle **sans** rien modifier ni tirer d'aléa.
+def cout_payable(etat: EtatPartie, cout: tuple[Instruction, ...], ctx: ContexteEffet) -> bool:
+    """Le coût peut-il être payé *en entier* ? — contrôle **pur**, sans rien modifier ni tirer.
 
     Un coût est typiquement « défaussez N cartes » : on vérifie qu'il y a assez de candidats. Le
     contrôle est volontairement conservateur (il ne simule pas les effets de bord), mais il garantit
     qu'on ne paie jamais un demi-coût — si le contrôle passe, l'exécution réelle qui suit aboutit.
+
+    Exposé (``etat`` + ``ctx``, sans ``Execution``) pour que la **jouabilité** d'un Objet
+    (:mod:`pbm_game.effets.dsl.jouabilite`) et sa **transition** le partagent : un Objet au coût
+    est impayable n'est **pas** jouable, et on ne le joue pas à moitié.
     """
     for instr in cout:
         # « Défaussez N Énergie de ce Pokémon » (deplacer vers la défausse) : le coût se paie sur
@@ -263,11 +272,11 @@ def _cout_payable(ex: Execution, cout: tuple[Instruction, ...]) -> bool:
         if instr.op == OP_DEPLACER and instr.source is not None:
             besoin = instr.nombre or 1
             origines = [
-                c for c in candidats(ex.etat, instr.source, ex.ctx) if isinstance(c, CiblePokemon)
+                c for c in candidats(etat, instr.source, ctx) if isinstance(c, CiblePokemon)
             ]
             if not origines:
                 return False
-            pok = _pokemon_par_identite_etat(ex.etat, origines[0])
+            pok = _pokemon_par_identite_etat(etat, origines[0])
             if pok is None or len(pok.energies) < besoin:
                 return False
             continue
@@ -275,9 +284,14 @@ def _cout_payable(ex: Execution, cout: tuple[Instruction, ...]) -> bool:
         if sel is None:
             continue
         besoin = sel.nombre or 1
-        if len(candidats(ex.etat, sel, ex.ctx)) < besoin:
+        if len(candidats(etat, sel, ctx)) < besoin:
             return False
     return True
+
+
+def _cout_payable(ex: Execution, cout: tuple[Instruction, ...]) -> bool:
+    """Variante interne sur une :class:`Execution` — délègue à :func:`cout_payable` (une porte)."""
+    return cout_payable(ex.etat, cout, ex.ctx)
 
 
 def _pokemon_par_identite_etat(etat, cible: CiblePokemon):
@@ -327,6 +341,7 @@ def executer_programme(
         verrous=tuple(ex.verrous),
         degats_annules=ex.degats_annules,
         cout_paye=True,
+        devenus_actifs=tuple(ex.devenus_actifs),
     )
 
 
@@ -435,6 +450,7 @@ __all__ = [
     "ContexteEffet",
     "StrategieChoix",
     "strategie_canonique",
+    "cout_payable",
     "executer_programme",
     "compiler_en_effet",
     "resolveur_dsl",

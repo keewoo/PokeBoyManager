@@ -23,6 +23,7 @@ from collections.abc import Callable
 from dataclasses import replace
 
 from ...combat.resolution import poser_compteurs, poser_degats
+from ...etats.matrice import soigner_etats_speciaux
 from ...rng import Rng  # noqa: F401  (type documentaire ; le rng réel vit dans l'Execution)
 from ...state.modele import ETATS_ORIENTATION, Joueur, PokemonEnJeu
 from ..pile import EVT_EFFET_SANS_CIBLE
@@ -375,7 +376,22 @@ def prim_regarder(ex: Execution, instr: Instruction) -> None:
 
 
 def prim_changer_actif(ex: Execution, instr: Instruction) -> None:
-    """« Changez le Pokémon Actif … » — échange forcé Actif ↔ banc (R-8.8), sans coût."""
+    """« Changez le Pokémon Actif … » — échange forcé Actif ↔ banc (R-8.8), sans coût.
+
+    C'est le geste de l'**appât** quand le sélecteur vise l'adversaire (« envoie au front un
+    Pokémon du banc adverse » — *Gust of Wind*, *Pokémon Catcher*), et le **changement d'Actif de
+    son côté** (type *Switch*) quand il vise ``moi``. Échange **forcé** : il ne consomme **ni** la
+    retraite du tour **ni** d'énergie (le DSL ne touche ni ``tour`` ni les énergies), et reste
+    valable même si l'Actif échangé est Endormi ou Paralysé (R-16.12) — aucun état n'est donc testé.
+
+    L'Actif qui **descend au banc** est nettoyé de ses états spéciaux (R-8.6), par la **même porte**
+    partagée que la retraite, la promotion et l'évolution
+    (:func:`~pbm_game.etats.matrice.soigner_etats_speciaux`) : « que garde / que perd un Pokémon qui
+    passe au banc » ne doit pas diverger entre ces chemins. Le Pokémon qui **monte** conserve, lui,
+    ses états (R-16.12). On **note** le passage dans ``ex.devenus_actifs`` pour que l'appelant
+    publie :data:`~pbm_game.effets.evenements.EJ_DEVIENT_ACTIF` sur le bus — sans ce passage, les
+    déclencheurs « quand ce Pokémon devient Actif… » seraient oubliés (risque de la fiche).
+    """
     cibles = [
         c
         for c in resoudre_cibles(ex, instr)
@@ -392,9 +408,18 @@ def prim_changer_actif(ex: Execution, instr: Instruction) -> None:
     banc = list(joueur.banc)
     idx = next(i for i, p in enumerate(banc) if p.cartes[0].instance_id == cible.identite)
     nouvel_actif = banc.pop(idx)
-    banc.append(joueur.actif)
+    ancien_id = joueur.actif.cartes[0].instance_id
+    descendu = soigner_etats_speciaux(joueur.actif)  # R-8.6 : l'Actif qui descend perd ses états
+    banc.append(descendu)
     ex.etat = _remplacer_joueur(ex.etat, replace(joueur, actif=nouvel_actif, banc=tuple(banc)))
-    _evt(ex, OP_CHANGER_ACTIF, joueur=cible.joueur, nouvel_actif=cible.identite)
+    ex.devenus_actifs.append((cible.joueur, cible.identite))
+    _evt(
+        ex,
+        OP_CHANGER_ACTIF,
+        joueur=cible.joueur,
+        nouvel_actif=cible.identite,
+        ancien_actif=ancien_id,
+    )
 
 
 def prim_poser_etat(ex: Execution, instr: Instruction) -> None:
