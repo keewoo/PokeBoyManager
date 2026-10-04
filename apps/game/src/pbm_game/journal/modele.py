@@ -112,6 +112,15 @@ ACTION_ATTACHER_ENERGIE = "attacher_energie"
 #: fournit le script et les métadonnées (le moteur ne lit pas le catalogue : D9). Ajoutée par
 #: ``j-cartes-objets``.
 ACTION_JOUER_OBJET = "jouer_objet"
+#: **Jouer une carte Supporter** (R-5.5) — coup de la phase principale du joueur actif, **un seul
+#: par tour** (R-5.5) et **jamais** au premier tour du joueur qui commence (R-6.2). Comme un Objet,
+#: la carte quitte la main pour la défausse puis son **script d'effet** se résout — mais ici des
+#: effets de **pioche**, de **recherche** et de **perturbation de l'adversaire** (mélanger sa main
+#: dans son deck et la faire repiocher, la faire défausser), et des effets **conditionnés** (« si
+#: vous avez moins de récompenses »). ``params`` : identiques à ``jouer_objet`` (``carte_main``,
+#: ``programme``, ``source``, ``metadonnees``, ``nom``). Refusé sous le verrou
+#: ``pas_de_supporter``, qui **nomme la carte responsable**. Ajoutée par ``j-cartes-supporters``.
+ACTION_JOUER_SUPPORTER = "jouer_supporter"
 #: **Répondre à une demande de décision** (R-9.3 étape D, et tout effet qui fait choisir un joueur)
 #: — coup d'un joueur quand une résolution est **suspendue** sur une demande. ``params`` : ``choix``
 #: (la liste des identifiants d'option retenus ; vide = abandon d'un effet facultatif). L'``auteur``
@@ -200,6 +209,11 @@ EVT_ECHANGE_FORCE = "echange_force_effectue"
 #: liste que l'orchestrateur relit pour publier :data:`EJ_DEVIENT_ACTIF` sur le bus (les événements
 #: propres du script, eux, suivent cet événement dans le journal).
 EVT_OBJET_JOUE = "objet_joue"
+#: Une **carte Supporter a été jouée** (R-5.5). Produit par la transition ``jouer_supporter`` : même
+#: forme que :data:`EVT_OBJET_JOUE` (joueur, ``ref``, ``nom``, ``instance_id`` défaussé, et
+#: ``devient_actif`` — p. ex. un Supporter d'appât). Le drapeau « un Supporter ce tour » (R-5.5) est
+#: porté par ``Tour.supporter_joue`` (marqué par la transition), pas par cet événement.
+EVT_SUPPORTER_JOUE = "supporter_joue"
 #: Un **état spécial** a été résolu au Checkup (R-12.2) sur l'Actif d'un joueur. Produit par
 #: ``j-checkup`` : porte le joueur, l'état (``empoisonne``/``brule``/``endormi``/``paralyse``),
 #: la règle citée, les dégâts posés (poison/brûlure) et, le cas échéant, le pile ou face

@@ -112,7 +112,7 @@ Le cas **aucune cible** est traité partout : la primitive ne bloque pas la part
 
 | `op` | ce qu'elle fait | champs | exemple de carte réelle |
 |---|---|---|---|
-| `piocher` | pioche N cartes du sommet vers la main (R-5.2) | `nombre` | *Dedenne* (« piochez des cartes… ») |
+| `piocher` | pioche N cartes du sommet vers la main du joueur visé (`cible.proprietaire`, `moi` par défaut ; `adversaire` = « votre adversaire pioche N ») (R-5.2) | `nombre`, `cible?` | *Dedenne* ; *N* (« votre adversaire pioche… ») |
 | `chercher` | déplace les cartes trouvées (deck/défausse) vers la main | `cible` | *Poké Ball*, *Recherche d'énergie* |
 | `defausser` | défausse les cartes désignées | `cible` | coûts de nombreux Objets |
 | `attacher` | attache une Énergie/Outil de la source à un Pokémon | `source`, `cible` | *Défenseur* (Outil), énergies |
@@ -120,7 +120,7 @@ Le cas **aucune cible** est traité partout : la primitive ne bloque pas la part
 | `soigner` | retire des marqueurs (ou tout), plancher 0 | `cible`, `nombre?` | *Potion*, *Pleine Santé* |
 | `poser_compteurs` | place N marqueurs directs (R-10.6) | `cible`, `nombre` | *Polichombr*, *Funécire* |
 | `infliger_degats` | dégâts d'effet directs (R-10.6) | `cible`, `nombre` | « inflige 20 dégâts à… » |
-| `melanger` | mélange une zone (R-4.1) | `cible?` (défaut pioche) | « mélangez votre deck » |
+| `melanger` | mélange une zone (R-4.1) ; `cible.zone = main` **remet la main dans le deck** puis mélange | `cible?` (défaut pioche) | « mélangez votre deck » ; *Juge*, *N*, *Cynthia* (« mélangez votre main… ») |
 | `reveler` | rend des cartes publiques (journal) | `cible` | « montrez-la à votre adversaire » |
 | `regarder` | regarde des cartes cachées (info **privée** : refs non journalisées) | `cible`, `nombre?` | « regardez les 5 du dessus » |
 | `choisir` | point de décision : retient N options, son `alors` agit sur elles | `cible`, `nombre?`, `alors` | « choisissez 1 de vos Pokémon… » |
@@ -148,6 +148,10 @@ Le cas **aucune cible** est traité partout : la primitive ne bloque pas la part
 - `zone_non_vide` : le sélecteur `cible` trouve au moins une carte/Pokémon.
 - `a_etat` : un Pokémon de `cible` porte `etat`.
 - `a_degats` : un Pokémon de `cible` porte au moins `minimum` marqueurs.
+- `type_cible` : un Pokémon de `cible` est du type `type_pokemon` (lu au catalogue, jamais deviné).
+- `moins_de_recompenses` : le joueur qui joue l'effet a **strictement moins** de récompenses
+  restantes que son adversaire — il mène aux récompenses (R-13.3). Sans sélecteur. Sert les
+  Supporters « seulement si vous avez moins de récompenses ».
 
 ## Le choix d'un joueur : une stratégie injectable
 

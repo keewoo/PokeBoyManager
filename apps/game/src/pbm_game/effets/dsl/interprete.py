@@ -32,6 +32,7 @@ from .selection import CiblePokemon, candidats
 from .vocabulaire import (
     COND_A_DEGATS,
     COND_A_ETAT,
+    COND_MOINS_DE_RECOMPENSES,
     COND_RESULTAT_PILE,
     COND_TYPE_CIBLE,
     COND_ZONE_NON_VIDE,
@@ -106,6 +107,13 @@ def _evaluer(ex: Execution, cond: Condition) -> bool:
             isinstance(c, CiblePokemon) and _type_ref(ex, c.ref) == cond.type_pokemon
             for c in cibles
         )
+    if cond.type == COND_MOINS_DE_RECOMPENSES:
+        # « seulement si vous avez moins de récompenses » (lot j-cartes-supporters) : le joueur qui
+        # joue l'effet a **strictement moins** de récompenses restantes que son adversaire — il mène
+        # (R-13.3). Compté sur l'état, jamais deviné : une réserve absente vaut zéro récompense.
+        return _recompenses_restantes(ex, ex.ctx.joueur) < _recompenses_restantes(
+            ex, ex.ctx.adversaire
+        )
     raise ValueError(f"Condition inconnue à l'évaluation : {cond.type!r}.")
 
 
@@ -136,6 +144,14 @@ def _pokemon_degats(ex: Execution, cible: CiblePokemon) -> int:
         for p in j.banc:
             if p.cartes[0].instance_id == cible.identite:
                 return p.compteurs_degats
+    return 0
+
+
+def _recompenses_restantes(ex: Execution, jid: str) -> int:
+    """Le nombre de cartes récompense **restantes** du joueur ``jid`` (R-3.4/R-13.3)."""
+    for j in ex.etat.joueurs:
+        if j.id == jid:
+            return len(j.recompenses)
     return 0
 
 

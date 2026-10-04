@@ -30,7 +30,7 @@
       "additionalProperties": false,
       "required": ["type"],
       "properties": {
-        "type": {"enum": ["resultat_pile", "zone_non_vide", "a_etat", "a_degats", "type_cible"]},
+        "type": {"enum": ["resultat_pile", "zone_non_vide", "a_etat", "a_degats", "type_cible", "moins_de_recompenses"]},
         "cible": {"$ref": "#/$defs/selecteur"},
         "etat": {"enum": ["endormi", "brule", "confus", "paralyse", "empoisonne"]},
         "attendu": {"enum": ["face", "pile"]},

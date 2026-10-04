@@ -60,9 +60,7 @@ def _melange_non_vide(etat: EtatPartie, instr: Instruction, ctx: ContexteEffet) 
     return False
 
 
-def _changement_actif_possible(
-    etat: EtatPartie, cands: list[object]
-) -> bool:
+def _changement_actif_possible(etat: EtatPartie, cands: list[object]) -> bool:
     """Un ``changer_actif`` peut-il agir ? — un Pokémon de banc visé, et un Actif à échanger.
 
     C'est la porte de l'appât : banc adverse vide ⇒ aucune cible ⇒ **non jouable**, et la raison
@@ -90,7 +88,12 @@ def _instruction_peut_agir(etat: EtatPartie, instr: Instruction, ctx: ContexteEf
         return instr.cible is not None and bool(candidats(etat, instr.cible, ctx))
     # Primitives feuilles sans sélecteur de cible classique.
     if op == OP_PIOCHER:
-        joueur = _joueur(etat, ctx.joueur)
+        # « piochez » agit sur la pioche du joueur visé (``proprietaire`` de la cible, ``moi`` par
+        # défaut) : un Supporter peut faire **repiocher l'adversaire** (lot j-cartes-supporters).
+        jid = ctx.joueur
+        if instr.cible is not None and instr.cible.proprietaire != "moi":
+            jid = ctx.adversaire
+        joueur = _joueur(etat, jid)
         return joueur is not None and len(joueur.pioche) > 0
     if op == OP_MELANGER:
         return _melange_non_vide(etat, instr, ctx)

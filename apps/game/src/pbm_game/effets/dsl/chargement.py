@@ -51,6 +51,7 @@ from .vocabulaire import (
     OP_SOIGNER,
     POSITIONS,
     PROPRIETAIRES,
+    ZONE_PIOCHE,
     ZONE_STADE,
     ZONES,
 )
@@ -365,6 +366,15 @@ def _charger_instruction(donnees: object, quoi: str, *, dans_choix: bool) -> Ins
     ):
         raise ProgrammeInvalide(
             f"{quoi} : on ne mélange qu'une zone de cartes, pas {cible.zone!r}."
+        )
+
+    # « piocher » agit sur UNE pioche : le joueur visé se lit sur ``proprietaire`` (``moi`` par
+    # défaut, ``adversaire`` pour « votre adversaire pioche N »). Une autre zone de cible n'a pas de
+    # sens — refus strict plutôt qu'un ``proprietaire`` deviné (lot j-cartes-supporters).
+    if op == OP_PIOCHER and cible is not None and cible.zone != ZONE_PIOCHE:
+        raise ProgrammeInvalide(
+            f"{quoi} : « piocher » ne cible qu'une pioche (le joueur visé se lit sur "
+            f"« proprietaire »), pas {cible.zone!r}."
         )
 
     return Instruction(
