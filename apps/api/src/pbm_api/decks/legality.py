@@ -29,7 +29,7 @@ import uuid
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 
-from pbm_api.decks import energy, formats
+from pbm_api.decks import energy, formats, regles_speciales
 
 DECK_SIZE = 60
 MAX_COPIES_PER_NAME = 4
@@ -51,6 +51,12 @@ CODE_NO_BASIC_POKEMON = "no_basic_pokemon"
 CODE_OUT_OF_FORMAT = "out_of_format"
 CODE_COUNTERFEIT_EXCLUDED = "counterfeit_excluded"
 CODE_UNSUPPORTED_EFFECT = "unsupported_effect"
+# Règles de cartes particulières (lot `j-cartes-regles-speciales`, R-2.3/2.4/2.7/2.8, R-15.22).
+CODE_ACE_SPEC_LIMIT = "ace_spec_limit"  # R-2.3 — au plus 1 ACE SPEC
+CODE_RADIANT_LIMIT = "radiant_limit"  # R-2.4 — au plus 1 Radiant
+CODE_PRISM_STAR_LIMIT = "prism_star_limit"  # R-2.7 — au plus 1 Prisme Étoile par nom
+CODE_STAR_LIMIT = "star_limit"  # R-2.8 — au plus 1 ★ par deck
+CODE_UNKNOWN_RULE_BOX = "unknown_rule_box"  # R-15.22 — Rule Box non classable, refusée
 
 # La catégorie de chaque code — une seule table, pour que tout constat la porte automatiquement.
 _CATEGORY_BY_CODE = {
@@ -96,6 +102,8 @@ class DeckCardFact:
     legal_standard: bool | None = None
     legal_expanded: bool | None = None
     counterfeit_owned: int = 0
+    rule_marker: str | None = None
+    prize_marker: str | None = None
 
 
 @dataclass
@@ -261,6 +269,90 @@ def evaluate(
                     message=(
                         f"{entry['count']} exemplaires de « {entry['name']} » — maximum "
                         f"{MAX_COPIES_PER_NAME} (les Énergies de base ne sont pas limitées)."
+                    ),
+                )
+            )
+
+    # Règles de cartes particulières (R-2.3/2.4/2.7/2.8, R-15.22) — limites PROPRES par catégorie,
+    # lues sur les marqueurs STRUCTURÉS du catalogue (jamais le nom, R-13.7 ; voir
+    # `pbm_api.decks.regles_speciales`). Une carte à Rule Box non classable est refusée (R-15.22).
+    nb_ace_spec = 0
+    nb_radiant = 0
+    nb_etoile = 0
+    prisme_par_nom: dict[str, dict] = {}
+    for f in facts:
+        cat = regles_speciales.marqueur_special(
+            supertype=f.supertype, rule_marker=f.rule_marker, prize_marker=f.prize_marker
+        )
+        if cat is None:
+            continue
+        if cat == regles_speciales.RULE_BOX_INCONNU:
+            issues.append(
+                LegalityIssue(
+                    code=CODE_UNKNOWN_RULE_BOX,
+                    severity=BLOCKING,
+                    card_id=f.card_id,
+                    card_name=f.name,
+                    message=(
+                        f"« {f.name} » porte une règle (Rule Box) que le jeu ne sait pas classer : "
+                        "refusée plutôt que jouée avec un nombre de récompenses deviné "
+                        "(R-13.4/R-15.22)."
+                    ),
+                )
+            )
+            continue
+        if cat == regles_speciales.ACE_SPEC:
+            nb_ace_spec += f.quantity
+        elif cat == regles_speciales.RADIANT:
+            nb_radiant += f.quantity
+        elif cat == regles_speciales.ETOILE:
+            nb_etoile += f.quantity
+        elif cat == regles_speciales.PRISME_ETOILE:
+            e = prisme_par_nom.setdefault(energy.normalize(f.name), {"count": 0, "name": f.name})
+            e["count"] += f.quantity
+    if nb_ace_spec > 1:
+        issues.append(
+            LegalityIssue(
+                code=CODE_ACE_SPEC_LIMIT,
+                severity=BLOCKING,
+                detail={"count": nb_ace_spec, "limit": 1},
+                message=f"{nb_ace_spec} cartes ACE SPEC — au plus 1 ACE SPEC par deck (R-2.3).",
+            )
+        )
+    if nb_radiant > 1:
+        issues.append(
+            LegalityIssue(
+                code=CODE_RADIANT_LIMIT,
+                severity=BLOCKING,
+                detail={"count": nb_radiant, "limit": 1},
+                message=(
+                    f"{nb_radiant} Pokémon Radiant — au plus 1 Pokémon Radiant par deck (R-2.4)."
+                ),
+            )
+        )
+    if nb_etoile > 1:
+        issues.append(
+            LegalityIssue(
+                code=CODE_STAR_LIMIT,
+                severity=BLOCKING,
+                detail={"count": nb_etoile, "limit": 1},
+                message=(
+                    f"{nb_etoile} Pokémon ★ — au plus 1 Pokémon ★ par deck, tous noms confondus "
+                    "(R-2.8)."
+                ),
+            )
+        )
+    for e in prisme_par_nom.values():
+        if e["count"] > 1:
+            issues.append(
+                LegalityIssue(
+                    code=CODE_PRISM_STAR_LIMIT,
+                    severity=BLOCKING,
+                    card_name=e["name"],
+                    detail={"count": e["count"], "limit": 1},
+                    message=(
+                        f"{e['count']} cartes Prisme Étoile « {e['name']} » — au plus 1 Prisme "
+                        "Étoile de même nom par deck (R-2.7)."
                     ),
                 )
             )

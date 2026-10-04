@@ -85,6 +85,8 @@ def _joueur_vers(joueur: Joueur) -> dict:
         "defausse": [_carte_vers(c) for c in joueur.defausse],
         "recompenses": [_carte_vers(c) for c in joueur.recompenses],
         "zone_perdue": [_carte_vers(c) for c in joueur.zone_perdue],
+        # Trié pour un JSON déterministe (un frozenset n'a pas d'ordre).
+        "pouvoirs_uniques_utilises": sorted(joueur.pouvoirs_uniques_utilises),
     }
 
 
@@ -105,6 +107,11 @@ def _joueur_depuis(donnees: object) -> Joueur:
     banc_brut = donnees.get("banc", [])
     if not isinstance(banc_brut, list):
         raise ValueError(f"Joueur « {jid} » : « banc » doit être une liste.")
+    pouvoirs = donnees.get("pouvoirs_uniques_utilises", [])
+    if not isinstance(pouvoirs, list) or not all(isinstance(p, str) for p in pouvoirs):
+        raise ValueError(
+            f"Joueur « {jid} » : « pouvoirs_uniques_utilises » doit être une liste de chaînes."
+        )
     return Joueur(
         id=jid,
         pioche=_liste_cartes(donnees, "pioche"),
@@ -114,6 +121,7 @@ def _joueur_depuis(donnees: object) -> Joueur:
         defausse=_liste_cartes(donnees, "defausse"),
         recompenses=_liste_cartes(donnees, "recompenses"),
         zone_perdue=_liste_cartes(donnees, "zone_perdue"),
+        pouvoirs_uniques_utilises=frozenset(pouvoirs),
     )
 
 

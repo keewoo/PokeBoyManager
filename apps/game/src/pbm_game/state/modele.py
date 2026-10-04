@@ -142,6 +142,11 @@ class Joueur:
     defausse: tuple[Carte, ...] = ()
     recompenses: tuple[Carte, ...] = ()
     zone_perdue: tuple[Carte, ...] = ()
+    #: Pouvoirs à **usage unique par partie** déjà dépensés par ce joueur — attaque GX (R-15.3) et
+    #: VSTAR Power (R-15.6), tous Pokémon confondus. Suivi dans l'état du JOUEUR, jamais dans celui
+    #: de la carte : c'est de l'état sérialisé, donc l'interdiction d'un second usage survit à une
+    #: reprise après F5 et au rejeu du journal (voir :mod:`pbm_game.combat.pouvoirs_uniques`).
+    pouvoirs_uniques_utilises: frozenset[str] = field(default_factory=frozenset)
 
 
 @dataclass(frozen=True)
