@@ -163,8 +163,16 @@ def resoudre_cibles(ex: Execution, instr: Instruction) -> list:
 
 
 def prim_piocher(ex: Execution, instr: Instruction) -> None:
-    """« Piochez N cartes » — du **sommet** de la pioche du joueur vers sa main (R-5.2)."""
+    """« Piochez N cartes » — du **sommet** de la pioche d'un joueur vers sa main (R-5.2).
+
+    Le joueur qui pioche est celui que vise le ``proprietaire`` de la cible (``moi`` par défaut,
+    ``adversaire`` pour « votre adversaire pioche N » — la perturbation des Supporters). On ne
+    journalise que le **nombre** piochée, jamais les identités : repiocher la main de l'adversaire
+    ne révèle pas son contenu (confidentialité, lot j-cartes-supporters).
+    """
     jid = ex.ctx.joueur
+    if instr.cible is not None and instr.cible.proprietaire != "moi":
+        jid = ex.ctx.adversaire
     joueur = _joueur(ex.etat, jid)
     n = min(instr.nombre, len(joueur.pioche))
     if n == 0:
@@ -339,13 +347,32 @@ def prim_infliger_degats(ex: Execution, instr: Instruction) -> None:
 
 
 def prim_melanger(ex: Execution, instr: Instruction) -> None:
-    """« Mélangez votre deck » — mélange une zone via le flux d'aléatoire dédié (R-4.1)."""
+    """« Mélangez votre deck » — mélange une zone via le flux d'aléatoire dédié (R-4.1).
+
+    Cas particulier **« mélangez votre main dans votre deck »** (zone ``main`` — type *Judge*,
+    *N*, *Cynthia*) : au jeu, on ne mélange jamais sa main *sur place*, la tournure signifie
+    toujours « la remettre dans le deck ». La main rejoint la pioche, puis la **pioche entière**
+    est mélangée. On ne journalise que le **nombre** de cartes remises, jamais leurs identités : une
+    main (surtout celle de l'adversaire) reste cachée — le joueur actif apprend le nombre, pas le
+    contenu (confidentialité, lot j-cartes-supporters).
+    """
     if instr.cible is not None:
         jid = ex.ctx.joueur if instr.cible.proprietaire == "moi" else ex.ctx.adversaire
         zone = instr.cible.zone
     else:
         jid, zone = ex.ctx.joueur, "pioche"
     joueur = _joueur(ex.etat, jid)
+    if zone == "main":
+        main = joueur.main
+        if not main:
+            _sans_cible(ex, instr, "main vide — rien à remettre dans le deck")
+            return
+        combinee = joueur.pioche + main
+        flux = f"dsl:melange:main_dans_pioche:{jid}"
+        melangee = ex.rng.melanger(flux, f"DSL mélange main dans pioche de {jid}", combinee)
+        ex.etat = _remplacer_joueur(ex.etat, replace(joueur, main=(), pioche=tuple(melangee)))
+        _evt(ex, OP_MELANGER, joueur=jid, zone="main_dans_pioche", nombre=len(main))
+        return
     cartes = getattr(joueur, zone)
     if not cartes:
         _sans_cible(ex, instr, f"{zone} vide — rien à mélanger")

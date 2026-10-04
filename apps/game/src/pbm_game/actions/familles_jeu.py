@@ -40,11 +40,13 @@ from ..effets.dsl.contexte import ContexteEffet
 from ..effets.dsl.jouabilite import programme_jouable
 from ..effets.dsl.modele import Programme
 from ..effets.pile import SourceEffet
+from ..effets.verrous import VERROU_PAS_DE_SUPPORTER
 from ..journal.modele import (
     ACTION_ATTACHER_ENERGIE,
     ACTION_DECLARER_ATTAQUE,
     ACTION_EVOLUER,
     ACTION_JOUER_OBJET,
+    ACTION_JOUER_SUPPORTER,
     ACTION_PLACER_MISE_EN_PLACE,
     ACTION_POSER,
     ACTION_PROMOUVOIR,
@@ -66,6 +68,7 @@ from ..tour.contraintes import (
     peut_attacher_energie,
     peut_battre_retraite,
     peut_evoluer,
+    peut_jouer_supporter,
 )
 from ..tour.drapeaux import identite_pokemon
 from .generateur import Famille, FamilleAbandonner, FamilleAvancerPhase
@@ -107,12 +110,32 @@ class DefinitionObjet:
 
 
 @dataclass(frozen=True)
+class DefinitionSupporter:
+    """Définition catalogue d'une carte **Supporter** — même forme qu'un :class:`DefinitionObjet`.
+
+    Un Supporter n'a pas de données de combat : il porte un **script d'effet** (pioche, recherche,
+    perturbation de l'adversaire, effet conditionnel). Le service le construit depuis le registre
+    ``card_scripts`` (texte → script DSL validé), exactement comme un Objet ; ce qui le distingue à
+    l'usage, c'est la **règle du tour** — un seul par tour (R-5.5), aucun au premier tour du joueur
+    qui commence (R-6.2) — et le **verrou** ``pas_de_supporter`` (R-5.5). Ces contraintes sont
+    portées par :class:`FamilleJouerSupporter` et la transition ``jouer_supporter``, pas par cette
+    fiche (qui ne dit que « voici le script de cette carte »).
+    """
+
+    ref: str
+    nom: str
+    programme: Programme
+    source_text: str = ""
+
+
+@dataclass(frozen=True)
 class CatalogueJeu:
     """Les définitions de carte des deux decks d'une partie, par ``ref`` (fourni par le service).
 
     * ``pokemon`` — ``ref → DefinitionCarte`` pour les cartes Pokémon ;
     * ``energies`` — ``ref → DefinitionEnergie`` pour les cartes Énergie ;
     * ``objets`` — ``ref → DefinitionObjet`` pour les cartes Objet scriptées (``j-cartes-objets``).
+    * ``supporters`` — ``ref → DefinitionSupporter`` pour les Supporters (``j-cartes-supporters``).
 
     Le moteur ne lit **jamais** la base : ce catalogue est extrait une fois, à la création de la
     partie, et passé aux familles. Une ``ref`` absente des mappings **ne produit aucun coup**
@@ -122,6 +145,7 @@ class CatalogueJeu:
     pokemon: dict[str, DefinitionCarte] = field(default_factory=dict)
     energies: dict[str, DefinitionEnergie] = field(default_factory=dict)
     objets: dict[str, DefinitionObjet] = field(default_factory=dict)
+    supporters: dict[str, DefinitionSupporter] = field(default_factory=dict)
 
     def pokemon_de(self, ref: str) -> DefinitionCarte | None:
         return self.pokemon.get(ref)
@@ -131,6 +155,9 @@ class CatalogueJeu:
 
     def objet_de(self, ref: str) -> DefinitionObjet | None:
         return self.objets.get(ref)
+
+    def supporter_de(self, ref: str) -> DefinitionSupporter | None:
+        return self.supporters.get(ref)
 
     def metadonnees_completes(self) -> dict:
         """Les métadonnées ``ref → {categorie, stade, type}`` de **toutes** les cartes connues.
@@ -147,6 +174,8 @@ class CatalogueJeu:
         for ref in self.energies:
             meta.setdefault(ref, {"categorie": "energie"})
         for ref in self.objets:
+            meta.setdefault(ref, {"categorie": "dresseur"})
+        for ref in self.supporters:
             meta.setdefault(ref, {"categorie": "dresseur"})
         return meta
 
@@ -685,9 +714,7 @@ class FamilleJouerObjet(_FamilleCatalogue):
             if objet is None:
                 continue
             ctx = ContexteEffet(
-                source=SourceEffet(
-                    libelle=objet.nom, ref=objet.ref, instance_id=carte.instance_id
-                ),
+                source=SourceEffet(libelle=objet.nom, ref=objet.ref, instance_id=carte.instance_id),
                 joueur=joueur,
                 adversaire=adversaire,
                 metadonnees=meta,
@@ -736,6 +763,109 @@ class FamilleJouerObjet(_FamilleCatalogue):
         )
 
 
+class FamilleJouerSupporter(_FamilleCatalogue):
+    """Jouer une carte **Supporter** (R-5.5) — joueur actif, phase principale, **un seul par tour**.
+
+    Contrairement à l'Objet (illimité), le Supporter est contraint par le tour : **un seul** par
+    tour (R-5.5) et **aucun** au premier tour du joueur qui commence (R-6.2). On ne le **liste**
+    que si :func:`~pbm_game.tour.contraintes.peut_jouer_supporter` l'accorde **et** qu'aucun verrou
+    ``pas_de_supporter`` (type *Marnie* inversé, un talent — R-5.5) ne pèse sur le joueur. La
+    jouabilité du **script** se vérifie ensuite comme pour un Objet
+    (:func:`~pbm_game.effets.dsl.jouabilite.programme_jouable`, sur la main *sans* la carte, qui se
+    défausse d'abord). Le refus **nomme** toujours la cause : premier tour (R-6.2), Supporter déjà
+    joué (R-5.5), verrou (R-5.5, avec la carte responsable), ou script sans cible — jamais muet.
+
+    Le drapeau « un Supporter ce tour » (``Tour.supporter_joue``) est **levé par la transition**
+    ``jouer_supporter`` (le serveur tient la règle), pas par cette famille qui ne fait que lister.
+    """
+
+    nom = "jouer_supporter"
+
+    def gouverne(self, action: Action) -> bool:
+        return action.type == ACTION_JOUER_SUPPORTER
+
+    def _verrouille(self, etat: EtatPartie, joueur: str) -> bool:
+        """Un verrou ``pas_de_supporter`` pèse-t-il sur ``joueur`` (ou globalement) ? (R-5.5)"""
+        return etat.verrous is not None and etat.verrous.est_verrouille(
+            VERROU_PAS_DE_SUPPORTER, cible=joueur
+        )
+
+    def generer(self, etat: EtatPartie, joueur: str) -> list[ActionLegale]:
+        j = _joueur_de(etat, joueur)
+        if j is None or joueur != etat.tour.joueur_actif or etat.tour.phase != PHASE_PRINCIPALE:
+            return []
+        if etat.resolution is not None:
+            return []  # une décision est en attente : seule la réponse (ou l'abandon) est permise
+        if peut_jouer_supporter(etat.tour).refuse:
+            return []  # premier tour du joueur qui commence (R-6.2) ou Supporter déjà joué (R-5.5)
+        if self._verrouille(etat, joueur):
+            return []  # un verrou « pas de Supporter ce tour » pèse sur lui (R-5.5)
+        meta = self.catalogue.metadonnees_completes()
+        adversaire = _autre(etat, joueur).id
+        coups: list[ActionLegale] = []
+        for carte in j.main:
+            supp = self.catalogue.supporter_de(carte.ref)
+            if supp is None:
+                continue
+            ctx = ContexteEffet(
+                source=SourceEffet(libelle=supp.nom, ref=supp.ref, instance_id=carte.instance_id),
+                joueur=joueur,
+                adversaire=adversaire,
+                metadonnees=meta,
+            )
+            etat_probe = _etat_sans_carte_main(etat, joueur, carte.instance_id)
+            jouable, _raison = programme_jouable(etat_probe, supp.programme, ctx)
+            if not jouable:
+                continue
+            coups.append(
+                ActionLegale(
+                    action=Action(
+                        ACTION_JOUER_SUPPORTER,
+                        joueur,
+                        {
+                            "carte_main": carte.instance_id,
+                            "programme": supp.programme.en_json(),
+                            "source": {
+                                "libelle": supp.nom,
+                                "ref": supp.ref,
+                                "instance_id": carte.instance_id,
+                            },
+                            "metadonnees": meta,
+                            "nom": supp.nom,
+                        },
+                    ),
+                    etiquette=f"Jouer {supp.nom}",
+                )
+            )
+        return coups
+
+    def refuser(self, etat: EtatPartie, action: Action) -> Verdict:
+        if action.auteur != etat.tour.joueur_actif:
+            return refus("R-5.5", "Seul le joueur actif joue un Supporter (R-5.3/R-5.5).")
+        if etat.tour.phase != PHASE_PRINCIPALE:
+            return refus("R-5.5", "On joue un Supporter en phase principale (R-5.3).")
+        if etat.resolution is not None:
+            return refus(
+                "R-5.5",
+                "Une décision est en attente : seule la réponse (ou l'abandon) est permise, "
+                "pas un Supporter.",
+            )
+        v = peut_jouer_supporter(etat.tour)  # R-6.2 (premier tour) ou R-5.5 (déjà joué)
+        if v.refuse:
+            return v
+        if self._verrouille(etat, action.auteur):
+            src = etat.verrous.source_du_verrou(VERROU_PAS_DE_SUPPORTER, cible=action.auteur)
+            nom = src.libelle if src is not None else "un effet"
+            return refus(
+                "R-5.5",
+                f"Aucun Supporter ne peut être joué ce tour — bloqué par « {nom} » (R-5.5).",
+            )
+        return refus(
+            "R-5.5",
+            "Ce Supporter n'est pas jouable ici — son effet n'aurait aucune cible valide (R-5.5).",
+        )
+
+
 class FamilleAvancerPhaseJeu(FamilleAvancerPhase):
     """``avancer_phase`` du jeu : comme la famille de base, mais interdite tant qu'un Actif manque.
 
@@ -767,6 +897,7 @@ def familles_jeu(catalogue: CatalogueJeu) -> tuple[Famille, ...]:
         FamilleEvoluer(catalogue),
         FamilleAttacherEnergie(catalogue),
         FamilleJouerObjet(catalogue),
+        FamilleJouerSupporter(catalogue),
         FamilleAttaquer(catalogue),
         FamilleRetraite(catalogue),
         FamillePromouvoir(),
@@ -777,10 +908,12 @@ def familles_jeu(catalogue: CatalogueJeu) -> tuple[Famille, ...]:
 __all__ = [
     "CatalogueJeu",
     "DefinitionObjet",
+    "DefinitionSupporter",
     "FamillePoser",
     "FamilleEvoluer",
     "FamilleAttacherEnergie",
     "FamilleJouerObjet",
+    "FamilleJouerSupporter",
     "FamilleAttaquer",
     "FamilleRetraite",
     "FamillePromouvoir",

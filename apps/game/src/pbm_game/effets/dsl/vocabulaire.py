@@ -154,9 +154,21 @@ COND_A_DEGATS = "a_degats"
 #: Un Pokémon est du **type** attendu (« si le Pokémon Défenseur est de type Eau… ») — le type
 #: se lit dans les métadonnées de catalogue du contexte (``ref → type``), jamais deviné (D9).
 COND_TYPE_CIBLE = "type_cible"
+#: Le joueur qui joue l'effet a **strictement moins** de cartes récompense restantes que son
+#: adversaire — il **mène** aux récompenses (R-13.3). Sans sélecteur : la comparaison porte sur les
+#: deux réserves de récompenses de l'état. Sert les Supporters « seulement si vous avez moins de
+#: récompenses » (lot j-cartes-supporters).
+COND_MOINS_DE_RECOMPENSES = "moins_de_recompenses"
 
 CONDITIONS: frozenset[str] = frozenset(
-    {COND_RESULTAT_PILE, COND_ZONE_NON_VIDE, COND_A_ETAT, COND_A_DEGATS, COND_TYPE_CIBLE}
+    {
+        COND_RESULTAT_PILE,
+        COND_ZONE_NON_VIDE,
+        COND_A_ETAT,
+        COND_A_DEGATS,
+        COND_TYPE_CIBLE,
+        COND_MOINS_DE_RECOMPENSES,
+    }
 )
 
 __all__ = [
@@ -213,5 +225,6 @@ __all__ = [
     "COND_A_ETAT",
     "COND_A_DEGATS",
     "COND_TYPE_CIBLE",
+    "COND_MOINS_DE_RECOMPENSES",
     "CONDITIONS",
 ]

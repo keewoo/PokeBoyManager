@@ -46,6 +46,7 @@ from ..journal.modele import (
     EVT_PROMOTION,
     EVT_PROMOTION_REQUISE,
     EVT_RETRAITE,
+    EVT_SUPPORTER_JOUE,
     EVT_TOUR_COMMENCE,
     Evenement,
 )
@@ -140,6 +141,7 @@ PROJECTEURS: dict[str, Projecteur] = {
     EVT_MISE_EN_PLACE_REVELEE: _public,  # R-4.2/R-4.3 : Actif et banc rendus publics (refs)
     EVT_FIN_TOUR: _public,  # R-5.8 : fin de tour, joueur et phase quittée — aucun secret
     EVT_OBJET_JOUE: _public,  # R-5.5 : Objet joué — nom et Actifs changés, tout est public
+    EVT_SUPPORTER_JOUE: _public,  # R-5.5 : Supporter joué — nom et Actifs changés, tout est public
     # Combat et effets (lots j-attaque / effets de carte) : ces types **ne portent que de
     # l'information publique** — cartes en jeu, énergies attachées (publiques), pile ou face.
     # Le reste du système d'effets (demandes, choix, primitives) peut porter des identités cachées :

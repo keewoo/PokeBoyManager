@@ -121,4 +121,10 @@ _demandes.enregistrer(_interprete.TYPE_EFFET_DSL, _interprete.resolveur_dsl_dema
 # que ``appliquer`` la reconnaisse (la transition tire le DSL en local à l'usage).
 from .effets import objets as _objets  # noqa: E402,F401  (import pour effet d'enregistrement)
 
+# ``effets.supporters`` enregistre la transition ``jouer_supporter`` (R-5.5/R-6.2) dans le
+# ``REGISTRE`` du journal à son import (lot ``j-cartes-supporters``), comme ``effets.objets``.
+from .effets import (  # noqa: E402,F401  (import pour effet d'enregistrement)
+    supporters as _supporters,
+)
+
 __all__: list[str] = []
