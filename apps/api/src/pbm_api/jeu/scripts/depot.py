@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from datetime import UTC, datetime
+from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -71,6 +72,11 @@ async def enregistrer_script(
     author: str | None = None,
     tests: list | None = None,
     notes: str | None = None,
+    review_tests_ok: bool | None = None,
+    review_contradicteur: str | None = None,
+    famille: str | None = None,
+    confidence: str | None = None,
+    cost_eur: Decimal | None = None,
 ) -> CardScript:
     """Enregistre (ou met à jour) le script d'un texte d'effet, repéré par son empreinte.
 
@@ -83,6 +89,15 @@ async def enregistrer_script(
     La date de validation (``validated_at``) est posée **ici** quand le statut passe à ``scripte`` :
     c'est le dépôt qui tient l'horodatage, pas l'appelant (la validation est un fait d'exploitation,
     pas une donnée de partie rejouable où un ``_maintenant`` injecté aurait un sens).
+
+    **Les champs de revue (DJ8, lot `j-effets-assistance-ia`)** — ``review_tests_ok``,
+    ``review_contradicteur``, ``famille``, ``confidence``, ``cost_eur`` — portent la preuve de la
+    porte d'assistance IA. Un appelant qui passe ``scripte`` **vouche que ses tests sont verts** :
+    si ``review_tests_ok`` n'est pas fourni, il est posé à ``True`` par défaut (c'est le cas des
+    validations humaines/imports antérieurs à DJ8). La **contrainte en base** (``card_scripts``)
+    exige d'un ``scripte`` un programme, une date de validation **et** ``review_tests_ok`` vrai :
+    ainsi « aucun script n'entre en jeu sans tests verts » est tenu par la base, pas par une
+    consigne (critère d'acceptation n°1).
     """
     if statut not in SCRIPT_STATUTS:
         raise ValueError(f"Statut inconnu : {statut!r} (connus : {sorted(SCRIPT_STATUTS)}).")
@@ -102,6 +117,14 @@ async def enregistrer_script(
     ligne.tests = tests
     ligne.notes = notes
     ligne.validated_at = datetime.now(UTC) if statut == SCRIPT_STATUT_SCRIPTE else None
+    # Un « scripté » sans mention explicite vouche ses tests (import/validation d'avant DJ8).
+    if statut == SCRIPT_STATUT_SCRIPTE and review_tests_ok is None:
+        review_tests_ok = True
+    ligne.review_tests_ok = review_tests_ok
+    ligne.review_contradicteur = review_contradicteur
+    ligne.famille = famille
+    ligne.confidence = confidence
+    ligne.cost_eur = cost_eur
     await db.commit()
     await db.refresh(ligne)
     return ligne
