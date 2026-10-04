@@ -95,6 +95,37 @@ async def refus_scripts_cartes(
     return refus
 
 
+async def refus_scripts_par_carte(
+    db: AsyncSession, cartes: list[Card]
+) -> dict[uuid.UUID, str]:
+    """Les cartes dont un effet n'est pas jouable, en ``{card_id: première raison bloquante}``.
+
+    Même jugement que :func:`refus_scripts_cartes`, mais **indexé par carte** (une seule raison par
+    carte, celle du premier effet fautif) : c'est ce dont la légalité d'un deck a besoin pour
+    marquer *quelle* carte est bloquée, et dire pourquoi (le constat « effet non supporté » du
+    constructeur, `v7-decks-legalite`). La raison est **indépendante du deck** : un même ``card_id``
+    donne toujours la même raison, donc on peut calculer la carte une fois et réutiliser.
+    """
+    exigences: list[tuple[Card, EffetCarte]] = []
+    for card in cartes:
+        for effet in effets_scriptables(card):
+            exigences.append((card, effet))
+    if not exigences:
+        return {}
+
+    scripts = await scripts_par_empreintes(db, (effet.empreinte for _, effet in exigences))
+
+    refus: dict[uuid.UUID, str] = {}
+    for card, effet in exigences:
+        card_id = getattr(card, "id", None)
+        if card_id is None or card_id in refus:
+            continue  # première raison seulement : le constructeur en affiche une par carte
+        raison = _raison_refus(effet, scripts.get(effet.empreinte))
+        if raison is not None:
+            refus[card_id] = raison
+    return refus
+
+
 async def refus_scripts_deck(db: AsyncSession, deck_id: uuid.UUID) -> list[tuple[str, str]]:
     """Les cartes d'un deck dont un effet n'a pas de script valide, en ``(libellé, raison)``.
 
@@ -114,4 +145,4 @@ async def refus_scripts_deck(db: AsyncSession, deck_id: uuid.UUID) -> list[tuple
     return await refus_scripts_cartes(db, cartes)
 
 
-__all__ = ["refus_scripts_cartes", "refus_scripts_deck"]
+__all__ = ["refus_scripts_cartes", "refus_scripts_par_carte", "refus_scripts_deck"]

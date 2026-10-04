@@ -60,11 +60,16 @@ class SetDeckCardRequest(BaseModel):
 
 
 class LegalityIssueOut(BaseModel):
-    """Un manquement à la légalité (règle des 60/4, format, possession), bloquant ou non."""
+    """Un manquement à la légalité (règle des 60/4, format, possession, script), bloquant ou non.
+
+    `category` dit CE QUI bloque — `possession` (il manque des exemplaires), `legalite` (taille,
+    format, 4 exemplaires, Pokémon de base) ou `script` (l'effet n'est pas encore jouable, D9) :
+    le constructeur peut ainsi expliquer chaque carte refusée (lot `j-effets-couverture-outil`)."""
 
     code: str
     message: str
     severity: str  # "bloquant" | "avertissement"
+    category: str  # "possession" | "legalite" | "script"
     card_id: uuid.UUID | None = None
     card_name: str | None = None
     detail: dict | None = None

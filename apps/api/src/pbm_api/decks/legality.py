@@ -12,6 +12,13 @@ Socle posé par `v7-decks-api` (60 cartes, 4 exemplaires par nom, possession) ; 
     comptent pas dans la possession ; leur exclusion est signalée (avertissement) pour expliquer
     un décompte de possession plus bas que le nombre d'exemplaires réellement en collection.
 
+Étendu par `j-effets-couverture-outil` :
+  - chaque constat porte une **catégorie** (`possession` / `legalite` / `script`) : le constructeur
+    peut ainsi dire, pour chaque carte refusée, *ce qui* la bloque (critère n°1 du lot) ;
+  - les **effets non scriptés** (D9) deviennent un constat bloquant explicite, alimenté depuis le
+    registre `card_scripts` par l'appelant (le service, qui a la base) et passé ici déjà résolu —
+    `evaluate` reste pur : il ne lit aucune base, il reçoit la carte → raison déjà calculée.
+
 Une seule implémentation, exposée telle quelle par l'API et destinée à l'écran (risque du lot :
 « la même règle côté serveur et côté écran ») : jamais deux logiques qui divergent. Recalculé à
 chaque lecture, aucune légalité n'est mémorisée — une carte vendue ou signalée contrefaçon rend
@@ -19,6 +26,7 @@ le deck injouable sans écriture (« revalidation quand la collection change »)
 """
 
 import uuid
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 
 from pbm_api.decks import energy, formats
@@ -30,6 +38,11 @@ MAX_COPIES_PER_NAME = 4
 BLOCKING = "bloquant"
 WARNING = "avertissement"
 
+# Catégories d'un constat : ce qui bloque la carte, pour que le constructeur le dise (critère n°1).
+CATEGORY_POSSESSION = "possession"  # il manque des exemplaires (ou ils sont contrefaçon)
+CATEGORY_LEGALITE = "legalite"  # taille, 4 exemplaires, format, Pokémon de base
+CATEGORY_SCRIPT = "script"  # l'effet de la carte n'est pas (encore) scripté (D9)
+
 # Codes de constat (stables, réutilisés par l'écran).
 CODE_DECK_SIZE = "deck_size"
 CODE_COPY_LIMIT = "copy_limit"
@@ -39,8 +52,24 @@ CODE_OUT_OF_FORMAT = "out_of_format"
 CODE_COUNTERFEIT_EXCLUDED = "counterfeit_excluded"
 CODE_UNSUPPORTED_EFFECT = "unsupported_effect"
 
+# La catégorie de chaque code — une seule table, pour que tout constat la porte automatiquement.
+_CATEGORY_BY_CODE = {
+    CODE_NOT_OWNED: CATEGORY_POSSESSION,
+    CODE_COUNTERFEIT_EXCLUDED: CATEGORY_POSSESSION,
+    CODE_UNSUPPORTED_EFFECT: CATEGORY_SCRIPT,
+    CODE_DECK_SIZE: CATEGORY_LEGALITE,
+    CODE_COPY_LIMIT: CATEGORY_LEGALITE,
+    CODE_NO_BASIC_POKEMON: CATEGORY_LEGALITE,
+    CODE_OUT_OF_FORMAT: CATEGORY_LEGALITE,
+}
+
 _POKEMON_SUPERTYPES = {"pokemon"}
 _BASIC_STAGES = {"base", "basic"}
+
+
+def category_for(code: str) -> str:
+    """La catégorie d'un code (`possession`/`legalite`/`script`) ; `legalite` par défaut."""
+    return _CATEGORY_BY_CODE.get(code, CATEGORY_LEGALITE)
 
 
 def is_basic_pokemon(supertype: str | None, stage: str | None) -> bool:
@@ -71,7 +100,10 @@ class DeckCardFact:
 
 @dataclass
 class LegalityIssue:
-    """Un constat de légalité — bloquant (rend le deck illégal) ou simple avertissement."""
+    """Un constat de légalité — bloquant (rend le deck illégal) ou simple avertissement.
+
+    `category` est dérivée du `code` (table :data:`_CATEGORY_BY_CODE`) si elle n'est pas fournie :
+    tout constat porte ainsi sa catégorie sans qu'on ait à la répéter à chaque construction."""
 
     code: str
     message: str
@@ -79,6 +111,11 @@ class LegalityIssue:
     card_id: uuid.UUID | None = None
     card_name: str | None = None
     detail: dict | None = None
+    category: str = ""
+
+    def __post_init__(self) -> None:
+        if not self.category:
+            self.category = category_for(self.code)
 
 
 @dataclass
@@ -111,22 +148,20 @@ class DeckLegality:
     cards: list[CardLegality] = field(default_factory=list)
 
 
-def unsupported_card_ids(facts: list[DeckCardFact]) -> set[uuid.UUID]:
-    """Cartes dont l'effet n'est pas pris en charge par le moteur de règles (`v7-regles-cartes`).
-
-    Point d'intégration : tant que le moteur n'existe pas dans le dépôt, on ne peut PAS déclarer
-    un effet « non pris en charge » (sans moteur ce serait tous les effets — un deck jamais
-    légal, absurde). On retourne l'ensemble vide, et le rapport ne porte aucune issue de ce type.
-    S'activera en remplaçant ce corps par un appel au moteur — report explicite, pas un repli
-    silencieux : une dépendance non encore livrée."""
-    return set()
-
-
 def evaluate(
-    facts: list[DeckCardFact], deck_format: str = formats.DEFAULT_FORMAT
+    facts: list[DeckCardFact],
+    deck_format: str = formats.DEFAULT_FORMAT,
+    unsupported: Mapping[uuid.UUID, str] | None = None,
 ) -> DeckLegality:
     """Juge la légalité d'un deck à partir des faits fournis : taille, 4 exemplaires par nom,
-    possession, Pokémon de base, format — fonction pure, source unique côté serveur et écran."""
+    possession, Pokémon de base, format, et effets non scriptés — fonction pure, source unique
+    côté serveur et écran.
+
+    ``unsupported`` : ``{card_id: raison}`` des cartes dont un effet n'est pas scripté (D9), déjà
+    résolu par l'appelant contre le registre `card_scripts` (le service, qui a la base). `evaluate`
+    reste pur : il ne lit aucune base, il n'émet un constat `unsupported_effect` que pour les cartes
+    **présentes dans ce deck** (intersection avec les faits — la carte d'un autre deck ne fuit pas).
+    """
     if not formats.is_valid(deck_format):
         deck_format = formats.DEFAULT_FORMAT
     card_count = sum(f.quantity for f in facts)
@@ -230,21 +265,22 @@ def evaluate(
                 )
             )
 
-    # Effets non pris en charge (désactivé tant que `v7-regles-cartes` n'est pas livré).
-    unsupported = unsupported_card_ids(facts)
+    # Effets non scriptés (D9) : alimenté depuis le registre `card_scripts` par l'appelant. On
+    # n'émet que pour les cartes réellement présentes dans ce deck (intersection avec les faits).
     if unsupported:
         by_id = {f.card_id: f for f in facts}
-        for cid in unsupported:
-            name = by_id[cid].name if cid in by_id else str(cid)
+        for card_id, reason in unsupported.items():
+            fact = by_id.get(card_id)
+            if fact is None:
+                continue
             issues.append(
                 LegalityIssue(
                     code=CODE_UNSUPPORTED_EFFECT,
                     severity=BLOCKING,
-                    card_id=cid,
-                    card_name=name,
-                    message=(
-                        f"« {name} » : effet pas encore pris en charge par le moteur de règles."
-                    ),
+                    card_id=card_id,
+                    card_name=fact.name,
+                    detail={"reason": reason},
+                    message=f"« {fact.name} » : effet pas encore jouable — {reason}",
                 )
             )
 

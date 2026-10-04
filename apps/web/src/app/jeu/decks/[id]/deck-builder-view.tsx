@@ -34,6 +34,9 @@ import {
   type DeckReplacement,
 } from "@/lib/api/decks";
 
+import { requestPlayCard } from "@/lib/api/play-requests";
+import { categoryLabel, scriptBlockedCardIds } from "@/lib/game/legality";
+
 import { DeckAiAssistant } from "./deck-ai-assistant";
 import { DeckStatsPanel } from "./deck-stats-panel";
 
@@ -409,12 +412,22 @@ function DeckCardRow({
   onRemoveOne,
   onRemoveCard,
   disabled,
+  scriptBlocked = false,
+  requested = false,
+  requesting = false,
+  onRequestPlay,
 }: {
   card: DeckCard;
   onSetQuantity: (cardId: string, quantity: number) => void;
   onRemoveOne: (card: DeckCard) => void;
   onRemoveCard: (cardId: string) => void;
   disabled: boolean;
+  // Lot `j-effets-couverture-outil` : la carte porte un effet pas encore scripté (D9). On le dit,
+  // et on propose de la demander — le serveur reste seul juge de la jouabilité.
+  scriptBlocked?: boolean;
+  requested?: boolean;
+  requesting?: boolean;
+  onRequestPlay?: () => void;
 }) {
   return (
     <li className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-2">
@@ -436,7 +449,27 @@ function DeckCardRow({
           {card.counterfeit_excluded > 0 && (
             <Badge variant="danger">Contrefaçon exclue ({card.counterfeit_excluded})</Badge>
           )}
+          {scriptBlocked && <Badge variant="danger">Effet non géré</Badge>}
         </div>
+        {scriptBlocked && (
+          <div className="mt-1.5">
+            {requested ? (
+              <p className="text-xs text-success-foreground">
+                Demande envoyée ✓ — on la prend en compte.
+              </p>
+            ) : (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={onRequestPlay}
+                disabled={disabled || requesting}
+                aria-label={`Demander à jouer ${card.card_name}`}
+              >
+                {requesting ? "Envoi…" : "Je voudrais jouer cette carte"}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
       <div className="flex items-center gap-1">
         <Button
@@ -506,6 +539,28 @@ function DeckContents({
   // chaque carte sont déjà rendus par l'alerte « à compléter » ci-dessous — on ne les redouble pas.
   const globalIssues = deck.legality.issues.filter((i) => i.code !== "not_owned");
 
+  // Lot `j-effets-couverture-outil` : les cartes dont un effet n'est pas scripté (D9). On les
+  // marque par carte, et on laisse le joueur demander qu'on les rende jouables (mission n°4).
+  const scriptBlockedIds = useMemo(
+    () => scriptBlockedCardIds(deck.legality.issues),
+    [deck.legality.issues]
+  );
+  const [requestedIds, setRequestedIds] = useState<Set<string>>(new Set());
+  const [requestingId, setRequestingId] = useState<string | null>(null);
+  const [requestError, setRequestError] = useState<string | null>(null);
+  const handleRequestPlay = useCallback(async (card: DeckCard) => {
+    setRequestingId(card.card_id);
+    setRequestError(null);
+    try {
+      await requestPlayCard(card.card_id);
+      setRequestedIds((prev) => new Set(prev).add(card.card_id));
+    } catch (err) {
+      setRequestError(errorText(err, "La demande n'a pas pu être envoyée."));
+    } finally {
+      setRequestingId(null);
+    }
+  }, []);
+
   return (
     <section aria-label="Contenu du deck" className="min-w-0 rounded-lg border border-border bg-card p-4">
       <div className="flex items-center justify-between">
@@ -536,6 +591,7 @@ function DeckContents({
                 }
               >
                 {issue.severity === SEVERITY_BLOCKING ? "⛔ " : "⚠ "}
+                <span className="font-semibold">{categoryLabel(issue.category)} — </span>
                 {issue.message}
               </li>
             ))}
@@ -576,9 +632,18 @@ function DeckContents({
               onRemoveOne={onRemoveOne}
               onRemoveCard={onRemoveCard}
               disabled={disabled}
+              scriptBlocked={scriptBlockedIds.has(card.card_id)}
+              requested={requestedIds.has(card.card_id)}
+              requesting={requestingId === card.card_id}
+              onRequestPlay={() => handleRequestPlay(card)}
             />
           ))}
         </ul>
+      )}
+      {requestError && (
+        <p className="mt-2 text-sm text-danger-foreground" role="alert">
+          {requestError}
+        </p>
       )}
     </section>
   );

@@ -26,6 +26,8 @@ export type LegalityIssue = {
   code: string;
   message: string;
   severity: string;
+  /** `possession` | `legalite` | `script` — ce qui bloque la carte (lot `j-effets-couverture-outil`). */
+  category: string;
   card_id: string | null;
   card_name: string | null;
   detail: Record<string, unknown> | null;

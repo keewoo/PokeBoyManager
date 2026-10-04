@@ -3,6 +3,13 @@ de chaque module pour que le reste de l'API fasse `from pbm_api.models import X`
 
 from pbm_api.models.ai_usage import AiUsageMonthly
 from pbm_api.models.base import Base
+from pbm_api.models.card_play_requests import (
+    REQUEST_STATUT_EN_ATTENTE,
+    REQUEST_STATUT_REFUSEE,
+    REQUEST_STATUT_SCRIPTEE,
+    REQUEST_STATUTS,
+    CardPlayRequest,
+)
 from pbm_api.models.card_scripts import (
     SCRIPT_STATUT_A_REVOIR,
     SCRIPT_STATUT_NON_SUPPORTE,
@@ -101,6 +108,11 @@ __all__ = [
     "SCRIPT_STATUT_NON_SUPPORTE",
     "SCRIPT_STATUT_A_REVOIR",
     "SCRIPT_STATUTS",
+    "CardPlayRequest",
+    "REQUEST_STATUT_EN_ATTENTE",
+    "REQUEST_STATUT_SCRIPTEE",
+    "REQUEST_STATUT_REFUSEE",
+    "REQUEST_STATUTS",
     "Upload",
     "UploadStatus",
     "Detection",

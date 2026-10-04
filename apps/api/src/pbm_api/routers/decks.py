@@ -112,6 +112,7 @@ def _legality_out(report: DeckLegality) -> DeckLegalityOut:
                 code=i.code,
                 message=i.message,
                 severity=i.severity,
+                category=i.category,
                 card_id=i.card_id,
                 card_name=i.card_name,
                 detail=i.detail,
