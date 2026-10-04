@@ -4,11 +4,13 @@ import { notFound } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { FormNotice } from "@/components/auth/form-notice";
+import { FenetreDecision } from "@/components/game/fenetre-decision";
 import { GameBoard } from "@/components/game/game-board";
 import { JournalPanel } from "@/components/game/journal-panel";
 import { ApiError } from "@/lib/api/client";
 import { getGameState, playAction } from "@/lib/api/games";
 import { CanalPartie, type Coup, type EtatConnexion } from "@/lib/game/realtime";
+import { ACTION_REPONDRE_DEMANDE } from "@/lib/game/decision";
 import { agisseurDepuisEvenements } from "@/lib/game/indicateurs";
 import { construireJournal } from "@/lib/game/journal";
 import type { VueActionLegale, VuePartie } from "@/lib/game/plateau";
@@ -149,6 +151,26 @@ export function PartieView({ gameId }: { gameId: string }) {
     [gameId],
   );
 
+  /**
+   * Répond à une demande de décision (lot `j-plateau-decisions`) : soumet, par la **même** route
+   * que tout coup, l'action `repondre_demande` portant l'identifiant de la demande et les options
+   * retenues (liste vide = abandon d'un effet facultatif). Le serveur fait autorité — il rejoue la
+   * réponse, reprend la résolution suspendue, et renvoie la vue projetée (demande suivante ou
+   * disparue) ; un refus (`ApiError` 422) **remonte** à la fenêtre, qui en affiche la raison du moteur.
+   */
+  const onRepondre = useCallback(
+    async (demandeId: string, choix: string[]) => {
+      const rep = await playAction(gameId, {
+        type: ACTION_REPONDRE_DEMANDE,
+        params: { demande_id: demandeId, choix },
+        numero_attendu: numeroRef.current,
+      });
+      setVue(rep.vue);
+      numeroRef.current = typeof rep.numero === "number" ? rep.numero : numeroRef.current + 1;
+    },
+    [gameId],
+  );
+
   // Le fil du journal, reconstruit quand un coup arrive ou que la vue change de destinataire.
   const lignes = useMemo(
     () => (vue ? construireJournal(coups, vue.pour) : []),
@@ -177,6 +199,7 @@ export function PartieView({ gameId }: { gameId: string }) {
             onJouer={onJouer}
           />
           <JournalPanel lignes={lignes} onSurvol={setSurligne} />
+          <FenetreDecision vue={vue} onRepondre={onRepondre} />
         </>
       )}
     </div>

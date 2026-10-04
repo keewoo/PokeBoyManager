@@ -20,7 +20,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 
 from pbm_game.effets.continus import RegistreContinus
-from pbm_game.sortie import refs_en_jeu
+from pbm_game.sortie import refs_demande, refs_en_jeu
 from pbm_game.state.modele import EtatPartie
 from pbm_game.state.serialisation import depuis_json
 from sqlalchemy import or_, select
@@ -43,6 +43,7 @@ class CatalogueAffichage:
 
     pv_imprimes: dict[str, int] = field(default_factory=dict)
     types: dict[str, str | None] = field(default_factory=dict)
+    noms: dict[str, str] = field(default_factory=dict)
     registre: RegistreContinus = field(default_factory=dict)
 
 
@@ -83,6 +84,7 @@ async def catalogue_affichage(
 
     pv_imprimes: dict[str, int] = {}
     types: dict[str, str | None] = {}
+    noms: dict[str, str] = {}
     for ref in refs_set:
         card = index.get(ref)
         if card is None:
@@ -92,19 +94,28 @@ async def catalogue_affichage(
         # ``element_type`` est déjà le code normalisé (fire/water/…) pour un Pokémon comme pour une
         # énergie de base ; ``energy_type`` (Normal/Special) sert de filet via ``element_code``.
         types[ref] = element_code(card.element_type or card.energy_type)
+        # Nom lisible pour les fenêtres de décision (lot ``j-plateau-decisions``) : chercher une
+        # carte dans une pioche de soixante se fait sur le nom, pas sur un identifiant opaque.
+        noms[ref] = card.name
     return CatalogueAffichage(
-        pv_imprimes=pv_imprimes, types=types, registre=dict(registre or {})
+        pv_imprimes=pv_imprimes, types=types, noms=noms, registre=dict(registre or {})
     )
 
 
 async def catalogue_pour_etat(db: AsyncSession, etat: EtatPartie) -> CatalogueAffichage:
-    """La :class:`CatalogueAffichage` des cartes visibles d'un état (pour la vue courante)."""
-    return await catalogue_affichage(db, refs_en_jeu(etat))
+    """Les cartes visibles d'un état **et** les cartes des options d'une demande en cours.
+
+    En plus du visible (:func:`refs_en_jeu`), on charge les cartes désignées par une demande en
+    cours (:func:`refs_demande`) — même dans une zone cachée qu'on fait fouiller (la pioche) : la
+    fenêtre de décision doit afficher de vraies cartes (lot ``j-plateau-decisions``).
+    """
+    return await catalogue_affichage(db, refs_en_jeu(etat) | refs_demande(etat))
 
 
 async def catalogue_pour_resultat(db: AsyncSession, resultat) -> CatalogueAffichage:
-    """La :class:`CatalogueAffichage` des cartes visibles d'un résultat d'action (forme JSON)."""
-    return await catalogue_affichage(db, refs_en_jeu(depuis_json(resultat.etat)))
+    """Les cartes visibles d'un résultat d'action **et** les options de sa demande en cours."""
+    etat = depuis_json(resultat.etat)
+    return await catalogue_affichage(db, refs_en_jeu(etat) | refs_demande(etat))
 
 
 __all__ = [
