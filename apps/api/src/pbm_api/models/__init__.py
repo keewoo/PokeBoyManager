@@ -3,6 +3,13 @@ de chaque module pour que le reste de l'API fasse `from pbm_api.models import X`
 
 from pbm_api.models.ai_usage import AiUsageMonthly
 from pbm_api.models.base import Base
+from pbm_api.models.card_scripts import (
+    SCRIPT_STATUT_A_REVOIR,
+    SCRIPT_STATUT_NON_SUPPORTE,
+    SCRIPT_STATUT_SCRIPTE,
+    SCRIPT_STATUTS,
+    CardScript,
+)
 from pbm_api.models.catalog import (
     Card,
     CardInsight,
@@ -89,6 +96,11 @@ __all__ = [
     "CardInsightReport",
     "CardTournamentPresence",
     "TournamentPresenceStatus",
+    "CardScript",
+    "SCRIPT_STATUT_SCRIPTE",
+    "SCRIPT_STATUT_NON_SUPPORTE",
+    "SCRIPT_STATUT_A_REVOIR",
+    "SCRIPT_STATUTS",
     "Upload",
     "UploadStatus",
     "Detection",
