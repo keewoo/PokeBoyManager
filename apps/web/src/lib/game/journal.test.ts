@@ -31,6 +31,7 @@ describe("traduction des événements du journal", () => {
       retraite_effectuee: { joueur: MOI, ancien_actif: "p-1", nouvel_actif: "p-2", cout: 1, energies_defaussees: ["e-1"] },
       promotion_effectuee: { joueur: MOI, nouvel_actif: "p-3" },
       echange_force_effectue: { joueur: ADV, ancien_actif: "p-4", nouvel_actif: "p-5" },
+      objet_joue: { joueur: MOI, ref: "obj-1", nom: "Gust of Wind", carte: "g-1", devient_actif: [[ADV, "p-5"]] },
       etat_checkup: { joueur: MOI, etat: "empoisonne", regle: "R-11.7", degats: 10, gueri: false },
       effet_expire: {},
       ko: { joueur: ADV, pokemon: "p-9", compteurs: 120, recompenses_prises: 1, par: MOI },
