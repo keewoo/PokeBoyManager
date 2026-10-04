@@ -183,6 +183,21 @@ def resoudre_attaque_declaree(
             "implémenté n'est jamais approximé (R-15.12/D9)."
         )
 
+    # Pouvoir à usage unique par partie (attaque GX R-15.3, VSTAR Power R-15.6) : un second usage
+    # est refusé, l'usage étant suivi dans l'état du JOUEUR (jamais celui de la carte). Vérifié
+    # AVANT le coût — un pouvoir déjà dépensé n'est pas une attaque à payer.
+    pouvoir_unique = attaque.get("pouvoir_unique")
+    if pouvoir_unique is not None:
+        from .pouvoirs_uniques import REGLE_PAR_POUVOIR, deja_utilise, valider_pouvoir
+
+        valider_pouvoir(pouvoir_unique)
+        if deja_utilise(etat.joueurs[_index_joueur(etat, jid)], pouvoir_unique):
+            regle = REGLE_PAR_POUVOIR[pouvoir_unique]
+            raise ValueError(
+                f"Pouvoir « {pouvoir_unique} » déjà utilisé cette partie : un seul par partie et "
+                f"par joueur ({regle})."
+            )
+
     cout = _cout_depuis(attaque.get("cout"))
     energies = _energies_depuis(action.params.get("energies"))
     paiement = payer_cout(cout, energies)
@@ -190,6 +205,17 @@ def resoudre_attaque_declaree(
         raise ValueError(f"{paiement.verdict.message}")
     if cout.types or cout.incolore:
         evenements.append(paiement.evenement(cout))
+
+    # Le coût est payé : le pouvoir unique est désormais **dépensé** pour cette partie (même si la
+    # Confusion annule ensuite l'attaque — il a été déclaré). Marqué dans l'état du joueur, donc
+    # l'interdiction survit à un F5 et au rejeu.
+    if pouvoir_unique is not None:
+        from .pouvoirs_uniques import marquer_utilise
+
+        idx_att = _index_joueur(etat, jid)
+        etat = _remplacer_joueur(
+            etat, idx_att, marquer_utilise(etat.joueurs[idx_att], pouvoir_unique)
+        )
 
     if not attaque_a_lieu:
         # Confusion sur pile : ni effet ni dégât (R-11.5). Rien d'autre à résoudre ici.

@@ -50,6 +50,7 @@ class LoadedDeckCard:
     element_type: str | None
     attacks: list | None
     rule_marker: str | None
+    prize_marker: str | None
 
 
 def _merge_inputs(cards: list[DeckCardInput]) -> dict[uuid.UUID, int]:
@@ -105,6 +106,7 @@ async def _load_cards(
             Card.element_type.label("element_type"),
             Card.attacks.label("attacks"),
             Card.rule_marker.label("rule_marker"),
+            Card.prize_marker.label("prize_marker"),
         )
         .join(Card, DeckCard.card_id == Card.id)
         .join(Set, Card.set_id == Set.id)
@@ -160,6 +162,8 @@ def _facts(
             legal_standard=c.legal_standard,
             legal_expanded=c.legal_expanded,
             counterfeit_owned=counterfeit.get(c.card_id, 0),
+            rule_marker=c.rule_marker,
+            prize_marker=c.prize_marker,
         )
         for c in cards
     ]

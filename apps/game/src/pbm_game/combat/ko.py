@@ -43,6 +43,28 @@ def cartes_a_defausser(pokemon: PokemonEnJeu) -> tuple[Carte, ...]:
     return tuple(cartes)
 
 
+def router_cartes_ko(
+    pokemon: PokemonEnJeu, est_prisme_etoile: bool
+) -> tuple[tuple[Carte, ...], tuple[Carte, ...]]:
+    """Répartit les cartes d'un Pokémon K.O. entre **zone perdue** et **défausse** (R-13.2/R-15.18).
+
+    Pour un **Prisme Étoile (◇)**, la ou les cartes de sa **pile** (la carte ◇ elle-même) vont en
+    **zone perdue** — « une carte ◇ qui devrait aller à la défausse va en zone perdue »
+    (R-15.18/R-3.8) ; ses énergies et son Outil, qui ne sont **pas** des ◇, vont à la **défausse**
+    (R-13.2). Pour tout autre Pokémon, **tout** va à la défausse (comportement de
+    :func:`cartes_a_defausser`).
+
+    Renvoie ``(vers_zone_perdue, vers_defausse)``, dans l'ordre stable de
+    :func:`cartes_a_defausser`.
+    """
+    if not est_prisme_etoile:
+        return (), cartes_a_defausser(pokemon)
+    attaches: list[Carte] = list(pokemon.energies)
+    if pokemon.outil is not None:
+        attaches.append(pokemon.outil)
+    return tuple(pokemon.cartes), tuple(attaches)
+
+
 def est_ko(compteurs_degats: int, pv: int) -> bool:
     """Vrai si ``compteurs_degats ≥ pv`` (R-13.1). Lève si ``pv`` est absurde (≤ 0).
 
@@ -78,6 +100,7 @@ def prendre_recompenses(joueur: Joueur, nombre: int) -> tuple[Joueur, int]:
 
 __all__ = [
     "cartes_a_defausser",
+    "router_cartes_ko",
     "est_ko",
     "prendre_recompenses",
 ]

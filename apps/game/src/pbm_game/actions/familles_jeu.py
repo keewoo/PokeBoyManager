@@ -36,6 +36,7 @@ from dataclasses import dataclass, field, replace
 from ..cartes.energie import DefinitionEnergie
 from ..cartes.modele import DefinitionCarte, definition_vers_dict
 from ..combat.cout import EnergieAttachee, cout_satisfait
+from ..combat.pouvoirs_uniques import deja_utilise
 from ..effets.dsl.contexte import ContexteEffet
 from ..effets.dsl.jouabilite import programme_jouable
 from ..effets.dsl.modele import Programme
@@ -497,6 +498,10 @@ class FamilleAttaquer(_FamilleCatalogue):
         for attaque in def_actif.attaques:
             if not attaque.jouable:
                 continue  # D9 — une attaque à effet sans script n'est pas résoluble.
+            # Pouvoir à usage unique déjà dépensé (attaque GX R-15.3, VSTAR Power R-15.6) : on ne le
+            # propose plus comme coup légal — l'interdiction est portée par l'état du joueur.
+            if attaque.pouvoir_unique is not None and deja_utilise(j, attaque.pouvoir_unique):
+                continue
             if cout_satisfait(attaque.cout, [e.fournit for e in energies]).refuse:
                 continue
             # Dégâts : secs (entier) ou variables (formule calculée à la résolution, R-10.1).
@@ -511,6 +516,8 @@ class FamilleAttaquer(_FamilleCatalogue):
             }
             if attaque.script is not None:
                 fiche_attaque["script"] = attaque.script
+            if attaque.pouvoir_unique is not None:
+                fiche_attaque["pouvoir_unique"] = attaque.pouvoir_unique
             params: dict = {
                 "attaque": fiche_attaque,
                 "type_attaque": def_actif.type,

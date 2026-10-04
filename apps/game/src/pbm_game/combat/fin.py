@@ -44,7 +44,7 @@ from ..journal.modele import (
 )
 from ..state.modele import RAISON_EGALITE, EtatPartie, Joueur, PokemonEnJeu, carte_active
 from ..tour.drapeaux import identite_pokemon
-from .ko import cartes_a_defausser, est_ko, prendre_recompenses
+from .ko import est_ko, prendre_recompenses, router_cartes_ko
 
 # --- Marqueur de règle → nombre de récompenses (R-13.3/R-13.4/R-13.7) ---------------------
 
@@ -228,14 +228,21 @@ def _appliquer_ko(
     joueur = etat.joueurs[index]
     zone, i = cible
     pokemon = joueur.actif if zone == "actif" else joueur.banc[i]
-    nb = _recompenses_de_fiche(_fiche(fiches, pokemon))
+    fiche_ko = _fiche(fiches, pokemon)
+    nb = _recompenses_de_fiche(fiche_ko)
 
-    defausse = joueur.defausse + cartes_a_defausser(pokemon)
+    # Prisme Étoile (◇) : sa carte va en **zone perdue**, pas à la défausse (R-15.18/R-3.8) ; ses
+    # énergies et son Outil (qui ne sont pas des ◇) vont à la défausse (R-13.2). Détecté sur le
+    # marqueur de règle de la fiche (le moteur ne lit jamais le catalogue). Une fiche sans marqueur
+    # (« recompenses » déjà calculées par le service) route tout à la défausse — jamais deviné.
+    vers_zp, vers_def = router_cartes_ko(pokemon, fiche_ko.get("marqueur") == "prisme_etoile")
+    defausse = joueur.defausse + vers_def
+    zone_perdue = joueur.zone_perdue + vers_zp
     if zone == "actif":
-        joueur = replace(joueur, actif=None, defausse=defausse)
+        joueur = replace(joueur, actif=None, defausse=defausse, zone_perdue=zone_perdue)
     else:
         banc = joueur.banc[:i] + joueur.banc[i + 1 :]
-        joueur = replace(joueur, banc=banc, defausse=defausse)
+        joueur = replace(joueur, banc=banc, defausse=defausse, zone_perdue=zone_perdue)
     etat = _remplacer_joueur(etat, index, joueur)
 
     adversaire = _autre_joueur(etat, jid)

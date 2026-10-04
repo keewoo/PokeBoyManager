@@ -77,6 +77,7 @@ class AttaqueDef:
     effet: str = ""
     script: dict | None = None
     degats_variables: dict | None = None
+    pouvoir_unique: str | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.nom, str) or not self.nom.strip():
@@ -117,6 +118,12 @@ class AttaqueDef:
             from ..combat.valeur import valeur_depuis
 
             valeur_depuis(self.degats_variables)  # D9 : une formule incohérente bloque la carte.
+        if self.pouvoir_unique is not None:
+            # D9 : un pouvoir à usage unique inconnu bloque la carte à la construction du deck,
+            # jamais en pleine partie (attaque GX R-15.3, VSTAR Power R-15.6).
+            from ..combat.pouvoirs_uniques import valider_pouvoir
+
+            valider_pouvoir(self.pouvoir_unique)
 
     @property
     def jouable(self) -> bool:
@@ -259,6 +266,7 @@ def _attaque_depuis(donnees: object) -> AttaqueDef:
         effet=donnees.get("effet", ""),
         script=donnees.get("script"),
         degats_variables=donnees.get("degats_variables"),
+        pouvoir_unique=donnees.get("pouvoir_unique"),
     )
 
 
@@ -274,6 +282,8 @@ def _attaque_vers_dict(a: AttaqueDef) -> dict:
         donnees["script"] = a.script
     if a.degats_variables is not None:
         donnees["degats_variables"] = a.degats_variables
+    if a.pouvoir_unique is not None:
+        donnees["pouvoir_unique"] = a.pouvoir_unique
     return donnees
 
 

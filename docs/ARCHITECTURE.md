@@ -1107,3 +1107,42 @@ de vraies cartes, l'adaptateur API enrichit la demande après projection :
   projection au destinataire ; un ensemble caché n'a pas d'`options` → rien n'est enrichi.
 - **Réponse** : action `repondre_demande` (`params: {demande_id, choix}`), rejouée et validée par le
   moteur (l'auteur **doit** être le destinataire). R-9.3.
+
+## Cartes à règle particulière : ACE SPEC, Radiant, VSTAR, GX, Prisme Étoile (lot `j-cartes-regles-speciales`)
+
+Quelques cartes cassent les règles générales (R-15) ; ce lot les porte **au deck** et **en partie**.
+
+**Au deck** (`pbm_api.decks.regles_speciales`, pur ; branché dans `pbm_api.decks.legality.evaluate`,
+la source **unique** serveur + écran). Les limites propres se lisent sur les marqueurs **structurés**
+du catalogue, jamais sur le nom (R-13.7) :
+
+- **R-2.4 / R-2.7 / R-2.8** — au plus 1 Radiant, 1 Prisme Étoile (◇) *par nom*, 1 ★ Étoile par deck :
+  détectés sur `cards.prize_marker` (`radiant`/`prisme_etoile`/`etoile`, déjà calculé à l'import).
+- **R-15.22** — un Pokémon dont `prize_marker` vaut `inconnu` (Rule Box non classable) est **refusé**,
+  jamais joué avec une récompense devinée (R-13.4).
+- **R-2.3** — au plus 1 ACE SPEC (Dresseur) : détecté sur `cards.rule_marker == "ACE SPEC"`.
+  ⚠️ **Écart de données mesuré (04/10/2026)** : `pbm_catalogue_ref` (22 653 cartes) ne porte ce
+  suffixe sur **aucune** carte — l'import TCGdex ne le renseigne pas. La règle est implémentée et
+  testée (elle mord dès qu'une carte porte le signal) mais **ne s'applique à aucune carte réelle
+  tant que l'import ne remplit pas le marqueur ACE SPEC** : à traiter côté `catalog.import_service`
+  (le texte libre du catalogue ne porte pas non plus « ACE SPEC » — mesuré). C'est le piège nommé du
+  lot : la détection échoue bruyamment (écart documenté), jamais en silence.
+
+Nouveaux codes de constat (catégorie `legalite`) : `ace_spec_limit`, `radiant_limit`,
+`prism_star_limit`, `star_limit`, `unknown_rule_box`. L'écran les rend génériquement — aucun miroir
+de logique côté front (le risque « même règle des deux côtés » est évité par construction).
+
+**En partie** (moteur `pbm_game`, pur) :
+
+- **Usage « une fois par partie »** (attaque GX R-15.3, VSTAR Power R-15.6) : suivi dans l'état du
+  **joueur** (`Joueur.pouvoirs_uniques_utilises`), jamais dans la carte. C'est de l'état **sérialisé**,
+  donc l'interdiction d'un second usage **survit à un F5** et au rejeu. Garde pure
+  `pbm_game.combat.pouvoirs_uniques`, branchée dans `combat.attaque.resoudre_attaque_declaree` (un
+  second pouvoir lève, en citant R-15.3/R-15.6) et dans `actions.familles_jeu.FamilleAttaquer` (un
+  pouvoir dépensé n'est plus proposé comme coup légal). L'attaque porte son `pouvoir_unique` via
+  `AttaqueDef` (round-trip JSON pour le rejeu).
+- **Zone perdue** (R-3.8, DJ1) : déjà dans le modèle d'état (`Joueur.zone_perdue`). Un **Prisme
+  Étoile** mis K.O. voit sa carte ◇ rejoindre la **zone perdue** au lieu de la défausse (R-15.18) ;
+  ses énergies et son Outil (non ◇) vont à la défausse (R-13.2). `combat.ko.router_cartes_ko`,
+  branché dans `combat.fin._appliquer_ko` (détecté sur le marqueur de la **fiche**, le moteur ne lit
+  jamais le catalogue). Une carte en zone perdue n'en sort plus : aucune action ne l'en retire.
