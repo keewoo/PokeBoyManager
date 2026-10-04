@@ -7966,7 +7966,7 @@
       }
     },
     "j-cartes-regles-speciales": {
-      "statut": "a_faire",
+      "statut": "integre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
@@ -8018,8 +8018,21 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-10-04T15:44+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": "branche roadmap/j-cartes-regles-speciales fusionnee dans main (verifie par git merge-base)"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": {
+        "quand": "2026-10-04T15:44+0200",
+        "raisons": [
+          "branche roadmap/j-cartes-regles-speciales fusionnee dans main (verifie par git merge-base)"
+        ]
+      }
     },
     "j-effets-catalogue-compilation": {
       "statut": "integre",
