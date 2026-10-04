@@ -19,7 +19,13 @@ import uuid
 
 from pbm_game.journal.serialisation import evenement_depuis_json
 from pbm_game.rng import Rng, flux_melange_deck
-from pbm_game.sortie import Jetonneur, enrichir_indicateurs, projeter, secret_jetons
+from pbm_game.sortie import (
+    Jetonneur,
+    enrichir_demande,
+    enrichir_indicateurs,
+    projeter,
+    secret_jetons,
+)
 from pbm_game.state.modele import EtatPartie
 from pbm_game.state.serialisation import depuis_json
 
@@ -67,6 +73,10 @@ def vue_autoritaire(
         types=catalogue.types,
         registre=catalogue.registre,
     )
+    # Demande de décision en cours (lot ``j-plateau-decisions``) : on résout ses options en
+    # cartes affichables (nom, type), pour que l'écran les montre et les laisse chercher. Ne
+    # touche rien sans demande, ni pour un ensemble caché (aucune identité à révéler).
+    enrichir_demande(sortie["vue"], etat, noms=catalogue.noms, types=catalogue.types)
     # Actions légales du destinataire + commandes refusées motivées (lot j-plateau-interactions) :
     # l'écran illumine les cibles et grise les refus sans réécrire aucune règle.
     actions = actions_pour(etat, joueur_id, catalogue_jeu)
@@ -111,6 +121,10 @@ def projeter_resultat(
         types=catalogue.types,
         registre=catalogue.registre,
     )
+    # Demande de décision en cours (lot ``j-plateau-decisions``) : on résout ses options en
+    # cartes affichables (nom, type), pour que l'écran les montre et les laisse chercher. Ne
+    # touche rien sans demande, ni pour un ensemble caché (aucune identité à révéler).
+    enrichir_demande(sortie["vue"], etat, noms=catalogue.noms, types=catalogue.types)
     # Actions légales du destinataire + commandes refusées motivées (lot j-plateau-interactions) :
     # l'écran illumine les cibles et grise les refus sans réécrire aucune règle.
     actions = actions_pour(etat, joueur_id, catalogue_jeu)

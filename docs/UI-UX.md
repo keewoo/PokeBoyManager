@@ -519,3 +519,29 @@ Ce qui rend le jeu compréhensible quand on apprend : « Tu attaches une Énergi
 
 Tests : `journal.test.ts` (traduction de chaque type, catégories, détail de dégâts, repli non traduit),
 `journal-panel.test.tsx` (filtres, dernier coup, survol, escamotage), et la parité côté `game`.
+
+## Fenêtre de décision (lot `j-plateau-decisions`)
+
+Quand une carte réclame un choix à un joueur, le serveur pose une `VueDemande` dans l'état projeté
+(lot `j-effets-choix`). L'écran la rend avec **un seul composant générique**,
+`FenetreDecision` (`apps/web/src/components/game/fenetre-decision.tsx`) — jamais un écran par carte
+(le nombre de cartes rend cette approche impossible dès la deuxième extension).
+
+- **Deux regards.** Si `demande.destinataire === vue.pour`, une **modale** où je choisis ; sinon une
+  **bannière d'attente** (« ⏳ L'adversaire réfléchit », motif + compte à rebours), car la demande est
+  publique des deux côtés (jamais d'écran muet). Les deux sont **hors flux** (`fixed`) : le plateau
+  n'acquiert aucun défilement (l'e2e du plateau l'interdit, voir mémoire plateau).
+- **Six catégories**, pilotées par `demande.categorie` : `carte`/`cartes` (sélecteur de cartes avec
+  recherche + filtres par type), `ordre` (liste « monter/descendre »), `oui_non`, `type`, `nombre`
+  (pas à pas borné). Seules `carte`/`cartes` sont produites par une carte aujourd'hui ; le composant
+  gère les six pour être prêt sans retouche.
+- **Compte à rebours + réponse par défaut** : `temps_restant_ms` (serveur) estimé localement, et la
+  phrase « à défaut de réponse : … » calculée par `choixParDefaut` (miroir du moteur). On n'auto-soumet
+  jamais à zéro — le serveur applique la réponse par défaut (action `expirer_demande`).
+- **Indulgence** : on peut **annuler** sa sélection avant de valider ; une demande facultative offre
+  **Passer** (réponse vide = abandon). Le bouton **Valider** est grisé tant que `reponseValide`
+  (miroir de `valider_reponse`) refuse la sélection — mais le serveur reste l'autorité (il rejoue).
+- **Logique pure testable** dans `apps/web/src/lib/game/decision.ts` (`choixParDefaut`,
+  `reponseValide`, `filtrerOptions`, `typesPresents`, `deplacer`), sans React.
+- **Soumission** : `partie-view.tsx` → `onRepondre` envoie `repondre_demande` par la **même** route
+  que tout coup (`POST /games/{id}/actions`, idempotence par numéro).

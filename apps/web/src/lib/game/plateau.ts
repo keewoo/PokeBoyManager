@@ -111,6 +111,44 @@ export type VueActionRefusee = {
   irreversible: boolean;
 };
 
+/**
+ * Une option de demande résolue en **carte affichable** (lot `j-plateau-decisions`), pour les
+ * catégories « carte », « cartes » et « ordre ». L'API résout `nom`/`type` du catalogue à partir
+ * de l'`id` (un `instance_id`), pour que l'écran rende une vraie carte et la laisse chercher par
+ * nom et par type ; `id` est l'identifiant à renvoyer dans la réponse.
+ */
+export type VueOptionCarte = { id: string; ref: string; nom: string; type?: string | null };
+
+/**
+ * Une **demande de décision** en cours, telle que le serveur la projette (`pbm_game` +
+ * enrichissement API). Elle est **publique des deux côtés** : les deux joueurs voient qu'une
+ * décision est attendue et de qui (jamais d'écran muet). Mais seul le `destinataire` reçoit les
+ * `options` (et leurs `options_cartes` enrichies) ; pour un ensemble **caché** — « choisis dans la
+ * main adverse » — il n'en connaît que le nombre (`options_nombre`), jamais les identités.
+ *
+ * `temps_restant_ms` est le temps serveur restant (horloge à l'écran) ; `source` nomme la carte
+ * qui a posé la demande. `categorie` dit COMMENT présenter le choix, sans aucun code par carte.
+ */
+export type VueDemande = {
+  id: string;
+  destinataire: string;
+  categorie: "carte" | "cartes" | "ordre" | "oui_non" | "type" | "nombre";
+  libelle: string;
+  regle: string;
+  obligatoire: boolean;
+  minimum: number;
+  maximum: number;
+  source: Record<string, unknown>;
+  delai_ms: number | null;
+  temps_restant_ms: number | null;
+  /** Les identifiants d'option (destinataire d'un ensemble non caché). */
+  options?: string[];
+  /** Les options résolues en cartes (catégories carte/cartes/ordre). Absent → options non-cartes. */
+  options_cartes?: VueOptionCarte[];
+  /** Le nombre d'options d'un ensemble caché (identités jamais révélées, anti-triche). */
+  options_nombre?: number;
+};
+
 /** La vue complète d'une partie pour un joueur donné (`pour`). */
 export type VuePartie = {
   schema_version: number;
@@ -129,7 +167,8 @@ export type VuePartie = {
    */
   actions_legales?: VueActionLegale[];
   actions_refusees?: VueActionRefusee[];
-  demande?: unknown;
+  /** La décision de jeu en attente, s'il y en a une (lot `j-plateau-decisions`). */
+  demande?: VueDemande;
 };
 
 /** Enveloppe renvoyée par `GET /games/{id}/state` : la vue + les événements (vides sur cette route). */

@@ -23,6 +23,7 @@ from __future__ import annotations
 from ..journal.modele import Evenement
 from ..state.modele import EtatPartie
 from ..state.projection import vue
+from .demande import enrichir_demande, refs_demande
 from .evenements import PROJECTEURS, projeter_evenement
 from .indicateurs import enrichir_indicateurs, refs_en_jeu
 from .jetons import Jetonneur, secret_jetons
@@ -36,6 +37,8 @@ __all__ = [
     "projeter",
     "enrichir_indicateurs",
     "refs_en_jeu",
+    "enrichir_demande",
+    "refs_demande",
 ]
 
 

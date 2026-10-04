@@ -1088,3 +1088,22 @@ que `pv_max` suivra un Outil dès qu'il en existera, **sans changer le code d'af
 
 Tests : `apps/game/tests/test_sortie_indicateurs.py` (PV avec/sans Outil, plancher à 0, type inconnu
 non deviné), `apps/api/tests/test_games_indicateurs.py` (câblage catalogue `Card` ↔ moteur).
+
+### Demandes de décision : options enrichies en cartes (lot `j-plateau-decisions`)
+
+La projection d'une `DemandeDecision` n'expose que des `options` = `instance_id` **nus** (anti-fuite :
+un ensemble caché ne livre qu'`options_nombre`). Pour que l'écran rende — et laisse **chercher** —
+de vraies cartes, l'adaptateur API enrichit la demande après projection :
+
+- `pbm_game.sortie.enrichir_demande(vue, etat, *, noms, types)` résout chaque option-carte en
+  `{id, ref, nom, type}` (ordre préservé). Pur : noms/types entrent **en données**, jamais lus du
+  catalogue par le moteur (D9). Un nom inconnu retombe sur la `ref` (jamais inventé).
+- `pbm_game.sortie.refs_demande(etat)` relève les `ref` des cartes désignées par la demande — y
+  compris dans une **zone cachée qu'on fait fouiller** (la pioche), que `refs_en_jeu` ignore.
+- Côté API : `CatalogueAffichage` porte désormais `noms` (ref → nom) ; `catalogue_pour_etat` /
+  `catalogue_pour_resultat` chargent `refs_en_jeu(etat) | refs_demande(etat)` ;
+  `vue_autoritaire` / `projeter_resultat` appellent `enrichir_demande`.
+- **Anti-fuite inchangée** : l'enrichissement ne touche que les `options` déjà exposées par la
+  projection au destinataire ; un ensemble caché n'a pas d'`options` → rien n'est enrichi.
+- **Réponse** : action `repondre_demande` (`params: {demande_id, choix}`), rejouée et validée par le
+  moteur (l'auteur **doit** être le destinataire). R-9.3.
