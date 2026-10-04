@@ -1,19 +1,26 @@
-"""Résolution complète d'une **attaque déclarée** — coût, dégâts, K.O. (R-9, R-10, R-13).
+"""Résolution complète d'une **attaque déclarée** — coût, effet scripté, dégâts, K.O. (R-9/10/13).
 
 Module **pur** (aucune E/S). Il **branche** sur la déclaration d'attaque la machinerie déjà livrée :
-:func:`pbm_game.combat.cout.payer_cout` (R-9.2), :func:`pbm_game.combat.resolution.resoudre_degats`
-(l'ordre strict R-10) et :func:`pbm_game.combat.fin.resoudre_kos` (K.O., récompenses, conditions de
-victoire — R-13/R-14). ``j-degats-resolution`` et ``j-ko-recompenses`` avaient livré ce calcul ;
-rien ne l'appelait depuis une attaque (la transition ne faisait que terminer le tour,
-``degats: 0``).
-C'est ``j-coups-joueur`` qui l'appelle.
+:func:`pbm_game.combat.cout.payer_cout` (R-9.2), le **langage d'effets** (lot ``j-effets-dsl``,
+:func:`pbm_game.effets.dsl.executer_programme`), :func:`pbm_game.combat.resolution.resoudre_degats`
+(l'ordre strict R-10) et :func:`pbm_game.combat.fin.resoudre_kos` (K.O., récompenses, victoire —
+R-13/R-14).
 
-**Le moteur ne devine rien (D9).** L'action ``declarer_attaque`` porte, depuis le catalogue (fourni
-par le service, transporté par le journal) : l'``attaque`` choisie (coût, dégâts secs, type), les
-``energies`` attachées à l'Actif (pour payer le coût), la ``faiblesse``/``resistance`` de l'Actif
-adverse (R-10.2/R-10.3) et les ``fiches`` PV/marqueur des Pokémon en jeu (pour la mise K.O.). Une
-attaque **à effet** (texte non vide) n'est pas scriptée au jalon J1 : elle est refusée (R-15.12/D9),
-jamais approximée.
+**Les attaques à effet (ce lot, ``j-cartes-attaques-effets``).** Une attaque peut porter un
+**script DSL** (``params["attaque"]["script"]`` ou ``params["script"]``) : pile ou face, dégâts au
+banc, auto-dégâts, défausse d'énergies en coût, soins, états spéciaux, blocage du tour suivant. Le
+script se résout **entre ``avant_degats`` et ``apres_degats``** : il s'exécute d'abord (il peut
+poser un état, blesser le banc, ou **annuler** les dégâts — « si pile, cette attaque ne fait
+rien »), puis les dégâts **principaux** sont posés sur l'Actif adverse (avec faiblesse/résistance),
+sauf s'ils ont été annulés. Une attaque dont le texte porte un effet **sans script** reste refusée
+(R-15.12/D9) : un effet non implémenté n'est jamais approximé.
+
+**Les dégâts variables** (``params["attaque"]["degats"]`` peut être un **mapping** et non un entier)
+se calculent **au moment de la résolution** (:mod:`pbm_game.combat.valeur`), jamais à la déclaration
+— un joueur qui défausse une énergie entre les deux obtiendrait sinon un résultat faux.
+
+**Les verrous** posés par un ``empecher`` du script (« ne peut pas attaquer au prochain tour »)
+rejoignent ``etat.verrous`` : ils pèsent sur les tours suivants et expirent au Checkup (R-12.5).
 
 Cette fonction **n'entre pas** en Checkup : c'est la transition ``declarer_attaque`` qui termine le
 tour (R-5.8), sauf si l'attaque a déjà terminé la partie.
@@ -30,6 +37,7 @@ from .cout import EnergieAttachee, payer_cout
 from .fin import resoudre_kos
 from .modele import CoutAttaque, Faiblesse, Resistance
 from .resolution import evenement_degats, poser_degats, resoudre_degats
+from .valeur import est_valeur_dynamique, valeur_depuis
 
 
 def _index_joueur(etat: EtatPartie, jid: str) -> int:
@@ -92,13 +100,68 @@ def _resistance_depuis(brut: object) -> Resistance | None:
     return Resistance(type=brut.get("type", ""), reduction=brut.get("reduction", 30))
 
 
+def _base_degats(attaque: Mapping, etat: EtatPartie, *, attaquant: str, adversaire: str) -> int:
+    """Les dégâts **de base** de l'attaque : entier sec, ou valeur **variable** calculée sur l'état.
+
+    R-10.1 (le piège de la fiche) : une base variable (« 20 par énergie attachée ») est résolue
+    **ici**, au moment de la résolution, sur l'état courant — jamais figée à la déclaration.
+    """
+    brut = attaque.get("degats", 0)
+    if est_valeur_dynamique(brut):
+        return valeur_depuis(brut).evaluer(etat, attaquant=attaquant, adversaire=adversaire)
+    if not isinstance(brut, int) or isinstance(brut, bool) or brut < 0:
+        raise ValueError(f"« degats » invalides {brut!r} (entier ≥ 0 ou dégâts variables).")
+    return brut
+
+
+def _executer_script(
+    etat: EtatPartie, script_brut: object, attaque: Mapping, action: Action, jid: str, rng: object
+) -> tuple[EtatPartie, list[Evenement], bool]:
+    """Exécute le **script d'effet** de l'attaque entre ``avant_degats`` et ``apres_degats``.
+
+    Renvoie ``(etat, evenements, degats_annules)``. Les verrous posés (``empecher``) rejoignent
+    ``etat.verrous`` — sans re-journaliser (la primitive a déjà émis ``EVT_VERROU_POSE``). Imports
+    **locaux** : ``combat`` ne dépend pas du paquet ``effets`` au chargement (il le tire à l'usage),
+    comme ``journal.transitions`` tire ``combat.attaque``.
+    """
+    from ..effets.dsl.chargement import charger_programme
+    from ..effets.dsl.contexte import ContexteEffet
+    from ..effets.dsl.interprete import executer_programme
+    from ..effets.pile import SourceEffet
+    from ..effets.verrous import VERROUS_VIDES, JeuDeVerrous
+
+    adversaire = _autre_joueur(etat, jid)
+    actif = etat.joueurs[_index_joueur(etat, jid)].actif
+    adv_actif = etat.joueurs[_index_joueur(etat, adversaire)].actif
+    source = SourceEffet(
+        libelle=str(attaque.get("nom") or "Attaque"),
+        ref=action.params.get("ref_attaquant"),
+        instance_id=carte_active(actif).instance_id if actif is not None else None,
+    )
+    metadonnees = action.params.get("metadonnees")
+    ctx = ContexteEffet(
+        source=source,
+        joueur=jid,
+        adversaire=adversaire,
+        acteur_actif=actif.cartes[0].instance_id if actif is not None else None,
+        defenseur=adv_actif.cartes[0].instance_id if adv_actif is not None else None,
+        metadonnees=metadonnees if isinstance(metadonnees, Mapping) else {},
+    )
+    resultat = executer_programme(etat, charger_programme(script_brut), ctx, rng)
+    etat = resultat.etat
+    if resultat.verrous:
+        base = etat.verrous if etat.verrous is not None else VERROUS_VIDES
+        etat = replace(etat, verrous=JeuDeVerrous(base.verrous + tuple(resultat.verrous)))
+    return etat, list(resultat.evenements), resultat.degats_annules
+
+
 def resoudre_attaque_declaree(
     etat: EtatPartie, action: Action, jid: str, attaque_a_lieu: bool, rng: object
 ) -> tuple[EtatPartie, list[Evenement]]:
-    """Résout le coût, les dégâts et les K.O. d'une attaque déclarée par ``jid`` (R-9/R-10/R-13).
+    """Résout le coût, l'effet scripté, les dégâts et les K.O. d'une attaque déclarée (R-9/10/13).
 
     ``attaque_a_lieu`` est le verdict des états **avant** l'attaque (``pbm_game.etats.attaque``) :
-    faux signifie que la Confusion est tombée sur pile — l'attaque ne porte alors aucun dégât
+    faux signifie que la Confusion est tombée sur pile — l'attaque ne porte alors ni effet ni dégâts
     (l'auto-blessure a déjà été posée par l'appelant), mais le coût **reste payé** (R-11.5). Ne gère
     pas la fin du tour (c'est la transition ``declarer_attaque``).
     """
@@ -107,7 +170,14 @@ def resoudre_attaque_declaree(
     if not isinstance(attaque, Mapping):
         raise ValueError("« attaque » (fiche de l'attaque choisie) est requise (R-9.1, D9).")
     effet = (attaque.get("effet") or "").strip()
-    if effet:
+    script_brut = action.params.get("script")
+    if script_brut is None:
+        script_brut = attaque.get("script")
+    # D9 : un texte d'effet n'est jouable que s'il est **porté** par une forme structurée — un
+    # script DSL, ou des dégâts variables (``degats`` est alors une formule). Un texte d'effet sans
+    # l'un ni l'autre est un effet non implémenté : refusé, jamais approximé (R-15.12).
+    degats_variables = est_valeur_dynamique(attaque.get("degats"))
+    if effet and script_brut is None and not degats_variables:
         raise ValueError(
             f"L'attaque « {attaque.get('nom')} » porte un effet non scripté — un effet non "
             "implémenté n'est jamais approximé (R-15.12/D9)."
@@ -122,17 +192,33 @@ def resoudre_attaque_declaree(
         evenements.append(paiement.evenement(cout))
 
     if not attaque_a_lieu:
-        # Confusion sur pile : l'attaque ne porte pas (R-11.5). Rien d'autre à résoudre ici.
+        # Confusion sur pile : ni effet ni dégât (R-11.5). Rien d'autre à résoudre ici.
         return etat, evenements
 
-    base = attaque.get("degats", 0)
     adversaire = _autre_joueur(etat, jid)
+
+    # Dégâts de base, calculés MAINTENANT (R-10.1) — une base variable lit l'état courant, avant
+    # que le script ne défausse d'énergie ou ne change quoi que ce soit.
+    base = _base_degats(attaque, etat, attaquant=jid, adversaire=adversaire)
+
+    # Effet scripté entre avant_degats et apres_degats : il s'exécute d'abord (états, banc, verrous,
+    # annulation éventuelle), puis les dégâts principaux sont posés.
+    degats_annules = False
+    if script_brut is not None:
+        etat, evts_script, degats_annules = _executer_script(
+            etat, script_brut, attaque, action, jid, rng
+        )
+        evenements.extend(evts_script)
+
     idx_adv = _index_joueur(etat, adversaire)
     adv = etat.joueurs[idx_adv]
     cible = adv.actif
-    if cible is None:
-        # Aucun Actif adverse à toucher : l'attaque est déclarée, aucun dégât posé (R-9.1).
+    if degats_annules or base == 0 or cible is None:
+        # Pas de dégâts principaux à poser : attaque annulée (R-16), attaque sans dégât sec, ou
+        # aucun Actif adverse à toucher (R-9.1). L'attaque reste déclarée (le tour se termine).
         evenements.append(Evenement(EVT_ATTAQUE_DECLAREE, {"joueur": jid, "degats": 0}))
+        etat, evts_ko = resoudre_kos(etat, action.params.get("fiches", {}), (jid, adversaire))
+        evenements.extend(evts_ko)
         return etat, evenements
 
     resultat = resoudre_degats(
@@ -146,7 +232,8 @@ def resoudre_attaque_declaree(
     evenements.append(evenement_degats(resultat, carte_active(cible).instance_id))
     evenements.append(Evenement(EVT_ATTAQUE_DECLAREE, {"joueur": jid, "degats": resultat.degats}))
 
-    # K.O., récompenses et conditions de victoire (R-13/R-14) — ordre (attaquant, défenseur).
+    # K.O., récompenses et conditions de victoire (R-13/R-14) — ordre (attaquant, défenseur). Le
+    # résolveur voit AUSSI les K.O. d'auto-dégâts et de dégâts au banc posés par le script.
     etat, evts_ko = resoudre_kos(etat, action.params.get("fiches", {}), (jid, adversaire))
     evenements.extend(evts_ko)
     return etat, evenements

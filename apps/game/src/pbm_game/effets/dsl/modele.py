@@ -72,7 +72,9 @@ class Condition:
       ``resultat_pile``) ;
     * ``etat`` — l'état spécial attendu (pour ``a_etat``) ;
     * ``attendu`` — la face attendue ``face``/``pile`` (pour ``resultat_pile``) ;
-    * ``minimum`` — le seuil (pour ``a_degats`` : au moins ``minimum`` compteurs).
+    * ``minimum`` — le seuil (pour ``a_degats`` : au moins ``minimum`` compteurs) ;
+    * ``type_pokemon`` — le **type** attendu de la cible (pour ``type_cible`` : « si le Défenseur
+      est de type Eau… ») ; comparé aux métadonnées de catalogue du contexte, jamais deviné (D9).
     """
 
     type: str
@@ -80,6 +82,7 @@ class Condition:
     etat: str | None = None
     attendu: str | None = None
     minimum: int | None = None
+    type_pokemon: str | None = None
 
     def en_json(self) -> dict:
         donnees: dict = {"type": self.type}
@@ -91,6 +94,8 @@ class Condition:
             donnees["attendu"] = self.attendu
         if self.minimum is not None:
             donnees["minimum"] = self.minimum
+        if self.type_pokemon is not None:
+            donnees["type_pokemon"] = self.type_pokemon
         return donnees
 
 
@@ -116,6 +121,9 @@ class Instruction:
       « **si face** » d'un ``pile_ou_face`` ;
     * ``sinon`` — la branche « si faux » d'un ``si``, ou la branche « **si pile** » d'un
       ``pile_ou_face`` ;
+    * ``jusqu_a_echec`` — pour ``pile_ou_face`` : lancer une pièce **jusqu'au premier pile**
+      (« lancez jusqu'à obtenir pile »), ``alors`` jouée une fois **par face** obtenue avant
+      l'échec. Exclusif de ``nombre`` (qui fixe un nombre de pièces) ;
     * ``regle`` — l'identifiant ``R-x.y`` que l'instruction sert (facultatif, pour le journal).
     """
 
@@ -129,6 +137,7 @@ class Instruction:
     condition: Condition | None = None
     alors: tuple[Instruction, ...] = ()
     sinon: tuple[Instruction, ...] = ()
+    jusqu_a_echec: bool = False
     regle: str = ""
 
     def en_json(self) -> dict:
@@ -151,6 +160,8 @@ class Instruction:
             donnees["alors"] = [i.en_json() for i in self.alors]
         if self.sinon:
             donnees["sinon"] = [i.en_json() for i in self.sinon]
+        if self.jusqu_a_echec:
+            donnees["jusqu_a_echec"] = True
         if self.regle:
             donnees["regle"] = self.regle
         return donnees

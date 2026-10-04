@@ -33,9 +33,10 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     # Importés **seulement** pour l'annotation de champs : jamais au runtime, pour que
-    # ``state.modele`` reste une feuille sans dépendance aux paquets ``demandes`` / mise en place
-    # (pas de cycle).
+    # ``state.modele`` reste une feuille sans dépendance aux paquets ``demandes`` / mise en place /
+    # effets (pas de cycle — ``effets.verrous`` importe ``effets.pile`` qui importe ``state``).
     from ..demandes.moteur import ResolutionEnCours
+    from ..effets.verrous import JeuDeVerrous
     from ..mise_en_place.modele import MiseEnPlace
 
 # Version du schéma d'état : toute évolution incompatible de la forme sérialisée
@@ -45,6 +46,14 @@ if TYPE_CHECKING:
 # v4 (lot ``j-initialisation``) : ajout de ``EtatPartie.mise_en_place`` — l'état transitoire de la
 # mise en place (R-4), présent avant le premier tour (mulligans, cartes bonus, placement face
 # caché), ``None`` dès la révélation simultanée (la partie a alors commencé).
+# Lot ``j-cartes-attaques-effets`` : ajout de ``EtatPartie.verrous`` — les verrous nommés en vigueur
+# (R-5.5/R-5.7/R-12.3/R-8), posés par une attaque à effet (« pas attaquer au prochain tour »)
+# et expirés au Checkup (R-12.5). Ce champ **ne bump PAS** la version, à dessein : il est
+# **rétro-compatible** — ``None``/absent = aucun verrou, donc un état d'avant ce lot se relit sans
+# migration, et une partie en cours (en base, en PROD) n'est **jamais** rendue illisible par ce lot.
+# La sortie JSON n'ajoute la clé ``verrous`` que lorsqu'un verrou existe : un état sans verrou
+# produit exactement le JSON d'avant. (Un futur changement réellement *incompatible* de la forme,
+# lui, incrémentera la version — ce n'en est pas un.)
 SCHEMA_VERSION = 4
 
 # --- États spéciaux (R-11.1) -------------------------------------------------
@@ -190,6 +199,17 @@ class EtatPartie:
     demande **reprend exactement à cette demande**. Annotée en chaîne (``from __future__``) pour ne
     pas importer le paquet ``demandes`` ici — ``state.modele`` reste une feuille sans dépendance.
 
+    ``verrous`` : les **verrous nommés** en vigueur (lot ``j-cartes-attaques-effets``), ou ``None``
+    quand aucun n'est posé. Un verrou est une interdiction nommée qu'une attaque à effet pose — « ce
+    Pokémon ne peut pas attaquer au prochain tour » (R-5.7), « pas de Supporter ce tour » (R-5.5) —
+    avec une **portée** qui dit quand il tombe. Les verrous « ce tour » / « prochain tour » expirent
+    au Pokémon Checkup (R-12.5), chaque levée journalisée : un coup interdit nomme toujours la carte
+    responsable, un verrou ne disparaît jamais en silence. Donnée (type
+    ``pbm_game.effets.verrous.JeuDeVerrous``) sérialisée avec l'état — donc une partie reprise après
+    un F5 garde ses verrous, et le rejeu les repose à l'identique. Annotée en chaîne, même
+    motif que ``resolution`` : ``state.modele`` reste une feuille (``effets.verrous`` importe
+    ``effets.pile``, qui importe ``state`` — l'importer ici au runtime créerait un cycle).
+
     ``mise_en_place`` : l'état transitoire de la **mise en place** (R-4, lot ``j-initialisation``),
     ou ``None`` quand la partie a commencé. Quand elle n'est pas ``None``, la partie est **avant son
     premier tour** : elle porte le compte des mulligans (R-4.4), les cartes bonus dues (R-4.5) et le
@@ -209,6 +229,7 @@ class EtatPartie:
     raison_fin: str | None = None
     resolution: ResolutionEnCours | None = None
     mise_en_place: MiseEnPlace | None = None
+    verrous: JeuDeVerrous | None = None
 
 
 def orientation(pokemon: PokemonEnJeu) -> str:

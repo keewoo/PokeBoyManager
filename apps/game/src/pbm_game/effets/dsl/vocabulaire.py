@@ -151,9 +151,12 @@ COND_ZONE_NON_VIDE = "zone_non_vide"
 COND_A_ETAT = "a_etat"
 #: Un Pokémon porte au moins N compteurs de dégâts.
 COND_A_DEGATS = "a_degats"
+#: Un Pokémon est du **type** attendu (« si le Pokémon Défenseur est de type Eau… ») — le type
+#: se lit dans les métadonnées de catalogue du contexte (``ref → type``), jamais deviné (D9).
+COND_TYPE_CIBLE = "type_cible"
 
 CONDITIONS: frozenset[str] = frozenset(
-    {COND_RESULTAT_PILE, COND_ZONE_NON_VIDE, COND_A_ETAT, COND_A_DEGATS}
+    {COND_RESULTAT_PILE, COND_ZONE_NON_VIDE, COND_A_ETAT, COND_A_DEGATS, COND_TYPE_CIBLE}
 )
 
 __all__ = [
@@ -209,5 +212,6 @@ __all__ = [
     "COND_ZONE_NON_VIDE",
     "COND_A_ETAT",
     "COND_A_DEGATS",
+    "COND_TYPE_CIBLE",
     "CONDITIONS",
 ]

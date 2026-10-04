@@ -128,6 +128,30 @@ class Verrou:
             "pose_au_tour": self.pose_au_tour,
         }
 
+    @staticmethod
+    def depuis_json(donnees: object) -> Verrou:
+        """Relit un verrou produit par :meth:`en_json` — pour reprendre un état après un F5.
+
+        La validation de :meth:`__post_init__` **mord** ici (nom/portée hors liste, règle vide) :
+        un verrou sérialisé incohérent est une panne, jamais chargé « au mieux ».
+        """
+        if not isinstance(donnees, dict):
+            raise ValueError("Un verrou doit être un mapping {nom, portee, source, regle, …}.")
+        pose = donnees.get("pose_au_tour")
+        if pose is not None and (not isinstance(pose, int) or isinstance(pose, bool)):
+            raise ValueError("Verrou : « pose_au_tour » doit être un entier ou None.")
+        cible = donnees.get("cible")
+        if cible is not None and not isinstance(cible, str):
+            raise ValueError("Verrou : « cible » doit être une chaîne ou None.")
+        return Verrou(
+            nom=donnees.get("nom", ""),
+            portee=donnees.get("portee", ""),
+            source=SourceEffet.depuis_json(donnees.get("source")),
+            regle=donnees.get("regle", ""),
+            cible=cible,
+            pose_au_tour=pose,
+        )
+
 
 @dataclass(frozen=True)
 class JeuDeVerrous:
@@ -200,6 +224,58 @@ class JeuDeVerrous:
             else:
                 gardes.append(v)
         return JeuDeVerrous(tuple(gardes)), leves
+
+    def expirer_au_checkup_oriente(
+        self, numero_tour: int, *, joueur_actif: str, proprietaire_de
+    ) -> tuple[JeuDeVerrous, list[Evenement]]:
+        """Expire les verrous « ce tour » / « prochain tour » **en tenant compte du propriétaire**.
+
+        La différence avec :meth:`expirer_au_checkup` (pur, aveugle au propriétaire) : un verrou
+        « prochain tour » pèse sur le prochain tour **de sa cible**, pas sur le tour global suivant.
+        Comme les tours alternent, le prochain tour de la cible n'est pas toujours le tour N+1 :
+        un auto-blocage posé par Alice (« ce Pokémon ne peut pas attaquer au prochain tour ») doit
+        survivre au tour de Bob et ne tomber qu'au Checkup du **prochain tour d'Alice**. La règle :
+
+        * un :data:`PORTEE_CE_TOUR` tombe au Checkup du tour où il a été posé (``numero_tour >=
+          pose_au_tour``, et c'est alors le tour de son propriétaire) ;
+        * un :data:`PORTEE_PROCHAIN_TOUR` tombe au premier Checkup **du propriétaire de sa cible**
+          postérieur à la pose (``joueur_actif == proprietaire_de(cible)`` et ``numero_tour >
+          pose_au_tour``) — donc il a bien pesé sur un tour entier de la cible avant de tomber.
+
+        ``proprietaire_de(cible)`` renvoie l'identifiant du joueur à qui appartient la cible du
+        verrou (le joueur lui-même, ou le propriétaire du Pokémon visé), ou ``None`` si la cible est
+        **globale** (``cible is None``) ou introuvable — un verrou global « prochain tour » retombe
+        alors sur la règle aveugle (``numero_tour > pose_au_tour``), faute de propriétaire à qui
+        rattacher le tour. Chaque levée est journalisée (:data:`EVT_VERROU_LEVE`), jamais muette.
+        """
+        gardes: list[Verrou] = []
+        leves: list[Evenement] = []
+        for v in self.verrous:
+            proprio = proprietaire_de(v.cible) if v.cible is not None else None
+            if v.portee == PORTEE_CE_TOUR and (
+                v.pose_au_tour is None or numero_tour >= v.pose_au_tour
+            ):
+                leves.append(Evenement(EVT_VERROU_LEVE, {**v.en_json(), "au_tour": numero_tour}))
+            elif (
+                v.portee == PORTEE_PROCHAIN_TOUR
+                and v.pose_au_tour is not None
+                and (numero_tour > v.pose_au_tour and (proprio is None or proprio == joueur_actif))
+            ):
+                leves.append(Evenement(EVT_VERROU_LEVE, {**v.en_json(), "au_tour": numero_tour}))
+            else:
+                gardes.append(v)
+        return JeuDeVerrous(tuple(gardes)), leves
+
+    def en_json(self) -> list[dict]:
+        """Les verrous en vigueur en liste de ``dict`` JSON-natifs (ordre de pose conservé)."""
+        return [v.en_json() for v in self.verrous]
+
+    @staticmethod
+    def depuis_json(donnees: object) -> JeuDeVerrous:
+        """Relit un jeu de verrous produit par :meth:`en_json` (ou lève ``ValueError``)."""
+        if not isinstance(donnees, list):
+            raise ValueError("Les verrous doivent être une liste de verrous (jeu de verrous).")
+        return JeuDeVerrous(tuple(Verrou.depuis_json(v) for v in donnees))
 
     def retirer_sources_absentes(
         self, refs_en_jeu: frozenset[str]

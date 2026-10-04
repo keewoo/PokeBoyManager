@@ -25,6 +25,7 @@ from ..verrous import PORTEES_VERROU, VERROUS
 from .modele import Condition, Instruction, Programme, Selecteur
 from .vocabulaire import (
     CATEGORIES,
+    COND_TYPE_CIBLE,
     CONDITIONS,
     CTRL_REPETER,
     CTRL_SI,
@@ -85,7 +86,7 @@ _OPS_NOMBRE_REQUIS: frozenset[str] = frozenset({OP_PIOCHER, OP_POSER_COMPTEURS, 
 
 # Clés autorisées, par brique — tout le reste est refusé (strict).
 _CLES_SELECTEUR = {"zone", "proprietaire", "categorie", "stade", "nombre", "position"}
-_CLES_CONDITION = {"type", "cible", "etat", "attendu", "minimum"}
+_CLES_CONDITION = {"type", "cible", "etat", "attendu", "minimum", "type_pokemon"}
 _CLES_INSTRUCTION = {
     "op",
     "cible",
@@ -97,6 +98,7 @@ _CLES_INSTRUCTION = {
     "condition",
     "alors",
     "sinon",
+    "jusqu_a_echec",
     "regle",
 }
 _CLES_PROGRAMME = {"version", "effets", "cout"}
@@ -184,7 +186,32 @@ def _charger_condition(donnees: object, quoi: str) -> Condition:
     minimum = d.get("minimum")
     if minimum is not None:
         minimum = _entier_positif(minimum, f"{quoi}.minimum")
-    return Condition(type=type_, cible=cible, etat=etat, attendu=attendu, minimum=minimum)
+    type_pokemon = d.get("type_pokemon")
+    if type_pokemon is not None and (not isinstance(type_pokemon, str) or not type_pokemon.strip()):
+        raise ProgrammeInvalide(
+            f"{quoi}.type_pokemon : chaîne non vide attendue (le type de la cible), "
+            f"reçu {type_pokemon!r}."
+        )
+    # Garanties par condition : chacune exige ce dont elle a besoin, jamais deviné (D9).
+    if type_ == COND_TYPE_CIBLE:
+        if cible is None:
+            raise ProgrammeInvalide(
+                f"{quoi} : « type_cible » exige une « cible » (le Pokémon visé)."
+            )
+        if type_pokemon is None:
+            raise ProgrammeInvalide(
+                f"{quoi} : « type_cible » exige un « type_pokemon » (le type attendu)."
+            )
+    elif type_pokemon is not None:
+        raise ProgrammeInvalide(f"{quoi} : « type_pokemon » n'a de sens que pour « type_cible ».")
+    return Condition(
+        type=type_,
+        cible=cible,
+        etat=etat,
+        attendu=attendu,
+        minimum=minimum,
+        type_pokemon=type_pokemon,
+    )
 
 
 def _charger_instructions(
@@ -250,13 +277,24 @@ def _charger_instruction(donnees: object, quoi: str, *, dans_choix: bool) -> Ins
     if "condition" in d:
         raise ProgrammeInvalide(f"{quoi} : « condition » n'a de sens que pour un « si ».")
 
-    # --- pile_ou_face : nombre de pièces + branches alors (face) / sinon (pile) ---
+    # --- pile_ou_face : nombre de pièces (ou jusqu'à échec) + branches alors (face) / sinon (pile)
     if op == OP_PILE_OU_FACE:
         alors = _charger_instructions(d.get("alors", []), f"{quoi}.alors", dans_choix=dans_choix)
         sinon = _charger_instructions(d.get("sinon", []), f"{quoi}.sinon", dans_choix=dans_choix)
         if not alors and not sinon:
             raise ProgrammeInvalide(f"{quoi} : un « pile_ou_face » sans branche ne décide de rien.")
-        return Instruction(op=op, nombre=nombre, alors=alors, sinon=sinon, regle=regle)
+        jusqu_a_echec = d.get("jusqu_a_echec", False)
+        if not isinstance(jusqu_a_echec, bool):
+            raise ProgrammeInvalide(
+                f"{quoi}.jusqu_a_echec : booléen attendu, reçu {jusqu_a_echec!r}."
+            )
+        if jusqu_a_echec and nombre is not None:
+            raise ProgrammeInvalide(
+                f"{quoi} : « jusqu_a_echec » (jusqu'à pile) exclut « nombre » (pièces fixes)."
+            )
+        return Instruction(
+            op=op, nombre=nombre, alors=alors, sinon=sinon, jusqu_a_echec=jusqu_a_echec, regle=regle
+        )
 
     # --- choisir : la cible est les OPTIONS ; son corps « alors » agit sur le choix ---
     if op == OP_CHOISIR:
@@ -275,6 +313,9 @@ def _charger_instruction(donnees: object, quoi: str, *, dans_choix: bool) -> Ins
             f"{quoi} : « alors »/« sinon » ne valent que pour « si », « repeter », "
             "« pile_ou_face » ou « choisir »."
         )
+    # « jusqu_a_echec » n'a de sens que pour « pile_ou_face » — ne jamais l'avaler en silence.
+    if "jusqu_a_echec" in d:
+        raise ProgrammeInvalide(f"{quoi} : « jusqu_a_echec » ne vaut que pour « pile_ou_face ».")
 
     # --- Cible / source / nombre requis selon la primitive --------------------
     if op in _OPS_CIBLE_REQUISE and cible is None and not dans_choix:

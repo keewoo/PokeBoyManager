@@ -195,6 +195,11 @@ def vers_json(etat: EtatPartie) -> dict:
         from ..mise_en_place.modele import mise_en_place_vers_json
 
         donnees["mise_en_place"] = mise_en_place_vers_json(etat.mise_en_place)
+    if etat.verrous is not None and etat.verrous.verrous:
+        # Sérialisé **seulement** s'il y a des verrous : un état sans verrou produit le JSON d'avant
+        # ce lot. ``JeuDeVerrous.en_json`` conserve l'ordre de pose (déterministe, donc empreinte
+        # stable). Import local : ``state`` reste une feuille (``effets`` dépend de ``state``).
+        donnees["verrous"] = etat.verrous.en_json()
     return donnees
 
 
@@ -241,6 +246,13 @@ def depuis_json(donnees: object) -> EtatPartie:
         from ..mise_en_place.modele import mise_en_place_depuis_json
 
         mise_en_place = mise_en_place_depuis_json(mise_en_place_brute)
+    verrous_bruts = donnees.get("verrous")
+    verrous = None
+    if verrous_bruts is not None:
+        # Import local : ``state`` reste une feuille ; seul ``effets`` connaît la forme d'un verrou.
+        from ..effets.verrous import JeuDeVerrous
+
+        verrous = JeuDeVerrous.depuis_json(verrous_bruts)
     return EtatPartie(
         schema_version=version,
         joueurs=(_joueur_depuis(joueurs_bruts[0]), _joueur_depuis(joueurs_bruts[1])),
@@ -252,4 +264,5 @@ def depuis_json(donnees: object) -> EtatPartie:
         raison_fin=raison_fin,
         resolution=resolution,
         mise_en_place=mise_en_place,
+        verrous=verrous,
     )
