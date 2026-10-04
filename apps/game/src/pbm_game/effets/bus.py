@@ -25,13 +25,13 @@ lot ne câble pas ces publications dans le socle, exprès : ce serait le modifie
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 
 from ..journal.modele import Evenement
 from ..rng import Rng
 from ..state.modele import EtatPartie
-from .evenements import EVENEMENTS_JEU, EvenementJeu
+from .evenements import EJ_DEVIENT_ACTIF, EVENEMENTS_JEU, EvenementJeu
 from .pile import Interruption, PileEffets, RegistreEffets, resoudre_pile
 
 # Un réacteur reçoit l'état, l'événement de jeu publié et la pile courante ; il rend la pile
@@ -132,9 +132,43 @@ def declencheur_fenetre(
     return _declencheur
 
 
+def publier_devient_actif(
+    etat: EtatPartie,
+    devenus_actifs: Sequence[tuple[str, str]],
+    bus: Bus,
+    registre: RegistreEffets,
+    rng: Rng,
+) -> tuple[EtatPartie, list[Evenement]]:
+    """Publie :data:`~pbm_game.effets.evenements.EJ_DEVIENT_ACTIF` pour chaque Pokémon devenu Actif.
+
+    C'est le **passage par le bus** que réclame l'appât (fiche ``j-cartes-objets``). Quand une carte
+    force un Pokémon à devenir Actif — l'appât sort du banc le Pokémon fragile de l'adversaire, un
+    *Switch* change le sien — le DSL l'a noté dans
+    :attr:`~pbm_game.effets.dsl.interprete.ResultatProgramme.devenus_actifs` (une liste de
+    ``(joueur, identité)``). **Sans ce passage, les déclencheurs « quand ce Pokémon devient
+    Actif… » seraient oubliés** (le risque central nommé par la fiche) : l'appât amène souvent au
+    front un Pokémon porteur d'un tel talent.
+
+    Pour chaque ``(joueur, pokemon)``, dans l'ordre : construit l':class:`EvenementJeu`, le
+    **publie** sur le ``bus`` (les réacteurs abonnés empilent leurs effets), **résout** la pile avec
+    le ``registre``, et accumule les événements. Sans réacteur abonné, ne fait **rien** — l'absence
+    réelle d'effet, jamais un repli masqué (comme une fenêtre vide du socle). Pur côté état ;
+    ``rng`` est le seul collaborateur mutable (tirages rejouables).
+    """
+    evenements: list[Evenement] = []
+    for joueur, pokemon in devenus_actifs:
+        evenement = EvenementJeu(EJ_DEVIENT_ACTIF, {"joueur": joueur, "pokemon": pokemon})
+        pile, evts_pub = bus.publier(etat, evenement, PileEffets(), rng)
+        etat, evts_pile = resoudre_pile(etat, pile, registre, rng)
+        evenements.extend(evts_pub)
+        evenements.extend(evts_pile)
+    return etat, evenements
+
+
 __all__ = [
     "Reacteur",
     "Bus",
     "ChargeUtile",
     "declencheur_fenetre",
+    "publier_devient_actif",
 ]

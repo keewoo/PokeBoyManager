@@ -31,15 +31,20 @@ le journal transporte — le rejeu n'a donc pas besoin du catalogue.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from ..cartes.energie import DefinitionEnergie
 from ..cartes.modele import DefinitionCarte, definition_vers_dict
 from ..combat.cout import EnergieAttachee, cout_satisfait
+from ..effets.dsl.contexte import ContexteEffet
+from ..effets.dsl.jouabilite import programme_jouable
+from ..effets.dsl.modele import Programme
+from ..effets.pile import SourceEffet
 from ..journal.modele import (
     ACTION_ATTACHER_ENERGIE,
     ACTION_DECLARER_ATTAQUE,
     ACTION_EVOLUER,
+    ACTION_JOUER_OBJET,
     ACTION_PLACER_MISE_EN_PLACE,
     ACTION_POSER,
     ACTION_PROMOUVOIR,
@@ -82,25 +87,68 @@ _STADE_NON_POKEMON = "non_pokemon"
 
 
 @dataclass(frozen=True)
+class DefinitionObjet:
+    """Définition catalogue d'une carte **Objet** — ce que le service extrait pour la jouer.
+
+    Un Objet n'a pas de données de combat : il a un **script d'effet**. C'est le service qui, depuis
+    le registre ``card_scripts`` (texte → script DSL validé), construit cette définition — le moteur
+    ne lit jamais la base (D9).
+
+    * ``ref`` — référence catalogue de la carte ;
+    * ``nom`` — nom lisible (étiquette du coup, journal) ;
+    * ``programme`` — le script d'effet déjà **chargé et validé** (:class:`Programme`) ;
+    * ``source_text`` — le texte d'effet d'origine (empreinte / errata, tenus côté service).
+    """
+
+    ref: str
+    nom: str
+    programme: Programme
+    source_text: str = ""
+
+
+@dataclass(frozen=True)
 class CatalogueJeu:
     """Les définitions de carte des deux decks d'une partie, par ``ref`` (fourni par le service).
 
     * ``pokemon`` — ``ref → DefinitionCarte`` pour les cartes Pokémon ;
-    * ``energies`` — ``ref → DefinitionEnergie`` pour les cartes Énergie.
+    * ``energies`` — ``ref → DefinitionEnergie`` pour les cartes Énergie ;
+    * ``objets`` — ``ref → DefinitionObjet`` pour les cartes Objet scriptées (``j-cartes-objets``).
 
     Le moteur ne lit **jamais** la base : ce catalogue est extrait une fois, à la création de la
-    partie, et passé aux familles. Une ``ref`` absente des deux mappings **ne produit aucun coup**
+    partie, et passé aux familles. Une ``ref`` absente des mappings **ne produit aucun coup**
     (D9) — on ne devine pas ce qu'une carte est.
     """
 
     pokemon: dict[str, DefinitionCarte] = field(default_factory=dict)
     energies: dict[str, DefinitionEnergie] = field(default_factory=dict)
+    objets: dict[str, DefinitionObjet] = field(default_factory=dict)
 
     def pokemon_de(self, ref: str) -> DefinitionCarte | None:
         return self.pokemon.get(ref)
 
     def energie_de(self, ref: str) -> DefinitionEnergie | None:
         return self.energies.get(ref)
+
+    def objet_de(self, ref: str) -> DefinitionObjet | None:
+        return self.objets.get(ref)
+
+    def metadonnees_completes(self) -> dict:
+        """Les métadonnées ``ref → {categorie, stade, type}`` de **toutes** les cartes connues.
+
+        Nécessaire aux sélecteurs **filtrés** d'un script d'Objet qui fouillent une zone de cartes
+        (« cherchez un Pokémon dans votre deck ») : la sélection (:func:`candidats`) ne retient une
+        carte de la pioche/défausse que si ses métadonnées disent sa catégorie. Une ``ref`` absente
+        n'est simplement pas retenue par un filtre (jamais devinée, D9). Couvre les Pokémon (avec
+        stade et type), les énergies et les Objets connus.
+        """
+        meta: dict[str, dict] = {}
+        for ref, d in self.pokemon.items():
+            meta[ref] = {"categorie": "pokemon", "stade": d.stade, "type": d.type}
+        for ref in self.energies:
+            meta.setdefault(ref, {"categorie": "energie"})
+        for ref in self.objets:
+            meta.setdefault(ref, {"categorie": "dresseur"})
+        return meta
 
     def definitions(self) -> dict[str, dict]:
         """Le mapping ``ref → fiche`` attendu par la mise en place (R-4.2).
@@ -151,6 +199,26 @@ def _autre(etat: EtatPartie, jid: str) -> Joueur:
         if j.id != jid:
             return j
     raise ValueError(f"Pas d'adversaire pour « {jid} ».")
+
+
+def _etat_sans_carte_main(etat: EtatPartie, jid: str, instance_id: str) -> EtatPartie:
+    """L'état où ``instance_id`` a quitté la main de ``jid`` — pour sonder la jouabilité d'un Objet.
+
+    Un Objet se défausse avant que son effet ne s'applique (R-5.5) : la sonde de jouabilité doit
+    regarder la main **sans** lui, sinon son texte « défaussez N autres cartes » se compterait
+    lui-même. Renvoie l'état inchangé si la carte n'y est pas (la sonde n'est appelée que sur des
+    cartes réellement en main).
+    """
+    idx = _index_de(etat, jid)
+    if idx is None:
+        return etat
+    j = etat.joueurs[idx]
+    main = tuple(c for c in j.main if c.instance_id != instance_id)
+    if len(main) == len(j.main):
+        return etat
+    joueurs = list(etat.joueurs)
+    joueurs[idx] = replace(j, main=main)
+    return replace(etat, joueurs=(joueurs[0], joueurs[1]))
 
 
 def _en_jeu(joueur: Joueur) -> list[PokemonEnJeu]:
@@ -583,6 +651,91 @@ class FamillePlacer(_FamilleCatalogue):
         return refus("R-4.2", "Ce placement n'est pas possible dans cet état (R-4.2).")
 
 
+class FamilleJouerObjet(_FamilleCatalogue):
+    """Jouer une carte **Objet** (R-5.5) — joueur actif, phase principale, **autant qu'on veut**.
+
+    Contrairement au Supporter (un par tour) ou à l'énergie (une par tour), un Objet se joue sans
+    limite de nombre (R-5.5) : aucune garde de tour. La contrainte propre à ce lot — **un Objet
+    n'est listé que s'il a une cible valide** :
+    :func:`~pbm_game.effets.dsl.jouabilite.programme_jouable` vérifie, sur la main *sans* l'Objet
+    (son texte ne peut pas se défausser lui-même), que le coût est payable et qu'au moins un effet
+    pourrait agir. Un **appât sur un banc adverse vide** n'apparaît
+    donc pas, et son refus en cite la raison (critère d'acceptation). Pendant une **demande de
+    décision** (``etat.resolution``), la partie est en pause : aucun Objet n'est proposé — la garde
+    centrale d'``appliquer`` le refuse aussi, mais on ne le **liste** pas, pour que liste et
+    validation restent cohérentes (une seule source de vérité).
+    """
+
+    nom = "jouer_objet"
+
+    def gouverne(self, action: Action) -> bool:
+        return action.type == ACTION_JOUER_OBJET
+
+    def generer(self, etat: EtatPartie, joueur: str) -> list[ActionLegale]:
+        j = _joueur_de(etat, joueur)
+        if j is None or joueur != etat.tour.joueur_actif or etat.tour.phase != PHASE_PRINCIPALE:
+            return []
+        if etat.resolution is not None:
+            return []  # une décision est en attente : seule la réponse (ou l'abandon) est permise
+        meta = self.catalogue.metadonnees_completes()
+        adversaire = _autre(etat, joueur).id
+        coups: list[ActionLegale] = []
+        for carte in j.main:
+            objet = self.catalogue.objet_de(carte.ref)
+            if objet is None:
+                continue
+            ctx = ContexteEffet(
+                source=SourceEffet(
+                    libelle=objet.nom, ref=objet.ref, instance_id=carte.instance_id
+                ),
+                joueur=joueur,
+                adversaire=adversaire,
+                metadonnees=meta,
+            )
+            etat_probe = _etat_sans_carte_main(etat, joueur, carte.instance_id)
+            jouable, _raison = programme_jouable(etat_probe, objet.programme, ctx)
+            if not jouable:
+                continue
+            coups.append(
+                ActionLegale(
+                    action=Action(
+                        ACTION_JOUER_OBJET,
+                        joueur,
+                        {
+                            "carte_main": carte.instance_id,
+                            "programme": objet.programme.en_json(),
+                            "source": {
+                                "libelle": objet.nom,
+                                "ref": objet.ref,
+                                "instance_id": carte.instance_id,
+                            },
+                            "metadonnees": meta,
+                            "nom": objet.nom,
+                        },
+                    ),
+                    etiquette=f"Jouer {objet.nom}",
+                )
+            )
+        return coups
+
+    def refuser(self, etat: EtatPartie, action: Action) -> Verdict:
+        if action.auteur != etat.tour.joueur_actif:
+            return refus("R-5.5", "Seul le joueur actif joue un Objet (R-5.3/R-5.5).")
+        if etat.tour.phase != PHASE_PRINCIPALE:
+            return refus("R-5.5", "On joue un Objet en phase principale (R-5.3).")
+        if etat.resolution is not None:
+            return refus(
+                "R-5.5",
+                "Une décision est en attente : seule la réponse (ou l'abandon) est permise, "
+                "pas un Objet.",
+            )
+        return refus(
+            "R-5.5",
+            "Cet Objet n'est pas jouable ici — il n'a aucune cible valide (p. ex. un appât sur un "
+            "banc adverse vide, R-5.5).",
+        )
+
+
 class FamilleAvancerPhaseJeu(FamilleAvancerPhase):
     """``avancer_phase`` du jeu : comme la famille de base, mais interdite tant qu'un Actif manque.
 
@@ -613,6 +766,7 @@ def familles_jeu(catalogue: CatalogueJeu) -> tuple[Famille, ...]:
         FamillePoser(catalogue),
         FamilleEvoluer(catalogue),
         FamilleAttacherEnergie(catalogue),
+        FamilleJouerObjet(catalogue),
         FamilleAttaquer(catalogue),
         FamilleRetraite(catalogue),
         FamillePromouvoir(),
@@ -622,9 +776,11 @@ def familles_jeu(catalogue: CatalogueJeu) -> tuple[Famille, ...]:
 
 __all__ = [
     "CatalogueJeu",
+    "DefinitionObjet",
     "FamillePoser",
     "FamilleEvoluer",
     "FamilleAttacherEnergie",
+    "FamilleJouerObjet",
     "FamilleAttaquer",
     "FamilleRetraite",
     "FamillePromouvoir",

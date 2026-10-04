@@ -132,6 +132,13 @@ class Execution:
     selection: tuple[CibleCarte | CiblePokemon, ...] | None = None
     dernier_pile: str | None = None
     degats_annules: bool = False
+    #: Les Pokémon qui **sont devenus Actifs** pendant ce script, dans l'ordre — un ``(joueur,
+    #: identité)`` par passage. Alimenté par ``changer_actif`` (appât : l'Actif adverse change).
+    #: L'appelant s'en sert pour **publier** :data:`~pbm_game.effets.evenements.EJ_DEVIENT_ACTIF`
+    #: sur le bus (:func:`~pbm_game.effets.bus.publier_devient_actif`) : sans ce passage, les
+    #: déclencheurs « quand ce Pokémon devient Actif… » seraient oubliés (risque nommé par la fiche
+    #: du lot ``j-cartes-objets``). Le DSL reste **pur** : il *note* le moment, il ne publie pas.
+    devenus_actifs: list[tuple[str, str]] = field(default_factory=list)
     _budget: int = 100_000
 
     def consommer(self) -> None:

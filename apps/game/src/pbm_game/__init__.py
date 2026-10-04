@@ -116,4 +116,9 @@ from .effets.dsl import interprete as _interprete  # noqa: E402
 
 _demandes.enregistrer(_interprete.TYPE_EFFET_DSL, _interprete.resolveur_dsl_demandes)
 
+# ``effets.objets`` enregistre la transition ``jouer_objet`` dans le ``REGISTRE`` du journal à son
+# import (lot ``j-cartes-objets``). Même motif que ``banc`` : on l'importe ici, après le DSL, pour
+# que ``appliquer`` la reconnaisse (la transition tire le DSL en local à l'usage).
+from .effets import objets as _objets  # noqa: E402,F401  (import pour effet d'enregistrement)
+
 __all__: list[str] = []

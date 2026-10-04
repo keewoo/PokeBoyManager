@@ -322,6 +322,23 @@ export const TRADUCTEURS: Record<string, Traducteur> = {
     },
   },
 
+  objet_joue: {
+    automatique: false,
+    traduire: (d, pour) => {
+      const nom = chaine(d, "nom") ?? "un Objet";
+      const devient = Array.isArray(d.devient_actif) ? d.devient_actif : [];
+      const refs = devient
+        .map((paire: unknown) => (Array.isArray(paire) ? paire[1] : undefined))
+        .filter((x): x is string => typeof x === "string");
+      const appat = refs.length > 0 ? " — un Pokémon est tiré au front (R-8.8)" : "";
+      return {
+        texte: `${sujet(d, pour)} ${estMoi(d, pour) ? "joues" : "joue"} ${nom}${appat}.`,
+        surligne: refs[0] ?? null,
+        refs,
+      };
+    },
+  },
+
   etat_checkup: {
     automatique: true,
     traduire: (d, pour) => {
