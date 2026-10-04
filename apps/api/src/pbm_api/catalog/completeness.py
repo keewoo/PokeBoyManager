@@ -11,6 +11,7 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from pbm_api.catalog.prize_marker import POKEMON_SUPERTYPES, is_ordinary_stage
 from pbm_api.models import Card, CardName, CardPriceDaily, Set
 
 # Libellés TCGdex de la catégorie "Dresseur" et de l'Énergie spéciale, dans les deux langues
@@ -44,6 +45,13 @@ class CompletenessStats:
     trainers_by_type: list[tuple[str, int, int]]  # sous-type, total, avec effet
     cards_special_energy: int
     cards_special_energy_with_effect: int
+    # Stade d'évolution des Pokémon (lot `cat-stades`) — la clé de jouabilité en jeu : un Pokémon
+    # sans stade reconnu est bloqué par `definition_depuis_card` (R-7). Classé avec
+    # `is_ordinary_stage`, la même fonction que la classification des marqueurs.
+    pokemon_total: int
+    pokemon_with_playable_stage: int
+    pokemon_without_stage: int
+    pokemon_special_stage: list[tuple[str, int]]  # stade spécial (VMAX, VSTAR…), nombre de cartes
     sets_without_ptcg: list[tuple[str, str]]
     gaps: list[tuple[str, str, int, int]]  # code, name, cartes importées, total officiel TCGdex
 
@@ -136,6 +144,26 @@ async def compute_completeness_stats(session: AsyncSession) -> CompletenessStats
         await session.execute(select(func.count(Card.id)).where(is_special_energy & has_effect))
     ).scalar_one()
 
+    # Stade des Pokémon : on agrège par valeur brute puis on classe en Python avec la fonction
+    # PARTAGÉE `is_ordinary_stage` — « Stage1 », « stage 1 » et « Niveau 1 » comptent pour un seul
+    # stade jouable. Un stade absent (None/vide) reste bloqué (jamais deviné) ; un stade présent
+    # mais non ordinaire (VMAX, VSTAR, MÉGA…) est une mécanique spéciale non encore gérée.
+    pokemon_stage_rows = (
+        await session.execute(
+            select(Card.stage, func.count(Card.id))
+            .where(Card.supertype.in_(tuple(POKEMON_SUPERTYPES)))
+            .group_by(Card.stage)
+        )
+    ).all()
+    pokemon_total = sum(n for _, n in pokemon_stage_rows)
+    pokemon_with_playable_stage = sum(n for s, n in pokemon_stage_rows if is_ordinary_stage(s))
+    pokemon_without_stage = sum(n for s, n in pokemon_stage_rows if not s)
+    pokemon_special_stage = sorted(
+        ((s, n) for s, n in pokemon_stage_rows if s and not is_ordinary_stage(s)),
+        key=lambda r: r[1],
+        reverse=True,
+    )
+
     sets_without_ptcg: list[Any] = (
         await session.execute(
             select(Set.code, Set.name)
@@ -176,6 +204,10 @@ async def compute_completeness_stats(session: AsyncSession) -> CompletenessStats
         trainers_by_type=trainers_by_type,
         cards_special_energy=cards_special_energy,
         cards_special_energy_with_effect=cards_special_energy_with_effect,
+        pokemon_total=pokemon_total,
+        pokemon_with_playable_stage=pokemon_with_playable_stage,
+        pokemon_without_stage=pokemon_without_stage,
+        pokemon_special_stage=pokemon_special_stage,
         sets_without_ptcg=list(sets_without_ptcg),
         gaps=gaps,
     )

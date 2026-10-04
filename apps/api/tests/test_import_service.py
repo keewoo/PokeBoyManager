@@ -692,3 +692,113 @@ async def test_completeness_counts_effect_text_honestly(db_session):
     by_type = dict((t[0], (t[1], t[2])) for t in stats.trainers_by_type)
     assert by_type["Objet"] == (2, 1)  # Hyper Ball (effet) + Objet sans texte (vide)
     assert by_type["Supporter"] == (1, 1)
+
+
+# --------------------------------------------------------------------------------------------
+# Repli de stade sur l'anglais (lot `cat-stades`, 04/10/2026)
+# --------------------------------------------------------------------------------------------
+class ScenarioTcgdexClient:
+    """Doublure paramétrable : un détail d'extension et un détail de carte PAR langue, pour
+    éprouver le repli de stade (langue source muette, anglais renseigné)."""
+
+    def __init__(self, set_by_lang: dict, cards_by_lang: dict):
+        self._set_by_lang = set_by_lang
+        self._cards_by_lang = cards_by_lang
+        self.card_calls: list[tuple[str, str]] = []
+
+    async def list_sets(self, lang: str) -> list[dict]:
+        detail = self._set_by_lang.get(lang)
+        return [{"id": detail["id"], "name": detail["name"]}] if detail else []
+
+    async def get_set(self, lang: str, set_id: str) -> dict:
+        if lang not in self._set_by_lang:
+            raise RuntimeError("404 Not Found")
+        return self._set_by_lang[lang]
+
+    async def get_card(self, lang: str, card_id: str) -> dict:
+        self.card_calls.append((lang, card_id))
+        return self._cards_by_lang[lang][card_id]
+
+
+def _mini_set(name_suffix: str, card_ids_names: list[tuple[str, str]]) -> dict:
+    return {
+        "id": "setx",
+        "name": f"SetX {name_suffix}",
+        "serie": {"id": "x", "name": "Série X"},
+        "releaseDate": "2020-01-01",
+        "cardCount": {"official": len(card_ids_names), "total": len(card_ids_names)},
+        "cards": [
+            {"id": cid, "localId": cid.split("-")[-1], "name": n}
+            for cid, n in card_ids_names
+        ],
+    }
+
+
+def _mini_card(cid: str, name: str, stage) -> dict:
+    return {
+        "id": cid,
+        "localId": cid.split("-")[-1],
+        "name": name,
+        "category": "Pokemon",
+        "hp": 90,
+        "retreat": 1,
+        "stage": stage,
+        "attacks": [{"name": "Charge", "damage": 10}],
+    }
+
+
+async def test_import_repli_stade_anglais(db_session):
+    """Le stade manquant dans la langue source est pris sur l'édition anglaise quand elle le
+    porte ; une carte sans stade dans AUCUNE langue reste `None` et se compte (jamais devinée)."""
+    fr_set = _mini_set("fr", [("setx-1", "Évolix"), ("setx-2", "Promo Truc")])
+    en_set = _mini_set("en", [("setx-1", "Evolix"), ("setx-2", "Promo Thing")])
+    client = ScenarioTcgdexClient(
+        {"fr": fr_set, "en": en_set},
+        {
+            "fr": {
+                "setx-1": _mini_card("setx-1", "Évolix", None),       # pas de stade en fr
+                "setx-2": _mini_card("setx-2", "Promo Truc", None),   # pas de stade nulle part
+            },
+            "en": {
+                "setx-1": _mini_card("setx-1", "Evolix", "Stage 1"),  # stade seulement en en
+                "setx-2": _mini_card("setx-2", "Promo Thing", None),
+            },
+        },
+    )
+    report = await import_catalogue(db_session, client, None, languages=("fr", "en"))
+
+    carte1 = (
+        await db_session.execute(select(Card).where(Card.tcgdex_id == "setx-1"))
+    ).scalar_one()
+    carte2 = (
+        await db_session.execute(select(Card).where(Card.tcgdex_id == "setx-2"))
+    ).scalar_one()
+    assert carte1.stage == "Stage 1"          # repli anglais appliqué
+    assert carte2.stage is None               # introuvable partout : reste vide
+    assert report["cards_stage_from_en_fallback"] == 1
+    assert report["cards_pokemon_without_stage"] == 1
+
+
+async def test_import_repli_stade_borne_aux_cartes_sans_stade(db_session):
+    """Le repli ne retire QUE les Pokémon réellement sans stade : une carte dont le stade est
+    déjà donné en français n'est jamais re-téléchargée en anglais (lien bridé de chimera)."""
+    fr_set = _mini_set("fr", [("setx-3", "Basique")])
+    en_set = _mini_set("en", [("setx-3", "Basic One")])
+    client = ScenarioTcgdexClient(
+        {"fr": fr_set, "en": en_set},
+        {
+            # "Stage1" sans espace : déjà présent en source, ne doit pas déclencher de repli
+            "fr": {"setx-3": _mini_card("setx-3", "Basique", "Stage1")},
+            "en": {"setx-3": _mini_card("setx-3", "Basic One", "Stage 1")},
+        },
+    )
+    report = await import_catalogue(db_session, client, None, languages=("fr", "en"))
+
+    carte = (
+        await db_session.execute(select(Card).where(Card.tcgdex_id == "setx-3"))
+    ).scalar_one()
+    assert carte.stage == "Stage1"                      # valeur source conservée telle quelle
+    assert carte.rule_marker is None  # un stade ordinaire ne pollue jamais rule_marker
+    assert ("en", "setx-3") not in client.card_calls    # aucun repli inutile
+    assert report["cards_stage_from_en_fallback"] == 0
+    assert report["cards_pokemon_without_stage"] == 0

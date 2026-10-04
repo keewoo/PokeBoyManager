@@ -32,7 +32,8 @@ WHERE NOT EXISTS (SELECT 1 FROM sets ps WHERE ps.tcgdex_id = s.tcgdex_id)
 -- six dernières (energy_type, element_type, stage, prize_marker, trainer_type, effect) ajoutées le
 -- 02/10/2026 (lot `cat-textes-effets`). ⚠️ Toujours INSERT-ONLY : les cartes DÉJÀ en PROD ne sont
 -- pas rétro-remplies par cette chaîne — seules les cartes NOUVELLES portent ces colonnes. Un
--- rétro-remplissage des cartes existantes relève d'un geste PROD distinct (hors de cette chaîne).
+-- rétro-remplissage des cartes existantes relève d'un geste PROD distinct (hors de cette chaîne) :
+-- `infra/fleet/backfill_cards.sql`, à lancer UNE fois par la livraison du lot `cat-stades`.
 CREATE TEMP TABLE _cards_in (
     tcgdex_id text, set_tcgdex_id text, number text, name text, rarity text, supertype text,
     hp int, image_url text, illustrator text, attacks jsonb, abilities jsonb,
