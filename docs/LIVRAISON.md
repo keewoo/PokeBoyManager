@@ -859,6 +859,75 @@ ssh kailo-srv 'TS=20261004-161201 bash /tmp/deploy-switch.sh'  # → BASCULE_OK 
   **pas** le clone `~/dev/pokeboy` de la file de lots, supprimé juste après le push. `graphify update`
   non exécuté (doc seule ; le code `5efffd3` est déjà graphifié sur `main` par ses lots de fusion).
 
+## Cartes à effets — 2026-10-04 — **BLOQUÉE, PROD non touchée** (jouabilité hors de cette livraison)
+
+Lot `livraison-effets-cartes`, pour « rendre jouables les vraies cartes à effet » (attaques à
+effet, Dresseurs, talents, Outils, Stades). Les 8 lots prérequis étaient `integre` dans `etat.json`
+(`j-cartes-attaques-effets`, `j-plateau-decisions`, `j-cartes-objets`, `j-cartes-supporters`,
+`j-cartes-talents`, `j-cartes-stades`, `j-cartes-outils`, `j-effets-catalogue-compilation`) et
+`roadmap/cat-stades` ancêtre de `origin/main` ; commit figé **`44dd7b6`**
+(`44dd7b611e970d560b892e0ebd4d79f001662831`), CI « CI » push **success**. **Rien n'a été déployé.**
+
+### Pourquoi — mesuré, pas supposé
+
+La PROD est déjà sur **`5efffd3`** (`livraison-effets-ia`, 16:12), qui portait **la fondation effet +
+les données catalogue + les migrations jusqu'à `c9d4e7a1b3f8`**. Le **diff `5efffd3..44dd7b6`** de
+cette livraison est **purement moteur** (`apps/game`) + traducteurs journal front + docs : **aucun
+fichier `apps/api`, aucune migration, aucune variable d'env, aucun process, Caddy non concerné**. Il
+ajoute les cartes **Outils** (`effets/outils.py`, 3 réels : Protective Poncho ×2, Metal Core Barrier)
+et **Stades** (`effets/stades.py`, 3 réels) hardcodées dans le moteur pur.
+
+Deux faits de code rendent la jouabilité des cartes à effet **inatteignable par cette livraison** :
+
+1. **La porte de construction de deck (D9) lit la table `card_scripts`, pas le moteur.**
+   `pbm_api/jeu/scripts/chargeur.py::refus_scripts_deck` → `empreinte.py::effets_scriptables` exige
+   un script `card_scripts` pour **toute** carte portant un texte d'effet (`abilities[].effect`,
+   `attacks[].effect`, `effect` des Dresseurs — donc **Outils et Stades inclus**). **En PROD,
+   `card_scripts` compte 0 ligne** (mesuré). Donc **100 % des cartes à effet sont refusées à la
+   construction de deck** — un deck à carte-effet ne peut même pas entrer en partie. Les
+   implémentations moteur hardcodées des Outils/Stades sont un **mécanisme séparé**, jamais consulté
+   par cette porte.
+2. **Les lots Outils/Stades sont pur moteur, non câblés dans le service `apps/api`.** Leurs comptes
+   rendus (`docs/roadmap/comptes-rendus/j-cartes-{outils,stades}.md`, § « Reste à faire ») l'écrivent :
+   `CatalogueJeu.registre_continus` est « vide par défaut (D9) », le câblage depuis les decks, les
+   modificateurs continus dans `combat/attaque.py`, et le surfaçage de `attacher_outil` en coups
+   légaux sont un **lot ultérieur non créé**. Le diff confirme : zéro `apps/api`.
+
+Les deux **vrais** déblocages sont **hors de cette livraison et hors du mandat d'une session
+autonome** : (a) le **passage IA DJ8 (50 €)** qui écrit `card_scripts` — jamais lancé, ≫ plafond
+autonome de 5 €, et DJ8 exige un **rapport par famille remis à JF pour arbitrage** ; (b) le lot de
+**câblage service** des effets continus. Déployer `44dd7b6` aurait perturbé une PROD **saine** (qui
+sert aussi `kailo.life`/ACX) pour **du code moteur inatteignable — zéro jouabilité nouvelle**, et la
+**preuve exigée** (une partie réelle jouant une attaque-effet + un Objet + un Supporter + un talent)
+est **impossible**. Conformément au précédent du 03/10 (« coups du joueur, 2ᵉ tentative, sans toucher
+à la PROD ») et à « une PROD debout vaut mieux qu'une PROD cassée » : **serveur non touché**.
+
+### État PROD vérifié (lecture seule) — inchangé, sain
+
+- `app/ -> releases/20261004-161201`, `RELEASE_INFO` `commit=5efffd3`, `lot=livraison-effets-ia` ;
+  3 unités `pokeboy-prod-{api,web,worker}` `active` ; `/api/health` 200, `/` 200 ; charge 0.12,
+  2471 Mo dispo. **Voisins** `200 200 308 200 307`.
+- **Catalogue déjà pourvu** (backfill de `5efffd3`) : Pokémon avec stade **19 487**, cartes avec
+  effet **3 043**, Dresseurs avec effet **2 728** (sur 23 829 cartes). **Aucun import flotte
+  nécessaire** — la § « le catalogue doit porter les données d'effets » du prompt était déjà
+  satisfaite.
+- `card_scripts` : **0 ligne** → cartes à effet **0 % jouables** (inchangé depuis `5efffd3`).
+- **Accès jeu** inchangé et conforme : `jfonteray@gmail.com` et `aymeric.fonteray@gmail.com` ont
+  `game_access=true`, **personne d'autre** (6 comptes au total). Aucun compte créé ni modifié.
+
+### Reste à faire (nommé) pour que cette livraison ait un sens
+
+1. **Lancer le passage IA DJ8 (50 €)** depuis devAI, remettre le rapport par famille à JF, puis
+   importer `card_scripts` en PROD par SQL flotte (sans redéploiement) → débloque les cartes à effet
+   « génériques » (attaques-effet, Dresseurs, Objets, Supporters, talents).
+2. **Lot de câblage service** (`apps/api`) : assembler `CatalogueJeu.registre_continus` depuis les
+   decks, consulter les modificateurs continus dans `combat/attaque.py`, surfacer `attacher_outil` en
+   coups légaux → rend effectifs les Outils/Stades hardcodés. Une fois ce lot `integre`, `44dd7b6`
+   (ou son successeur) pourra être livré **avec** une preuve de partie réelle.
+
+`graphify update` non exécuté (trace doc seule, worktree transitoire ; le code `44dd7b6` est déjà
+graphifié sur `main` par ses lots de fusion).
+
 ## Conclure « déployé » — jamais sur une ligne de journal
 
 Un build qui échoue laisse la plateforme **debout sur l'ancienne version** : tout a l'air normal et
