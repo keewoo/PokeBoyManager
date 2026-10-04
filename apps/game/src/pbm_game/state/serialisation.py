@@ -136,6 +136,7 @@ def _tour_vers(tour: Tour) -> dict:
         # Trié pour un JSON déterministe (un frozenset n'a pas d'ordre).
         "entres_en_jeu_ce_tour": sorted(tour.entres_en_jeu_ce_tour),
         "evolues_ce_tour": sorted(tour.evolues_ce_tour),
+        "talents_actives_ce_tour": sorted(tour.talents_actives_ce_tour),
     }
 
 
@@ -164,6 +165,11 @@ def _tour_depuis(donnees: object) -> Tour:
     evolues = donnees.get("evolues_ce_tour", [])
     if not isinstance(evolues, list) or not all(isinstance(e, str) for e in evolues):
         raise ValueError("Tour : « evolues_ce_tour » doit être une liste de chaînes.")
+    talents_actives = donnees.get("talents_actives_ce_tour", [])
+    if not isinstance(talents_actives, list) or not all(
+        isinstance(e, str) for e in talents_actives
+    ):
+        raise ValueError("Tour : « talents_actives_ce_tour » doit être une liste de chaînes.")
 
     return Tour(
         joueur_actif=joueur_actif,
@@ -174,6 +180,7 @@ def _tour_depuis(donnees: object) -> Tour:
         retraite_faite=_drapeau("retraite_faite"),
         entres_en_jeu_ce_tour=frozenset(entres),
         evolues_ce_tour=frozenset(evolues),
+        talents_actives_ce_tour=frozenset(talents_actives),
     )
 
 

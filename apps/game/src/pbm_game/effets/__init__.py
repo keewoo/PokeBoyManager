@@ -48,6 +48,17 @@ from .pile import (
     SourceEffet,
     resoudre_pile,
 )
+from .talents import (
+    NATURES_TALENT,
+    RegistreTalents,
+    Talent,
+    VerdictTalent,
+    construire_bus,
+    construire_registre_continus,
+    identites_neutralisees,
+    talent_actif,
+    talents_en_jeu,
+)
 from .verrous import (
     VERROUS,
     VERROUS_VIDES,
@@ -78,4 +89,13 @@ __all__ = [
     "JeuDeVerrous",
     "VERROUS",
     "VERROUS_VIDES",
+    "Talent",
+    "VerdictTalent",
+    "RegistreTalents",
+    "NATURES_TALENT",
+    "talents_en_jeu",
+    "identites_neutralisees",
+    "talent_actif",
+    "construire_registre_continus",
+    "construire_bus",
 ]

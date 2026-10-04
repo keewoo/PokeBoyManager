@@ -92,6 +92,15 @@ def pokemon_evolue_ce_tour(tour: Tour, base_id: str) -> bool:
     return base_id in tour.evolues_ce_tour
 
 
+def talent_active_ce_tour(tour: Tour, cle: str) -> bool:
+    """Vrai si le talent de clé ``cle`` (``« identité|nom »``) a déjà été activé CE tour (R-5).
+
+    Le suivi est **par Pokémon** (la clé porte l'identité du porteur), pas par joueur : un
+    autre Pokémon portant le même talent garde son propre usage du tour.
+    """
+    return cle in tour.talents_actives_ce_tour
+
+
 # --- Marqueurs : lèvent un drapeau en renvoyant un NOUVEAU Tour --------------
 
 
@@ -120,6 +129,11 @@ def marquer_evolution(tour: Tour, base_id: str) -> Tour:
     return replace(tour, evolues_ce_tour=tour.evolues_ce_tour | {base_id})
 
 
+def marquer_talent_active(tour: Tour, cle: str) -> Tour:
+    """Renvoie un tour où le talent de clé ``cle`` est noté comme activé ce tour (R-5)."""
+    return replace(tour, talents_actives_ce_tour=tour.talents_actives_ce_tour | {cle})
+
+
 __all__ = [
     "identite_pokemon",
     "est_premier_tour_du_joueur_qui_commence",
@@ -129,9 +143,11 @@ __all__ = [
     "retraite_deja_faite",
     "pokemon_entre_ce_tour",
     "pokemon_evolue_ce_tour",
+    "talent_active_ce_tour",
     "marquer_energie_posee",
     "marquer_supporter_joue",
     "marquer_retraite_faite",
     "marquer_entree_en_jeu",
     "marquer_evolution",
+    "marquer_talent_active",
 ]

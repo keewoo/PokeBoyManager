@@ -184,6 +184,12 @@ class Tour:
     #: en jeu » pour l'attaque ou la retraite, seulement pour une seconde évolution. Remis à
     #: vide à chaque tour neuf, comme les drapeaux — donc sérialisé, donc repris après un F5.
     evolues_ce_tour: frozenset[str] = field(default_factory=frozenset)
+    #: Clés ``« identité|nom »`` des talents **activés ce tour**, par Pokémon (lot
+    #: ``j-cartes-talents``) — pour la règle « une fois par tour, PAR POKÉMON » des
+    #: talents activés (R-5). Remis à vide à chaque tour neuf comme les drapeaux, donc
+    #: sérialisé, donc repris après un F5. Rétro-compatible : absent/vide = aucun talent
+    #: activé (un état d'avant ce lot se relit sans migration).
+    talents_actives_ce_tour: frozenset[str] = field(default_factory=frozenset)
 
 
 @dataclass(frozen=True)

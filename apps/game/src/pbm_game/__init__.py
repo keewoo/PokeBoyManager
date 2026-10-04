@@ -127,4 +127,10 @@ from .effets import (  # noqa: E402,F401  (import pour effet d'enregistrement)
     supporters as _supporters,
 )
 
+# ``effets.talents_actives`` enregistre la transition ``activer_talent`` (R-5) dans le
+# ``REGISTRE`` du journal à son import (lot ``j-cartes-talents``), comme ``effets.objets``.
+from .effets import (  # noqa: E402,F401  (import pour effet d'enregistrement)
+    talents_actives as _talents_actives,
+)
+
 __all__: list[str] = []
