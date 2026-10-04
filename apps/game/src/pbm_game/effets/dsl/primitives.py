@@ -50,6 +50,7 @@ from .vocabulaire import (
     OP_SOIGNER,
     POSITION_DESSOUS,
     POSITION_DESSUS,
+    ZONE_DEFAUSSE,
 )
 
 #: Une primitive **a agi** — porte l'``op``, la source (via le contexte) et ce qui a été fait.
@@ -242,17 +243,22 @@ def prim_attacher(ex: Execution, instr: Instruction) -> None:
 
 
 def prim_deplacer(ex: Execution, instr: Instruction) -> None:
-    """« Déplacez N énergies de … vers … » — entre deux Pokémon (les compteurs ne bougent pas)."""
+    """« Déplacez N énergies de … vers … » — entre deux Pokémon, ou **vers la défausse** (coût).
+
+    Destination ``defausse`` : c'est la **défausse d'énergie** (« défaussez N Énergie de ce
+    Pokémon ») — le coût typique d'une attaque à effet. Les énergies attachées quittent le Pokémon
+    pour la défausse de leur propriétaire ; les compteurs de dégâts ne bougent pas. Sinon, c'est un
+    transfert d'énergie d'un Pokémon à un autre (*Transfert d'Énergie*).
+    """
     origines = [
         c
         for c in restreindre(ex, candidats(ex.etat, instr.source, ex.ctx), instr.source)
         if isinstance(c, CiblePokemon)
     ]
-    dests = [c for c in resoudre_cibles(ex, instr) if isinstance(c, CiblePokemon)]
-    if not origines or not dests:
-        _sans_cible(ex, instr, "origine ou destination absente pour le déplacement")
+    if not origines:
+        _sans_cible(ex, instr, "origine absente pour le déplacement d'énergie")
         return
-    origine, dest = origines[0], dests[0]
+    origine = origines[0]
     joueur_src = _joueur(ex.etat, origine.joueur)
     pok_src = _pokemon_par_identite(joueur_src, origine.identite)
     n = instr.nombre if instr.nombre is not None else len(pok_src.energies)
@@ -262,6 +268,23 @@ def prim_deplacer(ex: Execution, instr: Instruction) -> None:
         return
     bougees = pok_src.energies[:n]
     reste = pok_src.energies[n:]
+
+    # Destination « défausse » : défausse d'énergie (coût d'attaque). On lit la zone du sélecteur
+    # de destination plutôt qu'un Pokémon cible — c'est une carte, pas un Pokémon.
+    if instr.cible is not None and instr.cible.zone == ZONE_DEFAUSSE:
+        ex.etat = _maj_pokemon(ex.etat, origine, lambda p: replace(p, energies=reste))
+        joueur_dest = _joueur(ex.etat, origine.joueur)  # relu après la maj (état figé remplacé)
+        ex.etat = _remplacer_joueur(
+            ex.etat, replace(joueur_dest, defausse=joueur_dest.defausse + bougees)
+        )
+        _evt(ex, OP_DEPLACER, nombre=n, de=origine.identite, vers="defausse")
+        return
+
+    dests = [c for c in resoudre_cibles(ex, instr) if isinstance(c, CiblePokemon)]
+    if not dests:
+        _sans_cible(ex, instr, "destination absente pour le déplacement d'énergie")
+        return
+    dest = dests[0]
     ex.etat = _maj_pokemon(ex.etat, origine, lambda p: replace(p, energies=reste))
     ex.etat = _maj_pokemon(ex.etat, dest, lambda p: replace(p, energies=p.energies + bougees))
     _evt(ex, OP_DEPLACER, nombre=n, de=origine.identite, vers=dest.identite)

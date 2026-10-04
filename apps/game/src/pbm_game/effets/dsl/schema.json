@@ -30,11 +30,12 @@
       "additionalProperties": false,
       "required": ["type"],
       "properties": {
-        "type": {"enum": ["resultat_pile", "zone_non_vide", "a_etat", "a_degats"]},
+        "type": {"enum": ["resultat_pile", "zone_non_vide", "a_etat", "a_degats", "type_cible"]},
         "cible": {"$ref": "#/$defs/selecteur"},
         "etat": {"enum": ["endormi", "brule", "confus", "paralyse", "empoisonne"]},
         "attendu": {"enum": ["face", "pile"]},
-        "minimum": {"type": "integer", "minimum": 1}
+        "minimum": {"type": "integer", "minimum": 1},
+        "type_pokemon": {"type": "string", "minLength": 1}
       }
     },
     "instruction": {
@@ -59,6 +60,7 @@
         "condition": {"$ref": "#/$defs/condition"},
         "alors": {"type": "array", "items": {"$ref": "#/$defs/instruction"}},
         "sinon": {"type": "array", "items": {"$ref": "#/$defs/instruction"}},
+        "jusqu_a_echec": {"type": "boolean"},
         "regle": {"type": "string"}
       }
     }

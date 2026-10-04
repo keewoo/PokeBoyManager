@@ -19,10 +19,11 @@ Règles de référence structurées ici (``docs/jeu/REGLES.md``) :
   :mod:`pbm_game.combat.fin` ;
 * **R-9.2** — le coût d'une attaque (délégué à :class:`pbm_game.combat.modele.CoutAttaque`).
 
-**Attaques à dégâts secs seulement, pour l'instant.** Une attaque dont le texte porte un effet
-(``effet`` non vide) n'est **pas** jouable au jalon J1 : son script arrive avec
-``j-cartes-attaques-effets`` (D9). On la charge quand même — fidèlement — pour que la construction
-de deck puisse refuser la carte en disant pourquoi, mais le moteur ne la résout pas.
+**Attaques à effet (lot ``j-cartes-attaques-effets``).** Une attaque peut porter un **script**
+d'effet (DSL, ``pbm_game.effets.dsl``) et/ou des **dégâts variables** (``degats`` décrit alors une
+formule calculée à la résolution, :mod:`pbm_game.combat.valeur`). Une attaque dont le texte porte un
+effet **sans** script reste **non jouable** (D9) : elle se charge fidèlement pour que la
+construction de deck la refuse en disant pourquoi, mais le moteur ne la résout pas.
 """
 
 from __future__ import annotations
@@ -58,15 +59,24 @@ class AttaqueDef:
 
     * ``nom`` — le nom imprimé de l'attaque ;
     * ``cout`` — son :class:`~pbm_game.combat.modele.CoutAttaque` (colorés + incolores) ;
-    * ``degats`` — les dégâts **secs** imprimés (multiple de 10, ``≥ 0`` ; ``0`` = pas de dégâts) ;
-    * ``effet`` — le texte d'effet brut ; **vide** = attaque à dégâts secs (jouable au jalon J1),
-      **non vide** = l'attaque porte un effet non encore scripté (D9), donc pas jouable ici.
+    * ``degats`` — les dégâts **secs** imprimés (multiple de 10, ``≥ 0`` ; ``0`` = pas de dégâts
+      secs, soit parce que l'attaque n'inflige rien directement, soit parce qu'elle a des dégâts
+      **variables**, portés alors par ``degats_variables``) ;
+    * ``effet`` — le texte d'effet brut ; **vide** = attaque à dégâts secs, **non vide** = l'attaque
+      porte un effet (jouable **seulement** si elle a un ``script``, D9 sinon) ;
+    * ``script`` — le **script DSL** de l'effet (mapping ``{version, effets, cout?}``), ou ``None``.
+      Validé **ici** (il doit se charger) : un script incohérent **bloque** la carte à la
+      construction du deck, jamais en pleine partie ;
+    * ``degats_variables`` — une formule de **dégâts variables** (mapping),
+      ou ``None``. Exclusif de dégâts secs non nuls (la base va dans la formule).
     """
 
     nom: str
     cout: CoutAttaque
     degats: int = 0
     effet: str = ""
+    script: dict | None = None
+    degats_variables: dict | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.nom, str) or not self.nom.strip():
@@ -85,11 +95,44 @@ class AttaqueDef:
             raise ValueError(
                 f"Attaque « {self.nom} » : « effet » doit être une chaîne (vide si dégâts secs)."
             )
+        if self.script is not None:
+            if not isinstance(self.script, dict):
+                raise ValueError(f"Attaque « {self.nom} » : « script » doit être un mapping DSL.")
+            # Validation D9 au plus tôt : un script qui ne se charge pas bloque la carte à la
+            # construction du deck, jamais au milieu d'une partie. Import local (``effets``
+            # dépend de ``state`` ; on ne le tire pas au chargement de ``cartes``).
+            from ..effets.dsl.chargement import charger_programme
+
+            charger_programme(self.script)
+        if self.degats_variables is not None:
+            if not isinstance(self.degats_variables, dict):
+                raise ValueError(
+                    f"Attaque « {self.nom} » : « degats_variables » doit être un mapping."
+                )
+            if self.degats != 0:
+                raise ValueError(
+                    f"Attaque « {self.nom} » : des dégâts variables ne cohabitent pas avec des "
+                    "dégâts secs non nuls (la base va dans la formule)."
+                )
+            from ..combat.valeur import valeur_depuis
+
+            valeur_depuis(self.degats_variables)  # D9 : une formule incohérente bloque la carte.
+
+    @property
+    def jouable(self) -> bool:
+        """Vrai si l'attaque est **résoluble** : dégâts secs, scriptée, ou à dégâts variables.
+
+        Une attaque à texte d'effet **sans** script **ni** dégâts variables n'est pas jouable (D9) —
+        on ne l'approxime pas. Les dégâts variables portent à eux seuls une « 20 × énergie ».
+        """
+        return (
+            not self.effet.strip() or self.script is not None or self.degats_variables is not None
+        )
 
     @property
     def degats_secs(self) -> bool:
-        """Vrai si l'attaque n'a **aucun** effet scripté — la seule forme jouable au jalon J1."""
-        return not self.effet.strip()
+        """Vrai si l'attaque n'a aucun effet scripté ni dégâts variables (la forme simple)."""
+        return not self.effet.strip() and self.script is None and self.degats_variables is None
 
 
 @dataclass(frozen=True)
@@ -214,7 +257,24 @@ def _attaque_depuis(donnees: object) -> AttaqueDef:
         cout=_cout_depuis(donnees.get("cout")),
         degats=donnees.get("degats", 0),
         effet=donnees.get("effet", ""),
+        script=donnees.get("script"),
+        degats_variables=donnees.get("degats_variables"),
     )
+
+
+def _attaque_vers_dict(a: AttaqueDef) -> dict:
+    """Projette une :class:`AttaqueDef` en ``dict`` JSON-natif (script, dégâts variables inclus)."""
+    donnees: dict = {
+        "nom": a.nom,
+        "cout": {"types": dict(a.cout.types), "incolore": a.cout.incolore},
+        "degats": a.degats,
+        "effet": a.effet,
+    }
+    if a.script is not None:
+        donnees["script"] = a.script
+    if a.degats_variables is not None:
+        donnees["degats_variables"] = a.degats_variables
+    return donnees
 
 
 def definition_vers_dict(definition: DefinitionCarte) -> dict:
@@ -234,15 +294,7 @@ def definition_vers_dict(definition: DefinitionCarte) -> dict:
         "marqueur": definition.marqueur,
         "evolue_depuis": definition.evolue_depuis,
         "cout_retraite": definition.cout_retraite,
-        "attaques": [
-            {
-                "nom": a.nom,
-                "cout": {"types": dict(a.cout.types), "incolore": a.cout.incolore},
-                "degats": a.degats,
-                "effet": a.effet,
-            }
-            for a in definition.attaques
-        ],
+        "attaques": [_attaque_vers_dict(a) for a in definition.attaques],
     }
     if definition.faiblesse is not None:
         donnees["faiblesse"] = {

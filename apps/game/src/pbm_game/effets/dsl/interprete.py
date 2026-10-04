@@ -33,10 +33,12 @@ from .vocabulaire import (
     COND_A_DEGATS,
     COND_A_ETAT,
     COND_RESULTAT_PILE,
+    COND_TYPE_CIBLE,
     COND_ZONE_NON_VIDE,
     CTRL_REPETER,
     CTRL_SI,
     OP_CHOISIR,
+    OP_DEPLACER,
     OP_PILE_OU_FACE,
 )
 
@@ -90,7 +92,22 @@ def _evaluer(ex: Execution, cond: Condition) -> bool:
         return any(
             isinstance(c, CiblePokemon) and _pokemon_degats(ex, c) >= seuil_pv for c in cibles
         )
+    if cond.type == COND_TYPE_CIBLE:
+        # Le type d'un Pokémon vit au catalogue, pas dans l'état (D9) : on le lit dans les
+        # métadonnées du contexte (``ref → {"type": …}``). Une ``ref`` sans métadonnée n'est
+        # jamais « devinée du bon type » — elle ne satisfait pas la condition.
+        cibles = candidats(ex.etat, cond.cible, ex.ctx) if cond.cible else []
+        return any(
+            isinstance(c, CiblePokemon) and _type_ref(ex, c.ref) == cond.type_pokemon
+            for c in cibles
+        )
     raise ValueError(f"Condition inconnue à l'évaluation : {cond.type!r}.")
+
+
+def _type_ref(ex: Execution, ref: str) -> str | None:
+    """Le type de catalogue d'une ``ref`` (métadonnées du contexte), ou ``None`` si inconnu."""
+    meta = ex.ctx.metadonnees.get(ref)
+    return meta.get("type") if isinstance(meta, dict) else None
 
 
 def _pokemon_etats(ex: Execution, cible: CiblePokemon) -> frozenset:
@@ -136,17 +153,45 @@ def _executer_repeter(ex: Execution, instr: Instruction) -> None:
             _executer(ex, sous)
 
 
+#: Garde-fou d'un « jusqu'à échec » : une pièce honnête donne pile en ~2 lancers, mais une graine
+#: pathologique (ou un Rng truqué de test) pourrait boucler — on s'arrête **bruyamment** bien
+#: au-delà de tout cas réel, jamais en silence (même esprit que le budget d'instructions).
+_MAX_PILES_JUSQU_ECHEC = 1000
+
+
 def _executer_pile(ex: Execution, instr: Instruction) -> None:
-    pieces = instr.nombre if instr.nombre is not None else 1
-    faces = 0
-    for i in range(pieces):
-        resultat = ex.rng.pile_ou_face(
-            f"dsl:pile:{ex.ctx.joueur}", f"{ex.ctx.source.libelle} pièce {i + 1}"
-        )
-        if resultat == "face":
+    if instr.jusqu_a_echec:
+        # « Lancez une pièce jusqu'à obtenir pile » : on compte les faces avant le premier pile.
+        faces = 0
+        while True:
+            resultat = ex.rng.pile_ou_face(
+                f"dsl:pile:{ex.ctx.joueur}", f"{ex.ctx.source.libelle} jusqu'à échec #{faces + 1}"
+            )
+            if resultat != "face":
+                break
             faces += 1
+            if faces >= _MAX_PILES_JUSQU_ECHEC:
+                raise ValueError(
+                    "Pile ou face « jusqu'à échec » : trop de faces d'affilée — arrêt bruyant "
+                    "(graine ou Rng pathologique), jamais une boucle muette."
+                )
+        pieces = faces + 1  # toutes les faces, plus le pile final qui a arrêté
+    else:
+        pieces = instr.nombre if instr.nombre is not None else 1
+        faces = 0
+        for i in range(pieces):
+            resultat = ex.rng.pile_ou_face(
+                f"dsl:pile:{ex.ctx.joueur}", f"{ex.ctx.source.libelle} pièce {i + 1}"
+            )
+            if resultat == "face":
+                faces += 1
     ex.dernier_pile = "face" if faces > 0 else "pile"
-    ex.evenements.append(Evenement(EVT_DSL_PILE, {"pieces": pieces, "faces": faces}))
+    ex.evenements.append(
+        Evenement(
+            EVT_DSL_PILE,
+            {"pieces": pieces, "faces": faces, "jusqu_a_echec": instr.jusqu_a_echec},
+        )
+    )
     # « si c'est face » = la branche ``alors``, jouée une fois par face ; « sinon » une seule fois.
     if faces > 0:
         for _ in range(faces):
@@ -212,6 +257,20 @@ def _cout_payable(ex: Execution, cout: tuple[Instruction, ...]) -> bool:
     qu'on ne paie jamais un demi-coût — si le contrôle passe, l'exécution réelle qui suit aboutit.
     """
     for instr in cout:
+        # « Défaussez N Énergie de ce Pokémon » (deplacer vers la défausse) : le coût se paie sur
+        # les **énergies attachées** à la source, pas sur le nombre de Pokémon candidats — on
+        # compte donc les énergies de l'origine (jamais un repli optimiste).
+        if instr.op == OP_DEPLACER and instr.source is not None:
+            besoin = instr.nombre or 1
+            origines = [
+                c for c in candidats(ex.etat, instr.source, ex.ctx) if isinstance(c, CiblePokemon)
+            ]
+            if not origines:
+                return False
+            pok = _pokemon_par_identite_etat(ex.etat, origines[0])
+            if pok is None or len(pok.energies) < besoin:
+                return False
+            continue
         sel = instr.cible or instr.source
         if sel is None:
             continue
@@ -219,6 +278,19 @@ def _cout_payable(ex: Execution, cout: tuple[Instruction, ...]) -> bool:
         if len(candidats(ex.etat, sel, ex.ctx)) < besoin:
             return False
     return True
+
+
+def _pokemon_par_identite_etat(etat, cible: CiblePokemon):
+    """Le Pokémon désigné par ``cible`` (Actif/banc) dans ``etat``, ou ``None`` s'il a disparu."""
+    for j in etat.joueurs:
+        if j.id != cible.joueur:
+            continue
+        if j.actif is not None and j.actif.cartes[0].instance_id == cible.identite:
+            return j.actif
+        for p in j.banc:
+            if p.cartes[0].instance_id == cible.identite:
+                return p
+    return None
 
 
 # --- Exécution d'un programme complet ----------------------------------------

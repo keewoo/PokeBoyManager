@@ -69,6 +69,24 @@ BRULURE_DEGATS = 20
 # --- Helpers immuables (même forme que journal.transitions / banc.mouvements) ------------
 
 
+def _proprietaire_cible(etat: EtatPartie, cible: str) -> str | None:
+    """Le joueur à qui appartient ``cible`` (un id de joueur, ou l'identité d'un Pokémon en jeu).
+
+    Sert l'expiration **orientée** des verrous (R-12.5) : un « prochain tour » ne tombe qu'au
+    Checkup du propriétaire de sa cible. Renvoie ``None`` si la cible n'appartient à personne
+    (identité d'un Pokémon qui a quitté le jeu, p. ex.) — le verrou retombe alors sur la règle
+    aveugle, faute de propriétaire à qui rattacher le tour.
+    """
+    for joueur in etat.joueurs:
+        if joueur.id == cible:
+            return joueur.id
+        en_jeu = ([joueur.actif] if joueur.actif is not None else []) + list(joueur.banc)
+        for pok in en_jeu:
+            if pok.cartes[0].instance_id == cible:
+                return joueur.id
+    return None
+
+
 def _index_joueur(etat: EtatPartie, jid: str) -> int:
     for i, joueur in enumerate(etat.joueurs):
         if joueur.id == jid:
@@ -122,8 +140,13 @@ def _resoudre_etats_actif(
         evenements.append(
             Evenement(
                 EVT_ETAT_CHECKUP,
-                {"joueur": jid, "etat": EMPOISONNE, "regle": "R-11.7",
-                 "degats": POISON_DEGATS, "gueri": False},
+                {
+                    "joueur": jid,
+                    "etat": EMPOISONNE,
+                    "regle": "R-11.7",
+                    "degats": POISON_DEGATS,
+                    "gueri": False,
+                },
             )
         )
 
@@ -137,8 +160,14 @@ def _resoudre_etats_actif(
         evenements.append(
             Evenement(
                 EVT_ETAT_CHECKUP,
-                {"joueur": jid, "etat": BRULE, "regle": "R-11.4", "degats": BRULURE_DEGATS,
-                 "pile_ou_face": tirage, "gueri": gueri},
+                {
+                    "joueur": jid,
+                    "etat": BRULE,
+                    "regle": "R-11.4",
+                    "degats": BRULURE_DEGATS,
+                    "pile_ou_face": tirage,
+                    "gueri": gueri,
+                },
             )
         )
 
@@ -151,8 +180,14 @@ def _resoudre_etats_actif(
         evenements.append(
             Evenement(
                 EVT_ETAT_CHECKUP,
-                {"joueur": jid, "etat": ENDORMI, "regle": "R-11.3", "degats": 0,
-                 "pile_ou_face": tirage, "gueri": gueri},
+                {
+                    "joueur": jid,
+                    "etat": ENDORMI,
+                    "regle": "R-11.3",
+                    "degats": 0,
+                    "pile_ou_face": tirage,
+                    "gueri": gueri,
+                },
             )
         )
 
@@ -217,6 +252,19 @@ def resoudre_checkup(
     # 2) Expiration des effets « jusqu'à la fin de ce tour » (R-12.5), journalisée.
     etat, evts = declencher(etat, FENETRE_EXPIRATION_EFFETS, rng, declencheurs)
     evenements.extend(evts)
+
+    # 2 bis) Expiration des **verrous** « ce tour » / « prochain tour » (R-12.5, lot
+    # ``j-cartes-attaques-effets``). Un « prochain tour » pèse sur le prochain tour **de sa cible**
+    # (les tours alternent) : on l'expire orienté par le propriétaire, pour qu'un auto-blocage
+    # survive au tour adverse. Chaque levée est journalisée (jamais un retrait muet).
+    if etat.verrous is not None and etat.verrous.verrous:
+        jeu2, leves = etat.verrous.expirer_au_checkup_oriente(
+            etat.tour.numero,
+            joueur_actif=etat.tour.joueur_actif,
+            proprietaire_de=lambda cible: _proprietaire_cible(etat, cible),
+        )
+        etat = replace(etat, verrous=jeu2 if jeu2.verrous else None)
+        evenements.extend(leves)
 
     # 3) K.O. provoqués pendant la phase (R-12.4) + récompenses + conditions de victoire (R-13,
     #    R-14) — résolveur partagé avec l'attaque.

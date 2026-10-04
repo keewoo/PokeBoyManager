@@ -183,6 +183,28 @@ def _fiches(catalogue: CatalogueJeu, etat: EtatPartie) -> dict:
     return fiches
 
 
+def _metadonnees(catalogue: CatalogueJeu, etat: EtatPartie) -> dict:
+    """Les métadonnées de catalogue des Pokémon en jeu — ``ref → {categorie, stade, type}``.
+
+    Portées dans les ``params`` d'une attaque à effet (le journal les transporte, D9) : le script
+    DSL en a besoin pour ses sélecteurs filtrés (``categorie``/``stade``) et sa condition
+    ``type_cible`` (« si le Défenseur est de type Eau »). Le moteur ne lit jamais le catalogue :
+    une ``ref`` absente d'ici n'est simplement pas retenue par un filtre (jamais devinée).
+    """
+    meta: dict[str, dict] = {}
+    for joueur in etat.joueurs:
+        for pokemon in _en_jeu(joueur):
+            ref = carte_active(pokemon).ref
+            definition = catalogue.pokemon_de(ref)
+            if definition is not None:
+                meta[ref] = {
+                    "categorie": "pokemon",
+                    "stade": definition.stade,
+                    "type": definition.type,
+                }
+    return meta
+
+
 class _FamilleCatalogue(Famille):
     """Base des familles qui portent un :class:`CatalogueJeu` (injecté par :func:`familles_jeu`)."""
 
@@ -373,34 +395,49 @@ class FamilleAttaquer(_FamilleCatalogue):
                 }
             cibles = (_cible_pokemon(self.catalogue, adv.actif),)
         fiches = _fiches(self.catalogue, etat)
+        metadonnees = _metadonnees(self.catalogue, etat)
         coups: list[ActionLegale] = []
         for attaque in def_actif.attaques:
-            if not attaque.degats_secs:
-                continue  # D9 — une attaque à effet n'est pas scriptée au jalon J1.
+            if not attaque.jouable:
+                continue  # D9 — une attaque à effet sans script n'est pas résoluble.
             if cout_satisfait(attaque.cout, [e.fournit for e in energies]).refuse:
                 continue
+            # Dégâts : secs (entier) ou variables (formule calculée à la résolution, R-10.1).
+            degats = (
+                attaque.degats_variables if attaque.degats_variables is not None else attaque.degats
+            )
+            fiche_attaque: dict = {
+                "nom": attaque.nom,
+                "cout": {"types": dict(attaque.cout.types), "incolore": attaque.cout.incolore},
+                "degats": degats,
+                "effet": attaque.effet,
+            }
+            if attaque.script is not None:
+                fiche_attaque["script"] = attaque.script
             params: dict = {
-                "attaque": {
-                    "nom": attaque.nom,
-                    "cout": {"types": dict(attaque.cout.types), "incolore": attaque.cout.incolore},
-                    "degats": attaque.degats,
-                    "effet": "",
-                },
+                "attaque": fiche_attaque,
                 "type_attaque": def_actif.type,
+                "ref_attaquant": carte_active(j.actif).ref,
                 "energies": [
                     {"instance_id": e.instance_id, "fournit": dict(e.fournit), "libelle": e.libelle}
                     for e in energies
                 ],
                 "fiches": fiches,
+                "metadonnees": metadonnees,
             }
             if faiblesse is not None:
                 params["faiblesse"] = faiblesse
             if resistance is not None:
                 params["resistance"] = resistance
+            etiquette = (
+                f"Attaquer : {attaque.nom}"
+                if attaque.degats_variables is not None
+                else f"Attaquer : {attaque.nom} ({attaque.degats})"
+            )
             coups.append(
                 ActionLegale(
                     action=Action(ACTION_DECLARER_ATTAQUE, joueur, params),
-                    etiquette=f"Attaquer : {attaque.nom} ({attaque.degats})",
+                    etiquette=etiquette,
                     cibles=cibles,
                 )
             )
@@ -519,7 +556,8 @@ class FamillePlacer(_FamilleCatalogue):
             return []  # pas de mise en place en cours pour lui, ou il a déjà placé.
         j = etat.joueurs[idx]
         bases = [
-            c for c in j.main
+            c
+            for c in j.main
             if (d := self.catalogue.pokemon_de(c.ref)) is not None and d.stade == "base"
         ]
         if not bases:

@@ -282,9 +282,7 @@ def _avancer_phase(
     return etat2, [evt]
 
 
-def _debut_tour(
-    etat: EtatPartie, action: Action, rng: Rng
-) -> tuple[EtatPartie, list[Evenement]]:
+def _debut_tour(etat: EtatPartie, action: Action, rng: Rng) -> tuple[EtatPartie, list[Evenement]]:
     """Début de tour (R-5.1/R-5.2) : pioche obligatoire, défaite sur pioche impossible (R-14.2).
 
     Action **système**, pas un coup libre du joueur (R-5.2) : le service l'applique quand un
@@ -312,9 +310,7 @@ def _debut_tour(
     # (1) Pioche impossible = DÉFAITE (R-14.2) — pas une exception, une condition de fin.
     if not joueur.pioche:
         gagnant = _autre_joueur(etat, jid)
-        etat2 = replace(
-            etat, terminee=True, vainqueur=gagnant, raison_fin=RAISON_PIOCHE_IMPOSSIBLE
-        )
+        etat2 = replace(etat, terminee=True, vainqueur=gagnant, raison_fin=RAISON_PIOCHE_IMPOSSIBLE)
         evt = Evenement(
             EVT_PARTIE_TERMINEE,
             {"vainqueur": gagnant, "raison": RAISON_PIOCHE_IMPOSSIBLE, "perdant": jid},
@@ -382,11 +378,26 @@ def _declarer_attaque(
             f"(phase : {etat.tour.phase!r}, R-5.1)."
         )
     if est_premier_tour_du_joueur_qui_commence(etat.tour):
-        raise ValueError(
-            "Le joueur qui commence ne peut pas attaquer à son premier tour (R-6.1)."
-        )
-    if etat.joueurs[_index_joueur(etat, jid)].actif is None:
+        raise ValueError("Le joueur qui commence ne peut pas attaquer à son premier tour (R-6.1).")
+    actif = etat.joueurs[_index_joueur(etat, jid)].actif
+    if actif is None:
         raise ValueError("Aucun Pokémon Actif ne peut porter l'attaque (R-9.1).")
+
+    # R-5.7 : un verrou « ne peut pas attaquer » posé par une attaque à effet (lot
+    # ``j-cartes-attaques-effets``) interdit l'attaque — en **nommant** la carte responsable, jamais
+    # un refus muet. On interroge l'identité de l'Actif ET le joueur (un verrou peut viser l'un ou
+    # l'autre, ou être global). Import local pour ne pas coupler le noyau des transitions au paquet
+    # ``effets`` à son chargement.
+    if etat.verrous is not None and etat.verrous.verrous:
+        from ..effets.verrous import VERROU_NE_PEUT_ATTAQUER
+
+        for cible in (actif.cartes[0].instance_id, jid):
+            if etat.verrous.est_verrouille(VERROU_NE_PEUT_ATTAQUER, cible=cible):
+                src = etat.verrous.source_du_verrou(VERROU_NE_PEUT_ATTAQUER, cible=cible)
+                nom = src.libelle if src is not None else "un effet"
+                raise ValueError(
+                    f"Ce Pokémon ne peut pas attaquer ce tour — bloqué par « {nom} » (R-5.7)."
+                )
 
     # R-11.3/R-11.5/R-11.6 : les états de l'Actif se résolvent AVANT l'attaque — Sommeil et
     # Paralysie l'interdisent (ValueError), la Confusion impose un pile ou face (face = l'attaque
@@ -419,9 +430,7 @@ def _declarer_attaque(
     return etat2, evenements
 
 
-def _abandonner(
-    etat: EtatPartie, action: Action, rng: Rng
-) -> tuple[EtatPartie, list[Evenement]]:
+def _abandonner(etat: EtatPartie, action: Action, rng: Rng) -> tuple[EtatPartie, list[Evenement]]:
     """Abandon : la partie se termine, l'adversaire gagne (R-14.3, R-14.6).
 
     L'auteur de l'action est le joueur qui abandonne ; l'autre joueur devient vainqueur.
@@ -489,10 +498,7 @@ def appliquer(
     # révélée, seuls le placement face caché et l'abandon sont permis — jamais une pioche de tour,
     # une attaque ou une pose libre (ce serait jouer une partie qui n'a pas commencé). La garde est
     # centrale, en plus de celles des transitions elles-mêmes (lot ``j-initialisation``).
-    if (
-        etat.mise_en_place is not None
-        and action.type not in _ACTIONS_PENDANT_MISE_EN_PLACE
-    ):
+    if etat.mise_en_place is not None and action.type not in _ACTIONS_PENDANT_MISE_EN_PLACE:
         raise ValueError(
             f"Mise en place en cours (R-4) : seuls le placement de l'Actif et du banc et l'abandon "
             f"sont permis, pas « {action.type} »."
