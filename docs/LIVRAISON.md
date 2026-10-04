@@ -741,6 +741,124 @@ quatre lots étaient couloir serveur (J-SRV).
   **pas** le clone `~/dev/pokeboy` de la file de lots, supprimé juste après le push. `graphify update`
   non exécuté (doc seule ; le code `c5084ad` est déjà graphifié sur `main` par ses lots de fusion).
 
+## Livraison des scripts d'effets IA — 2026-10-04 — **périmètre réduit, signalé** (code + données, pas les scripts IA)
+
+Lot `livraison-effets-ia`. Mise en PROD du chantier effet fusionné dans `main` (`j-cartes-attaques-effets`,
+`j-cartes-objets`, `j-cartes-supporters`, `j-cartes-regles-speciales`, `j-cartes-talents`,
+`j-effets-catalogue-compilation`, `j-effets-couverture-outil`, `j-effets-assistance-ia`,
+`j-plateau-decisions`, `cat-stades`) **plus** l'import flotte des données d'effet du catalogue.
+Release **`20261004-161201`**, commit figé **`5efffd3`**
+(`5efffd33f0416f8e9c54c4f0d62cee33a86c769c`), précédente `20261003-204554` (`c5084ad`, solo/IA).
+Livré depuis **devAI** en session autonome ; CI « CI » verte sur `5efffd3` (push, success). Jeu
+privé (D11) : JF et Aymeric uniquement.
+
+### ⚠️ Le cœur attendu — les scripts d'effet écrits par l'IA — N'A PAS pu être livré
+
+Le passage IA (décision **DJ8**, plafond 50 €) qui écrit les scripts de cartes **n'a jamais été
+lancé** : `j-effets-assistance-ia` a livré l'**outillage** mais, à la lettre de DJ8, **aucune dépense
+réelle** (« le passage réel est une opération à lancer depuis devAI »). Vérifié : **aucun
+`card_scripts`** n'existe nulle part (table absente en PROD avant ce lot, table absente de la
+référence `pbm_catalogue_ref` de chimera, aucun grand livre `var/assistance_scripts/ledger.json` sur
+devAI). **Ce lot de livraison n'a pas lancé ce passage** : mon prompt m'instruit de *lire* son rapport
+et de *livrer* des scripts existants, pas d'exécuter une génération IA de 50 € ; et DJ8 veut un
+**rapport par famille remis à JF pour arbitrage** avant mise en jeu, impossible en session autonome.
+
+**Conséquence, mesurée par le tableau de couverture LIVE** : 181 effets distincts dans les
+collections des deux joueurs, **0 scripté**, cartes à effet **0 % jouables**. Les vraies cartes à
+effet (et les collections d'Aymeric et de JF, qui en sont faites) **restent non jouables** tant que le
+passage n'a pas tourné. Ce qui est livré ici est la **fondation** (moteur, registre, couverture,
+règles spéciales, données du catalogue) : une fois le passage lancé et ses familles validées par JF,
+les `card_scripts` s'importent en PROD **par SQL flotte, sans redéploiement de code**.
+
+### Besoins relevés AVANT de toucher au serveur (`git diff c5084ad..5efffd3`)
+
+- **Migrations** : **3**, additives, tête unique `b2c3d4e5f6a7 → c3a7f1e9d2b4 → b7d3f1a2c9e4 →
+  c9d4e7a1b3f8` (`card_scripts`, `card_play_requests`, colonnes de revue IA + contrainte CHECK
+  `ck_card_scripts_scripte_gate`). `j-cartes-talents` : aucune migration.
+- **Variables d'environnement** : **aucune obligatoire**. `assistance_budget_eur`/`assistance_model`
+  (défauts) servent l'outillage **sur devAI**, pas la PROD. `.env` **non modifié**.
+- **Nouveau processus** : **aucun**. Temps réel = WebSocket de l'API uvicorn existante.
+- **Routes** : `/me/demandes-cartes` (file de demandes), sous `/api`. **Caddy non touché**.
+- **Parité de projection** : le défaut qui a bloqué la livraison « coups » est désormais couvert par
+  `test_parite_evenements_projecteurs.py` en CI ; `dsl_choix`/`dsl_primitive`/`demande_*` restent
+  nommément différés (émis seulement par une carte scriptée, donc jamais tant que `card_scripts` est vide).
+
+### Le catalogue de PROD porte désormais les données d'effet (import flotte)
+
+AVANT (PROD) : Pokémon avec stade **2 425**, cartes avec effet **0**, Dresseurs avec effet **0**.
+Export `infra/fleet/export_cards.sql` depuis `pbm_catalogue_ref` (chimera) → `cards.tsv` (22 653
+lignes, sha `ed228452…`, SHA-256 vérifié chimera→devAI→kailo-srv), puis `infra/fleet/backfill_cards.sql`
+(NULL-only, clé `tcgdex_id`, idempotent) après backup frais. APRÈS : stade **19 368** (+16 943),
+effet **3 043**, Dresseurs avec effet **2 849**. Écart résiduel assumé : 833 sans stade / 921 sans
+`element_type` (cartes absentes du bundle de référence ou vides des deux côtés). Ce backfill débloque
+la jouabilité des cartes **vanille** (un Pokémon sans stade était bloqué, R-7).
+
+### Ce qui a réellement été exécuté
+
+```bash
+# 0. Portes : CI verte sur 5efffd3 ; voisins AVANT 200 200 308 200 307 ; serveur sain (charge 0.25, 2397 Mo).
+# 1. chimera : worktree de build (dépôt relais) checkout --detach 5efffd3, HEAD vérifié ; apps/game
+#    présent ; pbm-build-lol.sh (game-aware) ; build détaché (setsid), sondé → BUILD_DONE. TS=20261004-161201.
+#    Artefact web : 4 .woff2, 0 googleapis/gstatic dans le CSS servi, 15 pokeboy.lol, 0 acx-connect.
+# 2. transfert chimera → devAI → kailo-srv, SHA-256 IDENTIQUES aux TROIS étapes :
+#    web 299945cd… · api 5ec2e933… · game a1249dac…
+# 3. backup frais : pokeboy_prod-20261004-141539.dump (48,9 Mo / 32 tables), photos 1053.
+# 3b. import flotte : backfill_cards.sql (cards.tsv sha ed228452…) → stades 2425→19368, effet 0→3043.
+ssh kailo-srv 'sudo -u postgres psql -d pokeboy_prod -f /tmp/backfill_cards.sql'
+# 4. préparation (extrait web+api+game, uv sync, migration) :
+ssh kailo-srv 'TS=20261004-161201 COMMIT=5efffd3… LOT=livraison-effets-ia bash /tmp/prep-lol.sh'  # → PREPARATION_OK, b2c3d4e5f6a7→c9d4e7a1b3f8
+# 5. bascule, retour arrière automatique sur échec de santé :
+ssh kailo-srv 'TS=20261004-161201 bash /tmp/deploy-switch.sh'  # → BASCULE_OK (api=200 web=200)
+```
+
+**Migration appliquée** : `b2c3d4e5f6a7 → c9d4e7a1b3f8` (3 révisions, additives). Tête LIVE `c9d4e7a1b3f8`.
+
+### Preuves (code déployé + vraie base PROD)
+
+- **Mise en ligne** : `app/ -> releases/20261004-161201` ; `RELEASE_INFO` commit=`5efffd3`,
+  lot=`livraison-effets-ia` ; 3 unités `active` ; `pokeboy.lol/api/health` 200, `/` 200 ; tête Alembic
+  en base `c9d4e7a1b3f8` ; `card_scripts` (0 ligne) et `card_play_requests` existent.
+- **Tableau de couverture LIVE** : 181 effets, **0 scripté**, 0 % de cartes à effet jouables,
+  blocueurs **nommés** (« aucun script écrit pour ce texte d'effet »), jamais un 500. bibi 105/0 jouable,
+  jf 21/0 jouable.
+- **Partie réelle en PROD — 14/14 PASS** (venv déployé, base PROD, 2 comptes jetables avec accès + 1
+  sans, puis suppression de tout, **0 résidu vérifié**) : la **porte D9** refuse un deck à carte-effet
+  en nommant la carte (« aucun script pour ce texte d'effet — effet non implémenté, carte refusée ») et
+  laisse passer un deck vanille ; la **projection** (`resynchroniser` depuis 0, le chemin qui faisait
+  500 à la livraison « coups ») projette la mise en place **sans 500 ni fuite** pour les deux joueurs,
+  la partie vanille va jusqu'à la **victoire par les récompenses** (`placer_mise_en_place` joué), la
+  graine ne sort jamais, non-fuite vérifiée par ÉGALITÉ d'`instance_id` ; **fermeture** (compte sans
+  accès → routes jeu 404, code inchangé). *(La preuve « ≥3 cartes au script IA » exigée par le prompt
+  est impossible faute de scripts : on prouve à la place le refus propre d'une carte à effet.)*
+- **Accès jeu** : **aymeric.fonteray@gmail.com** (bibi) laissé ouvert ; **jfonteray@gmail.com** (jf),
+  **inscrit depuis le 03/10**, a déjà `game_access=true` → confirmé idempotent. Audit : **2 comptes**
+  ouverts (eux deux), **personne d'autre** (6 comptes au total).
+- **Voisins inchangés** du début à la fin (`200 200 308 200 307`). Serveur après : charge 0.08, 2451 Mo
+  dispo, 3 unités `active`.
+
+### Reste à faire (nommé, non masqué)
+
+1. **Lancer le passage IA DJ8 (50 €)** depuis devAI (clé posée `~/.pokeboy-secrets/platform-anthropic-key`),
+   remettre le **rapport par famille à JF** pour arbitrage, puis importer `card_scripts` en PROD par SQL
+   flotte (sans redéploiement). **C'est ce qui rendra jouables les vraies cartes à effet** — y compris
+   les collections d'Aymeric et de JF, aujourd'hui à 0 carte jouable.
+2. **833 Pokémon sans stade / 921 sans element_type** en PROD : absents du bundle ou vides des deux côtés.
+3. **Front du salon** (bouton « S'entraîner », badge « Effet non géré », bouton « Je voudrais jouer
+   cette carte ») : câblage front à finir.
+
+### Pièges rejoués / notés
+
+- **Worktree de build (dépôt relais) resté sur `c5084ad`** : `fetch github` + `checkout --detach 5efffd3`
+  + **vérification du HEAD** avant le build — piège n°1, toujours réel.
+- **`main` avançait sous la session** : une file parallèle fusionnait `j-cartes-talents` dans le clone
+  partagé pendant la préparation → on fige le **commit SHA** (`5efffd3`) et on build CE commit, jamais
+  le HEAD mouvant du clone.
+- **Détecteur de non-fuite** : comparer par **égalité** d'`instance_id`, jamais par sous-chaîne (`:d1`
+  est un préfixe de `:d15`) — une première passe criait à tort à la fuite.
+- **Trace** écrite dans un worktree **transitoire** `~/dev/wt-livraison-effets-ia` (disque système),
+  **pas** le clone `~/dev/pokeboy` de la file de lots, supprimé juste après le push. `graphify update`
+  non exécuté (doc seule ; le code `5efffd3` est déjà graphifié sur `main` par ses lots de fusion).
+
 ## Conclure « déployé » — jamais sur une ligne de journal
 
 Un build qui échoue laisse la plateforme **debout sur l'ancienne version** : tout a l'air normal et
