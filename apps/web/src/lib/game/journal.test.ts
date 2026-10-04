@@ -33,6 +33,7 @@ describe("traduction des événements du journal", () => {
       echange_force_effectue: { joueur: ADV, ancien_actif: "p-4", nouvel_actif: "p-5" },
       objet_joue: { joueur: MOI, ref: "obj-1", nom: "Gust of Wind", carte: "g-1", devient_actif: [[ADV, "p-5"]] },
       supporter_joue: { joueur: MOI, ref: "sup-1", nom: "Hop", carte: "h-1", devient_actif: [] },
+      stade_joue: { joueur: MOI, ref: "sta-1", nom: "Stade en Liesse", carte: "s-1", remplace: "s-0", proprietaire_remplace: ADV },
       talent_active: { joueur: MOI, pokemon: "p-1", nom: "Incisives Travailleuses", ref: "ev1-9", devient_actif: [] },
       etat_checkup: { joueur: MOI, etat: "empoisonne", regle: "R-11.7", degats: 10, gueri: false },
       effet_expire: {},

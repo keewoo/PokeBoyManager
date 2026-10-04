@@ -46,6 +46,7 @@ from ..journal.modele import (
     EVT_PROMOTION,
     EVT_PROMOTION_REQUISE,
     EVT_RETRAITE,
+    EVT_STADE_JOUE,
     EVT_SUPPORTER_JOUE,
     EVT_TALENT_ACTIVE,
     EVT_TOUR_COMMENCE,
@@ -143,6 +144,7 @@ PROJECTEURS: dict[str, Projecteur] = {
     EVT_FIN_TOUR: _public,  # R-5.8 : fin de tour, joueur et phase quittée — aucun secret
     EVT_OBJET_JOUE: _public,  # R-5.5 : Objet joué — nom et Actifs changés, tout est public
     EVT_SUPPORTER_JOUE: _public,  # R-5.5 : Supporter joué — nom et Actifs changés, tout est public
+    EVT_STADE_JOUE: _public,  # R-3.5 : Stade joué — zone partagée publique, aucun secret
     EVT_TALENT_ACTIVE: _public,  # R-5 : talent activé — nom, Pokémon et Actifs changés, tout public
     # Combat et effets (lots j-attaque / effets de carte) : ces types **ne portent que de
     # l'information publique** — cartes en jeu, énergies attachées (publiques), pile ou face.

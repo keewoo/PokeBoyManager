@@ -33,6 +33,8 @@ from .continus import (
     EffetContinu,
     RegistreContinus,
     collecter_effets_continus,
+    cout_retraite_effectif,
+    delta_cout_retraite,
     modificateurs_degats,
     seuil_ko,
 )
@@ -85,6 +87,8 @@ __all__ = [
     "collecter_effets_continus",
     "modificateurs_degats",
     "seuil_ko",
+    "delta_cout_retraite",
+    "cout_retraite_effectif",
     "Verrou",
     "JeuDeVerrous",
     "VERROUS",

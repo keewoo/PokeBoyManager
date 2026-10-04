@@ -133,6 +133,7 @@ def _tour_vers(tour: Tour) -> dict:
         "energie_posee": tour.energie_posee,
         "supporter_joue": tour.supporter_joue,
         "retraite_faite": tour.retraite_faite,
+        "stade_joue": tour.stade_joue,
         # Trié pour un JSON déterministe (un frozenset n'a pas d'ordre).
         "entres_en_jeu_ce_tour": sorted(tour.entres_en_jeu_ce_tour),
         "evolues_ce_tour": sorted(tour.evolues_ce_tour),
@@ -178,6 +179,7 @@ def _tour_depuis(donnees: object) -> Tour:
         energie_posee=_drapeau("energie_posee"),
         supporter_joue=_drapeau("supporter_joue"),
         retraite_faite=_drapeau("retraite_faite"),
+        stade_joue=_drapeau("stade_joue"),
         entres_en_jeu_ce_tour=frozenset(entres),
         evolues_ce_tour=frozenset(evolues),
         talents_actives_ce_tour=frozenset(talents_actives),

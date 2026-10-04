@@ -128,6 +128,13 @@ ACTION_JOUER_SUPPORTER = "jouer_supporter"
 #: ``metadonnees``. Suivi **par Pokémon** via ``Tour.talents_actives_ce_tour`` ; refusé sous
 #: un verrou ``talents_sans_effet``, qui **nomme la carte responsable**. Ajoutée par
 #: ``j-cartes-talents``.
+#: **Jouer une carte Stade** (R-3.5/R-5.5) — coup de la phase principale du joueur actif,
+#: **un seul par tour** (R-5.5). Le Stade entre dans la zone **partagée** ``EtatPartie.stade``
+#: et **défausse le Stade précédent** chez son propriétaire (R-3.5) ; un Stade de même nom
+#: qu'un Stade déjà en jeu est refusé. ``params`` : ``carte_main`` (instance en main),
+#: ``nom``, ``source``. Pas de script immédiat : un Stade agit en **continu** tant qu'il est
+#: en jeu (``effets.continus``), jamais par mutation à la pose. Ajoutée par ``j-cartes-stades``.
+ACTION_JOUER_STADE = "jouer_stade"
 ACTION_ACTIVER_TALENT = "activer_talent"
 #: **Répondre à une demande de décision** (R-9.3 étape D, et tout effet qui fait choisir un joueur)
 #: — coup d'un joueur quand une résolution est **suspendue** sur une demande. ``params`` : ``choix``
@@ -226,6 +233,12 @@ EVT_SUPPORTER_JOUE = "supporter_joue"
 #: porte le joueur, l'identité du ``pokemon`` porteur, le ``nom`` du talent, sa ``ref`` et
 #: ``devient_actif`` (Pokémon forcés à l'Actif par le script, pour le bus). Le « une fois par
 #: tour » est porté par ``Tour.talents_actives_ce_tour`` (marqué par la transition), pas ici.
+#: Une **carte Stade a été jouée** (R-3.5/R-5.5). Produit par la transition ``jouer_stade`` :
+#: porte ``joueur``, ``ref``, ``nom``, ``carte`` (instance posée en zone Stade), ``remplace``
+#: (instance de l'ancien Stade défaussé, ou ``None``) et ``proprietaire_remplace``. Public :
+#: la zone Stade est visible des deux joueurs. Le « un Stade ce tour » est porté par
+#: ``Tour.stade_joue`` (marqué par la transition), pas par cet événement.
+EVT_STADE_JOUE = "stade_joue"
 EVT_TALENT_ACTIVE = "talent_active"
 #: Un **état spécial** a été résolu au Checkup (R-12.2) sur l'Actif d'un joueur. Produit par
 #: ``j-checkup`` : porte le joueur, l'état (``empoisonne``/``brule``/``endormi``/``paralyse``),
