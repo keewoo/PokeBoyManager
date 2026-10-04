@@ -56,7 +56,8 @@ class EffetContinu:
     """Ce qu'une source en jeu **contribue** au calcul, tant qu'elle y est.
 
     Une contribution est soit un **modificateur de dégâts** (``modificateur`` + ``face``), soit
-    un **delta de PV** (``pv`` ≠ 0, qui déplace le seuil de K.O.), soit les deux. ``cible`` est
+    un **delta de PV** (``pv`` ≠ 0, qui déplace le seuil de K.O.), soit un **delta de coût de
+    retraite** (``cout_retraite`` ≠ 0, type *Stade*, R-8.2), ou plusieurs à la fois. ``cible`` est
     l'identité stable (``instance_id`` de carte de base) du Pokémon concerné : côté PV, c'est
     lui dont le seuil change ; côté dégâts, c'est lui qui attaque (``FACE_ATTAQUANT``) ou qui
     défend (``FACE_DEFENSEUR``). ``source`` nomme la carte responsable (journal), ``portee``
@@ -71,6 +72,7 @@ class EffetContinu:
     modificateur: Modificateur | None = None
     face: str | None = None
     pv: int = 0
+    cout_retraite: int = 0
 
     def __post_init__(self) -> None:
         if not isinstance(self.libelle, str) or not self.libelle.strip():
@@ -87,12 +89,17 @@ class EffetContinu:
                 f"Un modificateur continu doit dire sa face ({FACE_ATTAQUANT}/{FACE_DEFENSEUR}), "
                 f"reçu {self.face!r}."
             )
-        if self.modificateur is None and self.pv == 0:
+        if self.modificateur is None and self.pv == 0 and self.cout_retraite == 0:
             raise ValueError(
-                "Un effet continu ne contribue rien : ni modificateur de dégâts ni delta de PV."
+                "Un effet continu ne contribue rien : ni modificateur de dégâts, ni delta "
+                "de PV, ni delta de coût de retraite."
             )
         if not isinstance(self.pv, int) or isinstance(self.pv, bool):
             raise ValueError(f"Delta de PV continu invalide : {self.pv!r} (entier).")
+        if not isinstance(self.cout_retraite, int) or isinstance(self.cout_retraite, bool):
+            raise ValueError(
+                f"Delta de coût de retraite continu invalide : {self.cout_retraite!r} (entier)."
+            )
 
 
 # Un producteur lit l'état et rend les effets continus d'**une** source précise. Il reçoit
@@ -186,6 +193,33 @@ def seuil_ko(pv_imprime: int, effets: list[EffetContinu], pokemon: str) -> int:
     return max(0, pv_imprime + delta_pv(effets, pokemon))
 
 
+def delta_cout_retraite(effets: list[EffetContinu], pokemon: str) -> int:
+    """La somme des **deltas de coût de retraite** continus qui pèsent sur ``pokemon`` (R-8.2).
+
+    Un Stade (``cible=None``) frappe les **deux camps** : son delta s'applique à n'importe quel
+    Pokémon, exactement comme un modificateur de dégâts global (:func:`modificateurs_degats`). Un
+    effet ciblé (``cible`` renseignée) ne compte que pour ce Pokémon-là. C'est ainsi qu'un Stade
+    « le Coût de Retraite de chaque Pokémon est diminué de 1 » touche l'Actif des deux joueurs.
+    """
+    return sum(
+        e.cout_retraite for e in effets if e.cout_retraite and e.cible in (None, pokemon)
+    )
+
+
+def cout_retraite_effectif(base: int, effets: list[EffetContinu], pokemon: str) -> int:
+    """Le **coût de retraite effectif** de ``pokemon`` : son coût imprimé + les deltas continus.
+
+    ``base`` est le coût de retraite imprimé (fourni par le service depuis le catalogue, R-8.2).
+    Un Stade peut l'augmenter ou le diminuer pour les deux camps ; retirer le Stade (remplacer
+    ``etat.stade``) fait disparaître le delta au calcul suivant, sans rien défaire — le coût
+    revient *par construction* à sa valeur imprimée. Ne descend jamais sous 0 (un coût de retraite
+    négatif n'existe pas : au plancher, la retraite est gratuite).
+    """
+    if not isinstance(base, int) or isinstance(base, bool) or base < 0:
+        raise ValueError(f"Coût de retraite imprimé invalide : {base!r} (entier ≥ 0, R-8.2).")
+    return max(0, base + delta_cout_retraite(effets, pokemon))
+
+
 __all__ = [
     "PORTEE_OUTIL",
     "PORTEE_STADE",
@@ -201,4 +235,6 @@ __all__ = [
     "modificateurs_degats",
     "delta_pv",
     "seuil_ko",
+    "delta_cout_retraite",
+    "cout_retraite_effectif",
 ]

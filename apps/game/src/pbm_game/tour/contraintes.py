@@ -33,6 +33,7 @@ from .drapeaux import (
     pokemon_entre_ce_tour,
     pokemon_evolue_ce_tour,
     retraite_deja_faite,
+    stade_deja_joue,
     supporter_deja_joue,
 )
 
@@ -53,6 +54,19 @@ def peut_jouer_supporter(tour: Tour) -> Verdict:
         )
     if supporter_deja_joue(tour):
         return refus("R-5.5", "Un Supporter a déjà été joué ce tour : un seul par tour.")
+    return ACCORD
+
+
+def peut_jouer_stade(tour: Tour) -> Verdict:
+    """R-5.5 — jouer un Stade n'est permis qu'une fois par tour.
+
+    Contrairement au Supporter, aucune restriction de premier tour : un Stade peut être joué
+    dès le premier tour (R-6.2 ne vise que les Supporters). La règle « un seul Stade EN JEU »
+    (R-3.5) et l'interdiction d'un Stade de même nom relèvent de la transition ``jouer_stade``
+    et de sa famille (qui connaissent le Stade en jeu), pas de cette garde-ci de tour.
+    """
+    if stade_deja_joue(tour):
+        return refus("R-5.5", "Un Stade a déjà été joué ce tour : un seul par tour.")
     return ACCORD
 
 
@@ -111,6 +125,7 @@ __all__ = [
     "peut_attacher_energie",
     "peut_jouer_supporter",
     "peut_battre_retraite",
+    "peut_jouer_stade",
     "peut_evoluer",
     "attaque_permise",
 ]

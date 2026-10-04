@@ -356,6 +356,18 @@ export const TRADUCTEURS: Record<string, Traducteur> = {
     },
   },
 
+  stade_joue: {
+    automatique: false,
+    traduire: (d, pour) => {
+      const nom = chaine(d, "nom") ?? "un Stade";
+      const remplace = chaine(d, "remplace");
+      const suffixe = remplace ? " (remplace le Stade précédent, R-3.5)" : "";
+      return {
+        texte: `${sujet(d, pour)} ${estMoi(d, pour) ? "joues" : "joue"} le Stade ${nom}${suffixe}.`,
+      };
+    },
+  },
+
   talent_active: {
     automatique: false,
     traduire: (d, pour) => {

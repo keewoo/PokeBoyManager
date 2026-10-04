@@ -82,6 +82,11 @@ def retraite_deja_faite(tour: Tour) -> bool:
     return tour.retraite_faite
 
 
+def stade_deja_joue(tour: Tour) -> bool:
+    """Vrai si un Stade a déjà été joué ce tour (R-5.5)."""
+    return tour.stade_joue
+
+
 def pokemon_entre_ce_tour(tour: Tour, base_id: str) -> bool:
     """Vrai si le Pokémon d'identité ``base_id`` est entré en jeu pendant CE tour (R-7.3)."""
     return base_id in tour.entres_en_jeu_ce_tour
@@ -119,6 +124,11 @@ def marquer_retraite_faite(tour: Tour) -> Tour:
     return replace(tour, retraite_faite=True)
 
 
+def marquer_stade_joue(tour: Tour) -> Tour:
+    """Renvoie un tour où le Stade du tour est marqué comme joué (R-5.5)."""
+    return replace(tour, stade_joue=True)
+
+
 def marquer_entree_en_jeu(tour: Tour, base_id: str) -> Tour:
     """Renvoie un tour où ``base_id`` est noté comme entré en jeu ce tour (R-7.3)."""
     return replace(tour, entres_en_jeu_ce_tour=tour.entres_en_jeu_ce_tour | {base_id})
@@ -141,12 +151,14 @@ __all__ = [
     "energie_deja_posee",
     "supporter_deja_joue",
     "retraite_deja_faite",
+    "stade_deja_joue",
     "pokemon_entre_ce_tour",
     "pokemon_evolue_ce_tour",
     "talent_active_ce_tour",
     "marquer_energie_posee",
     "marquer_supporter_joue",
     "marquer_retraite_faite",
+    "marquer_stade_joue",
     "marquer_entree_en_jeu",
     "marquer_evolution",
     "marquer_talent_active",

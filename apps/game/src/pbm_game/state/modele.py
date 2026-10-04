@@ -177,6 +177,10 @@ class Tour:
     energie_posee: bool = False
     supporter_joue: bool = False
     retraite_faite: bool = False
+    #: Un **Stade a été joué ce tour** (R-5.5 : un seul par tour). Porté par l'état donc
+    #: sérialisé — un second Stade est refusé, et le drapeau survit à une reprise après un
+    #: F5. Rétro-compatible : absent/faux = aucun Stade joué.
+    stade_joue: bool = False
     entres_en_jeu_ce_tour: frozenset[str] = field(default_factory=frozenset)
     #: Identités (``instance_id`` de carte de base) des Pokémon qui ont **évolué** ce tour —
     #: pour R-7.4 (pas deux évolutions du même Pokémon dans le même tour). Distinct de

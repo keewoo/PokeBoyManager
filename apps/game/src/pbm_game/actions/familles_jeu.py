@@ -37,6 +37,11 @@ from ..cartes.energie import DefinitionEnergie
 from ..cartes.modele import DefinitionCarte, definition_vers_dict
 from ..combat.cout import EnergieAttachee, cout_satisfait
 from ..combat.pouvoirs_uniques import deja_utilise
+from ..effets.continus import (
+    RegistreContinus,
+    collecter_effets_continus,
+    cout_retraite_effectif,
+)
 from ..effets.dsl.contexte import ContexteEffet
 from ..effets.dsl.jouabilite import programme_jouable
 from ..effets.dsl.modele import Programme
@@ -47,6 +52,7 @@ from ..journal.modele import (
     ACTION_DECLARER_ATTAQUE,
     ACTION_EVOLUER,
     ACTION_JOUER_OBJET,
+    ACTION_JOUER_STADE,
     ACTION_JOUER_SUPPORTER,
     ACTION_PLACER_MISE_EN_PLACE,
     ACTION_POSER,
@@ -69,6 +75,7 @@ from ..tour.contraintes import (
     peut_attacher_energie,
     peut_battre_retraite,
     peut_evoluer,
+    peut_jouer_stade,
     peut_jouer_supporter,
 )
 from ..tour.drapeaux import identite_pokemon
@@ -130,6 +137,26 @@ class DefinitionSupporter:
 
 
 @dataclass(frozen=True)
+class DefinitionStade:
+    """Définition catalogue d'une carte **Stade** — ce que le service extrait pour la jouer (R-3.5).
+
+    Un Stade n'a ni données de combat ni script d'effet immédiat : son effet est **continu** (un
+    producteur de :mod:`pbm_game.effets.stades`, dérivé de ce qui est en jeu tant que le Stade y
+    est). Cette fiche ne porte donc que de quoi le **jouer** et le **nommer** — la règle « un seul
+    Stade en jeu, pas deux de même nom » (R-3.5) est portée par :class:`FamilleJouerStade` et la
+    transition ``jouer_stade``, pas ici.
+
+    * ``ref`` — référence catalogue de la carte ;
+    * ``nom`` — nom lisible (étiquette du coup, journal, et **clé du refus R-3.5 « même nom »**) ;
+    * ``source_text`` — le texte d'effet d'origine (empreinte / errata, tenus côté service).
+    """
+
+    ref: str
+    nom: str
+    source_text: str = ""
+
+
+@dataclass(frozen=True)
 class CatalogueJeu:
     """Les définitions de carte des deux decks d'une partie, par ``ref`` (fourni par le service).
 
@@ -147,6 +174,12 @@ class CatalogueJeu:
     energies: dict[str, DefinitionEnergie] = field(default_factory=dict)
     objets: dict[str, DefinitionObjet] = field(default_factory=dict)
     supporters: dict[str, DefinitionSupporter] = field(default_factory=dict)
+    stades: dict[str, DefinitionStade] = field(default_factory=dict)
+    #: Producteurs d'effets continus de la partie (Outils, Stades, talents), par ``ref`` — ce que
+    #: chaque source en jeu ajoute au calcul (PV, dégâts, coût de retraite). **Vide par défaut**
+    #: (D9) : le service l'assemble depuis les decks (p. ex. ``effets.stades.registre_stades``).
+    #: Sans lui, la retraite coûte le prix imprimé et aucun Stade ne modifie rien.
+    registre_continus: RegistreContinus = field(default_factory=dict)
 
     def pokemon_de(self, ref: str) -> DefinitionCarte | None:
         return self.pokemon.get(ref)
@@ -159,6 +192,9 @@ class CatalogueJeu:
 
     def supporter_de(self, ref: str) -> DefinitionSupporter | None:
         return self.supporters.get(ref)
+
+    def stade_de(self, ref: str) -> DefinitionStade | None:
+        return self.stades.get(ref)
 
     def metadonnees_completes(self) -> dict:
         """Les métadonnées ``ref → {categorie, stade, type}`` de **toutes** les cartes connues.
@@ -177,6 +213,8 @@ class CatalogueJeu:
         for ref in self.objets:
             meta.setdefault(ref, {"categorie": "dresseur"})
         for ref in self.supporters:
+            meta.setdefault(ref, {"categorie": "dresseur"})
+        for ref in self.stades:
             meta.setdefault(ref, {"categorie": "dresseur"})
         return meta
 
@@ -576,7 +614,13 @@ class FamilleRetraite(_FamilleCatalogue):
         def_actif = self.catalogue.pokemon_de(carte_active(j.actif).ref)
         if def_actif is None:
             return []
-        cout = def_actif.cout_retraite
+        # Coût de retraite **effectif** = coût imprimé + deltas continus : un Stade peut
+        # l'abaisser ou l'augmenter pour les deux camps (R-3.5/R-8.2). Dérivé de l'état —
+        # registre vide (défaut J2) = coût imprimé inchangé.
+        effets = collecter_effets_continus(etat, self.catalogue.registre_continus)
+        cout = cout_retraite_effectif(
+            def_actif.cout_retraite, effets, j.actif.cartes[0].instance_id
+        )
         if len(j.actif.energies) < cout:
             return []
         # Au choix du joueur (R-8.2) : au jalon J1, on défausse les `cout` premières énergies
@@ -873,6 +917,93 @@ class FamilleJouerSupporter(_FamilleCatalogue):
         )
 
 
+class FamilleJouerStade(_FamilleCatalogue):
+    """Jouer une carte **Stade** (R-3.5/R-5.5) — joueur actif, phase principale, un par tour.
+
+    Liste un Stade de la main comme coup légal seulement si : c'est le tour du joueur, en phase
+    principale, aucune décision n'est en attente, **aucun Stade n'a été joué ce tour**
+    (:func:`~pbm_game.tour.contraintes.peut_jouer_stade`, R-5.5) et — point **autoritaire** de
+    R-3.5 — **le Stade en jeu n'a pas déjà le même nom**. Comme ``valider`` recalcule cette liste,
+    un client qui tenterait un Stade de même nom verrait son coup refusé ici, jamais appliqué.
+    Aucune restriction de premier tour : un Stade se joue dès le tour 1 (R-6.2 ne vise que les
+    Supporters). Le drapeau « un Stade ce tour » est levé par la **transition** ``jouer_stade``, pas
+    par cette famille qui ne fait que lister.
+    """
+
+    nom = "jouer_stade"
+
+    def gouverne(self, action: Action) -> bool:
+        return action.type == ACTION_JOUER_STADE
+
+    def _nom_stade_en_jeu(self, etat: EtatPartie) -> str | None:
+        """Le **nom** du Stade en jeu (via le catalogue), ou ``None``.
+
+        R-3.5 compare par **nom**, pas par référence — pour couvrir deux impressions distinctes d'un
+        même Stade. Un Stade en jeu dont la définition manque au catalogue rend ``None`` : on ne
+        devine pas un nom (D9), la comparaison par référence de la transition reste le filet.
+        """
+        if etat.stade is None:
+            return None
+        definition = self.catalogue.stade_de(etat.stade.ref)
+        return definition.nom if definition is not None else None
+
+    def generer(self, etat: EtatPartie, joueur: str) -> list[ActionLegale]:
+        j = _joueur_de(etat, joueur)
+        if j is None or joueur != etat.tour.joueur_actif or etat.tour.phase != PHASE_PRINCIPALE:
+            return []
+        if etat.resolution is not None:
+            return []  # une décision est en attente : seule la réponse (ou l'abandon) est permise
+        if peut_jouer_stade(etat.tour).refuse:
+            return []  # un Stade a déjà été joué ce tour (R-5.5)
+        nom_en_jeu = self._nom_stade_en_jeu(etat)
+        coups: list[ActionLegale] = []
+        for carte in j.main:
+            stade = self.catalogue.stade_de(carte.ref)
+            if stade is None:
+                continue
+            if nom_en_jeu is not None and stade.nom == nom_en_jeu:
+                continue  # R-3.5 — un Stade de même nom est déjà en jeu : le rejouer ne ferait rien
+            coups.append(
+                ActionLegale(
+                    action=Action(
+                        ACTION_JOUER_STADE,
+                        joueur,
+                        {
+                            "carte_main": carte.instance_id,
+                            "source": {
+                                "libelle": stade.nom,
+                                "ref": stade.ref,
+                                "instance_id": carte.instance_id,
+                            },
+                            "nom": stade.nom,
+                        },
+                    ),
+                    etiquette=f"Jouer le Stade {stade.nom}",
+                )
+            )
+        return coups
+
+    def refuser(self, etat: EtatPartie, action: Action) -> Verdict:
+        if action.auteur != etat.tour.joueur_actif:
+            return refus("R-5.5", "Seul le joueur actif joue un Stade (R-5.3/R-5.5).")
+        if etat.tour.phase != PHASE_PRINCIPALE:
+            return refus("R-5.5", "On joue un Stade en phase principale (R-5.3).")
+        if etat.resolution is not None:
+            return refus(
+                "R-5.5",
+                "Une décision est en attente : seule la réponse (ou l'abandon) est permise, "
+                "pas un Stade.",
+            )
+        v = peut_jouer_stade(etat.tour)  # R-5.5 — un Stade a déjà été joué ce tour
+        if v.refuse:
+            return v
+        return refus(
+            "R-3.5",
+            "Ce Stade ne peut pas être joué ici — un Stade de même nom est déjà en jeu, ou la "
+            "carte n'est pas dans votre main (R-3.5).",
+        )
+
+
 class FamilleAvancerPhaseJeu(FamilleAvancerPhase):
     """``avancer_phase`` du jeu : comme la famille de base, mais interdite tant qu'un Actif manque.
 
@@ -905,6 +1036,7 @@ def familles_jeu(catalogue: CatalogueJeu) -> tuple[Famille, ...]:
         FamilleAttacherEnergie(catalogue),
         FamilleJouerObjet(catalogue),
         FamilleJouerSupporter(catalogue),
+        FamilleJouerStade(catalogue),
         FamilleAttaquer(catalogue),
         FamilleRetraite(catalogue),
         FamillePromouvoir(),
@@ -916,6 +1048,8 @@ __all__ = [
     "CatalogueJeu",
     "DefinitionObjet",
     "DefinitionSupporter",
+    "DefinitionStade",
+    "FamilleJouerStade",
     "FamillePoser",
     "FamilleEvoluer",
     "FamilleAttacherEnergie",
