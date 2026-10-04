@@ -7996,7 +7996,7 @@
       "compte_rendu": {}
     },
     "j-effets-catalogue-compilation": {
-      "statut": "a_faire",
+      "statut": "integre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
@@ -8048,8 +8048,21 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-10-04T12:51+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": "branche roadmap/j-effets-catalogue-compilation fusionnee dans main (verifie par git merge-base)"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": {
+        "quand": "2026-10-04T12:51+0200",
+        "raisons": [
+          "branche roadmap/j-effets-catalogue-compilation fusionnee dans main (verifie par git merge-base)"
+        ]
+      }
     },
     "j-effets-assistance-ia": {
       "statut": "a_faire",
