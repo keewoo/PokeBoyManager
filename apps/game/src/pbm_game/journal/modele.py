@@ -136,6 +136,21 @@ ACTION_JOUER_SUPPORTER = "jouer_supporter"
 #: en jeu (``effets.continus``), jamais par mutation à la pose. Ajoutée par ``j-cartes-stades``.
 ACTION_JOUER_STADE = "jouer_stade"
 ACTION_ACTIVER_TALENT = "activer_talent"
+#: **Attacher un Outil** à un de ses Pokémon (R-3.7/R-5.5) — coup de la phase principale du
+#: joueur actif. Autant d'Outils qu'on veut par tour (R-5.5, comme un Objet), mais **au plus un
+#: par Pokémon** (R-3.7). La carte quitte la main et rejoint le Pokémon ciblé (Actif ou banc) ;
+#: son effet est **continu** (``effets.continus``), consulté au calcul, jamais une mutation à la
+#: pose. ``params`` : ``carte_main`` (instance en main), ``cible`` (identité du Pokémon), ``nom``.
+#: Ajoutée par ``j-cartes-outils``.
+ACTION_ATTACHER_OUTIL = "attacher_outil"
+#: **Retirer un Outil** d'un Pokémon (R-3.7) — déclenché par un effet (souvent adverse). L'Outil
+#: rejoint la **défausse de son propriétaire** (R-13.2) et son effet continu cesse *par
+#: construction* (la source disparaît de l'état). Comme le retrait d'un Outil de PV abaisse le
+#: seuil de K.O. (R-13.1), la transition **résout un K.O. immédiat** avec le PV effectif
+#: post-retrait fourni par le service. ``params`` : ``proprietaire`` (joueur porteur), ``cible``
+#: (identité du Pokémon), ``fiches`` (PV effectifs + marqueur, pour le K.O.). Ajoutée par
+#: ``j-cartes-outils``.
+ACTION_RETIRER_OUTIL = "retirer_outil"
 #: **Répondre à une demande de décision** (R-9.3 étape D, et tout effet qui fait choisir un joueur)
 #: — coup d'un joueur quand une résolution est **suspendue** sur une demande. ``params`` : ``choix``
 #: (la liste des identifiants d'option retenus ; vide = abandon d'un effet facultatif). L'``auteur``
@@ -240,6 +255,16 @@ EVT_SUPPORTER_JOUE = "supporter_joue"
 #: ``Tour.stade_joue`` (marqué par la transition), pas par cet événement.
 EVT_STADE_JOUE = "stade_joue"
 EVT_TALENT_ACTIVE = "talent_active"
+#: Un **Outil a été attaché** à un Pokémon (R-3.7/R-5.5). Produit par la transition
+#: ``attacher_outil`` : porte ``joueur``, l'``outil`` (instance_id), sa ``ref``, l'identité
+#: ``cible`` du Pokémon et le ``nom`` de l'Outil. Public : l'Outil attaché est visible des deux
+#: joueurs.
+EVT_OUTIL_ATTACHE = "outil_attache"
+#: Un **Outil a été retiré** d'un Pokémon (R-3.7) et défaussé chez son propriétaire (R-13.2).
+#: Produit par la transition ``retirer_outil`` : porte ``joueur`` (propriétaire), l'``outil``
+#: (instance_id), sa ``ref``, l'identité ``cible`` et ``par`` (l'auteur du retrait). Journaliser
+#: le retrait rend explicite la **fin de ses effets continus** — jamais un retrait muet.
+EVT_OUTIL_RETIRE = "outil_retire"
 #: Un **état spécial** a été résolu au Checkup (R-12.2) sur l'Actif d'un joueur. Produit par
 #: ``j-checkup`` : porte le joueur, l'état (``empoisonne``/``brule``/``endormi``/``paralyse``),
 #: la règle citée, les dégâts posés (poison/brûlure) et, le cas échéant, le pile ou face

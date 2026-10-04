@@ -368,7 +368,35 @@ export const TRADUCTEURS: Record<string, Traducteur> = {
     },
   },
 
+  outil_attache: {
+    automatique: false,
+    traduire: (d, pour) => {
+      const nom = chaine(d, "nom") ?? "un Outil";
+      const cible = chaine(d, "cible") ?? null;
+      return {
+        texte: `${sujet(d, pour)} ${estMoi(d, pour) ? "attaches" : "attache"} l'Outil ${nom} (R-3.7).`,
+        surligne: cible,
+        refs: cible ? [cible] : [],
+      };
+    },
+  },
+
+  outil_retire: {
+    automatique: false,
+    traduire: (d) => {
+      const ref = chaine(d, "ref");
+      const cible = chaine(d, "cible") ?? null;
+      const quoi = ref ? `l'Outil ${ref}` : "un Outil";
+      return {
+        texte: `${quoi} est retiré et défaussé (R-3.7/R-13.2).`,
+        surligne: cible,
+        refs: cible ? [cible] : [],
+      };
+    },
+  },
+
   talent_active: {
+    automatique: false,  talent_active: {
     automatique: false,
     traduire: (d, pour) => {
       const nom = chaine(d, "nom") ?? "un talent";

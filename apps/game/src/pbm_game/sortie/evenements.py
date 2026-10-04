@@ -38,6 +38,8 @@ from ..journal.modele import (
     EVT_MISE_EN_PLACE_REVELEE,
     EVT_MULLIGAN,
     EVT_OBJET_JOUE,
+    EVT_OUTIL_ATTACHE,
+    EVT_OUTIL_RETIRE,
     EVT_PARTIE_TERMINEE,
     EVT_PHASE_AVANCEE,
     EVT_PIOCHE_MELANGEE,
@@ -146,6 +148,8 @@ PROJECTEURS: dict[str, Projecteur] = {
     EVT_SUPPORTER_JOUE: _public,  # R-5.5 : Supporter joué — nom et Actifs changés, tout est public
     EVT_STADE_JOUE: _public,  # R-3.5 : Stade joué — zone partagée publique, aucun secret
     EVT_TALENT_ACTIVE: _public,  # R-5 : talent activé — nom, Pokémon et Actifs changés, tout public
+    EVT_OUTIL_ATTACHE: _public,  # R-3.7 : Outil attaché — visible des deux joueurs
+    EVT_OUTIL_RETIRE: _public,  # R-3.7/R-13.2 : Outil retiré et défaussé — geste public
     # Combat et effets (lots j-attaque / effets de carte) : ces types **ne portent que de
     # l'information publique** — cartes en jeu, énergies attachées (publiques), pile ou face.
     # Le reste du système d'effets (demandes, choix, primitives) peut porter des identités cachées :
