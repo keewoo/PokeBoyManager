@@ -19,6 +19,7 @@ from pbm_api.decks import energy, legality, stats
 from pbm_api.decks.errors import DeckCardNotFoundError, DeckNotFoundError
 from pbm_api.decks.legality import DeckCardFact, DeckLegality
 from pbm_api.decks.schemas import CreateDeckRequest, DeckCardInput
+from pbm_api.jeu.scripts.chargeur import refus_scripts_par_carte
 from pbm_api.models import Card, CollectionItem, Deck, DeckCard, DeckEvent, PriceVariant, Set, User
 from pbm_api.pricing import valuation
 from pbm_api.validation.errors import CardNotFoundError
@@ -164,8 +165,31 @@ def _facts(
     ]
 
 
-def _evaluate(deck: Deck, cards: list[LoadedDeckCard], owned, counterfeit) -> DeckLegality:
-    return legality.evaluate(_facts(cards, owned, counterfeit), deck.format)
+async def _unsupported_map(
+    session: AsyncSession, card_ids: list[uuid.UUID]
+) -> dict[uuid.UUID, str]:
+    """Pour les cartes citées, `{card_id: raison}` des effets non scriptés (D9), via le chargeur.
+
+    La raison est **indépendante du deck** : on calcule la carte une fois et la carte d'un deck A
+    sert aussi au deck B. `evaluate` n'émet un constat que pour les cartes réellement dans le deck
+    jugé (il filtre sur ses propres faits), donc passer la carte globale ne fait fuiter aucune
+    carte d'un deck dans un autre."""
+    if not card_ids:
+        return {}
+    cards = list(
+        (await session.execute(select(Card).where(Card.id.in_(card_ids)))).scalars()
+    )
+    return await refus_scripts_par_carte(session, cards)
+
+
+def _evaluate(
+    deck: Deck,
+    cards: list[LoadedDeckCard],
+    owned,
+    counterfeit,
+    unsupported: dict[uuid.UUID, str] | None = None,
+) -> DeckLegality:
+    return legality.evaluate(_facts(cards, owned, counterfeit), deck.format, unsupported)
 
 
 async def create_deck(session: AsyncSession, user: User, data: CreateDeckRequest) -> Deck:
@@ -195,7 +219,10 @@ async def list_decks(session: AsyncSession, user: User) -> list[tuple[Deck, Deck
     loaded = await _load_cards(session, [d.id for d in decks])
     all_card_ids = {c.card_id for cards in loaded.values() for c in cards}
     owned, counterfeit = await _owned_counts(session, user.id, list(all_card_ids))
-    return [(d, _evaluate(d, loaded.get(d.id, []), owned, counterfeit)) for d in decks]
+    unsupported = await _unsupported_map(session, list(all_card_ids))
+    return [
+        (d, _evaluate(d, loaded.get(d.id, []), owned, counterfeit, unsupported)) for d in decks
+    ]
 
 
 async def deck_detail(
@@ -206,7 +233,8 @@ async def deck_detail(
     deck = await _get_owned_deck(session, user, deck_id)
     loaded = (await _load_cards(session, [deck.id]))[deck.id]
     owned, counterfeit = await _owned_counts(session, user.id, [c.card_id for c in loaded])
-    return deck, loaded, _evaluate(deck, loaded, owned, counterfeit)
+    unsupported = await _unsupported_map(session, [c.card_id for c in loaded])
+    return deck, loaded, _evaluate(deck, loaded, owned, counterfeit, unsupported)
 
 
 async def update_deck(

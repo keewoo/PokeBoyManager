@@ -4,11 +4,25 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DeckBuilderView } from "@/app/jeu/decks/[id]/deck-builder-view";
 import * as decksApi from "@/lib/api/decks";
+import * as playRequestsApi from "@/lib/api/play-requests";
 import { ApiError } from "@/lib/api/client";
 import type { DeckCard, DeckDetail, DeckStats } from "@/lib/api/decks";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
+}));
+
+vi.mock("@/lib/api/play-requests", () => ({
+  requestPlayCard: vi.fn().mockResolvedValue({
+    id: "r1",
+    card_id: "sombre",
+    card_name: "Carte à effet",
+    statut: "en_attente",
+    note: null,
+    jouable_maintenant: false,
+    created_at: "2026-10-04T10:00:00Z",
+    updated_at: "2026-10-04T10:00:00Z",
+  }),
 }));
 
 vi.mock("@/lib/api/decks", async (importOriginal) => {
@@ -85,6 +99,7 @@ function deck(): DeckDetail {
           code: "deck_size",
           message: "Il manque 53 carte(s) : un deck compte exactement 60 cartes.",
           severity: "bloquant",
+          category: "legalite",
           card_id: null,
           card_name: null,
           detail: null,
@@ -93,6 +108,7 @@ function deck(): DeckDetail {
           code: "not_owned",
           message: "Il manque 1 exemplaire(s) de « Roucool ».",
           severity: "bloquant",
+          category: "possession",
           card_id: "roucool",
           card_name: "Roucool",
           detail: null,
@@ -199,6 +215,49 @@ describe("DeckBuilderView", () => {
     expect(screen.getByText("Illégal")).toBeInTheDocument();
     // Le constat global (taille) est visible ; le constat par carte est porté par l'alerte.
     expect(screen.getByText(/un deck compte exactement 60 cartes/i)).toBeInTheDocument();
+  });
+
+  it("marque une carte à effet non scripté et laisse le joueur la demander (lot couverture)", async () => {
+    const user = userEvent.setup();
+    const withScript: DeckDetail = {
+      ...deck(),
+      cards: [
+        card({ card_id: "pika", card_name: "Pikachu", quantity: 4, owned: 4 }),
+        card({ card_id: "sombre", card_name: "Carte à effet", quantity: 1, owned: 1 }),
+      ],
+      legality: {
+        legal: false,
+        card_count: 5,
+        size_ok: false,
+        format: "standard",
+        format_label: "Standard",
+        issues: [
+          {
+            code: "unsupported_effect",
+            message: "« Carte à effet » : effet pas encore jouable — attaque — aucun script.",
+            severity: "bloquant",
+            category: "script",
+            card_id: "sombre",
+            card_name: "Carte à effet",
+            detail: null,
+          },
+        ],
+      },
+    };
+    api.getDeck.mockResolvedValue(withScript);
+    const requestPlayCard = vi.mocked(playRequestsApi.requestPlayCard);
+    render(<DeckBuilderView deckId="d1" />);
+    await screen.findByText("Carte à effet");
+
+    // La carte porte le badge « Effet non géré » (critère n°1 : c'est le script qui bloque).
+    expect(screen.getByText("Effet non géré")).toBeInTheDocument();
+    // Et le constat global nomme la catégorie.
+    expect(screen.getByText(/Effet non géré —/)).toBeInTheDocument();
+
+    // Le joueur demande la carte ; l'API est appelée, et l'écran confirme (mission n°4).
+    await user.click(screen.getByRole("button", { name: "Demander à jouer Carte à effet" }));
+    await waitFor(() => expect(requestPlayCard).toHaveBeenCalledWith("sombre"));
+    expect(await screen.findByText(/Demande envoyée/)).toBeInTheDocument();
   });
 
   it("affiche l'alerte « à compléter » avec ses trois issues pour une carte manquante", async () => {
