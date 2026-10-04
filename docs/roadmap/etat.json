@@ -10993,6 +10993,11 @@
       "prise": "JF le 03/10/2026 (choix « Bot d'abord, IA ensuite ») : 1) un bot qui joue seul les coups légaux avec des règles simples — gratuit, instantané, sans clé — en mode « entraînement », non compté au classement, qui sert aussi aux simulations de milliers de parties ; 2) puis une couche IA branchée sur la clé de l'utilisateur (Claude/Gemini/OpenAI) : un adversaire qui raisonne et explique ses coups, ou un coach.",
       "par": "JF",
       "quand": "2026-10-03T17:01+0200"
+    },
+    "DJ8": {
+      "prise": "JF le 04/10/2026 (choix « IA + tests + relecture IA », budget « 50 € ») : l'IA propose le script d'effet d'une carte ET ses cas de test à partir du texte de la carte ; le script n'entre en jeu que si ses tests passent ET qu'une seconde IA, chargée de le contredire, l'a validé — sans relecture humaine carte par carte ; un rapport par famille d'effets est fait à JF, qui peut retirer une famille d'un mot. Clé plateforme uniquement, jamais celle d'Aymeric : fichier ~/.pokeboy-secrets/platform-anthropic-key sur devAI (transmise au traitement par entrée standard ou fichier chmod 600 temporaire, jamais dans le dépôt, un journal ou une sortie). Plafond cumulé 50 € : le lot s'arrête au plafond sans redemander. Clé absente : le lot livre l'outillage, ses tests et une mesure sur un fournisseur factice, puis s'arrête avant toute dépense en le disant. Priorité DJ2 : cartes possédées d'abord, puis les plus fréquentes.",
+      "par": "JF",
+      "quand": "2026-10-04T11:31+0200"
     }
   }
 }
