@@ -39,7 +39,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.catalog.element_type import element_code
-from pbm_api.catalog.prize_marker import is_ordinary_stage, normalized_prize_marker
+from pbm_api.catalog.prize_marker import (
+    POKEMON_SUPERTYPES,
+    is_ordinary_stage,
+    normalized_prize_marker,
+)
 from pbm_api.catalog.ptcg_client import PtcgClient, PtcgUnavailableError
 from pbm_api.catalog.reconciliation import (
     match_card_number,
@@ -175,7 +179,11 @@ async def _upsert_set(session: AsyncSession, tcgdex_set_id: str, detail: dict) -
 
 
 async def _upsert_card(
-    session: AsyncSession, set_row: Set, tcgdex_card_id: str, detail: dict
+    session: AsyncSession,
+    set_row: Set,
+    tcgdex_card_id: str,
+    detail: dict,
+    stage_fallback: str | None = None,
 ) -> tuple[Card, bool]:
     result = await session.execute(select(Card).where(Card.tcgdex_id == tcgdex_card_id))
     card = result.scalar_one_or_none()
@@ -228,7 +236,10 @@ async def _upsert_card(
     # Stade d'évolution (`stage`) — sert au « au moins un Pokémon de base » de la légalité
     # des decks (lot `v7-decks-legalite`). `None` hors Pokémon. `is_basic_pokemon` accepte déjà
     # les libellés des deux langues ("Base" / "Basic"), le repli `en` ne le met pas en défaut.
-    card.stage = detail.get("stage")
+    # `stage_fallback` (stade de l'édition anglaise) ne sert que si la langue source n'en donne
+    # pas — jamais pour écraser un stade présent. Une carte sans stade dans aucune langue reste
+    # `None` (comptée au rapport, jamais devinée).
+    card.stage = detail.get("stage") or stage_fallback
     card.variants = detail.get("variants")
     await session.flush()
     return card, created
@@ -290,6 +301,12 @@ async def import_catalogue(
         "cards_matched_ptcg": 0,
         "cards_unmatched_ptcg_count": 0,
         "cards_unmatched_ptcg_sample": [],
+        # Stade pris sur l'édition anglaise faute de stade dans la langue source (repli R-7) :
+        # rend le repli mesurable d'un import à l'autre (lot `cat-stades`).
+        "cards_stage_from_en_fallback": 0,
+        # Pokémon entrés en base SANS stade dans AUCUNE langue : ils restent bloqués en jeu
+        # (jamais un stade deviné) — ce compteur les rend visibles plutôt que silencieux.
+        "cards_pokemon_without_stage": 0,
         "errors": [],
     }
 
@@ -369,6 +386,32 @@ async def import_catalogue(
                         )
                     )
 
+            # Repli de stade sur l'anglais. Le stade d'un Pokémon manque parfois dans la langue
+            # source (le catalogue `fr` de TCGdex est incomplet, cf. en-tête du module) ; quand
+            # l'anglais le porte, on le prend là plutôt que de laisser la carte bloquée en jeu
+            # (R-7, « on ne devine pas le stade »). Borné aux Pokémon RÉELLEMENT sans stade et pas
+            # déjà anglais, pour ne tirer que les cartes concernées sur le lien bridé de chimera.
+            # Mesuré NUL sur le catalogue actuel (TCGdex ne donne de stade aux EX/GX/TAG TEAM dans
+            # AUCUNE langue, lot `cat-stades`, 04/10/2026) ; le repli reste correct si le `fr`
+            # prend un jour du retard sur le `en`.
+            stage_from_en: dict[str, str] = {}
+            if "en" in languages:
+                ids_sans_stade = [
+                    cid
+                    for cid in card_ids
+                    if card_source_lang[cid] != "en"
+                    and isinstance(card_details.get(cid), dict)
+                    and card_details[cid].get("category") in POKEMON_SUPERTYPES
+                    and not card_details[cid].get("stage")
+                ]
+                if ids_sans_stade:
+                    en_details = await _fetch_card_details(
+                        tcgdex, "en", ids_sans_stade, TCGDEX_CARD_FETCH_CONCURRENCY
+                    )
+                    for cid, en_detail in en_details.items():
+                        if isinstance(en_detail, dict) and en_detail.get("stage"):
+                            stage_from_en[cid] = en_detail["stage"]
+
             number_to_ptcg_id: dict[str, str] | None = None
             if ptcg is not None:
                 try:
@@ -386,10 +429,20 @@ async def import_catalogue(
                         raise card_detail
                     source_lang = card_source_lang[tcgdex_card_id]
                     card, card_created = await _upsert_card(
-                        session, set_row, tcgdex_card_id, card_detail
+                        session,
+                        set_row,
+                        tcgdex_card_id,
+                        card_detail,
+                        stage_fallback=stage_from_en.get(tcgdex_card_id),
                     )
                     report["cards_created" if card_created else "cards_updated"] += 1
                     report["cards_by_source_language"][source_lang] += 1
+                    if tcgdex_card_id in stage_from_en:
+                        report["cards_stage_from_en_fallback"] += 1
+                    # Un Pokémon sans stade (dans aucune langue) se compte : on le voit, on ne le
+                    # devine pas. Il reste bloqué en jeu (R-7) jusqu'à ce que la source le porte.
+                    if card.supertype in POKEMON_SUPERTYPES and not card.stage:
+                        report["cards_pokemon_without_stage"] += 1
 
                     for lang in languages:
                         lang_name = (

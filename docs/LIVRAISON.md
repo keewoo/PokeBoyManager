@@ -64,6 +64,28 @@ pas d'UAT.
 > et **chaque livraison doit reporter ici ce qu'elle a réellement exécuté**. Le jour où le script
 > existe, son chemin remplace ce paragraphe.
 
+### Rétro-remplissage du catalogue (colonnes de jouabilité) — une seule fois
+
+`import_weekly.sql` est **INSERT-ONLY** : il n'a jamais rempli les colonnes ajoutées à la chaîne le
+02/10/2026 (`energy_type`, `element_type`, `stage`, `prize_marker`, `trainer_type`, `effect`) sur les
+cartes **déjà en PROD**. Toutes les cartes chargées avant cette date sont donc restées `NULL` sur ces
+colonnes, et en jeu `definition_depuis_card` **bloque** un Pokémon sans `stage` ou sans `prize_marker`
+(R-7, on ne devine pas) : c'est la cause des très rares cartes jouables observée le 03/10. Le lot
+`cat-stades` livre le rattrapage.
+
+À faire **une fois**, pendant la livraison qui embarque `cat-stades`, avec le **même bundle** que
+l'import hebdo (`cards.tsv` dans `/tmp/pbm-import/`) :
+
+```bash
+sudo -u postgres psql -d pokeboy_prod -f infra/fleet/backfill_cards.sql
+```
+
+Le script affiche le compte de Pokémon sans `stage` / `prize_marker` / `element_type` **avant et
+après**. Il ne remplit que ce qui est `NULL` en PROD **et** renseigné dans la référence (`COALESCE` +
+garde `WHERE`) : une valeur déjà posée n'est jamais écrasée, une colonne légitimement vide reste vide.
+**Idempotent** — un second passage ne change plus rien. Validé le 04/10 sur une base clonée de la
+référence (50 cartes simulées « pré-02/10 » rattrapées, un témoin déjà rempli laissé intact).
+
 ## Livraison du 23/09/2026 — vague V7D « Gestionnaire de decks »
 
 Ce qui a réellement été exécuté (la chaîne n'est toujours pas scriptée dans le dépôt).

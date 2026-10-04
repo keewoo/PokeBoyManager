@@ -114,6 +114,11 @@ sudo -u postgres psql -d pokeboy_prod -c \
 
 ## Ce qui reste manuel / hors périmètre
 
+- **Rétro-remplissage ponctuel du catalogue** (colonnes `stage`/`prize_marker`/… ajoutées après le
+  premier chargement) : `infra/fleet/backfill_cards.sql`, lancé UNE fois par une livraison, jamais
+  par un cron. L'import hebdo reste INSERT-ONLY et ne rattrape pas les cartes déjà chargées (lot
+  `cat-stades`, voir `docs/LIVRAISON.md`).
+
 - La **PROD reste manuelle** pour tout déploiement de code (décision JF).
 - L'orchestration launchd vit sur **devAI** (hors dépôt, comme `ai.upgreg.pbm-relais`) ; les pièces
   portables (scripts Python de relève, SQL d'export/import) sont **dans le dépôt** (`apps/api/scripts/`,

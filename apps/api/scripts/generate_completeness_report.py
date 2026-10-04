@@ -71,6 +71,34 @@ def _render(stats: CompletenessStats) -> str:
             for subtype, total, with_effect in stats.trainers_by_type
         ],
         "",
+        "## Stade d'évolution des Pokémon (jouabilité en jeu)",
+        "",
+        "Le stade (`stage`) est la clé de jouabilité : "
+        "`pbm_api.jeu.catalogue.definition_depuis_card` **bloque** un Pokémon sans stade reconnu "
+        "(R-7, on ne devine jamais). Le classement utilise `is_ordinary_stage` — la même fonction "
+        "que la classification des marqueurs — donc « Stage1 », « stage 1 » et « Niveau 1 » "
+        "comptent pour un seul stade jouable.",
+        "",
+        f"- Pokémon : **{stats.pokemon_total}**",
+        f"- dont un stade jouable (Base / Niveau 1 / Niveau 2) : "
+        f"**{stats.pokemon_with_playable_stage}** "
+        f"({stats.ratio_pct(stats.pokemon_with_playable_stage, stats.pokemon_total):.1f} %)",
+        f"- sans stade dans aucune langue (bloqués, jamais devinés) : "
+        f"**{stats.pokemon_without_stage}** "
+        f"({stats.ratio_pct(stats.pokemon_without_stage, stats.pokemon_total):.1f} %)",
+        "",
+        "Les cartes sans stade sont des Pokémon-EX/GX/TAG TEAM et quelques promos ; vérifié carte "
+        "par carte (lot `cat-stades`, 04/10/2026), TCGdex ne fournit de stade dans AUCUNE langue "
+        "(ni `fr` ni `en`) pour ces cartes — elles restent vides et comptées, jamais un stade "
+        "deviné. La quasi-totalité porte déjà un marqueur Rule Box (EX/GX/TAG TEAM), donc bloquée "
+        "en jeu de toute façon.",
+        "",
+        "Stades « spéciaux » présents mais non encore gérés par le moteur (bloqués à raison) :",
+        "",
+        "| Stade | Cartes |",
+        "|---|---|",
+        *[f"| {stage} | {count} |" for stage, count in stats.pokemon_special_stage],
+        "",
         "## Extensions non rapprochées avec Pokémon TCG API",
         "",
         f"{len(stats.sets_without_ptcg)} extension(s) sans une seule carte avec `ptcg_id` "

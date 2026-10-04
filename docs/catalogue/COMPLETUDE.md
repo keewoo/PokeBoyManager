@@ -1,6 +1,6 @@
 # Rapport de complétude du catalogue
 
-Généré le 2026-10-02T12:02:09.316331+00:00 — mission `v2-catalogue-complet` point 4.
+Généré le 2026-10-04T09:56:09.595323+00:00 — mission `v2-catalogue-complet` point 4.
 
 ## Vue d'ensemble
 
@@ -13,7 +13,7 @@ Généré le 2026-10-02T12:02:09.316331+00:00 — mission `v2-catalogue-complet`
 - Cartes avec faiblesses ou résistances : **22534** (99.5 %)
 - Cartes avec coût de retraite : **19182** (84.7 %)
 - Cartes avec variantes connues : **22653** (100.0 %)
-- Cartes avec au moins un prix relevé : **19676** (86.9 %)
+- Cartes avec au moins un prix relevé : **19786** (87.3 %)
 
 ## Texte d'effet des Dresseurs et des Énergies spéciales
 
@@ -35,6 +35,30 @@ Détail des Dresseurs par sous-type (un Dresseur sans texte chez TCGdex reste vi
 | Item | 6 | 6 |
 | Machine Technique | 4 | 4 |
 | Tool | 3 | 3 |
+
+## Stade d'évolution des Pokémon (jouabilité en jeu)
+
+Le stade (`stage`) est la clé de jouabilité : `pbm_api.jeu.catalogue.definition_depuis_card` **bloque** un Pokémon sans stade reconnu (R-7, on ne devine jamais). Le classement utilise `is_ordinary_stage` — la même fonction que la classification des marqueurs — donc « Stage1 », « stage 1 » et « Niveau 1 » comptent pour un seul stade jouable.
+
+- Pokémon : **19215**
+- dont un stade jouable (Base / Niveau 1 / Niveau 2) : **17863** (93.0 %)
+- sans stade dans aucune langue (bloqués, jamais devinés) : **806** (4.2 %)
+
+Les cartes sans stade sont des Pokémon-EX/GX/TAG TEAM et quelques promos ; vérifié carte par carte (lot `cat-stades`, 04/10/2026), TCGdex ne fournit de stade dans AUCUNE langue (ni `fr` ni `en`) pour ces cartes — elles restent vides et comptées, jamais un stade deviné. La quasi-totalité porte déjà un marqueur Rule Box (EX/GX/TAG TEAM), donc bloquée en jeu de toute façon.
+
+Stades « spéciaux » présents mais non encore gérés par le moteur (bloqués à raison) :
+
+| Stade | Cartes |
+|---|---|
+| VMAX | 210 |
+| MÉGA | 94 |
+| VSTAR | 94 |
+| Niveau Sup | 67 |
+| TURBO | 37 |
+| V-UNION | 20 |
+| Restauré | 13 |
+| Bébé | 7 |
+| LEVEL-UP | 4 |
 
 ## Extensions non rapprochées avec Pokémon TCG API
 
