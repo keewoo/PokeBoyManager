@@ -396,7 +396,6 @@ export const TRADUCTEURS: Record<string, Traducteur> = {
   },
 
   talent_active: {
-    automatique: false,  talent_active: {
     automatique: false,
     traduire: (d, pour) => {
       const nom = chaine(d, "nom") ?? "un talent";
