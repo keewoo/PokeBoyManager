@@ -928,6 +928,140 @@ est **impossible**. Conformément au précédent du 03/10 (« coups du joueur, 2
 `graphify update` non exécuté (trace doc seule, worktree transitoire ; le code `44dd7b6` est déjà
 graphifié sur `main` par ses lots de fusion).
 
+## Livraison des cartes à effets — 2026-10-05 — **RÉUSSIE** (une partie à effets se joue en PROD)
+
+Troisième passe de `livraison-effets-cartes`. Les deux premières (04/10) étaient **bloquées** : la
+fondation effet était en PROD (`livraison-effets-ia`, `5efffd3`) mais les effets n'étaient **pas
+branchés dans le service** et `card_scripts` était vide → 0 carte à effet jouable. Depuis,
+`j-effets-cablage-service` a **fermé le trou** (Objets, Supporters, talents, Outils, Stades assemblés
+dans le `CatalogueJeu` d'une partie, fenêtre de décision injectée dans `jouer_objet`, familles
+`attacher_outil`/`activer_talent` surfacées, modificateurs continus consultés) et le passage IA
+`ia-scripts-passe` a produit **0 script admissible** (génération à corriger — non attendu ici).
+
+Cette passe livre donc **le câblage service** (commit `ab77675`, CI « CI » verte au passage push)
+**et sème les 6 scripts d'effet écrits à la main** (`apps/api/scripts/seed_effets.json`, statut
+`scripte`). Release **`20261005-134110`**, précédente `20261004-161201` (`5efffd3`). Livré depuis
+**devAI** en session autonome. Jeu **privé** (D11) : JF et Aymeric uniquement.
+
+### Besoins relevés AVANT de toucher au serveur (`git diff 5efffd3..ab77675`)
+
+- **Migrations** : **aucune** — aucun fichier sous `apps/api/migrations/versions/` ne change. Tête
+  inchangée `c9d4e7a1b3f8` ; `alembic upgrade head` à la préparation = **NO-OP** (vérifié : tête
+  identique avant ET après).
+- **Variables d'environnement** : **aucune** (ni `config.py`, ni `getenv`/`Settings` nouveau dans
+  `apps/api`/`apps/game`). `/srv/pokeboy/prod/config/.env` **non modifié**.
+- **Nouveau processus** : **aucun**. Le nouveau coup `repondre_demande` est une **action** de
+  `POST /games/{id}/actions` (validée par la transition), pas une route : aucun router nouveau, aucune
+  unité systemd. Temps réel = WebSocket de l'API uvicorn existante.
+- **Caddy** : **non touché** (le WebSocket passe par le `reverse_proxy /api` déjà en place).
+- Changent : `apps/api` + `apps/game` (code pur), `apps/web` (traducteurs de journal), `seed_effets.json`,
+  `infra/fleet/*card_scripts*.sql`, et de la doc/roadmap.
+
+### Le catalogue de PROD portait déjà les données d'effet — aucun import flotte
+
+Compté AVANT (lecture seule) : **Pokémon avec stade 19 368**, **Dresseurs avec texte d'effet 2 849**
+(supertype `Dresseur` 2 821 + `Trainer` EN 28), posés par le backfill de `livraison-effets-ia`. La
+§ « le catalogue doit porter les données d'effet » du prompt était donc **déjà satisfaite** : aucun
+import flotte lancé.
+
+### Ce qui a réellement été exécuté
+
+```bash
+# 0. Portes : CI « CI » verte sur ab77675 (push : web, game, api, e2e — 4 jobs success) ;
+#    voisins AVANT 200 200 308 200 307 ; serveur sain (charge 0.26, 2420 Mo). PROD de départ :
+#    20261004-161201 (5efffd3), tête c9d4e7a1b3f8.
+# 1. chimera : worktree de build (dépôt relais) checkout --detach ab77675, HEAD vérifié (ab77675) ;
+#    apps/game présent, dép. editable ../game ; pbm-build-lol.sh (game-aware) ; build détaché (setsid),
+#    sondé → BUILD_DONE. TS=20261005-134110. Artefact web : 4 .woff2, 0 googleapis/gstatic dans le CSS,
+#    15 fichiers pokeboy.lol, 0 acx-connect.
+# 2. transfert chimera → devAI → kailo-srv, SHA-256 IDENTIQUES aux TROIS étapes :
+#    web b4afa219…36cf4f · api 5865a02a…4307c20 · game da7432cd…35f0ad
+# 3. point de restauration frais AVANT toute écriture :
+ssh kailo-srv 'sudo -n -u pokeboy bash /srv/pokeboy/prod/backups/backup.sh'  # pokeboy_prod-20261005-114507.dump (34 tables), photos 1059
+# 4. préparation (extrait web+api+game, uv sync, alembic = NO-OP ; l'ancienne release sert encore) :
+ssh kailo-srv 'TS=20261005-134110 COMMIT=ab77675… LOT=livraison-effets-cartes bash /tmp/prep-lol.sh'  # → PREPARATION_OK, tête c9d4e7a1b3f8 avant ET après
+# 5. bascule, retour arrière automatique sur échec de santé :
+ssh kailo-srv 'TS=20261005-134110 bash /tmp/deploy-switch.sh'  # → BASCULE_OK (api=200 web=200 au 1er contrôle)
+# 6. semis des scripts d'effet écrits à la main (statut scripte, idempotent par empreinte) :
+ssh kailo-srv '… .venv/bin/python scripts/scripts_effets.py importer scripts/seed_effets.json'  # 6 scripts importés
+```
+
+**Preuve de mise en ligne** : `app/ -> releases/20261005-134110` ; `RELEASE_INFO` porte
+`commit=ab77675…`, `lot=livraison-effets-cartes` ; les 3 unités `active` ; `pokeboy.lol/api/health`
+200, `/` 200 ; tête Alembic **LIVE** `c9d4e7a1b3f8`. **Voisins inchangés** du début à la fin
+(`200 200 308 200 307`). Serveur après : charge 0.14, 2458 Mo dispo.
+
+### Les scripts d'effet semés — ce qu'ils débloquent, mesuré
+
+Les 6 scripts de `seed_effets.json` (statut `scripte`) sont au registre. La **diffusion** sur le
+catalogue entier (`scripts_effets.py diffuser`) : ils rendent jouables **265 cartes vivantes** —
+« Piochez une carte. » (172), « Piochez 3 cartes. » (87), « Échange d'Actif » (6). Les trois autres
+(« Cherchez un Pokémon… », appât banc-adverse, « Soignez 30 ») couvrent **0 carte** : leur texte
+générique n'est pas l'impression réelle au catalogue (l'empreinte diffère — c'est le propre de la
+graine à la main, à aligner par l'assistance IA DJ8 sur le texte réel).
+
+⚠️ **Dans les collections des deux joueurs** (bibi/aymeric 105 cartes à effet, jf 10), **1 seul des
+181 effets distincts** correspond à un texte semé : la graine touche à peine leurs cartes.
+Tableau de couverture (`pbm_api.jeu.scripts.couverture`), AVANT → APRÈS semis :
+
+| | avant | après |
+|---|---|---|
+| effets distincts scriptés (collections JF+Aymeric) | 0 / 181 | **1 / 181** |
+| cartes jouables-avec-effet (collections) | 0 | 0 |
+| cartes du catalogue rendues jouables (diffusion) | 0 | **265** |
+
+Le vrai déblocage des collections de JF et d'Aymeric **reste le passage IA DJ8** (sur les textes
+réels des cartes, non encore produit). Le semis est une **amorce** : il prouve que le câblage rend
+immédiatement jouable tout script correctement enregistré, et c'est ce que prouve la partie réelle.
+
+### Preuve que le jeu marche — partie réelle à effets en PROD (HTTP + WebSocket), 17/17 PASS
+
+Script de preuve dans le venv déployé, dirigé contre le serveur uvicorn **LIVE** (`127.0.0.1:8100`),
+modelé sur `test_games_effets_cablage.py`. Deux comptes jetables **avec** accès + 1 **sans**, un deck
+à cartes à effet (attaquant à **attaque à effet** scriptée + **talent activé** couvert par le moteur,
+**Objet** scripté ouvrant une décision, **Supporter** scripté, **Stade** et **Outil** réels du
+catalogue couverts par le moteur). **Les vraies cartes du catalogue réutilisées — `B2-148` (Outil
+Metal Core Barrier) et `sv08-180` (Stade en Liesse) — ne sont ni créées ni supprimées** ; les autres
+cartes de test sont créées puis supprimées par leur UUID. Puis **suppression de tout**.
+
+- **Fermeture** (compte sans accès) : `/me` `game_access=false` ; `GET /games`, `/matchmaking/presence`,
+  `/games/{id}` → **404** (jamais 403 : pas de fuite d'existence).
+- **WebSocket** (Origin `https://pokeboy.lol` exigé) : resync initiale reçue par A et B.
+- **Les 7 familles d'effet résolues par le chemin réel (HTTP + diffusion WS)** : **attaque à effet,
+  Objet, Supporter, talent activé, Outil, Stade**, et une **fenêtre de décision ouverte ET répondue**
+  (`repondre_demande` 200). 7/7.
+- **Non-fuite** vérifiée sur **chaque** réponse HTTP et **chaque** diffusion WS : aucun `instance_id`
+  caché (pioche, récompenses, main adverse) n'apparaît jamais dans la vue projetée d'un joueur.
+- **Suppression prouvée** : 0 compte / 0 partie / 0 deck / 0 carte de test restants ; **B2-148 et
+  sv08-180 intacts** (2/2).
+
+### Accès jeu — JF et Aymeric, personne d'autre
+
+`aymeric.fonteray@gmail.com` et `jfonteray@gmail.com` ont **déjà** `game_access=true` (posé le 03–04/10).
+**Rien à ouvrir** (idempotent). Audit après livraison : **2 comptes** ouverts (eux deux), **personne
+d'autre** (6 comptes au total). La fermeture est prouvée ci-dessus (compte sans droit → 404, supprimé).
+
+### Périmètre réellement jouable aujourd'hui
+
+Une partie à **cartes à effet** se joue vraiment à deux en PROD (attaque à effet, Objet, Supporter,
+talent activé, Outil, Stade, fenêtre de décision), en temps réel et sans fuite. **Ce qui reste** : le
+passage IA **DJ8** (50 €) qui écrit `card_scripts` sur les **textes réels** — c'est lui qui rendra
+jouables les collections de JF et d'Aymeric, aujourd'hui quasi intactes par la graine à la main.
+
+### Pièges rejoués / notés
+
+- **Worktree de build (dépôt relais) resté sur `5efffd3`** : `fetch github` + `checkout --detach
+  ab77675` + **vérification du HEAD** avant le build — piège n°1, toujours réel.
+- **`tcgdex_id` est UNIQUE** : les refs couvertes par le moteur `B2-148` et `sv08-180` **existent déjà**
+  au catalogue PROD — la preuve les **réutilise** (jamais ne les recrée ni ne les supprime) ; seul
+  `swsh12-46` (absent) est créé puis supprimé. Un détecteur de non-fuite par **égalité** d'`instance_id`
+  (jamais sous-chaîne).
+- **Origin du WebSocket** : la preuve doit tourner avec `config/.env` **sourcé**, sinon
+  `settings.app_public_url` retombe sur le défaut `http://localhost:3000` et l'anti-CSWSH refuse le WS.
+- **Trace** écrite dans un worktree **transitoire** `~/dev/wt-livraison-effets-cartes` (disque système),
+  **pas** le clone `~/dev/pokeboy` de la file de lots, supprimé juste après le push. `graphify update`
+  non exécuté (doc seule ; le code `ab77675` est déjà graphifié sur `main` par ses lots de fusion).
+
 ## Conclure « déployé » — jamais sur une ligne de journal
 
 Un build qui échoue laisse la plateforme **debout sur l'ancienne version** : tout a l'air normal et
