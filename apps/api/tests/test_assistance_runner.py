@@ -94,14 +94,21 @@ _BANCALE = (
 
 
 def _handler(prompt: str) -> str:
-    """Répond en fonction du prompt : contradicteur → approuve ; proposeur → selon le texte."""
+    """Répond en fonction du prompt : contradicteur → approuve ; proposeur → selon le texte.
+
+    On ne matche que la section « CARTE À TRAITER » du prompt, pas le prompt entier : depuis
+    ``ia-scripts-passe-2`` celui-ci porte des **exemples d'amorce** (dont « Piochez 2 cartes. ») qui
+    citeraient d'autres textes et fausseraient le choix du factice. Le vrai modèle, lui, répond pour
+    la carte à traiter — ce découpage reflète donc la réalité, il ne la contourne pas.
+    """
     if "avocat du diable" in prompt:
         return _APPROUVE
-    if _BANCAL in prompt:
+    carte = prompt.split("=== CARTE À TRAITER ===")[-1]
+    if _BANCAL in carte:
         return _BANCALE
-    if _PIOCHE_2 in prompt:
+    if _PIOCHE_2 in carte:
         return _proposition(2)
-    if _PIOCHE_1 in prompt:
+    if _PIOCHE_1 in carte:
         return _proposition(1)
     return _NON_SUPPORTE
 
