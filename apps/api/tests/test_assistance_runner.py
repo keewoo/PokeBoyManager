@@ -40,6 +40,22 @@ def _script_pioche(n: int) -> dict:
     return {"version": 1, "effets": [{"op": "piocher", "nombre": n}]}
 
 
+# --- Amorce des exemples (pur, sans base) --------------------------------------------------
+
+
+def test_amorces_proches_donne_toujours_une_forme_a_calquer():
+    """Le trou du premier passage : sans ``card_scripts``, le prompt n'avait aucun exemple.
+    Désormais :func:`runner._amorces_proches` rend toujours des exemples prouvés (famille d'abord).
+    """
+    amorces = runner._amorces_proches("pioche")
+    assert amorces, "l'amorce ne doit jamais être vide (sinon prompt sans forme à calquer)"
+    assert len(amorces) <= runner._MAX_EXEMPLES
+    # La famille demandée vient en tête (un exemple de pioche existe dans l'amorce).
+    assert "pioch" in amorces[0].source_text.casefold()
+    # Et chaque exemple porte bien un script (la forme à calquer).
+    assert all(a.script.get("effets") for a in amorces)
+
+
 def _essai_pioche(n: int) -> dict:
     return {
         "nom": f"pioche {n}",
@@ -78,14 +94,21 @@ _BANCALE = (
 
 
 def _handler(prompt: str) -> str:
-    """Répond en fonction du prompt : contradicteur → approuve ; proposeur → selon le texte."""
+    """Répond en fonction du prompt : contradicteur → approuve ; proposeur → selon le texte.
+
+    On ne matche que la section « CARTE À TRAITER » du prompt, pas le prompt entier : depuis
+    ``ia-scripts-passe-2`` celui-ci porte des **exemples d'amorce** (dont « Piochez 2 cartes. ») qui
+    citeraient d'autres textes et fausseraient le choix du factice. Le vrai modèle, lui, répond pour
+    la carte à traiter — ce découpage reflète donc la réalité, il ne la contourne pas.
+    """
     if "avocat du diable" in prompt:
         return _APPROUVE
-    if _BANCAL in prompt:
+    carte = prompt.split("=== CARTE À TRAITER ===")[-1]
+    if _BANCAL in carte:
         return _BANCALE
-    if _PIOCHE_2 in prompt:
+    if _PIOCHE_2 in carte:
         return _proposition(2)
-    if _PIOCHE_1 in prompt:
+    if _PIOCHE_1 in carte:
         return _proposition(1)
     return _NON_SUPPORTE
 
