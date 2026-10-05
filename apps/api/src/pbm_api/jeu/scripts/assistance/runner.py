@@ -25,6 +25,7 @@ et un effet déjà tranché n'est jamais repris (reprise au grain de l'empreinte
 from __future__ import annotations
 
 import uuid
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from decimal import Decimal
 from pathlib import Path
@@ -79,6 +80,9 @@ class EffetCandidat:
     carte_nom: str
     demandeurs: int  # joueurs distincts qui possèdent une carte portant cet effet
     frequence: int  # nombre de cartes possédées qui portent cet effet
+    frequence_catalogue: int = 0  # nombre de cartes du CATALOGUE qui portent cet effet (DJ2 : le
+    # critère de départage « puis les plus fréquentes du catalogue », nul quand on ne regarde que
+    # l'univers possédé local)
 
 
 @dataclass
@@ -167,14 +171,94 @@ async def _univers_possede(
     return cartes, joueurs_par_carte, exemplaires_par_carte
 
 
-async def selectionner_effets(db: AsyncSession, *, limite: int) -> list[EffetCandidat]:
+def _nouvelle_entree(effet, card, *, demandeurs: int, frequence: int, freq_cat: int) -> dict:
+    """Première rencontre d'une empreinte : son texte représentatif et ses compteurs DJ2."""
+    return {
+        "source_text": effet.texte,
+        "origine": effet.origine,
+        "intitule": effet.intitule,
+        "carte_nom": getattr(card, "name", ""),
+        "lang": getattr(card, "lang", None),
+        "demandeurs": demandeurs,
+        "frequence": frequence,
+        "frequence_catalogue": freq_cat,
+    }
+
+
+async def _agreger_possedes(db: AsyncSession) -> dict[str, dict]:
+    """Agrège les effets de l'**univers possédé local** (collections + decks des joueurs de CETTE
+    base), avec les compteurs DJ2 locaux. C'est le chemin historique : une base de type PROD qui
+    porte à la fois le catalogue et les collections (comme en test et comme le ferait un run direct
+    sur la prod). ``frequence_catalogue`` reste 0 — on ne mesure pas le catalogue entier ici."""
+    cartes, joueurs_par_carte, exemplaires_par_carte = await _univers_possede(db)
+    agrege: dict[str, dict] = {}
+    for card in cartes:
+        joueurs = joueurs_par_carte.get(card.id, 0)
+        exemplaires = exemplaires_par_carte.get(card.id, 0)
+        for effet in effets_scriptables(card):
+            entree = agrege.get(effet.empreinte)
+            if entree is None:
+                agrege[effet.empreinte] = _nouvelle_entree(
+                    effet, card, demandeurs=joueurs, frequence=exemplaires, freq_cat=0
+                )
+            else:
+                entree["demandeurs"] += joueurs
+                entree["frequence"] += exemplaires
+    return agrege
+
+
+async def _agreger_catalogue(
+    db: AsyncSession, priorite_tcgdex: Mapping[str, tuple[int, int]]
+) -> dict[str, dict]:
+    """Agrège les effets de **tout le catalogue** de CETTE base, en portant la priorité DJ2 par une
+    table de possession extraite ailleurs (empreinte des comptes ``game_access`` de la PROD).
+
+    C'est le chemin de la flotte : la base de travail est le **catalogue de référence**, qui porte
+    les cartes mais **pas** les collections des joueurs (leurs UUID diffèrent d'ailleurs de ceux de
+    la PROD). ``priorite_tcgdex`` fait le pont : une carte dont le ``tcgdex_id`` y figure reçoit ses
+    compteurs de possession PROD (``demandeurs``/``frequence``), les autres ne comptent que par leur
+    **fréquence catalogue** (nombre de cartes qui portent l'effet). L'ordre de tri réalise alors la
+    priorité DJ2 à la lettre : possédées d'abord, **puis** les plus fréquentes du catalogue."""
+    agrege: dict[str, dict] = {}
+    for card in (await db.execute(select(Card))).scalars():
+        tcgdex = getattr(card, "tcgdex_id", None) or ""
+        demandeurs, exemplaires = priorite_tcgdex.get(tcgdex, (0, 0))
+        for effet in effets_scriptables(card):
+            entree = agrege.get(effet.empreinte)
+            if entree is None:
+                agrege[effet.empreinte] = _nouvelle_entree(
+                    effet, card, demandeurs=demandeurs, frequence=exemplaires, freq_cat=1
+                )
+            else:
+                entree["demandeurs"] += demandeurs
+                entree["frequence"] += exemplaires
+                entree["frequence_catalogue"] += 1
+    return agrege
+
+
+async def selectionner_effets(
+    db: AsyncSession,
+    *,
+    limite: int,
+    priorite_tcgdex: Mapping[str, tuple[int, int]] | None = None,
+) -> list[EffetCandidat]:
     """Les textes d'effet à couvrir, ordonnés par priorité DJ2, hors effets déjà tranchés.
 
     Un effet déjà ``scripte`` ou ``non_supporte`` dans le registre est **décidé** : on ne le reprend
     pas (seuls ``a_revoir`` et les effets jamais vus restent candidats). Chaque empreinte n'apparaît
     qu'une fois (regroupement par texte), avec un texte représentatif et les compteurs DJ2 agrégés.
+
+    Deux univers, selon ce que porte la base :
+
+    * ``priorite_tcgdex`` fourni → univers = **catalogue entier** de la base, priorité de possession
+      injectée depuis la PROD (chemin flotte, base = catalogue de référence) ;
+    * ``priorite_tcgdex`` absent → univers = **possédé local** (chemin historique, base de type
+      PROD portant collections et catalogue ; comportement et tests inchangés).
     """
-    cartes, joueurs_par_carte, exemplaires_par_carte = await _univers_possede(db)
+    if priorite_tcgdex is not None:
+        agrege = await _agreger_catalogue(db, priorite_tcgdex)
+    else:
+        agrege = await _agreger_possedes(db)
 
     registre = {
         emp: statut
@@ -183,28 +267,6 @@ async def selectionner_effets(db: AsyncSession, *, limite: int) -> list[EffetCan
         ).all()
     }
     decides = {SCRIPT_STATUT_SCRIPTE, SCRIPT_STATUT_NON_SUPPORTE}
-
-    agrege: dict[str, dict] = {}
-    for card in cartes:
-        joueurs = joueurs_par_carte.get(card.id, 0)
-        exemplaires = exemplaires_par_carte.get(card.id, 0)
-        for effet in effets_scriptables(card):
-            if registre.get(effet.empreinte) in decides:
-                continue
-            entree = agrege.get(effet.empreinte)
-            if entree is None:
-                agrege[effet.empreinte] = {
-                    "source_text": effet.texte,
-                    "origine": effet.origine,
-                    "intitule": effet.intitule,
-                    "carte_nom": getattr(card, "name", ""),
-                    "lang": getattr(card, "lang", None),
-                    "demandeurs": joueurs,
-                    "frequence": exemplaires,
-                }
-            else:
-                entree["demandeurs"] += joueurs
-                entree["frequence"] += exemplaires
 
     candidats = [
         EffetCandidat(
@@ -216,12 +278,18 @@ async def selectionner_effets(db: AsyncSession, *, limite: int) -> list[EffetCan
             carte_nom=e["carte_nom"],
             demandeurs=e["demandeurs"],
             frequence=e["frequence"],
+            frequence_catalogue=e["frequence_catalogue"],
         )
         for emp, e in agrege.items()
+        if registre.get(emp) not in decides
     ]
     # Priorité DJ2 : d'abord les plus demandés (possédés par le plus de joueurs), puis les plus
-    # fréquents ; le nom en dernier pour un ordre stable (déterministe, donc reprise prévisible).
-    candidats.sort(key=lambda c: (c.demandeurs, c.frequence, c.carte_nom), reverse=True)
+    # fréquents parmi les possédées, puis les plus fréquents du **catalogue** ; le nom en dernier
+    # pour un ordre stable (déterministe, donc reprise prévisible).
+    candidats.sort(
+        key=lambda c: (c.demandeurs, c.frequence, c.frequence_catalogue, c.carte_nom),
+        reverse=True,
+    )
     return candidats[:limite]
 
 
@@ -342,15 +410,20 @@ async def run(
     model: str,
     ledger_path: Path = budget_mod.DEFAULT_LEDGER_PATH,
     limite: int = 100,
+    priorite_tcgdex: Mapping[str, tuple[int, int]] | None = None,
 ) -> RapportPassage:
     """Un passage complet, plafonné et reprenable. Voir la docstring du module pour le déroulé.
 
     S'arrête **net** au plafond, sans redemander (DJ8) : dès que le budget restant est épuisé, le
     passage se termine en ``budget_epuise`` avec ce qui a déjà été fait. Le grand livre est sauvé
     après chaque effet — une interruption reprend à l'exact endroit, sans rien retraiter.
+
+    ``priorite_tcgdex`` (facultatif) : la priorité de possession extraite de la PROD, passée à
+    :func:`selectionner_effets` (chemin flotte, base = catalogue de référence). Absent : univers
+    possédé local (chemin historique).
     """
     livre = budget_mod.charger(ledger_path)
-    candidats = await selectionner_effets(db, limite=limite)
+    candidats = await selectionner_effets(db, limite=limite, priorite_tcgdex=priorite_tcgdex)
     rapport = RapportPassage(status="termine")
 
     if not candidats:

@@ -76,10 +76,30 @@ def _lire_cle(fichier: str | None) -> str | None:
     return None
 
 
+def _lire_priorite(fichier: str | None) -> dict[str, tuple[int, int]] | None:
+    """Charge la priorité de possession PROD : ``{tcgdex_id: [demandeurs, exemplaires]}`` (JSON).
+
+    Extraite en **lecture seule** de la PROD par devAI (comptes ``game_access``), elle porte la
+    priorité DJ2 jusqu'au catalogue de référence, qui ne connaît pas les collections des joueurs.
+    Rend ``None`` si aucun fichier n'est fourni : le passage retombe alors sur l'univers possédé
+    **local** de la base (chemin historique). Ne contient aucun secret (des identifiants de cartes).
+    """
+    if not fichier:
+        return None
+    brut = json.loads(Path(fichier).read_text(encoding="utf-8"))
+    return {str(tcgdex): (int(v[0]), int(v[1])) for tcgdex, v in brut.items()}
+
+
 async def _run(args: argparse.Namespace) -> int:
     cle = None if args.factice else _lire_cle(args.fichier_cle)
     plafond = Decimal(str(args.plafond_eur))
     ledger_path = Path(args.ledger) if args.ledger else budget_mod.DEFAULT_LEDGER_PATH
+    priorite = _lire_priorite(args.priorite_possession)
+    if priorite is not None:
+        print(
+            f"Priorité de possession PROD : {len(priorite)} carte(s) possédée(s) (DJ2), "
+            "univers de sélection = catalogue entier de la base."
+        )
 
     generateur: GenerateurScript
     if cle:
@@ -113,6 +133,7 @@ async def _run(args: argparse.Namespace) -> int:
                 model=args.model,
                 ledger_path=ledger_path,
                 limite=args.limite,
+                priorite_tcgdex=priorite,
             )
     finally:
         await generateur.aclose()
@@ -143,6 +164,16 @@ def _parser() -> argparse.ArgumentParser:
         help="force le fournisseur factice (mesure sans dépense, DJ8)",
     )
     p.add_argument("--rapport", default=None, help="écrit le rapport par famille dans ce fichier")
+    p.add_argument(
+        "--priorite-possession",
+        default=None,
+        dest="priorite_possession",
+        help=(
+            "fichier JSON {tcgdex_id: [demandeurs, exemplaires]} extrait en lecture seule de la "
+            "PROD (comptes game_access) : porte la priorité DJ2 au catalogue de référence, dont "
+            "l'univers de sélection devient alors le catalogue entier"
+        ),
+    )
     return p
 
 
