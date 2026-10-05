@@ -11061,7 +11061,7 @@
       "compte_rendu": {}
     },
     "j-effets-cablage-service": {
-      "statut": "a_faire",
+      "statut": "integre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
@@ -11113,8 +11113,21 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-10-05T13:33+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": "branche roadmap/j-effets-cablage-service fusionnee dans main (verifie par git merge-base)"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": {
+        "quand": "2026-10-05T13:33+0200",
+        "raisons": [
+          "branche roadmap/j-effets-cablage-service fusionnee dans main (verifie par git merge-base)"
+        ]
+      }
     }
   },
   "decisions_prises": {
