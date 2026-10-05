@@ -25,10 +25,12 @@ et un effet déjà tranché n'est jamais repris (reprise au grain de l'empreinte
 from __future__ import annotations
 
 import uuid
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from decimal import Decimal
 from pathlib import Path
 
+from pydantic import ValidationError
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -38,6 +40,7 @@ from pbm_api.jeu.scripts.assistance.budget import GrandLivre
 from pbm_api.jeu.scripts.assistance.familles import famille as _famille_de_texte
 from pbm_api.jeu.scripts.assistance.fournisseur import (
     GenerateurScript,
+    ReponseIllisibleError,
     parser_proposition,
     parser_verdict,
 )
@@ -79,6 +82,9 @@ class EffetCandidat:
     carte_nom: str
     demandeurs: int  # joueurs distincts qui possèdent une carte portant cet effet
     frequence: int  # nombre de cartes possédées qui portent cet effet
+    frequence_catalogue: int = 0  # nombre de cartes du CATALOGUE qui portent cet effet (DJ2 : le
+    # critère de départage « puis les plus fréquentes du catalogue », nul quand on ne regarde que
+    # l'univers possédé local)
 
 
 @dataclass
@@ -167,14 +173,94 @@ async def _univers_possede(
     return cartes, joueurs_par_carte, exemplaires_par_carte
 
 
-async def selectionner_effets(db: AsyncSession, *, limite: int) -> list[EffetCandidat]:
+def _nouvelle_entree(effet, card, *, demandeurs: int, frequence: int, freq_cat: int) -> dict:
+    """Première rencontre d'une empreinte : son texte représentatif et ses compteurs DJ2."""
+    return {
+        "source_text": effet.texte,
+        "origine": effet.origine,
+        "intitule": effet.intitule,
+        "carte_nom": getattr(card, "name", ""),
+        "lang": getattr(card, "lang", None),
+        "demandeurs": demandeurs,
+        "frequence": frequence,
+        "frequence_catalogue": freq_cat,
+    }
+
+
+async def _agreger_possedes(db: AsyncSession) -> dict[str, dict]:
+    """Agrège les effets de l'**univers possédé local** (collections + decks des joueurs de CETTE
+    base), avec les compteurs DJ2 locaux. C'est le chemin historique : une base de type PROD qui
+    porte à la fois le catalogue et les collections (comme en test et comme le ferait un run direct
+    sur la prod). ``frequence_catalogue`` reste 0 — on ne mesure pas le catalogue entier ici."""
+    cartes, joueurs_par_carte, exemplaires_par_carte = await _univers_possede(db)
+    agrege: dict[str, dict] = {}
+    for card in cartes:
+        joueurs = joueurs_par_carte.get(card.id, 0)
+        exemplaires = exemplaires_par_carte.get(card.id, 0)
+        for effet in effets_scriptables(card):
+            entree = agrege.get(effet.empreinte)
+            if entree is None:
+                agrege[effet.empreinte] = _nouvelle_entree(
+                    effet, card, demandeurs=joueurs, frequence=exemplaires, freq_cat=0
+                )
+            else:
+                entree["demandeurs"] += joueurs
+                entree["frequence"] += exemplaires
+    return agrege
+
+
+async def _agreger_catalogue(
+    db: AsyncSession, priorite_tcgdex: Mapping[str, tuple[int, int]]
+) -> dict[str, dict]:
+    """Agrège les effets de **tout le catalogue** de CETTE base, en portant la priorité DJ2 par une
+    table de possession extraite ailleurs (empreinte des comptes ``game_access`` de la PROD).
+
+    C'est le chemin de la flotte : la base de travail est le **catalogue de référence**, qui porte
+    les cartes mais **pas** les collections des joueurs (leurs UUID diffèrent d'ailleurs de ceux de
+    la PROD). ``priorite_tcgdex`` fait le pont : une carte dont le ``tcgdex_id`` y figure reçoit ses
+    compteurs de possession PROD (``demandeurs``/``frequence``), les autres ne comptent que par leur
+    **fréquence catalogue** (nombre de cartes qui portent l'effet). L'ordre de tri réalise alors la
+    priorité DJ2 à la lettre : possédées d'abord, **puis** les plus fréquentes du catalogue."""
+    agrege: dict[str, dict] = {}
+    for card in (await db.execute(select(Card))).scalars():
+        tcgdex = getattr(card, "tcgdex_id", None) or ""
+        demandeurs, exemplaires = priorite_tcgdex.get(tcgdex, (0, 0))
+        for effet in effets_scriptables(card):
+            entree = agrege.get(effet.empreinte)
+            if entree is None:
+                agrege[effet.empreinte] = _nouvelle_entree(
+                    effet, card, demandeurs=demandeurs, frequence=exemplaires, freq_cat=1
+                )
+            else:
+                entree["demandeurs"] += demandeurs
+                entree["frequence"] += exemplaires
+                entree["frequence_catalogue"] += 1
+    return agrege
+
+
+async def selectionner_effets(
+    db: AsyncSession,
+    *,
+    limite: int,
+    priorite_tcgdex: Mapping[str, tuple[int, int]] | None = None,
+) -> list[EffetCandidat]:
     """Les textes d'effet à couvrir, ordonnés par priorité DJ2, hors effets déjà tranchés.
 
     Un effet déjà ``scripte`` ou ``non_supporte`` dans le registre est **décidé** : on ne le reprend
     pas (seuls ``a_revoir`` et les effets jamais vus restent candidats). Chaque empreinte n'apparaît
     qu'une fois (regroupement par texte), avec un texte représentatif et les compteurs DJ2 agrégés.
+
+    Deux univers, selon ce que porte la base :
+
+    * ``priorite_tcgdex`` fourni → univers = **catalogue entier** de la base, priorité de possession
+      injectée depuis la PROD (chemin flotte, base = catalogue de référence) ;
+    * ``priorite_tcgdex`` absent → univers = **possédé local** (chemin historique, base de type
+      PROD portant collections et catalogue ; comportement et tests inchangés).
     """
-    cartes, joueurs_par_carte, exemplaires_par_carte = await _univers_possede(db)
+    if priorite_tcgdex is not None:
+        agrege = await _agreger_catalogue(db, priorite_tcgdex)
+    else:
+        agrege = await _agreger_possedes(db)
 
     registre = {
         emp: statut
@@ -183,28 +269,6 @@ async def selectionner_effets(db: AsyncSession, *, limite: int) -> list[EffetCan
         ).all()
     }
     decides = {SCRIPT_STATUT_SCRIPTE, SCRIPT_STATUT_NON_SUPPORTE}
-
-    agrege: dict[str, dict] = {}
-    for card in cartes:
-        joueurs = joueurs_par_carte.get(card.id, 0)
-        exemplaires = exemplaires_par_carte.get(card.id, 0)
-        for effet in effets_scriptables(card):
-            if registre.get(effet.empreinte) in decides:
-                continue
-            entree = agrege.get(effet.empreinte)
-            if entree is None:
-                agrege[effet.empreinte] = {
-                    "source_text": effet.texte,
-                    "origine": effet.origine,
-                    "intitule": effet.intitule,
-                    "carte_nom": getattr(card, "name", ""),
-                    "lang": getattr(card, "lang", None),
-                    "demandeurs": joueurs,
-                    "frequence": exemplaires,
-                }
-            else:
-                entree["demandeurs"] += joueurs
-                entree["frequence"] += exemplaires
 
     candidats = [
         EffetCandidat(
@@ -216,12 +280,18 @@ async def selectionner_effets(db: AsyncSession, *, limite: int) -> list[EffetCan
             carte_nom=e["carte_nom"],
             demandeurs=e["demandeurs"],
             frequence=e["frequence"],
+            frequence_catalogue=e["frequence_catalogue"],
         )
         for emp, e in agrege.items()
+        if registre.get(emp) not in decides
     ]
     # Priorité DJ2 : d'abord les plus demandés (possédés par le plus de joueurs), puis les plus
-    # fréquents ; le nom en dernier pour un ordre stable (déterministe, donc reprise prévisible).
-    candidats.sort(key=lambda c: (c.demandeurs, c.frequence, c.carte_nom), reverse=True)
+    # fréquents parmi les possédées, puis les plus fréquents du **catalogue** ; le nom en dernier
+    # pour un ordre stable (déterministe, donc reprise prévisible).
+    candidats.sort(
+        key=lambda c: (c.demandeurs, c.frequence, c.frequence_catalogue, c.carte_nom),
+        reverse=True,
+    )
     return candidats[:limite]
 
 
@@ -247,6 +317,61 @@ async def _exemples_proches(db: AsyncSession, candidat: EffetCandidat) -> list[E
 # ---------------------------------------------------------------------- traitement d'un effet
 
 
+def _vers_eur(cost_usd: Decimal, rate_usd_eur: Decimal | None) -> Decimal:
+    """Le coût en euros, ou 0 sans taux ni dépense (jamais une valeur inventée)."""
+    if rate_usd_eur is not None and cost_usd > 0:
+        return convert_to_eur(cost_usd, rate_usd_eur)
+    return Decimal("0")
+
+
+async def _ecrire_a_revoir_illisible(
+    db: AsyncSession,
+    candidat: EffetCandidat,
+    *,
+    model: str,
+    cost_usd: Decimal,
+    rate_usd_eur: Decimal | None,
+    proposition: object | None,
+    raison: str,
+) -> tuple[ResultatPorte, Decimal, Decimal, str]:
+    """Écrit un effet « à revoir » sur réponse d'IA **inexploitable**, et rend le 4-uplet
+    attendu par le passage.
+
+    Une réponse illisible (JSON absent, tronqué au plafond de jetons, ou non conforme au schéma)
+    n'est jamais jouée « au mieux » et n'arrête **pas** le passage : l'effet devient ``a_revoir``,
+    nommé. Le script déjà parsé (échec survenu à l'étape du contradicteur) est conservé pour la
+    relecture ; sinon il est NULL. Le jeton déjà facturé est compté honnêtement (DJ8)."""
+    script = getattr(proposition, "script", None)
+    confiance = getattr(proposition, "confiance", "basse")
+    essais = getattr(proposition, "essais", None) if script else None
+    famille = _famille_de_texte(candidat.source_text, script)
+    cost_eur = _vers_eur(cost_usd, rate_usd_eur)
+    await enregistrer_script(
+        db,
+        source_text=candidat.source_text,
+        statut=verification.GATE_A_REVOIR,
+        dsl_version=(script or {}).get("version", 1),
+        script=script,
+        lang=candidat.lang,
+        author=f"assistance-ia:{model}",
+        tests=essais,
+        notes=raison,
+        review_tests_ok=False,
+        review_contradicteur=None,
+        famille=famille,
+        confidence=confiance,
+        cost_eur=cost_eur,
+    )
+    porte = ResultatPorte(
+        resultat=verification.GATE_A_REVOIR,
+        tests_ok=False,
+        contradicteur_ok=None,
+        raison=raison,
+        famille=famille,
+    )
+    return porte, cost_usd, cost_eur, confiance
+
+
 async def traiter_effet(
     db: AsyncSession,
     candidat: EffetCandidat,
@@ -261,17 +386,26 @@ async def traiter_effet(
     Le contradicteur n'est appelé **que** si les tests sont verts : on ne paie pas une contradiction
     sur un script déjà faux (économie de budget, mission point 4). Le coût agrège les deux appels
     réellement faits, depuis l'usage facturé — jamais une estimation.
+
+    Une réponse d'IA inexploitable (à la proposition ou à la contradiction) devient ``a_revoir`` via
+    :func:`_ecrire_a_revoir_illisible` : un modèle qui déborde du JSON n'arrête pas un passage de
+    plusieurs milliers d'appels (la porte de sûreté reste intacte — rien n'entre en jeu non prouvé).
     """
     exemples = await _exemples_proches(db, candidat)
     prompt = prompt_proposition(
         texte_fr=candidat.source_text, texte_en=None, exemples=exemples
     )
     reponse, usage_prop = await generateur.generer(prompt)
-    proposition = parser_proposition(reponse)
-
     cost_usd = pricing.cout_usd(
         model, input_tokens=usage_prop.input_tokens, output_tokens=usage_prop.output_tokens
     )
+    try:
+        proposition = parser_proposition(reponse)
+    except (ReponseIllisibleError, ValidationError) as exc:
+        return await _ecrire_a_revoir_illisible(
+            db, candidat, model=model, cost_usd=cost_usd, rate_usd_eur=rate_usd_eur,
+            proposition=None, raison=f"réponse IA (proposeur) inexploitable : {exc}",
+        )
 
     # Premier passage de la porte : sans verdict (pour savoir si les tests sont verts).
     pre = verification.evaluer(
@@ -285,20 +419,22 @@ async def traiter_effet(
             essais=proposition.essais,
         )
         reponse_c, usage_c = await generateur.generer(prompt_c)
-        verdict = parser_verdict(reponse_c)
         cost_usd += pricing.cout_usd(
             model, input_tokens=usage_c.input_tokens, output_tokens=usage_c.output_tokens
         )
+        try:
+            verdict = parser_verdict(reponse_c)
+        except (ReponseIllisibleError, ValidationError) as exc:
+            return await _ecrire_a_revoir_illisible(
+                db, candidat, model=model, cost_usd=cost_usd, rate_usd_eur=rate_usd_eur,
+                proposition=proposition,
+                raison=f"réponse IA (contradicteur) inexploitable : {exc}",
+            )
 
     porte = verification.evaluer(
         texte_fr=candidat.source_text, proposition=proposition, verdict=verdict
     )
-
-    cost_eur = (
-        convert_to_eur(cost_usd, rate_usd_eur)
-        if (rate_usd_eur is not None and cost_usd > 0)
-        else Decimal("0")
-    )
+    cost_eur = _vers_eur(cost_usd, rate_usd_eur)
 
     # Écriture du registre : scripté seulement si la porte le dit ; sinon nommé (non supporté / à
     # revoir), jamais joué « au mieux ». Les colonnes de revue (DJ8) portent la preuve de la porte.
@@ -342,15 +478,20 @@ async def run(
     model: str,
     ledger_path: Path = budget_mod.DEFAULT_LEDGER_PATH,
     limite: int = 100,
+    priorite_tcgdex: Mapping[str, tuple[int, int]] | None = None,
 ) -> RapportPassage:
     """Un passage complet, plafonné et reprenable. Voir la docstring du module pour le déroulé.
 
     S'arrête **net** au plafond, sans redemander (DJ8) : dès que le budget restant est épuisé, le
     passage se termine en ``budget_epuise`` avec ce qui a déjà été fait. Le grand livre est sauvé
     après chaque effet — une interruption reprend à l'exact endroit, sans rien retraiter.
+
+    ``priorite_tcgdex`` (facultatif) : la priorité de possession extraite de la PROD, passée à
+    :func:`selectionner_effets` (chemin flotte, base = catalogue de référence). Absent : univers
+    possédé local (chemin historique).
     """
     livre = budget_mod.charger(ledger_path)
-    candidats = await selectionner_effets(db, limite=limite)
+    candidats = await selectionner_effets(db, limite=limite, priorite_tcgdex=priorite_tcgdex)
     rapport = RapportPassage(status="termine")
 
     if not candidats:
@@ -368,9 +509,24 @@ async def run(
             rapport.status = "budget_epuise"
             break
 
-        porte, cost_usd, cost_eur, confiance = await traiter_effet(
-            db, candidat, generateur=generateur, model=model, rate_usd_eur=rate_usd_eur
-        )
+        try:
+            porte, cost_usd, cost_eur, confiance = await traiter_effet(
+                db, candidat, generateur=generateur, model=model, rate_usd_eur=rate_usd_eur
+            )
+        except Exception as exc:  # noqa: BLE001 — un passage de milliers d'appels ne doit pas mourir
+            # Erreur fournisseur (HTTP non-200, réseau, délai) : on NE perd PAS le passage. L'effet
+            # est compté « à revoir » au grand livre (aucune dépense sûre à imputer : coût 0), et on
+            # passe au suivant. Rien n'entre en jeu — sûreté intacte. On le DIT (jamais muet).
+            porte = ResultatPorte(
+                resultat=verification.GATE_A_REVOIR,
+                tests_ok=False,
+                contradicteur_ok=None,
+                raison=f"erreur fournisseur, effet sauté : {type(exc).__name__}: {exc}",
+                famille=_famille_de_texte(candidat.source_text, None),
+            )
+            cost_usd = Decimal("0")
+            cost_eur = Decimal("0")
+            confiance = "basse"
         livre.enregistrer(
             empreinte=candidat.empreinte,
             resultat=porte.resultat,

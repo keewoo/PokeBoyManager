@@ -225,3 +225,96 @@ async def test_plafond_arrete_le_passage(db_session, tmp_path):
     )
     assert rapport.status == "budget_epuise"
     assert rapport.effets_examines == 1  # le second n'a pas été traité
+
+
+async def _carte_catalogue(db, *, effet: str, tcgdex: str) -> Card:
+    """Une carte du **catalogue** (avec un ``tcgdex_id``), sans aucune collection : le cas d'une
+    base de référence de la flotte, où la priorité de possession vient d'ailleurs (PROD)."""
+    set_row = Set(code=f"cat-{uuid.uuid4().hex[:8]}", name="Set cat", series="Série test")
+    db.add(set_row)
+    await db.flush()
+    card = Card(
+        set_id=set_row.id,
+        number=str(uuid.uuid4().int % 100000),
+        name="Pokémon cat",
+        supertype="Pokémon",
+        energy_type="water",
+        element_type="water",
+        hp=60,
+        stage="Base",
+        retreat_cost=1,
+        prize_marker="ordinaire",
+        tcgdex_id=tcgdex,
+        attacks=[{"name": "Att", "cost": ["water"], "damage": "10", "effect": effet}],
+    )
+    db.add(card)
+    await db.flush()
+    return card
+
+
+@pytest.mark.asyncio
+async def test_selection_catalogue_priorite_possession(db_session):
+    """Chemin flotte : univers = catalogue entier, priorité DJ2 injectée depuis la PROD.
+
+    Sans collection locale, une table de possession ``{tcgdex_id: (demandeurs, exemplaires)}`` fait
+    remonter les possédées d'abord, puis les plus fréquentes du catalogue. Ce test **mord** deux
+    fois : sans le passage « catalogue » les cartes non possédées n'apparaîtraient pas du tout, et
+    sans l'injection la possédée ne serait pas prioritaire.
+    """
+    await _carte_catalogue(db_session, effet=_PIOCHE_1, tcgdex="own-1")  # possédée (demandeurs 1)
+    await _carte_catalogue(db_session, effet=_PIOCHE_2, tcgdex="freq-a")  # fréquente (cat. 2)
+    await _carte_catalogue(db_session, effet=_PIOCHE_2, tcgdex="freq-b")  # même texte → cat. 2
+    await _carte_catalogue(db_session, effet=_IMPOSSIBLE, tcgdex="rare-1")  # rare (cat. 1)
+
+    priorite = {"own-1": (1, 1)}
+    candidats = await runner.selectionner_effets(
+        db_session, limite=100, priorite_tcgdex=priorite
+    )
+    ordre = [c.empreinte for c in candidats]
+    assert ordre == [
+        empreinte_texte(_PIOCHE_1),  # possédée, en tête (DJ2)
+        empreinte_texte(_PIOCHE_2),  # puis la plus fréquente du catalogue (2 cartes)
+        empreinte_texte(_IMPOSSIBLE),  # puis la plus rare (1 carte)
+    ]
+    # Les compteurs portent bien la sémantique DJ2 injectée + la fréquence catalogue.
+    par_emp = {c.empreinte: c for c in candidats}
+    assert par_emp[empreinte_texte(_PIOCHE_1)].demandeurs == 1
+    assert par_emp[empreinte_texte(_PIOCHE_2)].frequence_catalogue == 2
+    assert par_emp[empreinte_texte(_IMPOSSIBLE)].demandeurs == 0
+
+    # Sans priorité injectée, pas de collection locale → aucun candidat (univers possédé vide).
+    assert await runner.selectionner_effets(db_session, limite=100) == []
+
+
+@pytest.mark.asyncio
+async def test_reponse_illisible_devient_a_revoir_sans_tuer_le_passage(db_session, tmp_path):
+    """Une réponse d'IA inexploitable n'arrête PAS le passage : l'effet devient « à revoir » (nommé)
+    et les autres continuent. Sans cette robustesse, un seul débordement JSON du modèle tuait un
+    passage de plusieurs milliers d'appels (vécu avec claude-sonnet-5 au 13ᵉ effet). Ce test mord :
+    retirer le try/except de `traiter_effet` fait remonter l'exception et échouer le passage."""
+    user = await _user_joueur(db_session)
+    await _carte_possedee(db_session, user, effet=_PIOCHE_1)  # proposeur OK → scripte
+    illisible = "Un effet dont la réponse IA sera illisible."
+    await _carte_possedee(db_session, user, effet=illisible)
+
+    def handler(prompt: str) -> str:
+        if "avocat du diable" in prompt:
+            return _APPROUVE
+        if illisible in prompt:
+            return "Voici le script demandé : (de la prose, aucun objet JSON exploitable)."
+        if _PIOCHE_1 in prompt:
+            return _proposition(1)
+        return _NON_SUPPORTE
+
+    factice = FournisseurFactice(handler, usage=Usage(10, 10))
+    rapport = await runner.run(
+        db_session, generateur=factice, plafond_eur=Decimal("50"), rate_usd_eur=Decimal("0.9"),
+        model="claude-haiku-4-5", ledger_path=tmp_path / "ledger.json", limite=100,
+    )
+    assert rapport.status == "termine"  # le passage ne tombe pas
+    assert rapport.scriptes == 1  # l'effet valide passe quand même
+    assert rapport.a_revoir == 1  # l'illisible est « à revoir », pas une exception
+
+    ligne = await script_par_empreinte(db_session, empreinte_texte(illisible))
+    assert ligne.statut == "a_revoir"
+    assert "inexploitable" in (ligne.notes or "")
