@@ -93,6 +93,7 @@ Si le serveur MCP `graphify` est chargé dans ta session, `query_graph`, `get_ne
 **Débloque :**
 - `j-accessibilite-jeu` — Confort et accessibilité : jouable par un enfant, lisible par tous
 - `j-e2e-deux-navigateurs` — Partie complète jouée automatiquement, à deux navigateurs
+- `j-effets-cablage-service` — Brancher les effets dans le service de parties : Objets, Supporters, talents, Outils, Stades, en partie réelle
 
 ## 3. Mission
 

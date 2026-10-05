@@ -92,6 +92,7 @@ Si le serveur MCP `graphify` est chargé dans ta session, `query_graph`, `get_ne
 
 **Débloque :**
 - `j-effets-assistance-ia` — Assistance IA : proposer le script d'une carte, jamais le valider seule
+- `j-effets-cablage-service` — Brancher les effets dans le service de parties : Objets, Supporters, talents, Outils, Stades, en partie réelle
 - `j-effets-couverture-outil` — Tableau de couverture : ce qui est jouable, ce qui manque, et pour qui
 
 **Décision DJ2** — Quel périmètre de cartes scripter en premier ? Lis la décision prise dans `docs/roadmap/etat.json` (`decisions_prises.DJ2`) et applique-la à la lettre ; la proposition du pilote n'est qu'un contexte : _Piloté par la collection : on script d'abord les cartes réellement possédées par les comptes invités, puis les cartes les plus fréquentes du catalogue. Le tableau de couverture dit à tout moment ce qui manque pour rendre un deck jouable._

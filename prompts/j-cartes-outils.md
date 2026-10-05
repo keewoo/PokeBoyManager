@@ -90,7 +90,7 @@ Si le serveur MCP `graphify` est chargé dans ta session, `query_graph`, `get_ne
 - `j-effets-architecture` — Pile d'effets et déclencheurs : l'architecture qui accueille toutes les cartes
 
 **Débloque :**
-- aucun lot n'en dépend
+- `j-effets-cablage-service` — Brancher les effets dans le service de parties : Objets, Supporters, talents, Outils, Stades, en partie réelle
 
 ## 3. Mission
 

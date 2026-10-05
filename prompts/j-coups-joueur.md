@@ -98,6 +98,7 @@ Si le serveur MCP `graphify` est chargé dans ta session, `query_graph`, `get_ne
 - `j-temps-reel` — Canal temps réel : diffusion des coups, reconnexion et reprise après F5
 
 **Débloque :**
+- `j-effets-cablage-service` — Brancher les effets dans le service de parties : Objets, Supporters, talents, Outils, Stades, en partie réelle
 - `j-simulation-bots` — Bots de simulation : des milliers de parties pour débusquer les blocages
 
 ## 3. Mission

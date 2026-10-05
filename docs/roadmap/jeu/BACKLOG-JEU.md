@@ -1,7 +1,7 @@
 # Backlog du jeu — plateau, moteur de règles et parties
 
 > GÉNÉRÉ par `docs/roadmap/jeu/build-jeu.py` depuis `docs/roadmap/jeu/plan/`. Ne pas éditer à la main.
-> Version 1.0 — 2026-09-21 — 70 lots.
+> Version 1.0 — 2026-09-21 — 71 lots.
 
 **Objet.** Deux joueurs s'affrontent en ligne avec les cartes qu'ils possèdent vraiment : recherche d'un adversaire, choix du deck, mise en place, partie au tour par tour sur un plateau animé, puis une fin de partie qui laisse une trace sur le compte. Le moteur applique les règles officielles et sait jouer les cartes — attaques, défense, appâts, Dresseurs, talents, états spéciaux — sans jamais approximer un effet qu'il ne connaît pas.
 
@@ -90,7 +90,7 @@ _Objets, Supporters, Stades, Outils, talents, états spéciaux, appâts, attaque
 
 **Preuve attendue.** Un deck entièrement construit depuis la collection d'Aymeric est déclaré jouable, et chacune de ses cartes a un script testé.
 
-**15 lots**, poids 29 (S=1, M=2, L=3), paliers 8 → 15. Les jalons se chevauchent : pendant que l'interface se construit, les cartes se scriptent dans un autre couloir. Un jalon est atteint quand son dernier lot est livré.
+**16 lots**, poids 32 (S=1, M=2, L=3), paliers 8 → 15. Les jalons se chevauchent : pendant que l'interface se construit, les cartes se scriptent dans un autre couloir. Un jalon est atteint quand son dernier lot est livré.
 
 | Palier | Lot | Titre | Piste | Couloir | Prio | Taille | Après |
 |---|---|---|---|---|---|---|---|
@@ -108,6 +108,7 @@ _Objets, Supporters, Stades, Outils, talents, états spéciaux, appâts, attaque
 | 11 | [`j-effets-assistance-ia`](#j-effets-assistance-ia) | Assistance IA : proposer le script d'une carte, jamais le valider seule | E | `J-EFF` | P1 | M | `j-effets-catalogue-compilation` |
 | 11 | [`j-effets-couverture-outil`](#j-effets-couverture-outil) | Tableau de couverture : ce qui est jouable, ce qui manque, et pour qui | E | `J-EFF` | P1 | S | `j-effets-catalogue-compilation` |
 | 14 | [`j-plateau-decisions`](#j-plateau-decisions) | Fenêtres de décision : choisir des cartes, ordonner, répondre pendant le tour adverse | U | `J-UI` | P0 | M | `j-plateau-interactions`, `j-effets-choix` |
+| 15 | [`j-effets-cablage-service`](#j-effets-cablage-service) | Brancher les effets dans le service de parties : Objets, Supporters, talents, Outils, Stades, en partie réelle | S | `J-SRV` | P0 | L | `j-cartes-attaques-effets`, `j-cartes-objets`, `j-cartes-supporters`, `j-cartes-talents`, `j-cartes-outils`, `j-cartes-stades`, `j-effets-catalogue-compilation`, `j-plateau-decisions`, `j-coups-joueur` |
 | 15 | [`j-simulation-bots`](#j-simulation-bots) | Bots de simulation : des milliers de parties pour débusquer les blocages | Q | `J-QUA` | P0 | M | `j-tests-regles`, `j-effets-dsl`, `j-coups-joueur` |
 
 ### J3 — Le plateau donne envie d'y jouer
@@ -190,7 +191,7 @@ Un palier ne peut commencer que quand tout ce dont il dépend est livré. À l'i
 | **12** | [`j-deconnexion-abandon`](#j-deconnexion-abandon), [`j-initialisation`](#j-initialisation), [`j-notifications-jeu`](#j-notifications-jeu), [`j-plateau-layout`](#j-plateau-layout) | `J-MOT`, `J-SRV`, `J-UI` |
 | **13** | [`j-fin-effets-compte`](#j-fin-effets-compte), [`j-plateau-etat-visuel`](#j-plateau-etat-visuel), [`j-plateau-interactions`](#j-plateau-interactions), [`j-rendu-carte`](#j-rendu-carte) | `J-GFX`, `J-SRV`, `J-UI` |
 | **14** | [`j-anim-socle`](#j-anim-socle), [`j-assets-pipeline`](#j-assets-pipeline), [`j-classement-prive`](#j-classement-prive), [`j-coups-joueur`](#j-coups-joueur), [`j-plateau-decisions`](#j-plateau-decisions), [`j-plateau-journal`](#j-plateau-journal) | `J-GFX`, `J-SRV`, `J-UI` |
-| **15** | [`j-accessibilite-jeu`](#j-accessibilite-jeu), [`j-anim-attaques-typees`](#j-anim-attaques-typees), [`j-anim-evolution-ko`](#j-anim-evolution-ko), [`j-anim-pokemon-apparition`](#j-anim-pokemon-apparition), [`j-arene-decors`](#j-arene-decors), [`j-partie-fin-ui`](#j-partie-fin-ui), [`j-plateau-aide`](#j-plateau-aide), [`j-simulation-bots`](#j-simulation-bots), [`j-son`](#j-son) | `J-GFX`, `J-QUA`, `J-UI` |
+| **15** | [`j-accessibilite-jeu`](#j-accessibilite-jeu), [`j-anim-attaques-typees`](#j-anim-attaques-typees), [`j-anim-evolution-ko`](#j-anim-evolution-ko), [`j-anim-pokemon-apparition`](#j-anim-pokemon-apparition), [`j-arene-decors`](#j-arene-decors), [`j-effets-cablage-service`](#j-effets-cablage-service), [`j-partie-fin-ui`](#j-partie-fin-ui), [`j-plateau-aide`](#j-plateau-aide), [`j-simulation-bots`](#j-simulation-bots), [`j-son`](#j-son) | `J-GFX`, `J-QUA`, `J-SRV`, `J-UI` |
 | **16** | [`j-charge-temps-reel`](#j-charge-temps-reel), [`j-e2e-deux-navigateurs`](#j-e2e-deux-navigateurs), [`j-mode-solo`](#j-mode-solo), [`j-stats-joueur`](#j-stats-joueur) | `J-QUA`, `J-SRV`, `J-UI` |
 | **17** | [`j-adversaire-ia`](#j-adversaire-ia), [`j-profil-jeu`](#j-profil-jeu), [`j-securite-jeu`](#j-securite-jeu) | `J-SRV`, `J-UI` |
 | **18** | [`j-coach-ia`](#j-coach-ia), [`j-mise-en-ligne-jeu`](#j-mise-en-ligne-jeu) | `J-SRV` |
@@ -855,7 +856,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 **Risque à surveiller.** Le cas « je retire l'Outil qui maintenait ce Pokémon en vie » est rarement testé et arrive en tournoi : il est dans la table de cas.
 
 **Vient après** : [`j-effets-architecture`](#j-effets-architecture)  
-**Débloque** : — (rien n'en dépend)
+**Débloque** : [`j-effets-cablage-service`](#j-effets-cablage-service)
 
 <a id="j-cartes-stades"></a>
 ### `j-cartes-stades` — Stades : un seul en jeu, des effets qui s'appliquent aux deux joueurs
@@ -883,7 +884,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 **Risque à surveiller.** Appliquer l'effet d'un Stade au moment où il est joué (mutation) au lieu de le consulter au calcul : son remplacement laisse alors des traces indélébiles.
 
 **Vient après** : [`j-effets-architecture`](#j-effets-architecture)  
-**Débloque** : — (rien n'en dépend)
+**Débloque** : [`j-effets-cablage-service`](#j-effets-cablage-service)
 
 <a id="j-effets-dsl"></a>
 ### `j-effets-dsl` — Langage d'effets : décrire ce que fait une carte, sans écrire de code par carte
@@ -1060,7 +1061,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 **Risque à surveiller.** Les dégâts variables se calculent au moment de la résolution, pas de la déclaration : un joueur qui défausse une carte entre les deux obtiendrait sinon un résultat faux.
 
 **Vient après** : [`j-effets-dsl`](#j-effets-dsl), [`j-etats-speciaux`](#j-etats-speciaux)  
-**Débloque** : — (rien n'en dépend)
+**Débloque** : [`j-effets-cablage-service`](#j-effets-cablage-service)
 
 <a id="j-cartes-regles-speciales"></a>
 ### `j-cartes-regles-speciales` — Règles de cartes particulières : ACE SPEC, Radiant, VSTAR, GX, Prism Star
@@ -1119,7 +1120,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 **Risque à surveiller.** La tentation d'un repli « script manquant → effet neutre » : c'est précisément l'approximation interdite par D9. Une carte sans script bloque le deck, et le dit.
 
 **Vient après** : [`j-effets-dsl`](#j-effets-dsl), [`j-cartes-pokemon`](#j-cartes-pokemon)  
-**Débloque** : [`j-effets-assistance-ia`](#j-effets-assistance-ia), [`j-effets-couverture-outil`](#j-effets-couverture-outil)
+**Débloque** : [`j-effets-assistance-ia`](#j-effets-assistance-ia), [`j-effets-cablage-service`](#j-effets-cablage-service), [`j-effets-couverture-outil`](#j-effets-couverture-outil)
 
 <a id="j-effets-choix"></a>
 ### `j-effets-choix` — Demandes de décision : quand le moteur doit attendre un joueur — y compris l'adversaire
@@ -1269,7 +1270,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 **Risque à surveiller.** L'appât est aussi une carte qui déclenche des effets adverses (« quand ce Pokémon devient actif… ») : sans passage par le bus d'événements, ces déclencheurs seront oubliés.
 
 **Vient après** : [`j-effets-choix`](#j-effets-choix)  
-**Débloque** : — (rien n'en dépend)
+**Débloque** : [`j-effets-cablage-service`](#j-effets-cablage-service)
 
 <a id="j-cartes-supporters"></a>
 ### `j-cartes-supporters` — Supporters : un par tour, et les effets qui perturbent l'adversaire
@@ -1298,7 +1299,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 **Risque à surveiller.** Les effets de perturbation sont ceux qui font fuir l'information cachée : chaque script doit passer le test de non-fuite de `j-autorite-vues`.
 
 **Vient après** : [`j-effets-choix`](#j-effets-choix)  
-**Débloque** : — (rien n'en dépend)
+**Débloque** : [`j-effets-cablage-service`](#j-effets-cablage-service)
 
 <a id="j-cartes-talents"></a>
 ### `j-cartes-talents` — Talents : passifs, activés une fois par tour, déclenchés — et annulables
@@ -1327,7 +1328,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 **Risque à surveiller.** Les talents continus consultés au mauvais moment (au début du tour au lieu du calcul) donnent des résultats justes en apparence et faux dans les cas limites, ceux qu'un joueur remarque.
 
 **Vient après** : [`j-effets-architecture`](#j-effets-architecture), [`j-effets-choix`](#j-effets-choix)  
-**Débloque** : — (rien n'en dépend)
+**Débloque** : [`j-effets-cablage-service`](#j-effets-cablage-service)
 
 <a id="j-effets-assistance-ia"></a>
 ### `j-effets-assistance-ia` — Assistance IA : proposer le script d'une carte, jamais le valider seule
@@ -1681,7 +1682,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 **Risque à surveiller.** Réécrire une règle dans la famille au lieu de réutiliser la transition livrée : les deux divergent, et le refus ne cite plus la bonne règle. Et repousser encore le branchement « au lot suivant » : il n'y en a pas.
 
 **Vient après** : [`j-plateau-interactions`](#j-plateau-interactions), [`j-initialisation`](#j-initialisation), [`j-effets-choix`](#j-effets-choix), [`j-cartes-energies`](#j-cartes-energies), [`j-cartes-pokemon`](#j-cartes-pokemon), [`j-degats-resolution`](#j-degats-resolution), [`j-retraite-banc`](#j-retraite-banc), [`j-ko-recompenses`](#j-ko-recompenses), [`j-temps-reel`](#j-temps-reel)  
-**Débloque** : [`j-simulation-bots`](#j-simulation-bots)
+**Débloque** : [`j-effets-cablage-service`](#j-effets-cablage-service), [`j-simulation-bots`](#j-simulation-bots)
 
 <a id="j-plateau-journal"></a>
 ### `j-plateau-journal` — Journal de partie : ce qui vient de se passer, en français
@@ -1740,7 +1741,7 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 **Risque à surveiller.** Un écran par carte : le nombre de cartes rend l'approche impossible dès la deuxième extension.
 
 **Vient après** : [`j-plateau-interactions`](#j-plateau-interactions), [`j-effets-choix`](#j-effets-choix)  
-**Débloque** : [`j-accessibilite-jeu`](#j-accessibilite-jeu), [`j-e2e-deux-navigateurs`](#j-e2e-deux-navigateurs)
+**Débloque** : [`j-accessibilite-jeu`](#j-accessibilite-jeu), [`j-e2e-deux-navigateurs`](#j-e2e-deux-navigateurs), [`j-effets-cablage-service`](#j-effets-cablage-service)
 
 <a id="j-anim-socle"></a>
 ### `j-anim-socle` — Socle d'animation : les effets suivent les événements, jamais l'inverse
@@ -1827,6 +1828,36 @@ Aucune n'empêche de commencer : le premier palier n'en dépend pas. Mais chacun
 **Risque à surveiller.** Un classement incrémental non recalculable : la première erreur devient définitive.
 
 **Vient après** : [`j-fin-effets-compte`](#j-fin-effets-compte)  
+**Débloque** : — (rien n'en dépend)
+
+<a id="j-effets-cablage-service"></a>
+### `j-effets-cablage-service` — Brancher les effets dans le service de parties : Objets, Supporters, talents, Outils, Stades, en partie réelle
+
+**Palier 15** · jalon **J2** · piste S (Serveur de parties) · couloir `J-SRV` (chimera) · P0 · taille L · complexité 4/5 · difficulté 4/5
+
+**Pourquoi ce lot.** Constat de la livraison bloquée du 04/10 (« livraison-effets-cartes ») : les lots d'effets ont écrit le moteur et renvoyé le branchement côté service « à un lot ultérieur » qui n'existait pas — `CatalogueJeu.registre_continus` vide, `objets` jamais alimenté depuis `card_scripts`, talents non câblés dans l'orchestrateur, `attacher_outil` jamais proposé. Une carte à effet ne peut donc pas être jouée en partie réelle, même avec son script. Ce lot est celui qui rend les effets jouables.
+
+**Ce qu'il fait.** À la création d'une partie, le service assemble depuis les decks et `card_scripts` tout ce dont le moteur a besoin : registre des Objets et Supporters, registres de talents, effets continus (Outils, Stades), modificateurs consultés au calcul des dégâts ; les familles correspondantes (jouer un Objet, un Supporter, un Stade, attacher un Outil, utiliser un talent) apparaissent dans les coups légaux ; les décisions qu'ouvrent ces effets passent par les fenêtres de `j-plateau-decisions` ; la zone Stade est rendue sur le plateau.
+
+**Mission**
+
+- Relire la section « Reste à faire » des comptes rendus de `j-cartes-attaques-effets`, `j-cartes-objets`, `j-cartes-supporters`, `j-cartes-talents`, `j-cartes-outils`, `j-cartes-stades`, `j-plateau-decisions` et en faire la liste de ce que ce lot branche — tout ce qui relève du service ou de l'écran est ici, rien n'est renvoyé à un « lot ultérieur » sans en créer la fiche.
+- Alimenter le `CatalogueJeu` d'une partie depuis `card_scripts` (Objets, Supporters, talents) et depuis le moteur (Outils, Stades, effets continus) ; câbler les modificateurs continus dans le calcul des dégâts ; surfacer les familles manquantes en coups légaux.
+- Semer dans `card_scripts` les scripts écrits à la main par les lots (les 15 Objets de `j-cartes-objets`, et ceux des autres lots), par la commande d'import prévue — avec leur preuve (tests), conformément à la contrainte `ck_card_scripts_scripte_gate`.
+- Prouver par **une partie réelle à travers l'API et le WebSocket** (client de test FastAPI) qu'on joue et résout : une attaque à effet, un Objet, un Supporter, un talent, un Outil et un Stade, avec au moins une fenêtre de décision ouverte et répondue — sans fuite dans la vue de chaque joueur.
+- Rendre la zone Stade sur le plateau (le journal traduit déjà `stade_joue`).
+
+**Critères d'acceptation**
+
+- Une partie réelle, jouée par les routes HTTP et le WebSocket, résout une attaque à effet, un Objet, un Supporter, un talent, un Outil et un Stade — test vert en CI.
+- Un deck contenant ces cartes passe la construction (D9) dès que leurs scripts sont dans `card_scripts`, et est refusé sinon, en disant pourquoi.
+- Aucune ligne de « Reste à faire » des lots d'effets relevant du service ou de l'écran n'est laissée sans être faite ou sans fiche de lot créée.
+
+**Livrables** : effets branchés dans le service de parties, scripts écrits à la main semés dans card_scripts, partie réelle à effets testée par l'API et le WebSocket, zone Stade sur le plateau.
+
+**Risque à surveiller.** Refaire l'erreur des lots précédents : tester dans le moteur seul et laisser le chemin réel (service, API, temps réel) non exercé. La preuve passe par les routes, ou elle ne vaut rien.
+
+**Vient après** : [`j-cartes-attaques-effets`](#j-cartes-attaques-effets), [`j-cartes-objets`](#j-cartes-objets), [`j-cartes-supporters`](#j-cartes-supporters), [`j-cartes-talents`](#j-cartes-talents), [`j-cartes-outils`](#j-cartes-outils), [`j-cartes-stades`](#j-cartes-stades), [`j-effets-catalogue-compilation`](#j-effets-catalogue-compilation), [`j-plateau-decisions`](#j-plateau-decisions), [`j-coups-joueur`](#j-coups-joueur)  
 **Débloque** : — (rien n'en dépend)
 
 <a id="j-simulation-bots"></a>
@@ -2392,6 +2423,7 @@ Ce sont les manques que le découpage grossier cachait : sans eux, le jeu se liv
 | [`j-coach-ia`](#j-coach-ia) | Coach IA : un conseil sur demande, et ce qu'on retient d'une partie |
 | [`j-coups-joueur`](#j-coups-joueur) | Coups du joueur : la partie se joue vraiment, de la mise en place à la victoire |
 | [`j-echanges-emotes`](#j-echanges-emotes) | Emotes prédéfinies : se parler sans chat libre |
+| [`j-effets-cablage-service`](#j-effets-cablage-service) | Brancher les effets dans le service de parties : Objets, Supporters, talents, Outils, Stades, en partie réelle |
 | [`j-mise-en-ligne-jeu`](#j-mise-en-ligne-jeu) | Mettre le jeu en ligne sur le serveur partagé |
 | [`j-mode-solo`](#j-mode-solo) | Partie d'entraînement contre un bot |
 | [`j-notifications-jeu`](#j-notifications-jeu) | Être prévenu : invitation reçue, c'est ton tour, partie reprise |

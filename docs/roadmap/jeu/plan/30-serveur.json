@@ -366,5 +366,48 @@
     "bilan de fin de partie"
   ],
   "risques": "Un coach qui joue à la place de l'enfant : il apprend à cliquer « conseil », pas à jouer. Le geste reste le sien."
+},
+{
+  "id": "j-effets-cablage-service",
+  "titre": "Brancher les effets dans le service de parties : Objets, Supporters, talents, Outils, Stades, en partie réelle",
+  "piste": "S",
+  "couloir": "J-SRV",
+  "jalon": "J2",
+  "priorite": "P0",
+  "taille": "L",
+  "complexite": 4,
+  "difficulte": 4,
+  "apres": [
+    "j-cartes-attaques-effets",
+    "j-cartes-objets",
+    "j-cartes-supporters",
+    "j-cartes-talents",
+    "j-cartes-outils",
+    "j-cartes-stades",
+    "j-effets-catalogue-compilation",
+    "j-plateau-decisions",
+    "j-coups-joueur"
+  ],
+  "gain": "Constat de la livraison bloquée du 04/10 (« livraison-effets-cartes ») : les lots d'effets ont écrit le moteur et renvoyé le branchement côté service « à un lot ultérieur » qui n'existait pas — `CatalogueJeu.registre_continus` vide, `objets` jamais alimenté depuis `card_scripts`, talents non câblés dans l'orchestrateur, `attacher_outil` jamais proposé. Une carte à effet ne peut donc pas être jouée en partie réelle, même avec son script. Ce lot est celui qui rend les effets jouables.",
+  "fonctionnalites": "À la création d'une partie, le service assemble depuis les decks et `card_scripts` tout ce dont le moteur a besoin : registre des Objets et Supporters, registres de talents, effets continus (Outils, Stades), modificateurs consultés au calcul des dégâts ; les familles correspondantes (jouer un Objet, un Supporter, un Stade, attacher un Outil, utiliser un talent) apparaissent dans les coups légaux ; les décisions qu'ouvrent ces effets passent par les fenêtres de `j-plateau-decisions` ; la zone Stade est rendue sur le plateau.",
+  "mission": [
+    "Relire la section « Reste à faire » des comptes rendus de `j-cartes-attaques-effets`, `j-cartes-objets`, `j-cartes-supporters`, `j-cartes-talents`, `j-cartes-outils`, `j-cartes-stades`, `j-plateau-decisions` et en faire la liste de ce que ce lot branche — tout ce qui relève du service ou de l'écran est ici, rien n'est renvoyé à un « lot ultérieur » sans en créer la fiche.",
+    "Alimenter le `CatalogueJeu` d'une partie depuis `card_scripts` (Objets, Supporters, talents) et depuis le moteur (Outils, Stades, effets continus) ; câbler les modificateurs continus dans le calcul des dégâts ; surfacer les familles manquantes en coups légaux.",
+    "Semer dans `card_scripts` les scripts écrits à la main par les lots (les 15 Objets de `j-cartes-objets`, et ceux des autres lots), par la commande d'import prévue — avec leur preuve (tests), conformément à la contrainte `ck_card_scripts_scripte_gate`.",
+    "Prouver par **une partie réelle à travers l'API et le WebSocket** (client de test FastAPI) qu'on joue et résout : une attaque à effet, un Objet, un Supporter, un talent, un Outil et un Stade, avec au moins une fenêtre de décision ouverte et répondue — sans fuite dans la vue de chaque joueur.",
+    "Rendre la zone Stade sur le plateau (le journal traduit déjà `stade_joue`)."
+  ],
+  "acceptation": [
+    "Une partie réelle, jouée par les routes HTTP et le WebSocket, résout une attaque à effet, un Objet, un Supporter, un talent, un Outil et un Stade — test vert en CI.",
+    "Un deck contenant ces cartes passe la construction (D9) dès que leurs scripts sont dans `card_scripts`, et est refusé sinon, en disant pourquoi.",
+    "Aucune ligne de « Reste à faire » des lots d'effets relevant du service ou de l'écran n'est laissée sans être faite ou sans fiche de lot créée."
+  ],
+  "livrables": [
+    "effets branchés dans le service de parties",
+    "scripts écrits à la main semés dans card_scripts",
+    "partie réelle à effets testée par l'API et le WebSocket",
+    "zone Stade sur le plateau"
+  ],
+  "risques": "Refaire l'erreur des lots précédents : tester dans le moteur seul et laisser le chemin réel (service, API, temps réel) non exercé. La preuve passe par les routes, ou elle ne vaut rien."
 }
 ]

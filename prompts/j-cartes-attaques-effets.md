@@ -91,7 +91,7 @@ Si le serveur MCP `graphify` est chargé dans ta session, `query_graph`, `get_ne
 - `j-etats-speciaux` — États spéciaux : Empoisonné, Brûlé, Endormi, Paralysé, Confus
 
 **Débloque :**
-- aucun lot n'en dépend
+- `j-effets-cablage-service` — Brancher les effets dans le service de parties : Objets, Supporters, talents, Outils, Stades, en partie réelle
 
 ## 3. Mission
 

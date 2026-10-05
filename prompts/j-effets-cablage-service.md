@@ -1,9 +1,9 @@
-# Lot `j-cartes-talents` — Talents : passifs, activés une fois par tour, déclenchés — et annulables
+# Lot `j-effets-cablage-service` — Brancher les effets dans le service de parties : Objets, Supporters, talents, Outils, Stades, en partie réelle
 
 > Prompt GÉNÉRÉ depuis `docs/roadmap/jeu/plan/` (via `jeu.json`) par `docs/roadmap/suivi.py build` — ne pas éditer à la main.
 > Plan du jeu : `docs/roadmap/jeu/BACKLOG-JEU.md` · onglet « Backlog du jeu » de `docs/roadmap/ROADMAP.html`.
 
-**P0** · piste Effets & cartes · couloir **J-EFF** (**chimera**) · jalon **J2 — Toutes les cartes du deck sont vraiment jouées** · palier 11 · taille M · complexité 5/5 · difficulté 5/5
+**P0** · piste Serveur de parties · couloir **J-SRV** (**chimera**) · jalon **J2 — Toutes les cartes du deck sont vraiment jouées** · palier 15 · taille L · complexité 4/5 · difficulté 4/5
 
 ## A. Où tourne cette session ? — à trancher AVANT tout le reste
 
@@ -14,16 +14,16 @@ Ce lot **s'exécute sur chimera**. Lance `hostname -s` :
 
 ## P. Mode PILOTE
 
-1. Garde-fou : `python3 docs/roadmap/suivi.py verifier j-cartes-talents`. Code 2 → présente les raisons à JF et demande-lui quoi faire ; ne passe jamais outre sans son « oui » explicite.
+1. Garde-fou : `python3 docs/roadmap/suivi.py verifier j-effets-cablage-service`. Code 2 → présente les raisons à JF et demande-lui quoi faire ; ne passe jamais outre sans son « oui » explicite.
 2. Prépare le worktree sur chimera :
 
 ```bash
-ssh chimera 'wsl -d Ubuntu-24.04 -u upgreg -- bash -lc "cd ~/dev/pokeboy && git fetch -q origin && git worktree add ../wt-j-cartes-talents -b roadmap/j-cartes-talents origin/main && mkdir -p ~/dev/logs"'
+ssh chimera 'wsl -d Ubuntu-24.04 -u upgreg -- bash -lc "cd ~/dev/pokeboy && git fetch -q origin && git worktree add ../wt-j-effets-cablage-service -b roadmap/j-effets-cablage-service origin/main && mkdir -p ~/dev/logs"'
 ```
 
-3. Lance le lot autonome : par le mécanisme de lots de chimera (`~/dev/lots/launch-lot.sh`, étendu au dépôt `~/dev/pokeboy` par le lot `v0-flotte`), **lancé côté Windows** — un `nohup` interne à la WSL meurt avec la session. Journal : `~/dev/logs/j-cartes-talents.log`.
+3. Lance le lot autonome : par le mécanisme de lots de chimera (`~/dev/lots/launch-lot.sh`, étendu au dépôt `~/dev/pokeboy` par le lot `v0-flotte`), **lancé côté Windows** — un `nohup` interne à la WSL meurt avec la session. Journal : `~/dev/logs/j-effets-cablage-service.log`.
 4. **3 minutes plus tard**, lis le journal du lot. Journal vide et processus mort = lot mort au démarrage : relance UNE fois, puis arrête-toi et alerte JF avec la cause. Un lot silencieux n'est jamais une conclusion.
-5. À la fin : `git fetch` et lis le compte rendu du lot dans `docs/roadmap/etat.json` de la branche `roadmap/j-cartes-talents` ; résume à JF : statut, grille, preuves, décisions attendues.
+5. À la fin : `git fetch` et lis le compte rendu du lot dans `docs/roadmap/etat.json` de la branche `roadmap/j-effets-cablage-service` ; résume à JF : statut, grille, preuves, décisions attendues.
 
 ---
 
@@ -31,15 +31,15 @@ ssh chimera 'wsl -d Ubuntu-24.04 -u upgreg -- bash -lc "cd ~/dev/pokeboy && git 
 
 ## 0. Garde-fou d'ordre — avant toute ligne de code
 
-Dépôt : `~/dev/pokeboy (WSL Ubuntu-24.04, utilisateur upgreg)`. Travaille dans ton **worktree** `../wt-j-cartes-talents`, branche `roadmap/j-cartes-talents` depuis `origin/main` — jamais dans l'arbre commun, jamais `git stash`, jamais `git add -A`.
+Dépôt : `~/dev/pokeboy (WSL Ubuntu-24.04, utilisateur upgreg)`. Travaille dans ton **worktree** `../wt-j-effets-cablage-service`, branche `roadmap/j-effets-cablage-service` depuis `origin/main` — jamais dans l'arbre commun, jamais `git stash`, jamais `git add -A`.
 
 ```bash
-python3 docs/roadmap/suivi.py verifier j-cartes-talents
-python3 docs/roadmap/suivi.py demarrer j-cartes-talents --machine "$(hostname -s)" --branche roadmap/j-cartes-talents
+python3 docs/roadmap/suivi.py verifier j-effets-cablage-service
+python3 docs/roadmap/suivi.py demarrer j-effets-cablage-service --machine "$(hostname -s)" --branche roadmap/j-effets-cablage-service
 ```
 
 - **Code 0** → continuer.
-- **Code 2 — ordre non tenu** (dépendance non livrée, décision non prise) → ne rien coder. Session interactive : demande à JF. Lot autonome : `suivi.py statut j-cartes-talents attente_validation --motif "<raisons>"`, section 8, dernier message `ATTENTE VALIDATION — j-cartes-talents — <raisons>`.
+- **Code 2 — ordre non tenu** (dépendance non livrée, décision non prise) → ne rien coder. Session interactive : demande à JF. Lot autonome : `suivi.py statut j-effets-cablage-service attente_validation --motif "<raisons>"`, section 8, dernier message `ATTENTE VALIDATION — j-effets-cablage-service — <raisons>`.
 - Tu n'accordes **jamais** toi-même une dérogation.
 
 ## 1. Cadre — relire avant d'agir
@@ -82,42 +82,52 @@ Si le serveur MCP `graphify` est chargé dans ta session, `query_graph`, `get_ne
 - **L'interface ne décide de rien.** Elle affiche les actions que le moteur déclare légales, et affiche la raison quand un coup est refusé. Aucune règle n'est réécrite côté écran.
 - **Le jeu est celui d'un enfant de onze ans.** Lisible sans connaître les règles, animé, sonore, indulgent : on peut annuler avant de valider, on comprend pourquoi un coup est interdit, et on n'attend jamais devant un écran muet.
 
-**Gain.** Les talents sont la partie la plus difficile du jeu moderne : ils agissent depuis le banc, en permanence, parfois pour annuler d'autres talents. C'est le vrai examen de passage de l'architecture d'effets.
+**Gain.** Constat de la livraison bloquée du 04/10 (« livraison-effets-cartes ») : les lots d'effets ont écrit le moteur et renvoyé le branchement côté service « à un lot ultérieur » qui n'existait pas — `CatalogueJeu.registre_continus` vide, `objets` jamais alimenté depuis `card_scripts`, talents non câblés dans l'orchestrateur, `attacher_outil` jamais proposé. Une carte à effet ne peut donc pas être jouée en partie réelle, même avec son script. Ce lot est celui qui rend les effets jouables.
 
-**Fonctionnalités.** Trois natures de talents — continus (toujours actifs, y compris depuis le banc), activés (une fois par tour, à son tour), déclenchés (sur un événement) ; talents qui annulent les talents adverses ; talents qui modifient les règles (coûts, dégâts, pioche) ; désactivation quand le Pokémon est affecté d'un état spécial, selon la carte.
+**Fonctionnalités.** À la création d'une partie, le service assemble depuis les decks et `card_scripts` tout ce dont le moteur a besoin : registre des Objets et Supporters, registres de talents, effets continus (Outils, Stades), modificateurs consultés au calcul des dégâts ; les familles correspondantes (jouer un Objet, un Supporter, un Stade, attacher un Outil, utiliser un talent) apparaissent dans les coups légaux ; les décisions qu'ouvrent ces effets passent par les fenêtres de `j-plateau-decisions` ; la zone Stade est rendue sur le plateau.
 
 **Vient après :**
-- `j-effets-architecture` — Pile d'effets et déclencheurs : l'architecture qui accueille toutes les cartes
-- `j-effets-choix` — Demandes de décision : quand le moteur doit attendre un joueur — y compris l'adversaire
+- `j-cartes-attaques-effets` — Attaques à effet : pile ou face, dégâts variables, blocages, états infligés
+- `j-cartes-objets` — Cartes Objet, dont les appâts qui forcent l'échange de l'actif adverse
+- `j-cartes-supporters` — Supporters : un par tour, et les effets qui perturbent l'adversaire
+- `j-cartes-talents` — Talents : passifs, activés une fois par tour, déclenchés — et annulables
+- `j-cartes-outils` — Outils Pokémon : un par Pokémon, attaché, défaussé au K.O.
+- `j-cartes-stades` — Stades : un seul en jeu, des effets qui s'appliquent aux deux joueurs
+- `j-effets-catalogue-compilation` — Du catalogue aux cartes jouables : compilation, versions et errata
+- `j-plateau-decisions` — Fenêtres de décision : choisir des cartes, ordonner, répondre pendant le tour adverse
+- `j-coups-joueur` — Coups du joueur : la partie se joue vraiment, de la mise en place à la victoire
 
 **Débloque :**
-- `j-effets-cablage-service` — Brancher les effets dans le service de parties : Objets, Supporters, talents, Outils, Stades, en partie réelle
+- aucun lot n'en dépend
 
 ## 3. Mission
 
-1. Représenter les trois natures et leur enregistrement automatique quand le Pokémon entre en jeu, leur retrait quand il en sort.
-2. Résoudre l'annulation mutuelle de talents (un talent qui éteint les talents, éteint-il celui qui l'éteint ?) selon `REGLES.md`, et le tester explicitement.
-3. Suivre les talents « une fois par tour » par Pokémon, et non par joueur.
-4. Tests : talent de banc qui soigne entre les tours, talent annulé par un talent adverse, talent activé deux fois refusé.
+1. Relire la section « Reste à faire » des comptes rendus de `j-cartes-attaques-effets`, `j-cartes-objets`, `j-cartes-supporters`, `j-cartes-talents`, `j-cartes-outils`, `j-cartes-stades`, `j-plateau-decisions` et en faire la liste de ce que ce lot branche — tout ce qui relève du service ou de l'écran est ici, rien n'est renvoyé à un « lot ultérieur » sans en créer la fiche.
+2. Alimenter le `CatalogueJeu` d'une partie depuis `card_scripts` (Objets, Supporters, talents) et depuis le moteur (Outils, Stades, effets continus) ; câbler les modificateurs continus dans le calcul des dégâts ; surfacer les familles manquantes en coups légaux.
+3. Semer dans `card_scripts` les scripts écrits à la main par les lots (les 15 Objets de `j-cartes-objets`, et ceux des autres lots), par la commande d'import prévue — avec leur preuve (tests), conformément à la contrainte `ck_card_scripts_scripte_gate`.
+4. Prouver par **une partie réelle à travers l'API et le WebSocket** (client de test FastAPI) qu'on joue et résout : une attaque à effet, un Objet, un Supporter, un talent, un Outil et un Stade, avec au moins une fenêtre de décision ouverte et répondue — sans fuite dans la vue de chaque joueur.
+5. Rendre la zone Stade sur le plateau (le journal traduit déjà `stade_joue`).
 
 ## 4. Critères d'acceptation
 
 Le lot n'est fini que si **chacun** est vrai, preuve à l'appui dans le compte rendu :
 
-- [ ] Le cas d'annulation mutuelle est tranché par écrit et testé.
-- [ ] Un talent cesse d'agir dès que son Pokémon quitte le jeu, au même instant.
-- [ ] Cinq talents réels de natures différentes sont scriptés et testés.
+- [ ] Une partie réelle, jouée par les routes HTTP et le WebSocket, résout une attaque à effet, un Objet, un Supporter, un talent, un Outil et un Stade — test vert en CI.
+- [ ] Un deck contenant ces cartes passe la construction (D9) dès que leurs scripts sont dans `card_scripts`, et est refusé sinon, en disant pourquoi.
+- [ ] Aucune ligne de « Reste à faire » des lots d'effets relevant du service ou de l'écran n'est laissée sans être faite ou sans fiche de lot créée.
 
 ## 5. Risques & pièges
 
-Les talents continus consultés au mauvais moment (au début du tour au lieu du calcul) donnent des résultats justes en apparence et faux dans les cas limites, ceux qu'un joueur remarque.
+Refaire l'erreur des lots précédents : tester dans le moteur seul et laisser le chemin réel (service, API, temps réel) non exercé. La preuve passe par les routes, ou elle ne vaut rien.
 
 ## 6. Livrables — définition de « fini »
 
-- trois natures de talents
-- annulation de talents
+- effets branchés dans le service de parties
+- scripts écrits à la main semés dans card_scripts
+- partie réelle à effets testée par l'API et le WebSocket
+- zone Stade sur le plateau
 - CI GitHub Actions verte sur la PR (elle fait foi, pas une suite verte sur une machine).
-- Compte rendu `docs/roadmap/comptes-rendus/j-cartes-talents.md` : résumé, livrables, preuves, écarts, reste à faire.
+- Compte rendu `docs/roadmap/comptes-rendus/j-effets-cablage-service.md` : résumé, livrables, preuves, écarts, reste à faire.
 - Le savoir durable va dans **une** fiche (« Où écrire quoi » de `CLAUDE.md`) ; pour le jeu, `docs/jeu/`.
 - Aucun secret dans le dépôt, les journaux ou les sorties.
 - **Code documenté** : chaque module, fonction et classe publique ajouté ou modifié a sa docstring (Python) ou son `/** … */` (TypeScript), en français, qui dit le pourquoi — `docs/CODE.md` § « Documenter le code ».
@@ -145,13 +155,13 @@ Grille de tâches du lot :
 - `compte_rendu` — Compte rendu dans le suivi
 
 ```bash
-python3 docs/roadmap/suivi.py tache j-cartes-talents <tache> fait "<preuve : commit, test, URL, capture>"
-python3 docs/roadmap/suivi.py compte-rendu j-cartes-talents --resume "…" --livrable "…" --preuve "…" --ecart "…" --reste "…"
-python3 docs/roadmap/suivi.py statut j-cartes-talents <livre_uat|attente_go_prod|livre|bloque>
+python3 docs/roadmap/suivi.py tache j-effets-cablage-service <tache> fait "<preuve : commit, test, URL, capture>"
+python3 docs/roadmap/suivi.py compte-rendu j-effets-cablage-service --resume "…" --livrable "…" --preuve "…" --ecart "…" --reste "…"
+python3 docs/roadmap/suivi.py statut j-effets-cablage-service <livre_uat|attente_go_prod|livre|bloque>
 python3 docs/roadmap/suivi.py build
 git add docs/roadmap/etat.json docs/roadmap/ROADMAP.html BACKLOG.md prompts/ <tes fichiers>   # jamais git add -A
-git commit -m "j-cartes-talents: …" && git push -u origin roadmap/j-cartes-talents
-bash scripts/ouvrir-pr.sh roadmap/j-cartes-talents   # ouvre la PR, ou echoue en disant pourquoi
+git commit -m "j-effets-cablage-service: …" && git push -u origin roadmap/j-effets-cablage-service
+bash scripts/ouvrir-pr.sh roadmap/j-effets-cablage-service   # ouvre la PR, ou echoue en disant pourquoi
 ```
 
 **La PR n'est pas optionnelle** : sans elle, la CI ne tourne pas sur ton travail, et c'est la CI qui fait foi. Si `ouvrir-pr.sh` sort en erreur, tu NE conclus PAS que c'est sans importance : tu nommes le manque dans ton compte rendu et dans ton dernier message.
