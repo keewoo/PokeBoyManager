@@ -22,7 +22,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.decks.energy import is_energy
-from pbm_api.jeu.catalogue import definition_depuis_card, definition_energie_depuis_card
+from pbm_api.jeu.catalogue import (
+    definition_depuis_card,
+    definition_energie_depuis_card,
+    genre_dresseur,
+    ref_catalogue,
+)
 from pbm_api.models import Card, DeckCard
 
 
@@ -72,17 +77,22 @@ async def resoudre_deck(
     for card, quantity in await _cartes_du_deck(db, deck_id):
         try:
             # Une carte Énergie se compile en DefinitionEnergie (seules les Énergies de base sont
-            # jouables au jalon J1) ; un Pokémon en DefinitionCarte. Les deux portent une ``ref``.
+            # jouables au jalon J1) ; un Pokémon en DefinitionCarte. Une carte **Dresseur** (Objet,
+            # Supporter, Stade, Outil) n'a pas de définition de combat : elle est jouable au titre
+            # de sa famille, et c'est son **script** (porte D9, ``refus_scripts_deck``) qui décide
+            # si son effet est implémenté — pas cette compilation. On la retient par sa ``ref``.
             if is_energy(getattr(card, "supertype", None)):
-                definition = definition_energie_depuis_card(card)
+                ref = definition_energie_depuis_card(card).ref
+            elif genre_dresseur(card) is not None:
+                ref = ref_catalogue(card)
             else:
-                definition = definition_depuis_card(card)
+                ref = definition_depuis_card(card).ref
         except ValueError as exc:
             nom = getattr(card, "name", None) or str(getattr(card, "id", "?"))
             refus.append((nom, str(exc)))
             continue
         for _ in range(quantity):
-            cartes.append(Carte(instance_id=f"{joueur_id}:d{index}", ref=definition.ref))
+            cartes.append(Carte(instance_id=f"{joueur_id}:d{index}", ref=ref))
             index += 1
     return cartes, refus
 

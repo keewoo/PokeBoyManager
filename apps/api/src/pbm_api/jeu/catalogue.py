@@ -28,6 +28,12 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping
 
+from pbm_game.actions.familles_jeu import (
+    DefinitionObjet,
+    DefinitionOutil,
+    DefinitionStade,
+    DefinitionSupporter,
+)
 from pbm_game.cartes import AttaqueDef, DefinitionCarte
 from pbm_game.cartes.energie import DefinitionEnergie
 from pbm_game.combat.modele import (
@@ -37,9 +43,11 @@ from pbm_game.combat.modele import (
     Faiblesse,
     Resistance,
 )
+from pbm_game.effets.dsl.modele import Programme
 
 from pbm_api.catalog.prize_marker import MARQUEUR_INCONNU, POKEMON_SUPERTYPES
 from pbm_api.decks.energy import is_basic_energy, is_energy, normalize
+from pbm_api.jeu.scripts.empreinte import empreinte_texte
 
 #: Correspondance des stades TCGdex (localisés) vers le vocabulaire du moteur (R-7). Un stade
 #: absent de cette table **bloque** la carte (on ne devine pas le stade d'un Pokémon).
@@ -157,18 +165,33 @@ def _degats_et_effet(damage: object, effet_texte: str) -> tuple[int, str]:
     return n, texte
 
 
-def _attaque(brut: object) -> AttaqueDef:
+def _attaque(brut: object, scripts_attaques: Mapping[str, dict] | None = None) -> AttaqueDef:
     if not isinstance(brut, Mapping):
         raise ValueError(f"Attaque mal formée dans le catalogue : {brut!r} (mapping attendu).")
     nom = brut.get("name") or brut.get("nom") or ""
     effet_texte = brut.get("effect") or brut.get("text") or brut.get("effet") or ""
     degats, effet = _degats_et_effet(brut.get("damage", brut.get("degats")), effet_texte)
+    # Attaque **à effet** : son script DSL vient du registre `card_scripts`, par l'empreinte de son
+    # texte (lot `j-cartes-attaques-effets`). Branché, l'attaque devient jouable (``AttaqueDef`` le
+    # valide en le chargeant) ; sans script, elle reste refusée (D9) — jamais approximée.
+    script: dict | None = None
+    if scripts_attaques and isinstance(effet_texte, str) and effet_texte.strip():
+        script = scripts_attaques.get(empreinte_texte(effet_texte))
     return AttaqueDef(
-        nom=nom, cout=_cout(brut.get("cost") or brut.get("cout")), degats=degats, effet=effet
+        nom=nom,
+        cout=_cout(brut.get("cost") or brut.get("cout")),
+        degats=degats,
+        effet=effet,
+        script=script,
     )
 
 
-def definition_depuis_card(card: object, *, evolue_depuis: str | None = None) -> DefinitionCarte:
+def definition_depuis_card(
+    card: object,
+    *,
+    evolue_depuis: str | None = None,
+    scripts_attaques: Mapping[str, dict] | None = None,
+) -> DefinitionCarte:
     """Construit un :class:`DefinitionCarte` depuis une carte du catalogue, ou **bloque** la carte.
 
     ``card`` porte les attributs du modèle ``Card`` (``name``, ``hp``, ``energy_type``,
@@ -208,7 +231,9 @@ def definition_depuis_card(card: object, *, evolue_depuis: str | None = None) ->
         faiblesse=_faiblesse(getattr(card, "weaknesses", None)),
         resistance=_resistance(getattr(card, "resistances", None)),
         cout_retraite=retreat,
-        attaques=tuple(_attaque(a) for a in (getattr(card, "attacks", None) or [])),
+        attaques=tuple(
+            _attaque(a, scripts_attaques) for a in (getattr(card, "attacks", None) or [])
+        ),
     )
 
 
@@ -258,4 +283,116 @@ def definition_energie_depuis_card(card: object) -> DefinitionEnergie:
     return DefinitionEnergie(ref=_ref(card), nom=nom or "", fournit={type_: 1})
 
 
-__all__ = ["definition_depuis_card", "definition_energie_depuis_card"]
+def ref_catalogue(card: object) -> str:
+    """La ``ref`` stable d'une carte (``tcgdex_id``/``ptcg_id``/``id``), pour la clé du catalogue.
+
+    Même règle que l'adaptateur Pokémon/Énergie — exposée pour que la couche de câblage des effets
+    (porte D9 du deck, assemblage du :class:`CatalogueJeu`) parle des cartes par la même ``ref`` que
+    le moteur.
+    """
+    return _ref(card)
+
+
+#: Sous-types de Dresseur (``trainer_type``, FR ou EN) rangés dans la règle de jeu du moteur. Une
+#: « Machine Technique » se joue comme un Objet (R-5.5). Un sous-type absent de cette table rend
+#: ``None`` : la carte n'est pas rangée (jamais devinée, D9).
+_TRAINER_TYPES: dict[str, str] = {
+    "objet": "objet",
+    "item": "objet",
+    "machine technique": "objet",
+    "technical machine": "objet",
+    "supporter": "supporter",
+    "stade": "stade",
+    "stadium": "stade",
+    "outil": "outil",
+    "tool": "outil",
+    "pokémon tool": "outil",
+    "pokemon tool": "outil",
+}
+
+
+def genre_dresseur(card: object) -> str | None:
+    """Le genre de jeu d'une carte Dresseur — ``objet``/``supporter``/``stade``/``outil`` — ou
+    ``None``.
+
+    Lit ``trainer_type`` (brut, FR ou EN selon l'import) et le range dans le vocabulaire du moteur.
+    ``None`` si la carte n'est pas un Dresseur, ou si son sous-type n'est pas reconnu (jamais
+    deviné, D9 : une carte non rangée ne produit aucun coup).
+    """
+    brut = getattr(card, "trainer_type", None)
+    if not isinstance(brut, str) or not brut.strip():
+        return None
+    return _TRAINER_TYPES.get(brut.strip().lower())
+
+
+def _nom(card: object) -> str:
+    return getattr(card, "name", None) or ""
+
+
+def definition_objet_depuis_card(card: object, programme: Programme) -> DefinitionObjet:
+    """Construit un :class:`DefinitionObjet` d'une carte Objet et de son **script déjà chargé**.
+
+    Le script (``programme``) vient du registre `card_scripts` (texte → DSL validé), rechargé et
+    validé côté service ; le moteur ne lit jamais la base (D9). La ``ref``, le ``nom`` et le texte
+    source accompagnent le script pour l'étiquette du coup et l'empreinte/errata.
+    """
+    return DefinitionObjet(
+        ref=_ref(card),
+        nom=_nom(card),
+        programme=programme,
+        source_text=getattr(card, "effect", None) or "",
+    )
+
+
+def definition_supporter_depuis_card(card: object, programme: Programme) -> DefinitionSupporter:
+    """Construit un :class:`DefinitionSupporter` d'une carte Supporter et de son script chargé.
+
+    Même forme qu'un Objet (:func:`definition_objet_depuis_card`) ; ce qui distingue un Supporter,
+    c'est la règle du tour (un par tour, R-5.5), portée par la famille, pas par cette fiche.
+    """
+    return DefinitionSupporter(
+        ref=_ref(card),
+        nom=_nom(card),
+        programme=programme,
+        source_text=getattr(card, "effect", None) or "",
+    )
+
+
+def definition_stade_depuis_card(card: object) -> DefinitionStade:
+    """Construit un :class:`DefinitionStade` d'une carte Stade (R-3.5).
+
+    Un Stade n'a pas de script DSL : son effet est **continu** (un producteur de
+    :mod:`pbm_game.effets.stades`, assemblé à part dans le ``registre_continus``). Cette fiche ne
+    porte que de quoi le jouer et le nommer — la clé du refus R-3.5 « même nom » est le ``nom``.
+    """
+    return DefinitionStade(
+        ref=_ref(card),
+        nom=_nom(card),
+        source_text=getattr(card, "effect", None) or "",
+    )
+
+
+def definition_outil_depuis_card(card: object) -> DefinitionOutil:
+    """Construit un :class:`DefinitionOutil` d'une carte Outil (R-3.7).
+
+    Comme un Stade, un Outil n'a pas de script DSL : son effet est **continu**
+    (:mod:`pbm_game.effets.outils`). Cette fiche ne sert qu'à **lister** le coup « attacher cet
+    Outil » et à le nommer ; l'effet vit dans le ``registre_continus``.
+    """
+    return DefinitionOutil(
+        ref=_ref(card),
+        nom=_nom(card),
+        source_text=getattr(card, "effect", None) or "",
+    )
+
+
+__all__ = [
+    "definition_depuis_card",
+    "definition_energie_depuis_card",
+    "ref_catalogue",
+    "genre_dresseur",
+    "definition_objet_depuis_card",
+    "definition_supporter_depuis_card",
+    "definition_stade_depuis_card",
+    "definition_outil_depuis_card",
+]

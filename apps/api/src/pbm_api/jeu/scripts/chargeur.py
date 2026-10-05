@@ -77,9 +77,20 @@ async def refus_scripts_cartes(
     chaque effet. Une carte peut apparaître plusieurs fois si elle porte plusieurs effets non
     scriptés — chacun est nommé. Liste vide = tout est jouable.
     """
+    # Imports locaux : `catalogue`/`couverture_jeu` importent (par `scripts.empreinte`) ce paquet —
+    # les charger au niveau module ferait un cycle. On les charge à l'appel, où tout est en place.
+    from pbm_api.jeu.catalogue import ref_catalogue
+    from pbm_api.jeu.couverture_jeu import effet_couvert_hors_dsl
+
     exigences: list[tuple[Card, EffetCarte]] = []
     for card in cartes:
+        ref = ref_catalogue(card)
         for effet in effets_scriptables(card):
+            # Outils, Stades et talents activés sont scriptés **hors** du registre DSL (moteur /
+            # fiche écrite à la main) : leur effet est déjà implémenté et testé ailleurs, il n'exige
+            # donc aucune ligne `card_scripts` (D9 — pas d'approximation, une vraie couverture).
+            if effet_couvert_hors_dsl(ref, effet.origine):
+                continue
             exigences.append((card, effet))
     if not exigences:
         return []
@@ -106,9 +117,15 @@ async def refus_scripts_par_carte(
     constructeur, `v7-decks-legalite`). La raison est **indépendante du deck** : un même ``card_id``
     donne toujours la même raison, donc on peut calculer la carte une fois et réutiliser.
     """
+    from pbm_api.jeu.catalogue import ref_catalogue
+    from pbm_api.jeu.couverture_jeu import effet_couvert_hors_dsl
+
     exigences: list[tuple[Card, EffetCarte]] = []
     for card in cartes:
+        ref = ref_catalogue(card)
         for effet in effets_scriptables(card):
+            if effet_couvert_hors_dsl(ref, effet.origine):
+                continue  # couvert hors DSL (Outil/Stade/talent) — aucun script `card_scripts` dû
             exigences.append((card, effet))
     if not exigences:
         return {}

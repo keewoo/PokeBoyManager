@@ -38,15 +38,13 @@ _PBM_GAME = Path(__file__).resolve().parents[1] / "src" / "pbm_game"
 #: ``test_games_http_ws_partie_complete``). Ils sont listés ici **nommément** — pas ignorés en
 #: silence : tant qu'ils n'ont pas de projecteur par destinataire, ``projeter_evenement`` les refuse
 #: (500 bruyant plutôt que fuite), ce qui est le comportement voulu avant leur livraison.
-DIFFERES_SYSTEME_EFFETS: frozenset[str] = frozenset(
-    {
-        "demande_emise",
-        "demande_repondue",
-        "demande_expiree",
-        "dsl_choix",
-        "dsl_primitive",
-    }
-)
+DIFFERES_SYSTEME_EFFETS: frozenset[str] = frozenset()
+# Depuis le lot ``j-effets-cablage-service``, les effets de carte au script DSL entrent réellement
+# en jeu par les routes HTTP (prouvé par ``apps/api/tests/test_games_effets_cablage.py``) : les
+# événements du système d'effets (``dsl_primitive``, ``dsl_choix``, ``demande_emise``/
+# ``demande_repondue``/``demande_expiree``) ont désormais leur **projecteur par destinataire** dans
+# ``PROJECTEURS`` (anti-fuite : un ``piocher`` ne livre que le nombre, une demande cache ses options
+# à qui n'est pas le destinataire). Plus aucun différé : tout ``EVT_*`` est projeté.
 
 #: Repère une déclaration de constante d'événement : ``EVT_XXX = "type"`` (ou guillemets simples).
 _MOTIF_EVT = re.compile(r"^EVT_[A-Z0-9_]+ = [\"']([a-z0-9_]+)[\"']", re.MULTILINE)

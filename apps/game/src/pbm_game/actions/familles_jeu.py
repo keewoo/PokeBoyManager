@@ -36,19 +36,31 @@ from dataclasses import dataclass, field, replace
 from ..cartes.energie import DefinitionEnergie
 from ..cartes.modele import DefinitionCarte, definition_vers_dict
 from ..combat.cout import EnergieAttachee, cout_satisfait
+from ..combat.modele import Modificateur
 from ..combat.pouvoirs_uniques import deja_utilise
 from ..effets.continus import (
     RegistreContinus,
     collecter_effets_continus,
     cout_retraite_effectif,
+    fiches_avec_seuils_continus,
+    modificateurs_degats,
 )
+from ..effets.dsl.chargement import charger_programme
 from ..effets.dsl.contexte import ContexteEffet
 from ..effets.dsl.jouabilite import programme_jouable
 from ..effets.dsl.modele import Programme
 from ..effets.pile import SourceEffet
+from ..effets.talents import (
+    NATURE_ACTIVE,
+    RegistreTalents,
+    talent_actif,
+    talents_en_jeu,
+)
 from ..effets.verrous import VERROU_PAS_DE_SUPPORTER
 from ..journal.modele import (
+    ACTION_ACTIVER_TALENT,
     ACTION_ATTACHER_ENERGIE,
+    ACTION_ATTACHER_OUTIL,
     ACTION_DECLARER_ATTAQUE,
     ACTION_EVOLUER,
     ACTION_JOUER_OBJET,
@@ -78,7 +90,7 @@ from ..tour.contraintes import (
     peut_jouer_stade,
     peut_jouer_supporter,
 )
-from ..tour.drapeaux import identite_pokemon
+from ..tour.drapeaux import identite_pokemon, talent_active_ce_tour
 from .generateur import Famille, FamilleAbandonner, FamilleAvancerPhase
 from .modele import (
     GENRE_POKEMON_EN_JEU,
@@ -157,6 +169,28 @@ class DefinitionStade:
 
 
 @dataclass(frozen=True)
+class DefinitionOutil:
+    """Définition catalogue d'une carte **Outil** Pokémon — de quoi la jouer et la nommer (R-3.7).
+
+    Un Outil n'a ni données de combat ni script DSL : son effet est **continu** (un producteur de
+    :mod:`pbm_game.effets.outils`, dérivé de ce qui est en jeu tant que l'Outil est attaché). Cette
+    fiche ne porte donc que de quoi **lister** le coup « attacher cet Outil » (R-3.7) et le
+    **nommer** ; la règle « au plus un Outil par Pokémon » est portée par
+    :class:`FamilleAttacherOutil`
+    et la transition ``attacher_outil``, pas ici. C'est le pendant des :class:`DefinitionStade` pour
+    les Outils : un identifiant de carte jouable, l'effet vivant dans ``registre_continus``.
+
+    * ``ref`` — référence catalogue de la carte (clé de son producteur dans ``registre_continus``) ;
+    * ``nom`` — nom lisible (étiquette du coup, journal) ;
+    * ``source_text`` — le texte d'effet d'origine (empreinte / errata, tenus côté service).
+    """
+
+    ref: str
+    nom: str
+    source_text: str = ""
+
+
+@dataclass(frozen=True)
 class CatalogueJeu:
     """Les définitions de carte des deux decks d'une partie, par ``ref`` (fourni par le service).
 
@@ -175,6 +209,20 @@ class CatalogueJeu:
     objets: dict[str, DefinitionObjet] = field(default_factory=dict)
     supporters: dict[str, DefinitionSupporter] = field(default_factory=dict)
     stades: dict[str, DefinitionStade] = field(default_factory=dict)
+    #: ``ref → DefinitionOutil`` pour les cartes Outil (``j-cartes-outils``) : de quoi **lister** le
+    #: coup « attacher cet Outil » (R-3.7). L'effet de l'Outil vit dans ``registre_continus``.
+    outils: dict[str, DefinitionOutil] = field(default_factory=dict)
+    #: ``ref → Talent`` pour les Pokémon en jeu qui portent un talent (``j-cartes-talents``). La
+    #: **fiche** gouverne le portillon :func:`~pbm_game.effets.talents.talent_actif` (nature, états
+    #: désactivants, neutralisation) ; le *comportement* d'un talent activé est son script DSL,
+    #: servi
+    #: par ``talents_programmes`` (le moteur ne lit jamais la base, D9).
+    talents: RegistreTalents = field(default_factory=dict)
+    #: ``ref → script DSL (JSON)`` du talent **activé** de cette carte : le programme que
+    #: :class:`FamilleActiverTalent` porte dans les ``params`` du coup (le journal le transporte, le
+    #: rejeu n'a donc pas besoin du catalogue). Un talent continu/déclenché n'a pas d'entrée ici
+    #: (son comportement vit dans ``registre_continus`` ou le bus).
+    talents_programmes: dict[str, dict] = field(default_factory=dict)
     #: Producteurs d'effets continus de la partie (Outils, Stades, talents), par ``ref`` — ce que
     #: chaque source en jeu ajoute au calcul (PV, dégâts, coût de retraite). **Vide par défaut**
     #: (D9) : le service l'assemble depuis les decks (p. ex. ``effets.stades.registre_stades``).
@@ -196,6 +244,9 @@ class CatalogueJeu:
     def stade_de(self, ref: str) -> DefinitionStade | None:
         return self.stades.get(ref)
 
+    def outil_de(self, ref: str) -> DefinitionOutil | None:
+        return self.outils.get(ref)
+
     def metadonnees_completes(self) -> dict:
         """Les métadonnées ``ref → {categorie, stade, type}`` de **toutes** les cartes connues.
 
@@ -216,6 +267,8 @@ class CatalogueJeu:
             meta.setdefault(ref, {"categorie": "dresseur"})
         for ref in self.stades:
             meta.setdefault(ref, {"categorie": "dresseur"})
+        for ref in self.outils:
+            meta.setdefault(ref, {"categorie": "dresseur"})
         return meta
 
     def definitions(self) -> dict[str, dict]:
@@ -225,7 +278,11 @@ class CatalogueJeu:
         stade **non-base** suffit (la mise en place n'a besoin que de « est-ce une base ? »).
         """
         fiches: dict[str, dict] = {ref: definition_vers_dict(d) for ref, d in self.pokemon.items()}
-        for ref in self.energies:
+        # Énergies et Dresseurs (Objet, Supporter, Stade, Outil) ne sont **pas** des Pokémon : un
+        # marqueur de stade non-base suffit à la mise en place (R-4.2 « est-ce une base ? ») — sans
+        # eux, une telle carte en main ferait échouer la mise en place (« stade inconnu, jamais
+        # deviné », D9), alors qu'elle n'a simplement pas à être placée comme Pokémon.
+        for ref in (*self.energies, *self.objets, *self.supporters, *self.stades, *self.outils):
             fiches[ref] = {"stade": _STADE_NON_POKEMON}
         return fiches
 
@@ -292,6 +349,36 @@ def _etat_sans_carte_main(etat: EtatPartie, jid: str, instance_id: str) -> EtatP
 def _en_jeu(joueur: Joueur) -> list[PokemonEnJeu]:
     """Les Pokémon en jeu du joueur (Actif puis banc), dans un ordre déterministe."""
     return ([joueur.actif] if joueur.actif is not None else []) + list(joueur.banc)
+
+
+def _modificateur_vers_dict(m: Modificateur) -> dict:
+    """Projette un :class:`Modificateur` en ``dict`` JSON-natif pour les ``params`` (D9).
+
+    Les modificateurs de dégâts continus (Outils, Stades, talents) sont calculés par la famille
+    **à la génération** du coup — comme la faiblesse, la résistance et les fiches — puis portés dans
+    les ``params`` que le journal transporte. La transition les relit (``_modificateurs_depuis``) :
+    le rejeu n'a donc pas besoin du catalogue, et l'ordre strict R-10.1 reste joué côté moteur pur.
+    """
+    return {"libelle": m.libelle, "regle": m.regle, "operation": m.operation, "valeur": m.valeur}
+
+
+def _modificateurs_continus(
+    catalogue: CatalogueJeu, etat: EtatPartie, attaquant: PokemonEnJeu, defenseur: PokemonEnJeu
+) -> tuple[list[dict], list[dict]]:
+    """Les modificateurs de dégâts continus (Outils/Stades/talents) pour ce duel, sérialisés.
+
+    Dérivés de ce qui est en jeu (:func:`~pbm_game.effets.continus.collecter_effets_continus`) puis
+    triés en ``(attaquant, défenseur)`` par :func:`~pbm_game.effets.continus.modificateurs_degats`,
+    selon l'identité **stable** (carte de base) de chaque Pokémon. Registre vide (défaut J2) = deux
+    listes vides : aucun effet continu ne pèse sur les dégâts (D9).
+    """
+    effets = collecter_effets_continus(etat, catalogue.registre_continus)
+    att, deff = modificateurs_degats(
+        effets,
+        attaquant=attaquant.cartes[0].instance_id,
+        defenseur=defenseur.cartes[0].instance_id,
+    )
+    return [_modificateur_vers_dict(m) for m in att], [_modificateur_vers_dict(m) for m in deff]
 
 
 def _cible_pokemon(catalogue: CatalogueJeu, pokemon: PokemonEnJeu) -> Cible:
@@ -520,6 +607,8 @@ class FamilleAttaquer(_FamilleCatalogue):
         adv = _autre(etat, joueur)
         faiblesse = resistance = None
         cibles: tuple[Cible, ...] = ()
+        mods_attaquant: list[dict] = []
+        mods_defenseur: list[dict] = []
         if adv.actif is not None:
             def_adv = self.catalogue.pokemon_de(carte_active(adv.actif).ref)
             if def_adv is not None and def_adv.faiblesse is not None:
@@ -530,7 +619,17 @@ class FamilleAttaquer(_FamilleCatalogue):
                     "reduction": def_adv.resistance.reduction,
                 }
             cibles = (_cible_pokemon(self.catalogue, adv.actif),)
-        fiches = _fiches(self.catalogue, etat)
+            # Modificateurs de dégâts continus (Outils, Stades, talents) pour ce duel : étape 2
+            # (attaquant) et étape 5 (défenseur) de l'ordre strict R-10.1. Registre vide = listes
+            # vides, l'attaque garde ses dégâts imprimés (D9).
+            mods_attaquant, mods_defenseur = _modificateurs_continus(
+                self.catalogue, etat, j.actif, adv.actif
+            )
+        # Fiches de K.O. **avec les seuils continus** : un Outil/Stade qui déplace les PV d'un
+        # Pokémon déplace son seuil de K.O. (R-13.1). Sans continus, revient aux PV imprimés.
+        fiches = fiches_avec_seuils_continus(
+            etat, self.catalogue.registre_continus, _fiches(self.catalogue, etat)
+        )
         metadonnees = _metadonnees(self.catalogue, etat)
         coups: list[ActionLegale] = []
         for attaque in def_actif.attaques:
@@ -571,6 +670,10 @@ class FamilleAttaquer(_FamilleCatalogue):
                 params["faiblesse"] = faiblesse
             if resistance is not None:
                 params["resistance"] = resistance
+            if mods_attaquant:
+                params["modificateurs_attaquant"] = mods_attaquant
+            if mods_defenseur:
+                params["modificateurs_defenseur"] = mods_defenseur
             etiquette = (
                 f"Attaquer : {attaque.nom}"
                 if attaque.degats_variables is not None
@@ -1004,6 +1107,175 @@ class FamilleJouerStade(_FamilleCatalogue):
         )
 
 
+class FamilleAttacherOutil(_FamilleCatalogue):
+    """Attacher un **Outil** Pokémon (R-3.7/R-5.5) — joueur actif, phase principale, sans limite.
+
+    Comme l'Objet (et contrairement au Supporter), un Outil se joue **sans limite de nombre** par
+    tour (R-5.5) : aucune garde de tour. On liste, pour chaque carte **Outil** de la main
+    (``catalogue.outils``), un coup par Pokémon en jeu du joueur qui **ne porte pas déjà** un Outil
+    (R-3.7 — au plus un par Pokémon). Une décision en attente (``etat.resolution``) met la partie en
+    pause : rien n'est proposé, pour que liste et validation restent cohérentes (une seule source).
+    L'effet de l'Outil est **continu** (``registre_continus``) : la famille rend seulement le coup
+    jouable, la transition ``attacher_outil`` l'applique.
+    """
+
+    nom = "attacher_outil"
+
+    def gouverne(self, action: Action) -> bool:
+        return action.type == ACTION_ATTACHER_OUTIL
+
+    def generer(self, etat: EtatPartie, joueur: str) -> list[ActionLegale]:
+        j = _joueur_de(etat, joueur)
+        if j is None or joueur != etat.tour.joueur_actif or etat.tour.phase != PHASE_PRINCIPALE:
+            return []
+        if etat.resolution is not None:
+            return []  # une décision est en attente : seule la réponse (ou l'abandon) est permise
+        coups: list[ActionLegale] = []
+        for carte in j.main:
+            outil = self.catalogue.outil_de(carte.ref)
+            if outil is None:
+                continue
+            for pokemon in _en_jeu(j):
+                if pokemon.outil is not None:
+                    continue  # R-3.7 — ce Pokémon porte déjà un Outil
+                coups.append(
+                    ActionLegale(
+                        action=Action(
+                            ACTION_ATTACHER_OUTIL,
+                            joueur,
+                            {
+                                "carte_main": carte.instance_id,
+                                "cible": identite_pokemon(pokemon),
+                                "nom": outil.nom,
+                            },
+                        ),
+                        etiquette=f"Attacher {outil.nom}",
+                        cibles=(_cible_pokemon(self.catalogue, pokemon),),
+                    )
+                )
+        return coups
+
+    def refuser(self, etat: EtatPartie, action: Action) -> Verdict:
+        if action.auteur != etat.tour.joueur_actif:
+            return refus("R-5.5", "Seul le joueur actif attache un Outil (R-5.3/R-5.5).")
+        if etat.tour.phase != PHASE_PRINCIPALE:
+            return refus("R-5.5", "On attache un Outil en phase principale (R-5.3).")
+        if etat.resolution is not None:
+            return refus(
+                "R-5.5",
+                "Une décision est en attente : seule la réponse (ou l'abandon) est permise, "
+                "pas un Outil.",
+            )
+        return refus(
+            "R-3.7",
+            "Cet Outil ne peut pas être attaché ici — la carte n'est pas un Outil de votre main, "
+            "ou le Pokémon ciblé porte déjà un Outil (R-3.7).",
+        )
+
+
+class FamilleActiverTalent(_FamilleCatalogue):
+    """Activer un **talent** (R-5) — joueur actif, un Pokémon en jeu, une fois par tour par Pokémon.
+
+    Liste, pour chaque Pokémon en jeu du joueur dont la carte au sommet porte un talent **activé**
+    (``catalogue.talents``, nature :data:`~pbm_game.effets.talents.NATURE_ACTIVE`), le coup
+    ``activer_talent`` — seulement si le portillon
+    :func:`~pbm_game.effets.talents.talent_actif` l'accorde (porteur en jeu, à la bonne place, non
+    neutralisé par un *Garbodor*, non désactivé par un état spécial) **et** que ce Pokémon ne l'a
+    pas déjà activé ce tour (R-5, suivi **par Pokémon**). Le script DSL du talent vient de
+    ``catalogue.talents_programmes`` et est embarqué dans les ``params`` (le journal le transporte ;
+    le rejeu n'a pas besoin du catalogue). Un talent activé **sans script** n'est pas proposé — un
+    effet non implémenté n'est jamais approximé (D9). Les talents **continus** (modificateurs) et
+    **déclenchés** (bus) ne passent pas par cette famille : ils ne se « jouent » pas.
+    """
+
+    nom = "activer_talent"
+
+    def gouverne(self, action: Action) -> bool:
+        return action.type == ACTION_ACTIVER_TALENT
+
+    def generer(self, etat: EtatPartie, joueur: str) -> list[ActionLegale]:
+        j = _joueur_de(etat, joueur)
+        if j is None or joueur != etat.tour.joueur_actif:
+            return []
+        if etat.tour.phase not in (PHASE_PRINCIPALE, PHASE_ATTAQUE):
+            return []
+        if etat.resolution is not None:
+            return []  # une décision est en attente : seule la réponse (ou l'abandon) est permise
+        par_identite = {identite_pokemon(p): p for p in _en_jeu(j)}
+        coups: list[ActionLegale] = []
+        for tej in talents_en_jeu(etat, self.catalogue.talents):
+            if tej.joueur != joueur or tej.talent.nature != NATURE_ACTIVE:
+                continue
+            programme = self.catalogue.talents_programmes.get(tej.talent.ref)
+            if programme is None:
+                continue  # talent activé sans script : non implémenté, jamais approximé (D9)
+            if not talent_actif(etat, self.catalogue.talents, tej.identite).actif:
+                continue  # neutralisé, désactivé, hors jeu — le portillon tranche (R-12.3)
+            if talent_active_ce_tour(etat.tour, f"{tej.identite}|{tej.talent.nom}"):
+                continue  # déjà activé ce tour par ce Pokémon (R-5)
+            # Jouabilité du script (comme un Objet) : coût payable **et** au moins un effet qui
+            # pourrait agir. Un talent dont le coût ne peut être payé (pas d'Énergie à défausser)
+            # n'est pas proposé — sinon la transition le refuserait (« pas dû être proposé »).
+            ctx = ContexteEffet(
+                source=SourceEffet(libelle=tej.talent.nom, ref=tej.talent.ref,
+                                   instance_id=tej.identite),
+                joueur=joueur,
+                adversaire=_autre(etat, joueur).id,
+                acteur_actif=tej.identite,
+                metadonnees=self.catalogue.metadonnees_completes(),
+            )
+            jouable, _raison = programme_jouable(etat, charger_programme(programme), ctx)
+            if not jouable:
+                continue
+            pokemon = par_identite.get(tej.identite)
+            cibles = (_cible_pokemon(self.catalogue, pokemon),) if pokemon is not None else ()
+            coups.append(
+                ActionLegale(
+                    action=Action(
+                        ACTION_ACTIVER_TALENT,
+                        joueur,
+                        {
+                            "pokemon": tej.identite,
+                            "nom": tej.talent.nom,
+                            "programme": programme,
+                            "une_fois_par_tour": True,
+                            "desactive_si_etat": sorted(tej.talent.desactive_si_etat),
+                            "source": {
+                                "libelle": tej.talent.nom,
+                                "ref": tej.talent.ref,
+                                "instance_id": tej.identite,
+                            },
+                            # Les métadonnées (ref → catégorie) voyagent dans les params, comme pour
+                            # un Objet : sans elles, un coût « défaussez une Énergie » ignorerait,
+                            # au rejeu, quelles cartes de la main sont des Énergies (le journal doit
+                            # suffire à rejouer — le catalogue n'est pas relu).
+                            "metadonnees": self.catalogue.metadonnees_completes(),
+                        },
+                    ),
+                    etiquette=f"Talent : {tej.talent.nom}",
+                    cibles=cibles,
+                )
+            )
+        return coups
+
+    def refuser(self, etat: EtatPartie, action: Action) -> Verdict:
+        if action.auteur != etat.tour.joueur_actif:
+            return refus("R-5", "Seul le joueur actif active un talent (R-5.1).")
+        if etat.tour.phase not in (PHASE_PRINCIPALE, PHASE_ATTAQUE):
+            return refus("R-5", "On active un talent pendant son propre tour (R-5.1).")
+        if etat.resolution is not None:
+            return refus(
+                "R-5",
+                "Une décision est en attente : seule la réponse (ou l'abandon) est permise, "
+                "pas un talent.",
+            )
+        return refus(
+            "R-5",
+            "Ce talent ne peut pas être activé ici — il n'est pas un talent activé en jeu, il a "
+            "déjà servi ce tour, ou il est neutralisé/désactivé (R-5/R-12.3).",
+        )
+
+
 class FamilleAvancerPhaseJeu(FamilleAvancerPhase):
     """``avancer_phase`` du jeu : comme la famille de base, mais interdite tant qu'un Actif manque.
 
@@ -1037,6 +1309,8 @@ def familles_jeu(catalogue: CatalogueJeu) -> tuple[Famille, ...]:
         FamilleJouerObjet(catalogue),
         FamilleJouerSupporter(catalogue),
         FamilleJouerStade(catalogue),
+        FamilleAttacherOutil(catalogue),
+        FamilleActiverTalent(catalogue),
         FamilleAttaquer(catalogue),
         FamilleRetraite(catalogue),
         FamillePromouvoir(),
@@ -1049,7 +1323,10 @@ __all__ = [
     "DefinitionObjet",
     "DefinitionSupporter",
     "DefinitionStade",
+    "DefinitionOutil",
     "FamilleJouerStade",
+    "FamilleAttacherOutil",
+    "FamilleActiverTalent",
     "FamillePoser",
     "FamilleEvoluer",
     "FamilleAttacherEnergie",

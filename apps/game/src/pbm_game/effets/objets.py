@@ -114,6 +114,28 @@ def appliquer_jouer_objet(
             "être proposé (R-5.5/D9)."
         )
 
+    # Mode **décision** (branché par le service, lot j-effets-cablage-service, reste-à-faire
+    # « injecter la demande de décision ») : chaque ``choisir`` du script devient une **fenêtre de
+    # décision réelle** adressée au joueur (:func:`~pbm_game.demandes.moteur.demarrer_resolution`),
+    # au lieu d'un choix tranché d'office. La partie se met en pause (``etat.resolution``) et
+    # reprend
+    # à la réponse (``repondre_demande``). Le drapeau n'est posé que par le service (jamais par le
+    # client ni le générateur : il changerait l'appartenance au coup légal) — les tests du moteur et
+    # les bots gardent la résolution déterministe (``strategie_canonique``).
+    evenement = Evenement(
+        EVT_OBJET_JOUE,
+        {"joueur": jid, "ref": carte.ref, "nom": source.libelle, "carte": carte.instance_id,
+         "devient_actif": []},
+    )
+    if params.get("decisions"):
+        from ..demandes.moteur import demarrer_resolution
+        from .dsl.interprete import compiler_en_effet
+        from .pile import PileEffets
+
+        effet = compiler_en_effet(programme, ctx, libelle=source.libelle, regle="R-5.5")
+        etat, evts = demarrer_resolution(etat, PileEffets((effet,)), rng)
+        return etat, [evenement, *evts]
+
     resultat = executer_programme(etat, programme, ctx, rng)
     etat = resultat.etat
     if resultat.verrous:

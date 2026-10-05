@@ -35,7 +35,7 @@ from ..journal.modele import EVT_ATTAQUE_DECLAREE, Action, Evenement
 from ..state.modele import EtatPartie, Joueur, carte_active
 from .cout import EnergieAttachee, payer_cout
 from .fin import resoudre_kos
-from .modele import CoutAttaque, Faiblesse, Resistance
+from .modele import CoutAttaque, Faiblesse, Modificateur, Resistance
 from .resolution import evenement_degats, poser_degats, resoudre_degats
 from .valeur import est_valeur_dynamique, valeur_depuis
 
@@ -92,6 +92,36 @@ def _faiblesse_depuis(brut: object) -> Faiblesse | None:
     if not isinstance(brut, Mapping):
         return None
     return Faiblesse(type=brut.get("type", ""), facteur=brut.get("facteur", 2))
+
+
+def _modificateurs_depuis(brut: object) -> list[Modificateur]:
+    """Reconstruit les :class:`Modificateur` continus portés dans les ``params`` (Outils/Stades).
+
+    La famille d'attaque (``actions.familles_jeu``) a calculé ces modificateurs à la génération du
+    coup, depuis le ``registre_continus`` du catalogue, et les a sérialisés en dicts que le journal
+    transporte. On les relit ici pour les passer à :func:`resoudre_degats` dans l'ordre strict
+    R-10.1 (étape 2 attaquant, étape 5 défenseur). Absents (J1, ou aucun effet continu) : liste vide
+    — l'attaque garde ses dégâts imprimés (D9). Une entrée mal formée est **ignorée**, jamais
+    devinée : seuls des modificateurs complets et valides pèsent sur le calcul.
+    """
+    if not isinstance(brut, (list, tuple)):
+        return []
+    mods: list[Modificateur] = []
+    for item in brut:
+        if not isinstance(item, Mapping):
+            continue
+        try:
+            mods.append(
+                Modificateur(
+                    libelle=item["libelle"],
+                    regle=item["regle"],
+                    operation=item["operation"],
+                    valeur=item["valeur"],
+                )
+            )
+        except (KeyError, ValueError, TypeError):
+            continue
+    return mods
 
 
 def _resistance_depuis(brut: object) -> Resistance | None:
@@ -252,6 +282,12 @@ def resoudre_attaque_declaree(
         type_attaque=action.params.get("type_attaque"),
         faiblesse=_faiblesse_depuis(action.params.get("faiblesse")),
         resistance=_resistance_depuis(action.params.get("resistance")),
+        modificateurs_attaquant=_modificateurs_depuis(
+            action.params.get("modificateurs_attaquant")
+        ),
+        modificateurs_defenseur=_modificateurs_depuis(
+            action.params.get("modificateurs_defenseur")
+        ),
     )
     adv = replace(adv, actif=poser_degats(cible, resultat.degats))
     etat = _remplacer_joueur(etat, idx_adv, adv)

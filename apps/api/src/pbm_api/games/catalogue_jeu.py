@@ -19,12 +19,25 @@ import uuid
 from collections.abc import Iterable
 
 from pbm_game.actions.familles_jeu import CatalogueJeu
+from pbm_game.effets.outils import registre_outils
+from pbm_game.effets.stades import registre_stades
 from pbm_game.state.modele import EtatPartie, PokemonEnJeu
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.decks.energy import is_energy
-from pbm_api.jeu.catalogue import definition_depuis_card, definition_energie_depuis_card
+from pbm_api.jeu.catalogue import (
+    definition_depuis_card,
+    definition_energie_depuis_card,
+    definition_objet_depuis_card,
+    definition_outil_depuis_card,
+    definition_stade_depuis_card,
+    definition_supporter_depuis_card,
+    genre_dresseur,
+)
+from pbm_api.jeu.couverture_jeu import fiche_talent_active
+from pbm_api.jeu.scripts.empreinte import ORIGINE_ATTAQUE, ORIGINE_DRESSEUR, effets_scriptables
+from pbm_api.jeu.scripts.programmes import programme_depuis_json, scripts_valides_par_empreinte
 from pbm_api.models import Card
 
 
@@ -93,20 +106,98 @@ async def construire_catalogue_jeu(db: AsyncSession, etat: EtatPartie) -> Catalo
 
     pokemon: dict = {}
     energies: dict = {}
+    objets: dict = {}
+    supporters: dict = {}
+    stades: dict = {}
+    outils: dict = {}
+    talents: dict = {}
+    talents_programmes: dict = {}
+
+    # Première passe — classement des cartes et **collecte de toutes les empreintes de texte** à
+    # charger en une seule requête : attaques à effet des Pokémon, et textes d'Objet/Supporter.
+    # Pokémon : def construite après le chargement des scripts (attaques à effet).
+    pokemon_cards: list[tuple[str, Card]] = []
+    dresseurs: list[tuple[str, str, Card]] = []  # (ref, genre, carte)
+    empreintes_dresseur: dict[str, str] = {}  # ref → empreinte du texte de Dresseur
+    empreintes: set[str] = set()
     for ref in refs:
         card = index.get(ref)
         if card is None:
             continue  # ref inconnue du catalogue : jamais devinée (D9).
-        try:
-            if is_energy(getattr(card, "supertype", None)):
+        if is_energy(getattr(card, "supertype", None)):
+            try:
                 energies[ref] = definition_energie_depuis_card(card)
-            else:
-                pokemon[ref] = definition_depuis_card(card)
-        except ValueError:
-            # Carte non compilable (donnée manquante, Énergie spéciale non scriptée) : omise (D9) —
-            # aucune famille ne produira de coup avec elle.
+            except ValueError:
+                pass  # Énergie spéciale non scriptée : omise (D9).
             continue
-    return CatalogueJeu(pokemon=pokemon, energies=energies)
+        genre = genre_dresseur(card)
+        if genre is not None:
+            dresseurs.append((ref, genre, card))
+            if genre in ("objet", "supporter"):
+                for effet in effets_scriptables(card):
+                    if effet.origine == ORIGINE_DRESSEUR:
+                        empreintes_dresseur[ref] = effet.empreinte
+                        empreintes.add(effet.empreinte)
+                        break
+            continue
+        pokemon_cards.append((ref, card))
+        for effet in effets_scriptables(card):
+            if effet.origine == ORIGINE_ATTAQUE:
+                empreintes.add(effet.empreinte)  # script d'attaque à effet (j-cartes-attaques)
+
+    # Scripts DSL validés de toutes ces empreintes, en **une** requête (attaques + Dresseurs).
+    scripts = await scripts_valides_par_empreinte(db, empreintes)
+
+    # Pokémon : def construite avec les scripts de ses attaques à effet branchés (une attaque sans
+    # script reste non jouable, D9). Fiche de talent activé écrite à la main si la ``ref`` en a une.
+    for ref, card in pokemon_cards:
+        try:
+            pokemon[ref] = definition_depuis_card(card, scripts_attaques=scripts)
+        except ValueError:
+            continue  # Pokémon non compilable (donnée manquante) : omis (D9).
+        fiche = fiche_talent_active(ref)
+        if fiche is not None:
+            talents[ref] = fiche.talent(ref)
+            talents_programmes[ref] = fiche.programme
+
+    # Objets/Supporters : script compilé en Programme ; une carte dont l'effet n'a pas de script
+    # valide est **omise** (D9) — aucune famille ne la jouera. Stades et Outils n'ont pas de DSL.
+    for ref, genre, card in dresseurs:
+        if genre == "stade":
+            stades[ref] = definition_stade_depuis_card(card)
+        elif genre == "outil":
+            outils[ref] = definition_outil_depuis_card(card)
+        elif genre in ("objet", "supporter"):
+            empreinte = empreintes_dresseur.get(ref)
+            script = scripts.get(empreinte) if empreinte else None
+            if script is None:
+                continue  # effet non scripté ou illisible : carte omise (D9).
+            programme = programme_depuis_json(script)
+            if genre == "objet":
+                objets[ref] = definition_objet_depuis_card(card, programme)
+            else:
+                supporters[ref] = definition_supporter_depuis_card(card, programme)
+
+    # Effets continus — producteurs réels d'Outils et de Stades, pour les seules ``ref`` présentes
+    # dans l'état. La métadonnée porte le type de chaque Pokémon (Metal Core Barrier en dépend).
+    meta = {r: {"type": d.type, "stade": d.stade, "nom": d.nom} for r, d in pokemon.items()}
+    registre_continus: dict = {}
+    for source in (registre_outils(meta), registre_stades(meta)):
+        for ref, producteur in source.items():
+            if ref in refs:
+                registre_continus[ref] = producteur
+
+    return CatalogueJeu(
+        pokemon=pokemon,
+        energies=energies,
+        objets=objets,
+        supporters=supporters,
+        stades=stades,
+        outils=outils,
+        talents=talents,
+        talents_programmes=talents_programmes,
+        registre_continus=registre_continus,
+    )
 
 
 __all__ = ["CatalogueJeu", "construire_catalogue_jeu", "refs_etat"]

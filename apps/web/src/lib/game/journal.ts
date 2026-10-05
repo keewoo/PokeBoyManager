@@ -652,6 +652,67 @@ export const TRADUCTEURS: Record<string, Traducteur> = {
       return { texte: `Coût de l'effet impayable${raison ? ` : ${raison}` : ""}.` };
     },
   },
+
+  // Une primitive d'effet a agi (piocher, défausser, soigner…) : le moteur ne porte que des
+  // nombres et des libellés publics (jamais l'identité d'une carte cachée — lot
+  // j-effets-cablage-service). On nomme l'action et, si connu, le nombre de cartes touchées.
+  dsl_primitive: {
+    automatique: true,
+    traduire: (d) => {
+      const op = chaine(d, "op") ?? "effet";
+      const verbes: Record<string, string> = {
+        piocher: "Pioche",
+        chercher: "Recherche",
+        defausser: "Défausse",
+        soigner: "Soin",
+        attacher: "Énergie attachée",
+        deplacer: "Déplacement",
+        poser_compteurs: "Compteurs posés",
+        infliger_degats: "Dégâts d'effet",
+        melanger: "Mélange",
+        reveler: "Carte révélée",
+        regarder: "Coup d'œil",
+        poser_etat: "État infligé",
+        retirer_etat: "État retiré",
+        empecher: "Interdiction",
+        annuler: "Effet annulé",
+      };
+      const n = nombre(d, "nombre");
+      const libelle = verbes[op] ?? `Effet (${op})`;
+      return { texte: `${libelle}${n != null ? ` : ${n}` : ""}.` };
+    },
+  },
+
+  // Un choix d'effet tranché : combien parmi combien de demandés (aucune identité).
+  dsl_choix: {
+    automatique: true,
+    traduire: (d) => {
+      const choisis = nombre(d, "choisis") ?? 0;
+      const demande = nombre(d, "demande") ?? choisis;
+      return { texte: `Choix : ${choisis} sur ${demande} demandé${demande > 1 ? "s" : ""}.` };
+    },
+  },
+
+  // Une fenêtre de décision s'ouvre : le joueur concerné doit trancher (R-9.3).
+  demande_emise: {
+    automatique: true,
+    traduire: (d) => {
+      const libelle = chaine(d, "libelle") ?? "un choix";
+      return { texte: `Décision demandée : ${libelle}.` };
+    },
+  },
+
+  // La décision a été prise (le choix d'identités reste côté état ; ici on annonce le fait).
+  demande_repondue: {
+    automatique: true,
+    traduire: () => ({ texte: "Décision prise." }),
+  },
+
+  // Personne n'a répondu à temps : le choix par défaut a été joué (jamais un blocage, DJ4).
+  demande_expiree: {
+    automatique: true,
+    traduire: () => ({ texte: "Décision expirée : choix par défaut appliqué." }),
+  },
 };
 
 /**

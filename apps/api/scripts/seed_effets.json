@@ -1,0 +1,86 @@
+[
+  {
+    "source_text": "Changez un des Pokémon de Banc de votre adversaire par son Pokémon Actif.",
+    "statut": "scripte",
+    "dsl_version": 1,
+    "author": "j-effets-cablage-service",
+    "notes": "Appât (type Pokémon Catcher) : force l'adversaire à promouvoir un Pokémon de son Banc. Ouvre une fenêtre de décision (choisir la cible).",
+    "tests": ["test_games_effets_cablage.test_partie_a_effets_par_http_et_ws"],
+    "script": {
+      "version": 1,
+      "effets": [
+        {
+          "op": "choisir",
+          "cible": {"zone": "banc", "proprietaire": "adversaire", "nombre": 1},
+          "alors": [{"op": "changer_actif"}]
+        }
+      ]
+    }
+  },
+  {
+    "source_text": "Piochez 3 cartes.",
+    "statut": "scripte",
+    "dsl_version": 1,
+    "author": "j-effets-cablage-service",
+    "notes": "Supporter de pioche (type Hop).",
+    "tests": ["test_games_effets_cablage.test_partie_a_effets_par_http_et_ws"],
+    "script": {"version": 1, "effets": [{"op": "piocher", "nombre": 3}]}
+  },
+  {
+    "source_text": "Piochez une carte.",
+    "statut": "scripte",
+    "dsl_version": 1,
+    "author": "j-effets-cablage-service",
+    "notes": "Effet d'attaque ou de talent : pioche simple.",
+    "tests": ["test_games_effets_cablage.test_partie_a_effets_par_http_et_ws"],
+    "script": {"version": 1, "effets": [{"op": "piocher", "nombre": 1}]}
+  },
+  {
+    "source_text": "Cherchez un Pokémon dans votre deck, montrez-le et ajoutez-le à votre main. Mélangez ensuite votre deck.",
+    "statut": "scripte",
+    "dsl_version": 1,
+    "author": "j-effets-cablage-service",
+    "notes": "Objet de recherche (type Super Ball). Le texte source doit correspondre à l'impression de la carte au catalogue (sinon l'empreinte diffère) — à aligner par l'assistance IA (DJ8) sur le texte réel.",
+    "script": {
+      "version": 1,
+      "effets": [
+        {"op": "chercher", "cible": {"zone": "pioche", "categorie": "pokemon", "nombre": 1}},
+        {"op": "melanger", "cible": {"zone": "pioche", "proprietaire": "moi"}}
+      ]
+    }
+  },
+  {
+    "source_text": "Soignez 30 dégâts d'un de vos Pokémon.",
+    "statut": "scripte",
+    "dsl_version": 1,
+    "author": "j-effets-cablage-service",
+    "notes": "Objet de soin (type Potion) : 3 marqueurs retirés = 30 PV.",
+    "script": {
+      "version": 1,
+      "effets": [
+        {
+          "op": "choisir",
+          "cible": {"zone": "en_jeu", "proprietaire": "moi", "nombre": 1},
+          "alors": [{"op": "soigner", "nombre": 3}]
+        }
+      ]
+    }
+  },
+  {
+    "source_text": "Échangez votre Pokémon Actif contre l'un de vos Pokémon de Banc.",
+    "statut": "scripte",
+    "dsl_version": 1,
+    "author": "j-effets-cablage-service",
+    "notes": "Objet de changement d'Actif (type Échange). Ouvre une fenêtre de décision.",
+    "script": {
+      "version": 1,
+      "effets": [
+        {
+          "op": "choisir",
+          "cible": {"zone": "banc", "proprietaire": "moi", "nombre": 1},
+          "alors": [{"op": "changer_actif"}]
+        }
+      ]
+    }
+  }
+]

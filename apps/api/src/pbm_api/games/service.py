@@ -33,6 +33,7 @@ from datetime import UTC, datetime, timedelta
 
 from pbm_game.actions import valider
 from pbm_game.actions.familles_jeu import _fiches, familles_jeu
+from pbm_game.effets.continus import fiches_avec_seuils_continus
 from pbm_game.journal import (
     JOURNAL_VERSION,
     Action,
@@ -53,7 +54,9 @@ from pbm_game.journal.modele import (
     ACTION_DEBUT_TOUR,
     ACTION_DESERTER,
     ACTION_EXPIRER_INACTIVITE,
+    ACTION_JOUER_OBJET,
     ACTION_MISE_EN_PLACE_INITIALE,
+    ACTION_REPONDRE_DEMANDE,
     AUTEUR_SYSTEME,
     Entree,
     Instantane,
@@ -471,6 +474,24 @@ def _jouable(etat: EtatPartie) -> bool:
     return any(j.actif is not None for j in etat.joueurs)
 
 
+def _est_reponse_demande(etat: EtatPartie, action: Action) -> bool:
+    """L'action est-elle la **réponse légitime** à une demande de décision en attente ?
+
+    Une demande de décision (``etat.resolution``, lots ``j-effets-choix`` / ``j-plateau-decisions``)
+    se répond par ``repondre_demande`` — un coup listé par **aucune** famille (ce n'est pas
+    un coup « libre » mais la reprise d'une résolution en pause). On ne peut donc pas le valider par
+    appartenance à ``actions_legales`` ; c'est la transition qui valide le choix
+    (options autorisées, destinataire) et **refuse** bruyamment un choix invalide (R-16/D9). On
+    reconnaît ici le cas — une demande en cours, le bon type, et l'auteur **est** le destinataire —
+    pour laisser la transition faire autorité ; tout le reste repasse par ``valider``.
+    """
+    return (
+        etat.resolution is not None
+        and action.type == ACTION_REPONDRE_DEMANDE
+        and action.auteur == etat.resolution.demande.destinataire
+    )
+
+
 def _persister_coup(
     db: AsyncSession,
     game: Game,
@@ -567,7 +588,13 @@ async def _piloter(
         if phase == PHASE_PIOCHE:
             action = Action(ACTION_DEBUT_TOUR, AUTEUR_SYSTEME)
         elif phase == PHASE_CHECKUP:
-            action = Action(ACTION_CHECKUP, AUTEUR_SYSTEME, {"fiches": _fiches(catalogue, etat)})
+            # Fiches de K.O. **avec les seuils continus** (Outils/Stades qui déplacent les PV) :
+            # un Checkup respecte les mêmes seuils qu'une attaque (R-13.1), jamais les PV imprimés
+            # seuls. Registre vide = PV imprimés inchangés.
+            fiches_ck = fiches_avec_seuils_continus(
+                etat, catalogue.registre_continus, _fiches(catalogue, etat)
+            )
+            action = Action(ACTION_CHECKUP, AUTEUR_SYSTEME, {"fiches": fiches_ck})
         else:
             break  # phase principale / attaque : au joueur de jouer.
         etat2, evenements = appliquer(etat, action, rng)
@@ -696,11 +723,25 @@ async def appliquer_action(
     catalogue = None
     if _jouable(etat_courant):
         catalogue = await construire_catalogue_jeu(db, etat_courant)
-        verdict = valider(etat_courant, action, familles=familles_jeu(catalogue))
-        if verdict.refuse:
-            motif = f"{verdict.message} ({verdict.regle})"
-            _journaliser_refus(game_id, user_id, type, motif, maintenant)
-            raise ActionRefusee(motif)
+        # Une réponse à une demande de décision (``repondre_demande``) n'est listée par aucune
+        # famille : la transition la valide (choix autorisé, destinataire). Tout autre coup
+        # passe par la liste légale (une seule source de vérité, anti-triche).
+        if not _est_reponse_demande(etat_courant, action):
+            verdict = valider(etat_courant, action, familles=familles_jeu(catalogue))
+            if verdict.refuse:
+                motif = f"{verdict.message} ({verdict.regle})"
+                _journaliser_refus(game_id, user_id, type, motif, maintenant)
+                raise ActionRefusee(motif)
+
+    # Les effets d'un **vrai joueur** passent en mode « décision » : un ``choisir`` du script ouvre
+    # une fenêtre de décision (``repondre_demande``) au lieu d'être tranché d'office (lot
+    # j-effets-cablage-service). Posé **après** ``valider`` (le drapeau n'appartient pas au coup
+    # légal, il ne doit pas en changer l'appartenance) et journalisé avec l'action, donc le rejeu
+    # reste cohérent. Les coups système, les bots et les tests du moteur n'empruntent pas ce chemin.
+    if action.type == ACTION_JOUER_OBJET and "decisions" not in action.params:
+        action = Action(
+            type=action.type, auteur=action.auteur, params={**action.params, "decisions": True}
+        )
 
     try:
         etat2, evenements = appliquer(etat_courant, action, rng)

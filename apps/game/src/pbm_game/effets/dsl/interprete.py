@@ -17,7 +17,7 @@ une demande de décision (lot ``j-effets-choix``), puisque script et contexte so
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from ...rng import Rng
 from ...state.modele import EtatPartie
@@ -420,7 +420,25 @@ def resolveur_dsl(
     programme = charger_programme(effet.params["programme"])
     ctx = _contexte_depuis_json(effet.source, effet.params["contexte"])
     resultat = executer_programme(etat, programme, ctx, rng)
-    return resultat.etat, list(resultat.evenements), []
+    return _avec_verrous(resultat.etat, resultat), list(resultat.evenements), []
+
+
+def _avec_verrous(etat: EtatPartie, resultat: ResultatProgramme) -> EtatPartie:
+    """Intègre à l'état les verrous posés par un ``empecher`` du script (R-12).
+
+    :func:`executer_programme` **rend** les verrous séparément (il ne touche pas
+    ``etat.verrous``) ; quand un script est résolu **par la pile** (lots de décisions, Dresseurs
+    câblés côté service), c'est ici qu'ils rejoignent le
+    :class:`~pbm_game.effets.verrous.JeuDeVerrous`
+    de l'état — sinon un « ne peut pas jouer de Supporter ce tour » posé via une décision serait
+    perdu en silence (interdiction du repli muet). Sans verrou, l'état est inchangé.
+    """
+    if not resultat.verrous:
+        return etat
+    from ..verrous import VERROUS_VIDES, JeuDeVerrous
+
+    base = etat.verrous if etat.verrous is not None else VERROUS_VIDES
+    return replace(etat, verrous=JeuDeVerrous(base.verrous + tuple(resultat.verrous)))
 
 
 def registre_dsl() -> RegistreEffets:
@@ -453,7 +471,7 @@ def resolveur_dsl_demandes(etat, effet, rng, gestionnaire):
     ctx = _contexte_depuis_json(effet.source, effet.params["contexte"])
     strategie = strategie_demande(gestionnaire, destinataire=ctx.joueur, regle=effet.regle)
     resultat = executer_programme(etat, programme, ctx, rng, strategie=strategie)
-    return resultat.etat, list(resultat.evenements), []
+    return _avec_verrous(resultat.etat, resultat), list(resultat.evenements), []
 
 
 __all__ = [
