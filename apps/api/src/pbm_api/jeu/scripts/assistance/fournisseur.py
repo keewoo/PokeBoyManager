@@ -161,7 +161,7 @@ class AnthropicGenerateur(GenerateurScript):
         api_key: str,
         *,
         model: str,
-        max_tokens: int = 4096,
+        max_tokens: int = 8192,
         http_client: httpx.AsyncClient | None = None,
     ) -> None:
         if not api_key:

@@ -284,3 +284,37 @@ async def test_selection_catalogue_priorite_possession(db_session):
 
     # Sans priorité injectée, pas de collection locale → aucun candidat (univers possédé vide).
     assert await runner.selectionner_effets(db_session, limite=100) == []
+
+
+@pytest.mark.asyncio
+async def test_reponse_illisible_devient_a_revoir_sans_tuer_le_passage(db_session, tmp_path):
+    """Une réponse d'IA inexploitable n'arrête PAS le passage : l'effet devient « à revoir » (nommé)
+    et les autres continuent. Sans cette robustesse, un seul débordement JSON du modèle tuait un
+    passage de plusieurs milliers d'appels (vécu avec claude-sonnet-5 au 13ᵉ effet). Ce test mord :
+    retirer le try/except de `traiter_effet` fait remonter l'exception et échouer le passage."""
+    user = await _user_joueur(db_session)
+    await _carte_possedee(db_session, user, effet=_PIOCHE_1)  # proposeur OK → scripte
+    illisible = "Un effet dont la réponse IA sera illisible."
+    await _carte_possedee(db_session, user, effet=illisible)
+
+    def handler(prompt: str) -> str:
+        if "avocat du diable" in prompt:
+            return _APPROUVE
+        if illisible in prompt:
+            return "Voici le script demandé : (de la prose, aucun objet JSON exploitable)."
+        if _PIOCHE_1 in prompt:
+            return _proposition(1)
+        return _NON_SUPPORTE
+
+    factice = FournisseurFactice(handler, usage=Usage(10, 10))
+    rapport = await runner.run(
+        db_session, generateur=factice, plafond_eur=Decimal("50"), rate_usd_eur=Decimal("0.9"),
+        model="claude-haiku-4-5", ledger_path=tmp_path / "ledger.json", limite=100,
+    )
+    assert rapport.status == "termine"  # le passage ne tombe pas
+    assert rapport.scriptes == 1  # l'effet valide passe quand même
+    assert rapport.a_revoir == 1  # l'illisible est « à revoir », pas une exception
+
+    ligne = await script_par_empreinte(db_session, empreinte_texte(illisible))
+    assert ligne.statut == "a_revoir"
+    assert "inexploitable" in (ligne.notes or "")

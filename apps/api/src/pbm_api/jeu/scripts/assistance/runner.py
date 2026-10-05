@@ -30,6 +30,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from pathlib import Path
 
+from pydantic import ValidationError
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -39,6 +40,7 @@ from pbm_api.jeu.scripts.assistance.budget import GrandLivre
 from pbm_api.jeu.scripts.assistance.familles import famille as _famille_de_texte
 from pbm_api.jeu.scripts.assistance.fournisseur import (
     GenerateurScript,
+    ReponseIllisibleError,
     parser_proposition,
     parser_verdict,
 )
@@ -315,6 +317,61 @@ async def _exemples_proches(db: AsyncSession, candidat: EffetCandidat) -> list[E
 # ---------------------------------------------------------------------- traitement d'un effet
 
 
+def _vers_eur(cost_usd: Decimal, rate_usd_eur: Decimal | None) -> Decimal:
+    """Le coût en euros, ou 0 sans taux ni dépense (jamais une valeur inventée)."""
+    if rate_usd_eur is not None and cost_usd > 0:
+        return convert_to_eur(cost_usd, rate_usd_eur)
+    return Decimal("0")
+
+
+async def _ecrire_a_revoir_illisible(
+    db: AsyncSession,
+    candidat: EffetCandidat,
+    *,
+    model: str,
+    cost_usd: Decimal,
+    rate_usd_eur: Decimal | None,
+    proposition: object | None,
+    raison: str,
+) -> tuple[ResultatPorte, Decimal, Decimal, str]:
+    """Écrit un effet « à revoir » sur réponse d'IA **inexploitable**, et rend le 4-uplet
+    attendu par le passage.
+
+    Une réponse illisible (JSON absent, tronqué au plafond de jetons, ou non conforme au schéma)
+    n'est jamais jouée « au mieux » et n'arrête **pas** le passage : l'effet devient ``a_revoir``,
+    nommé. Le script déjà parsé (échec survenu à l'étape du contradicteur) est conservé pour la
+    relecture ; sinon il est NULL. Le jeton déjà facturé est compté honnêtement (DJ8)."""
+    script = getattr(proposition, "script", None)
+    confiance = getattr(proposition, "confiance", "basse")
+    essais = getattr(proposition, "essais", None) if script else None
+    famille = _famille_de_texte(candidat.source_text, script)
+    cost_eur = _vers_eur(cost_usd, rate_usd_eur)
+    await enregistrer_script(
+        db,
+        source_text=candidat.source_text,
+        statut=verification.GATE_A_REVOIR,
+        dsl_version=(script or {}).get("version", 1),
+        script=script,
+        lang=candidat.lang,
+        author=f"assistance-ia:{model}",
+        tests=essais,
+        notes=raison,
+        review_tests_ok=False,
+        review_contradicteur=None,
+        famille=famille,
+        confidence=confiance,
+        cost_eur=cost_eur,
+    )
+    porte = ResultatPorte(
+        resultat=verification.GATE_A_REVOIR,
+        tests_ok=False,
+        contradicteur_ok=None,
+        raison=raison,
+        famille=famille,
+    )
+    return porte, cost_usd, cost_eur, confiance
+
+
 async def traiter_effet(
     db: AsyncSession,
     candidat: EffetCandidat,
@@ -329,17 +386,26 @@ async def traiter_effet(
     Le contradicteur n'est appelé **que** si les tests sont verts : on ne paie pas une contradiction
     sur un script déjà faux (économie de budget, mission point 4). Le coût agrège les deux appels
     réellement faits, depuis l'usage facturé — jamais une estimation.
+
+    Une réponse d'IA inexploitable (à la proposition ou à la contradiction) devient ``a_revoir`` via
+    :func:`_ecrire_a_revoir_illisible` : un modèle qui déborde du JSON n'arrête pas un passage de
+    plusieurs milliers d'appels (la porte de sûreté reste intacte — rien n'entre en jeu non prouvé).
     """
     exemples = await _exemples_proches(db, candidat)
     prompt = prompt_proposition(
         texte_fr=candidat.source_text, texte_en=None, exemples=exemples
     )
     reponse, usage_prop = await generateur.generer(prompt)
-    proposition = parser_proposition(reponse)
-
     cost_usd = pricing.cout_usd(
         model, input_tokens=usage_prop.input_tokens, output_tokens=usage_prop.output_tokens
     )
+    try:
+        proposition = parser_proposition(reponse)
+    except (ReponseIllisibleError, ValidationError) as exc:
+        return await _ecrire_a_revoir_illisible(
+            db, candidat, model=model, cost_usd=cost_usd, rate_usd_eur=rate_usd_eur,
+            proposition=None, raison=f"réponse IA (proposeur) inexploitable : {exc}",
+        )
 
     # Premier passage de la porte : sans verdict (pour savoir si les tests sont verts).
     pre = verification.evaluer(
@@ -353,20 +419,22 @@ async def traiter_effet(
             essais=proposition.essais,
         )
         reponse_c, usage_c = await generateur.generer(prompt_c)
-        verdict = parser_verdict(reponse_c)
         cost_usd += pricing.cout_usd(
             model, input_tokens=usage_c.input_tokens, output_tokens=usage_c.output_tokens
         )
+        try:
+            verdict = parser_verdict(reponse_c)
+        except (ReponseIllisibleError, ValidationError) as exc:
+            return await _ecrire_a_revoir_illisible(
+                db, candidat, model=model, cost_usd=cost_usd, rate_usd_eur=rate_usd_eur,
+                proposition=proposition,
+                raison=f"réponse IA (contradicteur) inexploitable : {exc}",
+            )
 
     porte = verification.evaluer(
         texte_fr=candidat.source_text, proposition=proposition, verdict=verdict
     )
-
-    cost_eur = (
-        convert_to_eur(cost_usd, rate_usd_eur)
-        if (rate_usd_eur is not None and cost_usd > 0)
-        else Decimal("0")
-    )
+    cost_eur = _vers_eur(cost_usd, rate_usd_eur)
 
     # Écriture du registre : scripté seulement si la porte le dit ; sinon nommé (non supporté / à
     # revoir), jamais joué « au mieux ». Les colonnes de revue (DJ8) portent la preuve de la porte.
@@ -441,9 +509,24 @@ async def run(
             rapport.status = "budget_epuise"
             break
 
-        porte, cost_usd, cost_eur, confiance = await traiter_effet(
-            db, candidat, generateur=generateur, model=model, rate_usd_eur=rate_usd_eur
-        )
+        try:
+            porte, cost_usd, cost_eur, confiance = await traiter_effet(
+                db, candidat, generateur=generateur, model=model, rate_usd_eur=rate_usd_eur
+            )
+        except Exception as exc:  # noqa: BLE001 — un passage de milliers d'appels ne doit pas mourir
+            # Erreur fournisseur (HTTP non-200, réseau, délai) : on NE perd PAS le passage. L'effet
+            # est compté « à revoir » au grand livre (aucune dépense sûre à imputer : coût 0), et on
+            # passe au suivant. Rien n'entre en jeu — sûreté intacte. On le DIT (jamais muet).
+            porte = ResultatPorte(
+                resultat=verification.GATE_A_REVOIR,
+                tests_ok=False,
+                contradicteur_ok=None,
+                raison=f"erreur fournisseur, effet sauté : {type(exc).__name__}: {exc}",
+                famille=_famille_de_texte(candidat.source_text, None),
+            )
+            cost_usd = Decimal("0")
+            cost_eur = Decimal("0")
+            confiance = "basse"
         livre.enregistrer(
             empreinte=candidat.empreinte,
             resultat=porte.resultat,

@@ -103,8 +103,11 @@ async def _run(args: argparse.Namespace) -> int:
 
     generateur: GenerateurScript
     if cle:
-        generateur = AnthropicGenerateur(cle, model=args.model)
-        print(f"Fournisseur : Anthropic (modèle {args.model}), plafond {plafond} €.")
+        generateur = AnthropicGenerateur(cle, model=args.model, max_tokens=args.max_tokens)
+        print(
+            f"Fournisseur : Anthropic (modèle {args.model}, max_tokens {args.max_tokens}), "
+            f"plafond {plafond} €."
+        )
     else:
         generateur = FournisseurFactice(lambda _prompt: _REPONSE_FACTICE)
         print(
@@ -148,6 +151,14 @@ async def _run(args: argparse.Namespace) -> int:
 def _parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Assistance IA pour les scripts d'effet (DJ8).")
     p.add_argument("--model", default=settings.assistance_model, help="modèle Anthropic")
+    p.add_argument(
+        "--max-tokens",
+        type=int,
+        default=8192,
+        dest="max_tokens",
+        help="plafond de jetons de sortie par appel (défaut 8192 ; trop bas = réponse tronquée "
+        "donc inexploitable, effet classé « à revoir »)",
+    )
     p.add_argument("--limite", type=int, default=100, help="nombre d'effets traités ce passage")
     p.add_argument(
         "--plafond-eur",
