@@ -18,7 +18,17 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from ..combat.cout import EVT_COUT_PAYE
-from ..effets.dsl.interprete import EVT_COUT_IMPAYABLE, EVT_DSL_PILE
+from ..demandes.moteur import (
+    EVT_DEMANDE_EMISE,
+    EVT_DEMANDE_EXPIREE,
+    EVT_DEMANDE_REPONDUE,
+)
+from ..effets.dsl.interprete import (
+    EVT_COUT_IMPAYABLE,
+    EVT_DSL_CHOIX,
+    EVT_DSL_PILE,
+    EVT_DSL_PRIMITIVE,
+)
 from ..effets.pile import EVT_EFFET_RESOLU, EVT_EFFET_SANS_CIBLE
 from ..effets.verrous import EVT_VERROU_LEVE, EVT_VERROU_POSE
 from ..journal.modele import (
@@ -70,6 +80,22 @@ def _public(evt: Evenement, pour: str, jetonneur: Jetonneur | None) -> Evenement
     même passé par ce registre, pour qu'aucun événement n'échappe au point de filtrage unique.
     """
     return evt
+
+
+def _demande_emise(evt: Evenement, pour: str, jetonneur: Jetonneur | None) -> Evenement:
+    """Demande de décision posée : le **destinataire** voit les options (il doit trancher) ; tout
+    autre joueur n'apprend que leur **nombre**, jamais les identités.
+
+    Une option peut désigner une carte d'une zone cachée (choisir dans sa main) : la montrer à
+    l'adversaire fuiterait. On applique donc la même règle que l'ensemble caché — ne diffuser à qui
+    n'est pas le destinataire que ``options_nombre``. Pour une demande à options publiques (un banc
+    adverse), c'est au plus une information retirée, jamais une fuite.
+    """
+    if pour == evt.donnees.get("destinataire"):
+        return evt
+    donnees = {cle: valeur for cle, valeur in evt.donnees.items() if cle != "options"}
+    donnees["options_nombre"] = len(evt.donnees.get("options", []))
+    return Evenement(evt.type, donnees)
 
 
 def _cartes_piochees(evt: Evenement, pour: str, jetonneur: Jetonneur | None) -> Evenement:
@@ -160,7 +186,20 @@ PROJECTEURS: dict[str, Projecteur] = {
     EVT_VERROU_POSE: _public,  # R-12 : verrou posé par une carte (nom, portée, source publique)
     EVT_VERROU_LEVE: _public,  # R-12.5 : verrou expiré — aucun secret
     EVT_DSL_PILE: _public,  # pile ou face : nombre de pièces et de faces, public par nature
+    # Une primitive DSL qui a agi (piocher, défausser, soigner…) : ne porte que des **nombres**, des
+    # ``ref`` (recherche/révélation — publiques par nature au TCG) ou des identités de Pokémon en
+    # jeu (publiques) — jamais l'``instance_id`` d'une carte d'une zone cachée (la pioche ne livre
+    # que le nombre, pas les identités). Public.
+    EVT_DSL_PRIMITIVE: _public,
+    EVT_DSL_CHOIX: _public,  # un choix d'effet : source + nombres demandé/choisi, aucune identité
     EVT_COUT_IMPAYABLE: _public,  # un coût d'effet n'a pas pu être payé — fait public
+    # Fenêtres de décision (lots j-effets-choix / j-plateau-decisions), enfin empruntées en partie
+    # réelle par le câblage des effets : la demande posée cache ses options à qui n'est pas le
+    # destinataire ; la réponse et l'expiration ne portent que l'id de la demande et le choix retenu
+    # (options déjà publiques ou identités de banc — jamais une carte d'une zone cachée ici).
+    EVT_DEMANDE_EMISE: _demande_emise,
+    EVT_DEMANDE_REPONDUE: _public,
+    EVT_DEMANDE_EXPIREE: _public,
 }
 
 

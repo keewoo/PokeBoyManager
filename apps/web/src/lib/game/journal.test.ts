@@ -59,6 +59,19 @@ describe("traduction des événements du journal", () => {
       verrou_leve: { nom: "attaque_interdite", portee: "ce_tour", source: { libelle: "Carte Piège" }, regle: "R-12", cible: null, au_tour: 2 },
       dsl_pile_ou_face: { pieces: 2, faces: 1 },
       dsl_cout_impayable: { source: { libelle: "Carte Effet" }, raison: "coût non payable" },
+      // Système d'effets de carte branché en partie réelle (lot j-effets-cablage-service).
+      dsl_primitive: { op: "piocher", source: { libelle: "Amphinobi Radieux" }, joueur: MOI, nombre: 2 },
+      dsl_choix: { source: { libelle: "Pokémon Catcher" }, demande: 1, choisis: 1 },
+      demande_emise: {
+        destinataire: MOI,
+        libelle: "Choix d'une cible",
+        categorie: "carte",
+        options: ["p-5"],
+        source: { libelle: "Pokémon Catcher" },
+        regle: "R-9.3",
+      },
+      demande_repondue: { demande_id: "d0", choix: ["p-5"] },
+      demande_expiree: { demande_id: "d0", choix: ["p-5"] },
     };
 
     for (const type of TYPES_EVENEMENT_CONNUS) {
