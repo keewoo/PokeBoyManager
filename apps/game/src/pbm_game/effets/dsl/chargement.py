@@ -62,8 +62,12 @@ from .vocabulaire import (
 _STADES: frozenset[str] = frozenset({"base", "stade1", "stade2"})
 
 # Primitives qui EXIGENT une cible principale (hors contexte d'un ``choisir``, où la cible par
-# défaut est l'ensemble choisi).
-_OPS_CIBLE_REQUISE: frozenset[str] = frozenset(
+# défaut est l'ensemble choisi). **Public** : la grammaire du prompt d'assistance IA
+# (:func:`pbm_api.jeu.scripts.assistance.gabarit.grammaire_dsl`, via
+# :mod:`pbm_game.effets.dsl.grammaire`) dérive ses « arguments requis » de ces trois ensembles —
+# jamais d'une liste recopiée à la main. Un test de cohérence (``test_grammaire_dsl``) mord si la
+# grammaire cesse de les refléter : c'est la raison d'être de leur exposition.
+OPS_CIBLE_REQUISE: frozenset[str] = frozenset(
     {
         OP_CHERCHER,
         OP_DEFAUSSER,
@@ -81,9 +85,9 @@ _OPS_CIBLE_REQUISE: frozenset[str] = frozenset(
     }
 )
 # Primitives qui EXIGENT un sélecteur source (origine) en plus de la cible (destination).
-_OPS_SOURCE_REQUISE: frozenset[str] = frozenset({OP_ATTACHER, OP_DEPLACER})
+OPS_SOURCE_REQUISE: frozenset[str] = frozenset({OP_ATTACHER, OP_DEPLACER})
 # Primitives qui EXIGENT un ``nombre`` entier strictement positif.
-_OPS_NOMBRE_REQUIS: frozenset[str] = frozenset({OP_PIOCHER, OP_POSER_COMPTEURS, OP_INFLIGER_DEGATS})
+OPS_NOMBRE_REQUIS: frozenset[str] = frozenset({OP_PIOCHER, OP_POSER_COMPTEURS, OP_INFLIGER_DEGATS})
 
 # Clés autorisées, par brique — tout le reste est refusé (strict).
 _CLES_SELECTEUR = {"zone", "proprietaire", "categorie", "stade", "nombre", "position"}
@@ -319,11 +323,11 @@ def _charger_instruction(donnees: object, quoi: str, *, dans_choix: bool) -> Ins
         raise ProgrammeInvalide(f"{quoi} : « jusqu_a_echec » ne vaut que pour « pile_ou_face ».")
 
     # --- Cible / source / nombre requis selon la primitive --------------------
-    if op in _OPS_CIBLE_REQUISE and cible is None and not dans_choix:
+    if op in OPS_CIBLE_REQUISE and cible is None and not dans_choix:
         raise ProgrammeInvalide(f"{quoi} : l'instruction « {op} » exige une cible.")
-    if op in _OPS_SOURCE_REQUISE and source is None:
+    if op in OPS_SOURCE_REQUISE and source is None:
         raise ProgrammeInvalide(f"{quoi} : l'instruction « {op} » exige une « source » (origine).")
-    if op in _OPS_NOMBRE_REQUIS and nombre is None:
+    if op in OPS_NOMBRE_REQUIS and nombre is None:
         raise ProgrammeInvalide(f"{quoi} : l'instruction « {op} » exige un « nombre ».")
     if op == OP_INFLIGER_DEGATS and nombre is not None and nombre % 10 != 0:
         raise ProgrammeInvalide(
@@ -416,4 +420,10 @@ def charger_programme(donnees: object) -> Programme:
     return Programme(version=version, effets=effets, cout=cout)
 
 
-__all__ = ["ProgrammeInvalide", "charger_programme"]
+__all__ = [
+    "ProgrammeInvalide",
+    "charger_programme",
+    "OPS_CIBLE_REQUISE",
+    "OPS_SOURCE_REQUISE",
+    "OPS_NOMBRE_REQUIS",
+]

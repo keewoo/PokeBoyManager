@@ -30,6 +30,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from pathlib import Path
 
+from pbm_game.effets.dsl.grammaire import EXEMPLES_AMORCE
 from pydantic import ValidationError
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -295,22 +296,56 @@ async def selectionner_effets(
     return candidats[:limite]
 
 
+def _amorces_proches(famille_cible: str) -> list[ExempleValide]:
+    """Les exemples **d'amorce** (prouvés) à joindre, même famille d'abord, puis complément.
+
+    :data:`~pbm_game.effets.dsl.grammaire.EXEMPLES_AMORCE` sont vérifiés en CI (chacun passe la
+    porte) : ils garantissent au prompt une forme réelle à calquer **même quand ``card_scripts`` est
+    vide** — le trou nommé au premier passage (``_exemples_proches`` ne joignait alors rien, le
+    modèle n'avait que la grammaire). On privilégie la même famille, puis on complète pour atteindre
+    :data:`_MAX_EXEMPLES`.
+    """
+    memes = [
+        ExempleValide(source_text=e["source_text"], script=e["script"])
+        for e in EXEMPLES_AMORCE
+        if _famille_de_texte(e["source_text"], e["script"]) == famille_cible
+    ]
+    autres = [
+        ExempleValide(source_text=e["source_text"], script=e["script"])
+        for e in EXEMPLES_AMORCE
+        if _famille_de_texte(e["source_text"], e["script"]) != famille_cible
+    ]
+    return (memes + autres)[:_MAX_EXEMPLES]
+
+
 async def _exemples_proches(db: AsyncSession, candidat: EffetCandidat) -> list[ExempleValide]:
     """Quelques scripts déjà validés de la **même famille** que le candidat — pour ancrer la forme.
 
     Un exemple réel (texte + script accepté) vaut mieux qu'une grammaire seule : le modèle calque
-    une forme qui marche. On n'en passe que de la même famille, pour rester pertinent.
+    une forme qui marche. On n'en passe que de la même famille, pour rester pertinent. À défaut
+    (``card_scripts`` vide, ou trop peu d'exemples de la famille), on **complète** avec les
+    exemples d'amorce prouvés (:func:`_amorces_proches`) — jamais un prompt sans forme à calquer.
     """
     famille_cible = _famille_de_texte(candidat.source_text, None)
     scriptes = [s for s in await tous_les_scripts(db) if s.statut == SCRIPT_STATUT_SCRIPTE]
     exemples: list[ExempleValide] = []
+    vus: set[str] = set()
     for s in scriptes:
         if s.script is None:
             continue
         if _famille_de_texte(s.source_text, s.script) == famille_cible:
             exemples.append(ExempleValide(source_text=s.source_text, script=s.script))
+            vus.add(s.source_text)
         if len(exemples) >= _MAX_EXEMPLES:
             break
+    if len(exemples) < _MAX_EXEMPLES:
+        for amorce in _amorces_proches(famille_cible):
+            if amorce.source_text in vus:
+                continue
+            exemples.append(amorce)
+            vus.add(amorce.source_text)
+            if len(exemples) >= _MAX_EXEMPLES:
+                break
     return exemples
 
 
