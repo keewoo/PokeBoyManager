@@ -52,7 +52,12 @@ pas d'UAT.
 1. **La CI est verte** sur le commit à livrer (GitHub Actions fait foi — voir `docs/CODE.md`).
 2. **chimera construit** les artefacts (front Next.js, API, dépendances).
 3. **Transfert** vers `/srv/pokeboy/prod/releases/<horodatage>/` — le groupe `pokeboy` y écrit,
-   c'est fait pour ça.
+   c'est fait pour ça. Sur **devAI**, les artefacts en transit passent par
+   `/Volumes/Data/DevAI/pokeboy/tmp/` et en sont supprimés après la livraison — **jamais** par `/tmp`
+   ni le disque système (règle de flotte de JF, 06/10/2026 : le disque système de devAI a frôlé la
+   saturation deux fois ; détail dans `~/.claude/CLAUDE.md` de devAI, § Espace de dev local). Volume
+   absent : on s'arrête et on le dit. Les worktrees transitoires d'une livraison vont dans
+   `/Volumes/Data/DevAI/pokeboy/worktrees/`.
 4. **Bascule** : `app/` pointe sur la nouvelle version.
 5. **Migrations** Alembic appliquées.
 6. `systemctl restart pokeboy-prod-{api,worker,web}`.
