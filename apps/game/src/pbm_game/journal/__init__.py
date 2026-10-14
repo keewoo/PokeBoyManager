@@ -12,7 +12,8 @@ rejouer le journal redonne exactement le même état.
   ``(etat, evenements)``, :func:`jouer`, :func:`partie_neuve` et le :data:`REGISTRE` des
   transitions mécaniques (mélange, pioche, phases) ;
 * :mod:`~pbm_game.journal.rejeu` — :func:`rejouer`, :func:`compacter`, :func:`reprendre`
-  (instantané + queue) et :class:`RejeuDivergent` ;
+  (instantané + queue), :func:`etapes` / :func:`etapes_partie` (la suite des états, pour le
+  **replay**) et :class:`RejeuDivergent` ;
 * :mod:`~pbm_game.journal.serialisation` — ``*_vers_json`` / ``*_depuis_json`` (round-trip exact) ;
 * :mod:`~pbm_game.journal.debogage` — :func:`decrire_entree` : une entrée lisible par un
   humain, identifiants de cartes résolus en noms.
@@ -69,8 +70,11 @@ from .modele import (
     Partie,
 )
 from .rejeu import (
+    Etape,
     RejeuDivergent,
     compacter,
+    etapes,
+    etapes_partie,
     rejouer,
     reprendre,
     reprendre_partie,
@@ -148,6 +152,10 @@ __all__ = [
     "reprendre",
     "reprendre_partie",
     "RejeuDivergent",
+    # replay : la suite des états (lot `j-replay`)
+    "Etape",
+    "etapes",
+    "etapes_partie",
     # sérialisation
     "action_vers_json",
     "action_depuis_json",

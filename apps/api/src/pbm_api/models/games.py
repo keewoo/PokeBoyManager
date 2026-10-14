@@ -161,6 +161,50 @@ class GamePlayer(Base, TimestampMixin):
     adversaire_ia: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
 
 
+class GameReplayShare(Base):
+    """Un compte à qui un joueur a **ouvert le replay** de cette partie (lot ``j-replay``).
+
+    Le replay d'une partie finie est visible de ses deux joueurs de droit. Au-delà, il faut un
+    geste : un joueur ouvre son replay à un **compte invité** (D11) nommément, et cette table en
+    garde la trace. Un compte absent de cette table et des sièges de la partie reçoit **404** sur
+    le replay — comme pour toute ressource d'autrui, pas 403 (pas de fuite d'existence).
+
+    **Le droit vit ici, pas dans un jeton d'URL.** Un lien porteur (``?jeton=…``) serait une
+    autorisation qui voyage : collée dans une conversation, journalisée par un intermédiaire,
+    gardée dans un historique, elle ouvre la partie à qui la détient — ce que le critère du lot
+    (« le lien de replay n'est pas accessible à un compte non autorisé ») interdit précisément. Le
+    lien partagé est donc l'URL ordinaire du replay ; ce qui se partage, c'est le **droit**, et il
+    se **retire** (ligne supprimée) aussi vite qu'il s'accorde.
+
+    Ne porte pas de ``TimestampMixin`` : un partage ne se met pas à jour — on l'ouvre, ou on le
+    ferme. ``created_by_user_id`` dit **quel joueur** l'a ouvert (les deux peuvent le faire, et
+    chacun peut fermer un partage de la partie : ils sont deux à y figurer).
+    """
+
+    __tablename__ = "game_replay_shares"
+    __table_args__ = (
+        UniqueConstraint("game_id", "user_id", name="uq_game_replay_shares_game_user"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    game_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("games.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    # Le compte autorisé à regarder le replay.
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    # Le joueur qui a ouvert ce partage (toujours un participant de la partie).
+    created_by_user_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
 class GameEvent(Base):
     """Une entrée du **journal** d'une partie — numérotée, *append-only*, autosuffisante.
 

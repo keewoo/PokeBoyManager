@@ -136,3 +136,26 @@ class BilanOut(BaseModel):
 
     resume: str
     moments: list[MomentBilanOut]
+
+
+class PartageReplayIn(BaseModel):
+    """Ouvrir le replay à un compte invité, désigné par son **pseudo** (lot `j-replay`).
+
+    Le pseudo, pas l'e-mail : c'est l'identifiant public d'un joueur (comme pour une invitation à
+    jouer), et il n'apprend rien à qui le saisit — une adresse, si.
+    """
+
+    pseudo: str = Field(min_length=1, max_length=64)
+
+
+class PartageReplayOut(BaseModel):
+    """Un compte à qui le replay est ouvert : qui, par qui, et depuis quand.
+
+    Aucune adresse e-mail : le pseudo suffit à reconnaître la personne à l'écran, et un partage ne
+    justifie pas d'exposer l'adresse d'un autre compte.
+    """
+
+    user_id: uuid.UUID
+    pseudo: str | None
+    partage_par_user_id: uuid.UUID
+    created_at: datetime

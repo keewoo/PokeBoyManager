@@ -60,6 +60,7 @@ from pbm_api.models.games import (
     Game,
     GameEvent,
     GamePlayer,
+    GameReplayShare,
     GameSnapshot,
 )
 from pbm_api.models.identification import (
@@ -127,6 +128,7 @@ __all__ = [
     "GamePlayer",
     "GameEvent",
     "GameSnapshot",
+    "GameReplayShare",
     "GAME_STATUS_EN_COURS",
     "GAME_STATUS_TERMINEE",
     "GAME_STATUS_EXPIREE",
