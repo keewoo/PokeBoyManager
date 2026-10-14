@@ -9924,7 +9924,7 @@
       }
     },
     "j-anim-evolution-ko": {
-      "statut": "a_faire",
+      "statut": "integre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
@@ -9976,8 +9976,21 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-10-14T20:31+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": "branche roadmap/j-anim-evolution-ko fusionnee dans main (verifie par git merge-base)"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": {
+        "quand": "2026-10-14T20:31+0200",
+        "raisons": [
+          "branche roadmap/j-anim-evolution-ko fusionnee dans main (verifie par git merge-base)"
+        ]
+      }
     },
     "j-anim-pokemon-apparition": {
       "statut": "a_faire",
