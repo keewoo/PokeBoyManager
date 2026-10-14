@@ -30,6 +30,7 @@ from pbm_api.detection.seconde_passe import evaluer as evaluer_seconde_passe
 from pbm_api.detection.service import run_detection_for_upload
 from pbm_api.email import get_email_sender
 from pbm_api.export.service import run_export
+from pbm_api.games.fin_compte import reprendre_fins_non_enregistrees
 from pbm_api.games.service import expirer_parties, purger
 from pbm_api.identification.service import run_identification_for_upload
 from pbm_api.imports.errors import (
@@ -601,12 +602,26 @@ async def games_maintenance_task(ctx: dict) -> dict:
     muet) ; `purger` supprime ensuite les parties mortes anciennes et les instantanés superflus. Le
     résultat est journalisé (compte de clôtures, métrique de purge) : un balayage qui n'a rien fait
     le **dit**.
+
+    ⚠️ **L'ordre des trois étapes n'est pas cosmétique.** `reprendre_fins_non_enregistrees` (lot
+    `j-fin-effets-compte`) rattrape les parties closes dont la trace sur les comptes manque — un
+    serveur tué entre le commit du coup et celui de la trace, ou une partie close avant ce lot. Elle
+    tourne **après** la clôture des fantômes (qui vient d'en produire) et **avant** la purge : une
+    partie purgée n'a plus de journal, donc plus de chiffres à recalculer, et sa trace serait perdue
+    pour de bon.
     """
     async with async_session_factory() as session:
         closes = await expirer_parties(session)
     async with async_session_factory() as session:
+        clotures = await reprendre_fins_non_enregistrees(session)
+    async with async_session_factory() as session:
         metrique = await purger(session)
-    rapport = {"parties_closes": closes, **metrique}
+    rapport = {
+        "parties_closes": closes,
+        "clotures_reprises": clotures["reprises"],
+        "clotures_restantes": clotures["restantes"],
+        **metrique,
+    }
     logger.info("maintenance des parties : %s", rapport)
     return rapport
 

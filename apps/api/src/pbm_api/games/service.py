@@ -679,6 +679,24 @@ async def _piloter(
     return etat, evts
 
 
+# --- Trace de fin sur les comptes (lot `j-fin-effets-compte`) ----------------
+
+
+async def _enregistrer_fin_si_due(db: AsyncSession, game: Game) -> None:
+    """Écrit sur les comptes ce que cette partie laisse, si elle vient d'être close.
+
+    Appelée **après le commit** de chaque coup, par les deux chemins d'écriture du service (coup de
+    joueur et coup système). Elle n'écrit rien si la partie est encore en cours, et n'écrit **qu'une
+    fois** par partie — l'unicité de ``game_results.game_id`` s'en charge, pas un ``if``.
+
+    Import local, comme pour le bot : :mod:`pbm_api.games.fin_compte` importe ce service (il lui
+    emprunte la lecture du journal), l'importer au chargement créerait un cycle.
+    """
+    from pbm_api.games.fin_compte import enregistrer_fin_si_due
+
+    await enregistrer_fin_si_due(db, game)
+
+
 async def demarrer_partie(
     db: AsyncSession, game: Game, maintenant: datetime | None = None
 ) -> None:
@@ -916,7 +934,7 @@ async def _appliquer_action_verifiee(
     await _notifier_apres_coup(db, game, etat_avant_coup, etat_courant, maintenant)
 
     await db.commit()
-    return ResultatAction(
+    resultat = ResultatAction(
         numero=numero_joueur,
         evenements=evts_json,
         empreinte=game.current_empreinte,
@@ -929,6 +947,8 @@ async def _appliquer_action_verifiee(
         horloges=_adapt_horloges.restant_json(game.horloges, maintenant.timestamp()),
         commentaires=commentaires,
     )
+    await _enregistrer_fin_si_due(db, game)
+    return resultat
 
 
 # --- Notifications issues d'un coup (lot `j-notifications-jeu`) --------------
@@ -1114,7 +1134,7 @@ async def _appliquer_coup(
     # naît « partie terminée par forfait ».
     await _notifier_apres_coup(db, game, etat_courant, etat2, maintenant)
     await db.commit()
-    return ResultatAction(
+    resultat = ResultatAction(
         numero=entree.numero,
         evenements=[dict(e) for e in brut["evenements"]],
         empreinte=empr,
@@ -1126,6 +1146,11 @@ async def _appliquer_coup(
         rng_compteurs=rng.compteurs(),
         horloges=_adapt_horloges.restant_json(game.horloges, ts),
     )
+    # Abandon, désertion, défaite au temps, expiration pour inactivité : toutes les fins anormales
+    # passent par ici, donc toutes laissent la même trace que la fin par les règles (mission du lot
+    # `j-fin-effets-compte` : « le même chemin d'écriture »).
+    await _enregistrer_fin_si_due(db, game)
+    return resultat
 
 
 async def abandonner_partie(
