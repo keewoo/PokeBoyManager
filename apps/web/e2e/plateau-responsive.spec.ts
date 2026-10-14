@@ -232,6 +232,57 @@ test.describe("Plateau : toutes les zones sans défilement sur un téléphone en
   });
 });
 
+test.describe("Décors d'arène : changer d'endroit ne déplace rien", () => {
+  // Lot `j-arene-decors`, critère : « le changement de décor n'affecte ni la disposition ni la
+  // lisibilité ». Le contraste est mesuré par le calcul (`src/__tests__/contraste-decors.test.ts`,
+  // 624 mesures) ; ce qu'un test de calcul ne peut PAS faire, c'est mesurer une mise en page. C'est
+  // donc ici, dans un vrai navigateur, sur le téléphone de référence, que la seconde moitié du
+  // critère se vérifie — et sur les six décors, pas sur un échantillon.
+  //
+  // Le décor est lu depuis `GET /jeu/confort/reglages` : on l'intercepte plutôt que de poser
+  // l'attribut à la main, pour que le test couvre aussi le **branchement** (réglage → plateau) et
+  // pas seulement le CSS.
+  for (const decor of ["arene", "caldeira", "lagon", "orage", "temple", "faille"]) {
+    test(`décor « ${decor} » : aucun défilement, les zones restent dans l'écran`, async ({
+      page,
+    }) => {
+      const email = uniqueEmail();
+      seedGameAccess(email);
+      await login(page, email);
+      await page.route(/\/jeu\/confort\/reglages$/, (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            animations: "completes",
+            taille_texte: "normale",
+            temps_rallonge: false,
+            decor,
+            animations_possibles: ["completes", "reduites"],
+            tailles_possibles: ["grande", "normale", "tres_grande"],
+            decors_possibles: ["arene", "caldeira", "lagon", "orage", "temple", "faille"],
+            facteur_temps_rallonge: 2,
+          }),
+        }),
+      );
+      await stubPartie(page);
+
+      await page.setViewportSize(PAYSAGE);
+      await page.goto("/jeu/parties/simulee");
+      await expect(page.getByTestId("plateau")).toBeVisible();
+
+      // Le réglage est bien arrivé jusqu'à l'arène (sinon le test ne mesurerait qu'un défaut).
+      await expect(page.locator(".pbm-arena")).toHaveAttribute("data-decor", decor);
+
+      // Et le plateau est exactement aussi utilisable qu'avec le décor d'origine.
+      await expect(page.getByRole("button", { name: /Mon actif/ })).toBeInViewport();
+      await expect(page.getByRole("button", { name: /Actif adverse/ })).toBeInViewport();
+      await expect(page.getByTestId("main-joueur")).toBeInViewport();
+      await assertNoScroll(page, `plateau @ 844×390 avec le décor « ${decor} »`);
+    });
+  }
+});
+
 test.describe("Fin de partie : l'écran de fin n'allonge pas la page du plateau", () => {
   test("partie finie en paysage puis en portrait : aucun défilement", async ({ page }) => {
     // Le risque est connu de ce dépôt : un panneau ajouté en flux normal sur `/jeu/parties/{id}`

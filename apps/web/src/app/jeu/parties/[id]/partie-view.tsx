@@ -18,6 +18,7 @@ import { ACTION_REPONDRE_DEMANDE } from "@/lib/game/decision";
 import { agisseurDepuisEvenements } from "@/lib/game/indicateurs";
 import { estPremierePartie, marquerGuideVu } from "@/lib/game/guide";
 import { construireJournal } from "@/lib/game/journal";
+import { useDecorArene } from "@/lib/game/use-decor";
 import type { VueActionLegale, VuePartie } from "@/lib/game/plateau";
 import { getProfile } from "@/lib/api/profile";
 
@@ -272,6 +273,11 @@ export function PartieView({ gameId }: { gameId: string }) {
     [coups, vue],
   );
 
+  // Décor de l'arène (lot `j-arene-decors`) : mon choix s'il existe, sinon le thème de mon deck.
+  // Posé ici, avec les autres hooks dérivés : `notFound()` juste en dessous est un retour
+  // anticipé, et un hook placé après lui n'est pas appelé à tous les rendus (React refuse).
+  const arene = useDecorArene(vue);
+
   if (denied || introuvable) {
     notFound();
     return null;
@@ -300,6 +306,8 @@ export function PartieView({ gameId }: { gameId: string }) {
             animationAcceleree={anim.mode === "accelere"}
             effetTypee={anim.effetTypee}
             moment={moments.moment}
+            decor={arene.decor}
+            decorMoment={arene.moment}
             premierePartie={premierePartie}
           />
           <JournalPanel lignes={lignes} onSurvol={setSurligne} />

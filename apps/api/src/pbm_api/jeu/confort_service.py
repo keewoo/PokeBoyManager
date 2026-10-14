@@ -19,11 +19,12 @@ from pbm_api.jeu.confort import (
     ReglagesConfort,
     temps_rallonge_partie,
 )
+from pbm_api.jeu.decors import DECORS_CONNUS, decor_valide
 from pbm_api.models import JeuConfortReglages
 
 
 class ConfortValeurInvalide(ValueError):
-    """Une valeur hors vocabulaire (:data:`~pbm_api.jeu.confort.ANIMATIONS` / ``TAILLES_TEXTE``)."""
+    """Une valeur hors vocabulaire (``ANIMATIONS``, ``TAILLES_TEXTE`` ou ``DECORS_CONNUS``)."""
 
 
 def _depuis_ligne(ligne: JeuConfortReglages | None) -> ReglagesConfort:
@@ -38,6 +39,7 @@ def _depuis_ligne(ligne: JeuConfortReglages | None) -> ReglagesConfort:
         animations=ligne.animations,
         taille_texte=ligne.taille_texte,
         temps_rallonge=ligne.temps_rallonge,
+        decor=ligne.decor,
     )
 
 
@@ -53,6 +55,8 @@ async def enregistrer_reglages(
     animations: str | None = None,
     taille_texte: str | None = None,
     temps_rallonge: bool | None = None,
+    decor: str | None = None,
+    decor_fourni: bool = False,
 ) -> ReglagesConfort:
     """Écrit les réglages (création de la ligne au premier passage) et rend l'état complet.
 
@@ -60,6 +64,11 @@ async def enregistrer_reglages(
     animations sans renvoyer la taille du texte, donc sans écraser un réglage changé dans un autre
     onglet. Une valeur hors vocabulaire lève :class:`ConfortValeurInvalide` **avant** toute
     écriture : rien n'est enregistré à moitié.
+
+    ``decor`` a besoin de **deux** paramètres, et c'est la seule façon correcte de le faire : pour
+    ce réglage, ``None`` est une valeur qui veut dire quelque chose (« reviens au thème
+    automatique »), donc elle ne peut pas aussi vouloir dire « ne touche pas à ce champ ».
+    ``decor_fourni`` porte cette distinction ; sans lui, revenir à l'automatique serait impossible.
     """
     if animations is not None and animations not in ANIMATIONS:
         raise ConfortValeurInvalide(
@@ -69,6 +78,11 @@ async def enregistrer_reglages(
         raise ConfortValeurInvalide(
             f"taille_texte « {taille_texte} » inconnue (attendues : {sorted(TAILLES_TEXTE)})"
         )
+    if decor_fourni and not decor_valide(decor):
+        raise ConfortValeurInvalide(
+            f"decor « {decor} » inconnu (attendus : {sorted(DECORS_CONNUS)}, ou aucun pour le "
+            "thème automatique)"
+        )
     ligne = await db.get(JeuConfortReglages, user_id)
     if ligne is None:
         defauts = ReglagesConfort()
@@ -77,6 +91,7 @@ async def enregistrer_reglages(
             animations=defauts.animations,
             taille_texte=defauts.taille_texte,
             temps_rallonge=defauts.temps_rallonge,
+            decor=defauts.decor,
         )
         db.add(ligne)
     if animations is not None:
@@ -85,6 +100,8 @@ async def enregistrer_reglages(
         ligne.taille_texte = taille_texte
     if temps_rallonge is not None:
         ligne.temps_rallonge = temps_rallonge
+    if decor_fourni:
+        ligne.decor = decor
     await db.flush()
     return _depuis_ligne(ligne)
 

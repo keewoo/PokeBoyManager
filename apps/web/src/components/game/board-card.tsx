@@ -493,7 +493,7 @@ export function EmptySlot({ etiquette, className }: { etiquette: string; classNa
   return (
     <div
       className={cn(
-        "flex aspect-[63/88] items-center justify-center rounded-[0.45em] border border-dashed border-[rgba(255,255,255,0.28)] text-center text-[0.6em] uppercase tracking-[0.06em] text-muted-foreground",
+        "flex aspect-[63/88] items-center justify-center rounded-[0.45em] border border-dashed border-[rgba(255,255,255,0.45)] text-center text-[0.6em] uppercase tracking-[0.06em] text-muted-foreground",
         className,
       )}
     >

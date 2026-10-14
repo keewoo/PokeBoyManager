@@ -23,6 +23,7 @@ import {
   reduire,
 } from "@/lib/game/interactions";
 import type { Animation } from "@/lib/game/animations";
+import { DECOR_DEFAUT, type MomentJour } from "@/lib/game/decors";
 import type { EtatConnexion } from "@/lib/game/realtime";
 import {
   BANC_MAX,
@@ -114,6 +115,18 @@ export type GameBoardProps = {
    * sur le parcours guidé. C'est le conteneur de partie qui tranche (mémoire du navigateur) ; le
    * plateau ne fait que porter la réponse.
    */
+  /**
+   * Clé du **décor d'arène** à peindre sous le plateau (lot `j-arene-decors`). Absente, c'est le
+   * décor par défaut — celui du plateau d'origine, donc rien ne change pour l'appelant qui ignore
+   * cette prop (le replay, notamment).
+   *
+   * Le décor est purement décoratif : il ne pose aucune couche au-dessus des cartes et ne touche
+   * ni à la disposition ni à la taille de police de l'arène. C'est ce qui permet de le changer
+   * sans rien casser, et c'est vérifié (`e2e/plateau-responsive.spec.ts`).
+   */
+  decor?: string;
+  /** Éclairage du décor : `"jour"` ou `"nuit"` (variation d'ambiance selon l'heure locale). */
+  decorMoment?: MomentJour;
   premierePartie?: boolean;
 };
 
@@ -177,7 +190,7 @@ function Recompenses({ restantes, pour }: { restantes: number; pour: string }) {
             "aspect-[63/88] w-[1.1em] rounded-[0.15em]",
             i < restantes
               ? "bg-[linear-gradient(150deg,#FFE08A,#C98A12)] shadow-[0_0_0.4em_rgba(242,193,78,0.5)]"
-              : "border border-dashed border-[rgba(255,255,255,0.3)]",
+              : "border border-dashed border-[rgba(255,255,255,0.45)]",
           )}
         />
       ))}
@@ -354,6 +367,8 @@ export function GameBoard({
   animationAcceleree = false,
   effetTypee = null,
   moment = null,
+  decor = DECOR_DEFAUT,
+  decorMoment = "jour",
   premierePartie = false,
 }: GameBoardProps) {
   const { moi, adversaire } = separerCamps(vue);
@@ -430,7 +445,12 @@ export function GameBoard({
           l'arène via `cqh` — l'arène ne peut pas interroger sa propre taille. */}
       <div className="pbm-arena-box flex min-h-0 flex-1">
         <div
-          className="pbm-arena relative flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-2xl bg-[radial-gradient(70%_80%_at_50%_50%,#0E2A1E,#06120B)] text-[#EAF3EE] shadow-[0_20px_50px_-30px_rgba(0,0,0,0.9)]"
+          className="pbm-arena relative flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-2xl text-[#EAF3EE] shadow-[0_20px_50px_-30px_rgba(0,0,0,0.9)]"
+          // Le fond n'est plus écrit ici : il vient du décor (lot `j-arene-decors`), peint en
+          // dégradés par `globals.css` à partir des quatre teintes de `lib/game/decors.ts`. Le
+          // décor par défaut reprend exactement les teintes d'origine (#0E2A1E → #06120B).
+          data-decor={decor}
+          data-decor-moment={decorMoment}
           // Le plateau tremble pour les types qui le demandent (l'éclair, l'impact de Combat) :
           // un `transform` sur une boîte déjà `overflow-hidden`, donc rien ne déborde et rien ne
           // défile — le plateau n'accepte aucun défilement (lot `j-plateau-layout`).
@@ -489,7 +509,7 @@ export function GameBoard({
 
           {/* Ligne centrale : le Stade est partagé, posé au milieu. */}
           <div className="flex items-center gap-[0.8em] text-[0.6em] uppercase tracking-[0.14em] text-[#9FD9BC] opacity-75">
-            <span className="h-px flex-1 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.35),transparent)]" />
+            <span className="h-px flex-1 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.45),transparent)]" />
             {vue.stade ? (
               <span className="w-[4.6875em]">
                 <BoardCard
@@ -507,7 +527,7 @@ export function GameBoard({
             ) : (
               <span className="normal-case">Stade (aucun)</span>
             )}
-            <span className="h-px flex-1 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.35),transparent)]" />
+            <span className="h-px flex-1 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.45),transparent)]" />
           </div>
 
           {/* Rang joueur */}

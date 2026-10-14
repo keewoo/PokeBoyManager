@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { SEUIL_TEXTE, contraste } from "@/lib/a11y/contraste";
 import { ELEMENTS, styleElement } from "@/lib/game/indicateurs";
 
 /**
@@ -19,27 +20,10 @@ import { ELEMENTS, styleElement } from "@/lib/game/indicateurs";
  * grand texte), parce que ces abréviations sont minuscules sur le plateau.
  */
 
-/** Luminance relative d'une couleur `#rrggbb` (formule WCAG 2.x, 1.4.3). */
-function luminance(hex: string): number {
-  const valeur = hex.replace("#", "");
-  const [r, g, b] = [0, 2, 4]
-    .map((i) => parseInt(valeur.slice(i, i + 2), 16) / 255)
-    .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)) as [
-    number,
-    number,
-    number,
-  ];
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-/** Rapport de contraste entre deux couleurs (1:1 à 21:1). */
-function contraste(a: string, b: string): number {
-  const la = luminance(a);
-  const lb = luminance(b);
-  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
-}
-
-const SEUIL_AA = 4.5;
+// Le calcul vit dans `@/lib/a11y/contraste` depuis le lot `j-arene-decors`, qui en a besoin pour
+// mesurer les décors : deux copies d'une formule WCAG, c'est deux occasions de la corriger à
+// moitié. Le seuil garde son nom local, utilisé dans les messages d'échec ci-dessous.
+const SEUIL_AA = SEUIL_TEXTE;
 
 describe("contraste des repères du jeu", () => {
   it("vérifie son propre calcul sur les deux extrêmes connus", () => {

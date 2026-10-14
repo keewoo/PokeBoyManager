@@ -10,6 +10,11 @@
 
 ## Les trois réglages du joueur — `/jeu/confort`
 
+> Depuis le lot `j-arene-decors`, cet écran en porte un **quatrième** : le **décor de l'arène**.
+> Il n'a rien d'un réglage d'accessibilité — il est là parce que c'est la même sorte de réglage
+> (il ne change aucune règle, il suit le compte) et qu'un enfant cherche « comment c'est beau » et
+> « comment ça bouge » au même endroit. Il a sa fiche : `docs/jeu/DECORS.md`.
+
 | Réglage | Ce qu'il fait | Où il vit |
 |---|---|---|
 | **animations** | `completes` (défaut) ou `reduites` : plus aucune animation n'est rendue, l'état du plateau reste lisible | `jeu_confort_reglages.animations` |

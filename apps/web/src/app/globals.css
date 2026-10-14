@@ -343,6 +343,96 @@ html[data-texte="tres_grande"]:not([data-ecran="plateau"]) {
 }
 
 /* ===================================================================================
+   Décors d'arène (lot `j-arene-decors`)
+   Six endroits où jouer, peints en dégradés — AUCUNE image : six décors en JPG, c'était
+   ~1,8 Mo pour de la décoration (les quatre fichiers de `public/arenes/` pèsent 1,24 Mo
+   à eux seuls), et un fond photographique dont on ne peut pas CALCULER le contraste.
+   Ici, chaque décor n'a que quatre teintes porteuses, toutes déclarées dans
+   `lib/game/decors.ts` : `src/__tests__/contraste-decors.test.ts` les mesure contre les
+   quinze repères du plateau, et `decors-css-garde.test.ts` vérifie que ce fichier et la
+   table ne peuvent pas diverger.
+   La nuit n'est jamais recopiée : elle est DÉRIVÉE par `color-mix` (voir plus bas), pour
+   que corriger une teinte de jour corrige sa nuit du même geste.
+   =================================================================================== */
+
+/* Le fond est porté par l'attribut, pas par une classe d'arène : l'arène du plateau et la
+   vignette de l'écran de choix sont ainsi peintes par le MÊME code, donc la vignette ne peut
+   pas montrer autre chose que ce qui sera joué.
+   Jour : les teintes de base, telles quelles. */
+[data-decor] {
+  --pbm-decor-tapis: var(--pbm-decor-tapis-base);
+  --pbm-decor-fond: var(--pbm-decor-fond-base);
+  --pbm-decor-bord: var(--pbm-decor-bord-base);
+  --pbm-decor-lueur: var(--pbm-decor-lueur-base);
+
+  background-color: var(--pbm-decor-fond);
+  /* Trois couches, du centre vers le bord. Les seules couleurs qui ÉCLAIRCISSENT sont les
+     quatre teintes du décor ; les stops de fondu sont transparents et le vignettage est
+     noir — ils ne peuvent qu'assombrir, donc jamais abaisser le contraste des repères
+     clairs posés par-dessus. C'est ce qui rend la mesure du test suffisante. */
+  background-image:
+    radial-gradient(46% 56% at 50% 53%, var(--pbm-decor-tapis) 0%, rgba(0, 0, 0, 0) 74%),
+    radial-gradient(135% 72% at 50% -14%, var(--pbm-decor-lueur) 0%, rgba(0, 0, 0, 0) 58%),
+    radial-gradient(102% 118% at 50% 55%, rgba(0, 0, 0, 0) 40%, var(--pbm-decor-bord) 100%);
+}
+
+/* Nuit : chaque teinte assombrie vers le noir — on baisse la lumière, on ne repeint pas. `teintesNuit()` de `lib/game/decors.ts`
+   applique exactement ce calcul — la part (72 %) et l'appoint (noir) y sont les constantes
+   `NUIT_PART` et `NUIT_APPOINT`, et la garde CSS vérifie qu'elles correspondent. */
+[data-decor][data-decor-moment="nuit"] {
+  --pbm-decor-tapis: color-mix(in srgb, var(--pbm-decor-tapis-base) 72%, #000000);
+  --pbm-decor-fond: color-mix(in srgb, var(--pbm-decor-fond-base) 72%, #000000);
+  --pbm-decor-bord: color-mix(in srgb, var(--pbm-decor-bord-base) 72%, #000000);
+  --pbm-decor-lueur: color-mix(in srgb, var(--pbm-decor-lueur-base) 72%, #000000);
+}
+
+/* Les six décors. `arene` reprend les teintes du fond livré par `j-plateau-layout` : le défaut
+   ne change rien à ce que le joueur connaît déjà. */
+[data-decor="arene"] {
+  --pbm-decor-tapis-base: #0e2a1e;
+  --pbm-decor-fond-base: #06120b;
+  --pbm-decor-bord-base: #030a06;
+  --pbm-decor-lueur-base: #15402c;
+}
+[data-decor="caldeira"] {
+  --pbm-decor-tapis-base: #2a1008;
+  --pbm-decor-fond-base: #150603;
+  --pbm-decor-bord-base: #0a0301;
+  --pbm-decor-lueur-base: #4a1608;
+}
+[data-decor="lagon"] {
+  --pbm-decor-tapis-base: #06223a;
+  --pbm-decor-fond-base: #03101d;
+  --pbm-decor-bord-base: #010710;
+  --pbm-decor-lueur-base: #0b3a5e;
+}
+[data-decor="orage"] {
+  --pbm-decor-tapis-base: #1b1c2e;
+  --pbm-decor-fond-base: #0c0d18;
+  --pbm-decor-bord-base: #05060c;
+  --pbm-decor-lueur-base: #33355a;
+}
+[data-decor="temple"] {
+  --pbm-decor-tapis-base: #1e1030;
+  --pbm-decor-fond-base: #0f0819;
+  --pbm-decor-bord-base: #07040d;
+  --pbm-decor-lueur-base: #38175a;
+}
+[data-decor="faille"] {
+  --pbm-decor-tapis-base: #101418;
+  --pbm-decor-fond-base: #07090c;
+  --pbm-decor-bord-base: #020304;
+  --pbm-decor-lueur-base: #1c2630;
+}
+
+/* Vignette de l'écran de choix : juste une boîte au bon format — le fond lui vient du bloc
+   `[data-decor]` ci-dessus, comme pour l'arène. */
+.pbm-decor-vignette {
+  aspect-ratio: 16 / 9;
+  border-radius: 0.75rem;
+}
+
+/* ===================================================================================
    Socle d'animation (lot `j-anim-socle`)
    Une règle, et elle est gardée par un test (`src/__tests__/anim-css-garde.test.ts`) :
    les images-clés `pbm-anim-*` n'animent QUE `transform` et `opacity`. Ce sont les deux

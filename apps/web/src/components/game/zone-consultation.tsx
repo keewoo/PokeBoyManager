@@ -35,7 +35,7 @@ function PileBouton({
     "flex aspect-[63/88] w-[4.6875em] flex-col items-center justify-center gap-[0.15em] rounded-[0.4em] border text-center",
     onClick
       ? "cursor-pointer border-[rgba(255,215,0,0.5)] bg-[rgba(255,215,0,0.08)] hover:bg-[rgba(255,215,0,0.16)]"
-      : "border-[rgba(255,255,255,0.3)] bg-[rgba(255,255,255,0.06)]",
+      : "border-[rgba(255,255,255,0.45)] bg-[rgba(255,255,255,0.06)]",
     className,
   );
   const contenu = (

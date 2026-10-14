@@ -16,10 +16,14 @@ import {
   libelleAnimations,
   libelleTailleTexte,
 } from "@/lib/game/confort";
+import { DECORS, DECORS_REGLABLES, momentPourHeure } from "@/lib/game/decors";
 
 /**
- * Écran « Confort de jeu » (`/jeu/confort`, lot `j-accessibilite-jeu`) : trois réglages, en
- * français d'enfant, et chacun dit ce qu'il change vraiment.
+ * Écran « Confort de jeu » (`/jeu/confort`, lot `j-accessibilite-jeu`) : quatre réglages, en
+ * français d'enfant, et chacun dit ce qu'il change vraiment. Le quatrième, le **décor d'arène**
+ * (lot `j-arene-decors`), est arrivé ici plutôt que sur un écran à lui : c'est la même sorte de
+ * réglage que les trois autres — il ne change aucune règle, il suit le compte, et un enfant qui
+ * cherche « comment c'est beau » et « comment ça bouge » les cherche au même endroit.
  *
  * Un compte sans droit d'accès au jeu reçoit une **page inexistante** (`notFound()`) : l'API lui
  * répond déjà 404 sur toutes les routes du jeu (D11).
@@ -138,6 +142,74 @@ export function ConfortView() {
             </label>
           ))}
         </div>
+      </section>
+
+      <section className="mt-8" aria-labelledby="titre-decor">
+        <h2 id="titre-decor" className="font-heading text-lg font-bold">
+          Le décor de l&apos;arène
+        </h2>
+        <p className="mt-1 text-xs text-muted-foreground">
+          L&apos;endroit où tu joues. Tous les décors restent sombres exprès&nbsp;: ce qu&apos;on
+          doit voir en premier, ce sont tes cartes. Le soir, le décor baisse sa lumière tout seul.
+        </p>
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Décor de l'arène">
+          {/* « Automatique » d'abord : c'est le défaut, et c'est le seul choix qui demande une
+              explication — les cinq autres se montrent. */}
+          <label
+            className="flex cursor-pointer flex-col gap-2 rounded-2xl border border-[rgba(157,0,255,0.3)] p-2 text-xs"
+            data-testid="confort-decor-option-auto"
+          >
+            <span className="pbm-decor-vignette flex items-center justify-center text-center text-[0.65rem] text-muted-foreground" data-decor="arene">
+              selon mon deck
+            </span>
+            <span className="flex min-h-11 items-center gap-2">
+              <input
+                type="radio"
+                name="decor"
+                data-testid="confort-decor-auto"
+                checked={confort.decor === null}
+                // `null` explicite, et non l'absence du champ : c'est ce qui distingue « reviens
+                // au thème automatique » de « ne touche pas à ce réglage ».
+                onChange={() => void regler({ decor: null })}
+              />
+              <span>Automatique</span>
+            </span>
+          </label>
+          {DECORS_REGLABLES.map((cle) => (
+            <label
+              key={cle}
+              className="flex cursor-pointer flex-col gap-2 rounded-2xl border border-[rgba(157,0,255,0.3)] p-2 text-xs"
+              data-testid={`confort-decor-option-${cle}`}
+            >
+              {/* La vignette porte `data-decor` : elle est peinte par le MÊME CSS que l'arène
+                  (`globals.css`, bloc « Décors d'arène »), donc elle ne peut pas montrer autre
+                  chose que ce qui sera joué. `data-decor-moment` suit l'heure, comme en partie. */}
+              <span
+                className="pbm-decor-vignette"
+                data-decor={cle}
+                data-decor-moment={momentPourHeure(new Date().getHours())}
+                aria-hidden
+              />
+              <span className="flex min-h-11 items-center gap-2">
+                <input
+                  type="radio"
+                  name="decor"
+                  value={cle}
+                  data-testid={`confort-decor-${cle}`}
+                  checked={confort.decor === cle}
+                  onChange={() => void regler({ decor: cle })}
+                />
+                <span>{DECORS[cle]!.libelle}</span>
+              </span>
+              <span className="text-[0.7rem] text-muted-foreground">{DECORS[cle]!.phrase}</span>
+            </label>
+          ))}
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground" data-testid="confort-decor-note">
+          En <strong>automatique</strong>, le jeu regarde les cartes de ton deck et choisit
+          l&apos;endroit qui leur va&nbsp;: un volcan pour le Feu, un lagon pour l&apos;Eau. Si tu
+          choisis un décor toi-même, c&apos;est le tien qui gagne, toujours.
+        </p>
       </section>
 
       <section className="mt-8" aria-labelledby="titre-temps">

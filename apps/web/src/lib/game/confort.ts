@@ -23,6 +23,8 @@
  * vit dans {@link ../confort-provider}, et le contrat serveur dans `lib/api/confort.ts`.
  */
 
+import { DECORS_REGLABLES } from "@/lib/game/decors";
+
 /** Les animations du jeu jouent normalement (défaut). */
 export const ANIMATIONS_COMPLETES = "completes";
 /** Aucune animation n'est rendue : l'état du plateau reste lisible, il ne bouge plus. */
@@ -55,6 +57,16 @@ export type ReglagesConfort = {
   taille_texte: ReglageTailleTexte;
   /** Les horloges de mes parties sont rallongées (DJ4) — décidé au lancement, côté serveur. */
   temps_rallonge: boolean;
+  /**
+   * Décor d'arène choisi (lot `j-arene-decors`), ou `null` pour « laisse le jeu choisir d'après
+   * mon deck ».
+   *
+   * Le décor est rangé ici, avec les animations et la taille du texte, parce que c'est la même
+   * sorte de réglage : il ne change **aucune** règle, seulement ce que le joueur voit, et il doit
+   * suivre le compte d'un appareil à l'autre. Le vocabulaire des clés vit dans `lib/game/decors.ts`
+   * (côté serveur : `pbm_api.jeu.decors`), et c'est le serveur qui refuse une clé inconnue.
+   */
+  decor: string | null;
 };
 
 /**
@@ -68,6 +80,8 @@ export const CONFORT_DEFAUT: ReglagesConfort = {
   animations: ANIMATIONS_COMPLETES,
   taille_texte: "normale",
   temps_rallonge: false,
+  // Aucun décor imposé : le jeu suit le deck joué (lot `j-arene-decors`).
+  decor: null,
 };
 
 /** Clé du cache local des réglages — il n'existe que pour éviter le clignotement au chargement. */
@@ -90,11 +104,16 @@ export function normaliserConfort(brut: unknown): ReglagesConfort {
   const taille = TAILLES_TEXTE.includes(o.taille_texte as ReglageTailleTexte)
     ? (o.taille_texte as ReglageTailleTexte)
     : CONFORT_DEFAUT.taille_texte;
+  // Un décor inconnu (clé retirée depuis, cache local d'une version précédente) retombe sur
+  // l'automatique : le joueur voit alors un décor cohérent avec son deck, jamais un fond nu.
+  const decor =
+    typeof o.decor === "string" && DECORS_REGLABLES.includes(o.decor) ? o.decor : CONFORT_DEFAUT.decor;
   return {
     animations,
     taille_texte: taille,
     temps_rallonge:
       typeof o.temps_rallonge === "boolean" ? o.temps_rallonge : CONFORT_DEFAUT.temps_rallonge,
+    decor,
   };
 }
 
