@@ -88,6 +88,7 @@ existe. Détail : `docs/PLUGINS.md`.
 | `docs/infra/JOBS-LOURDS.md` | on planifie ou on diagnostique un traitement lourd |
 | `docs/catalogue/COMPLETUDE.md` | on se demande si le catalogue est complet, et où sont les trous |
 | `docs/jeu/OBSERVABILITE.md` | on se demande si le jeu va bien : métriques, alertes, sonde, runbook |
+| `docs/jeu/CHARGE.md` | on se demande combien de parties le serveur tient : plafond, coût d'une partie, purge |
 | `docs/roadmap/jeu/BACKLOG-JEU.md` | on travaille sur le jeu (67 lots, paliers, décisions `DJ*`) |
 
 ## Où écrire quoi

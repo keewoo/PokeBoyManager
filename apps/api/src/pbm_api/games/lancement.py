@@ -53,7 +53,7 @@ from pbm_api.games.construction import (  # noqa: F401 (joueur_id_de documenté)
     resoudre_deck,
 )
 from pbm_api.games.entry import DeckInjouable, DeckIntrouvable, verifier_deck
-from pbm_api.games.errors import GameError
+from pbm_api.games.errors import GameError, PlafondPartiesAtteint
 from pbm_api.games.service import creer_partie, demarrer_partie
 from pbm_api.models import (
     Card,
@@ -313,6 +313,13 @@ async def _resoudre_defaut_si_echu(
     injouable entre-temps, le lancement par défaut échoue (:class:`DeckInjouable`) : on **ne tue pas
     le défaut en silence** — on laisse le lancement en « tirage » (état observable, aucune partie
     fantôme) et on journalise la cause ; elle sera renommée au joueur dès qu'il agira explicitement.
+
+    Même traitement si le serveur est à son **plafond de parties simultanées** (lot
+    `j-charge-temps-reel`), et pour une raison qui compte : cette résolution est déclenchée par des
+    routes qui ne demandent pas à lancer une partie — un simple `GET` de l'écran, ou même un
+    **abandon**. Laisser remonter le 503 ici rendrait l'abandon impossible pendant une saturation,
+    c'est-à-dire exactement au moment où libérer la place est utile. Le lancement reste en tirage
+    et sa résolution se refera au prochain accès.
     """
     if (
         launch.statut != LANCEMENT_STATUT_TIRAGE
@@ -323,7 +330,7 @@ async def _resoudre_defaut_si_echu(
         return
     try:
         await _lancer(db, launch, invitation, commencer=True, maintenant=maintenant)
-    except DeckInjouable as exc:
+    except (DeckInjouable, PlafondPartiesAtteint) as exc:
         logger.warning(
             "Lancement par défaut de l'invitation %s impossible : %s",
             invitation.id,

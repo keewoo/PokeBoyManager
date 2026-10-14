@@ -37,6 +37,11 @@ SEUIL_MOTIF_DOMINANT_VOLUME = 10
 #: pas déclencher d'alerte.
 DELAI_RECAP_HEBDO_J = 8
 
+#: Part du plafond de parties simultanées au-delà de laquelle on prévient (lot
+#: ``j-charge-temps-reel``). 0,8 et pas 1,0 : à 1,0 l'alerte arrive *en même temps* que le premier
+#: joueur refusé, donc trop tard pour être une alerte — elle ne serait qu'un constat.
+SEUIL_CAPACITE_FROLEE = 0.8
+
 
 @dataclass(frozen=True)
 class Alerte:
@@ -50,7 +55,7 @@ class Alerte:
 def evaluer(releve: Releve) -> list[Alerte]:
     """Les alertes de ce relevé, des plus graves aux moindres (liste vide = tout va bien).
 
-    Quatre signaux, chacun répondant à une mission du lot :
+    Cinq signaux, chacun répondant à une mission du lot :
 
     1. **erreur de moteur** (> 0) — critique, sans seuil : le moteur fait autorité, s'il plante
        le jeu a pu produire un état faux. « Toute erreur de moteur est une alerte, jamais une
@@ -58,7 +63,9 @@ def evaluer(releve: Releve) -> list[Alerte]:
     2. **rafale de refus** — volume *et* taux : une hausse signale un bug d'interface (l'écran
        propose un coup illégal) ou une tentative de triche (client modifié) ;
     3. **motif dominant** — un seul ``R-x.y`` concentre les refus : la règle est nommée ;
-    4. **parties qui n'aboutissent pas** — en cours mais sans coup depuis trop longtemps.
+    4. **capacité** — le plafond de parties simultanées est frôlé (avertissement) ou atteint
+       (critique, des joueurs sont refusés) : lot ``j-charge-temps-reel`` ;
+    5. **parties qui n'aboutissent pas** — en cours mais sans coup depuis trop longtemps.
 
     Les parties refusées pour carte non scriptée (D9) ne sont **pas** une alerte : c'est le
     comportement voulu (le jeu refuse plutôt que d'approximer). Elles restent **comptées** et
@@ -110,6 +117,28 @@ def evaluer(releve: Releve) -> list[Alerte]:
                     ),
                 )
             )
+
+    if releve.capacite_plafond > 0 and releve.capacite_taux >= SEUIL_CAPACITE_FROLEE:
+        # Critique seulement quand le plafond est **atteint** : à ce moment-là des joueurs sont
+        # effectivement refusés (503), ce n'est plus un risque mais une panne de service.
+        atteint = releve.parties_actives >= releve.capacite_plafond
+        alertes.append(
+            Alerte(
+                code="capacite_atteinte" if atteint else "capacite_frolee",
+                gravite=GRAVITE_CRITIQUE if atteint else GRAVITE_AVERTISSEMENT,
+                message=(
+                    f"{releve.parties_actives} partie(s) simultanée(s) pour un plafond de "
+                    f"{releve.capacite_plafond} ({releve.capacite_taux:.0%}). "
+                    + (
+                        "Toute nouvelle partie est refusée en 503. Agrandir le serveur ou relever "
+                        "le plafond — avec une mesure à l'appui (docs/jeu/CHARGE.md)."
+                        if atteint
+                        else "Il reste peu de places : regarder la taille du serveur maintenant, "
+                        "pas le soir où un joueur reçoit un 503 (docs/jeu/CHARGE.md)."
+                    )
+                ),
+            )
+        )
 
     if releve.parties_bloquees > 0:
         alertes.append(
@@ -181,6 +210,7 @@ __all__ = [
     "DELAI_RECAP_HEBDO_J",
     "GRAVITE_AVERTISSEMENT",
     "GRAVITE_CRITIQUE",
+    "SEUIL_CAPACITE_FROLEE",
     "SEUIL_MOTIF_DOMINANT_PART",
     "SEUIL_MOTIF_DOMINANT_VOLUME",
     "SEUIL_REFUS_TAUX",

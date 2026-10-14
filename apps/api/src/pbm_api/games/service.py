@@ -70,6 +70,7 @@ from sqlalchemy.orm import aliased
 
 from pbm_api.config import settings
 from pbm_api.games import horloges as _adapt_horloges
+from pbm_api.games.capacite import verifier_capacite, verrouiller_creations
 from pbm_api.games.catalogue_jeu import construire_catalogue_jeu
 from pbm_api.games.construction import (
     construire_etat_initial,
@@ -271,8 +272,16 @@ async def creer_partie(
     est posé sur le **siège 1** (``joueur_b``) : c'est lui, et lui seul, que le bot tient.
     ``adversaire_ia`` (lot `j-adversaire-ia`) marque ce même siège comme tenu par l'**IA du
     joueur** ; ``bot_niveau`` sert alors de repli quand l'IA échoue.
+
+    Refuse enfin par :class:`PlafondPartiesAtteint` quand le serveur tient déjà son plafond de
+    parties simultanées (lot `j-charge-temps-reel`) : mieux vaut une partie refusée en clair que
+    toutes les parties en cours ralenties ensemble. C'est **ici** que la garde vit, parce que c'est
+    le seul endroit du dépôt qui insère une ligne `games` — aucun chemin ne peut la contourner.
     """
     maintenant = maintenant or _maintenant()
+    # Contrôle bon marché d'abord : inutile de résoudre deux decks (requêtes catalogue + scripts)
+    # pour une partie que le plafond va refuser. Le contrôle exact, sous verrou, est plus bas.
+    await verifier_capacite(db, user_id=joueur_a[0], maintenant=maintenant)
     user_a, deck_a = joueur_a
     user_b, deck_b = joueur_b
     id_a, id_b = joueur_id_de(user_a), joueur_id_de(user_b)
@@ -304,6 +313,12 @@ async def creer_partie(
     partie = partie_neuve(etat_initial, graine_hex)
     instantane0 = compacter(partie, 0)
     empreinte0 = instantane0.empreinte
+
+    # Plafond **exact** : on sérialise les créations le temps du comptage et de l'insertion, sinon
+    # dix créations concurrentes lisent le même compte et passent toutes. Le verrou ne gêne que les
+    # créations — jouer un coup ne le demande jamais, donc les parties en vol gardent leur latence.
+    await verrouiller_creations(db)
+    await verifier_capacite(db, user_id=user_a, maintenant=maintenant, consigner=False)
 
     game = Game(
         status=GAME_STATUS_EN_COURS,

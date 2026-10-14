@@ -77,6 +77,8 @@ Les seuils vivent dans `pbm_api.observabilite.regles` — **pur**, sans base ni 
 | `rafale_refus` | avertissement | ≥ 30 refus **et** > 25 % des coups soumis | Soit l'écran propose un coup illégal, soit un client a été modifié |
 | `motif_dominant` | avertissement | ≥ 10 refus, dont ≥ 60 % sur un même `R-x.y` | Une règle précise est en cause — l'alerte la nomme |
 | `parties_bloquees` | avertissement | ≥ 1 partie en cours, sans coup depuis 48 h | Des parties n'aboutissent pas ; vérifier `expirer_parties` |
+| `capacite_frolee` | avertissement | ≥ 80 % du plafond de parties simultanées | Il reste peu de places : parler de la taille du serveur **avant** le premier 503 — `docs/jeu/CHARGE.md` |
+| `capacite_atteinte` | **critique** | plafond atteint | Des joueurs sont effectivement refusés en 503 — `docs/jeu/CHARGE.md` |
 | `recap_hebdo_manquant` | avertissement | pas de récapitulatif depuis 8 jours | **La sonde elle-même ne tourne plus** |
 
 Verdict : `PANNE` (au moins une critique), `A_SURVEILLER` (au moins une alerte), `OK` (aucune).
@@ -146,6 +148,7 @@ ne doit pas effacer la trace qui sert à expliquer l'incident. On perd le lien, 
 | `rafale_refus` | ventiler par compte : `select user_id, count(*) from jeu_incidents where genre='action_refusee' and created_at > now() - interval '24 hours' group by 1;` — un seul compte = client modifié ou joueur bloqué par l'écran ; tous = bug d'interface |
 | `motif_dominant` | lire la règle citée dans `docs/jeu/REGLES.md`, puis vérifier que l'écran ne propose pas ce coup (le client n'affiche que les coups que le moteur déclare légaux) |
 | `parties_bloquees` | `select id, status, last_action_at from games where status='en_cours' order by last_action_at;` puis vérifier que l'expiration tourne |
+| `capacite_frolee` / `capacite_atteinte` | `select count(*) from games where status='en_cours' and expires_at > now();` — comparer à `JEU_PARTIES_SIMULTANEES_MAX`. Un compte élevé avec peu de joueurs connus = des parties fantômes : vérifier `expirer_parties`. Sinon, **mesurer avant de relever le plafond** (`docs/jeu/CHARGE.md` § Refaire la mesure) |
 | `recap_hebdo_manquant` | la sonde, pas le jeu : son agent de planification tourne-t-il ? son fichier d'état est-il écrivable ? |
 | **aucun e-mail depuis des jours** | c'est le cas le plus grave et le plus discret : la sonde est morte. Lancer `--a-blanc` à la main |
 
@@ -163,3 +166,4 @@ ne doit pas effacer la trace qui sert à expliquer l'incident. On perd le lien, 
 | `apps/api/src/pbm_api/routers/observabilite.py` | `GET /jeu/metriques` |
 | `apps/api/scripts/sonde_jeu.py` | la sonde (quotidien / hebdomadaire) |
 | `apps/api/tests/test_observabilite.py` | les trois critères, dont le **test d'injection** d'erreur de moteur |
+| `apps/api/src/pbm_api/games/capacite.py` | le plafond de parties simultanées, dont les compteurs `parties_actives` / `capacite_plafond` du relevé — mesures et dimensionnement : `docs/jeu/CHARGE.md` |

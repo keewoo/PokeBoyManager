@@ -46,6 +46,7 @@ from pbm_api.games.errors import (
     ConflitNumero,
     PartieIntrouvable,
     PartieNonActive,
+    PlafondPartiesAtteint,
 )
 from pbm_api.games.indicateurs import catalogue_pour_etat, catalogue_pour_resultat
 from pbm_api.games.projection import projeter_resultat, vue_autoritaire
@@ -94,6 +95,7 @@ from pbm_api.games.service import (
 )
 from pbm_api.games.temps_reel import HUB
 from pbm_api.models import GamePlayer, User
+from pbm_api.routers.capacite_http import erreur_capacite
 
 router = APIRouter(prefix="/games", tags=["games"])
 
@@ -541,7 +543,8 @@ async def post_revanche(
 
     404 si l'utilisateur ne joue pas la partie finie, ou si un deck n'est pas le sien ; 409 si
     la partie n'est pas terminée ou si un des deux joueurs est engagé ailleurs ; 422 si un deck
-    n'est plus jouable (cartes nommées) ou n'existe plus.
+    n'est plus jouable (cartes nommées) ou n'existe plus ; **503** avec ``Retry-After`` si le
+    serveur tient déjà son plafond de parties simultanées.
     """
     try:
         partie, deja_creee = await creer_revanche(
@@ -573,6 +576,10 @@ async def post_revanche(
         ) from exc
     except (NiveauBotInconnu, CleIAIndisponible) as exc:
         raise HTTPException(422, str(exc)) from exc
+    except PlafondPartiesAtteint as exc:
+        # 503 : plafond de parties simultanées atteint. La partie finie reste consultable et la
+        # revanche reste possible plus tard — rien n'est perdu (lot `j-charge-temps-reel`).
+        raise erreur_capacite(exc) from exc
 
     if deja_creee:
         response.status_code = status.HTTP_200_OK

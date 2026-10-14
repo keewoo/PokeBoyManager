@@ -27,6 +27,12 @@ MOTIF_SANS_REGLE = "sans-regle"
 #: Motif d'une partie refusée faute de carte scriptée (D9) — cause unique, vocabulaire d'un mot.
 MOTIF_CARTE_NON_SCRIPTEE = "carte_non_scriptee"
 
+#: Motif d'une partie refusée parce que le serveur tenait déjà son plafond de parties simultanées
+#: (lot ``j-charge-temps-reel``). Distinct de :data:`MOTIF_CARTE_NON_SCRIPTEE` parce que la conduite
+#: à tenir n'est pas la même : une carte non scriptée se corrige en écrivant un script, une
+#: saturation se corrige en agrandissant la machine — ou en constatant qu'on a du succès.
+MOTIF_CAPACITE_ATTEINTE = "capacite_atteinte"
+
 #: Longueur maximale du détail conservé (colonne ``jeu_incidents.detail``).
 DETAIL_MAX = 480
 
@@ -70,6 +76,7 @@ def detail_borne(texte: str | None) -> str | None:
 
 __all__ = [
     "DETAIL_MAX",
+    "MOTIF_CAPACITE_ATTEINTE",
     "MOTIF_CARTE_NON_SCRIPTEE",
     "MOTIF_SANS_REGLE",
     "detail_borne",

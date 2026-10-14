@@ -69,6 +69,12 @@ class Settings(BaseSettings):
     # est l'ancienneté au-delà de laquelle une partie morte (terminée/expirée) est purgée.
     jeu_inactivite_plafond_h: float = 72.0
     jeu_purge_anciennete_j: float = 30.0
+    # Plafond de **parties simultanées** que le serveur accepte de tenir (lot
+    # `j-charge-temps-reel`, env `JEU_PARTIES_SIMULTANEES_MAX`). Au-delà, une partie de plus est
+    # refusée en 503 plutôt que de ralentir toutes les autres. Le défaut vient de la mesure sur
+    # deux cœurs (`docs/jeu/CHARGE.md`) : c'est un réglage de *machine*, pas de produit — il se
+    # relève quand le serveur grandit, et seulement avec une mesure à l'appui.
+    jeu_parties_simultanees_max: int = 24
     # Coach IA (lot `j-coach-ia`, DJ7) — nombre maximal de conseils demandés par partie, réglable
     # par l'environnement (`COACH_MAX_CONSEILS`) : un conseil consomme la clé IA du joueur, donc on
     # le borne, sans redéployer. Le bilan de fin de partie, lui, n'est pas compté (une fois par

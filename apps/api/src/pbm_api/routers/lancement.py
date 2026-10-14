@@ -25,6 +25,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pbm_api.auth.dependencies import require_csrf, require_game_access
 from pbm_api.db import get_session
 from pbm_api.games.entry import DeckInjouable, DeckIntrouvable
+from pbm_api.games.errors import PlafondPartiesAtteint
 from pbm_api.games.lancement import (
     InvitationPasAcceptee,
     LancementIntrouvable,
@@ -38,6 +39,7 @@ from pbm_api.games.lancement import (
     se_preparer,
 )
 from pbm_api.models import User
+from pbm_api.routers.capacite_http import erreur_capacite
 
 router = APIRouter(prefix="/lancements", tags=["lancements"])
 
@@ -137,6 +139,8 @@ def _traduire(exc: Exception) -> HTTPException:
         return _erreur_deck(exc)
     if isinstance(exc, (InvitationPasAcceptee, LancementMauvaisePhase, PasLeGagnantDuTirage)):
         return HTTPException(status.HTTP_409_CONFLICT, str(exc))
+    if isinstance(exc, PlafondPartiesAtteint):
+        return erreur_capacite(exc)
     raise exc  # une erreur non prévue n'est jamais masquée
 
 
@@ -203,7 +207,9 @@ async def choisir_premier(
 
     404 si l'invitation n'est pas la vôtre ; 409 si le lancement n'est pas en tirage ou si vous
     n'êtes pas le gagnant ; 422 si un deck est devenu injouable (lancement arrêté, sans partie
-    fantôme, cartes nommées).
+    fantôme, cartes nommées) ; **503** avec ``Retry-After`` si le serveur tient déjà son plafond de
+    parties simultanées — le lancement reste en tirage et reprendra tel quel (lot
+    `j-charge-temps-reel`).
     """
     try:
         launch, invitation = await choisir(
@@ -216,6 +222,7 @@ async def choisir_premier(
         PasLeGagnantDuTirage,
         DeckIntrouvable,
         DeckInjouable,
+        PlafondPartiesAtteint,
     ) as exc:
         raise _traduire(exc) from exc
     return LancementOut.de(await composer_vue(db, launch=launch, invitation=invitation))

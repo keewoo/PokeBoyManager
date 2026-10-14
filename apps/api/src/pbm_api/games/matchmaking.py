@@ -39,7 +39,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.config import settings
 from pbm_api.games.entry import verifier_deck
-from pbm_api.games.errors import CartesNonJouables, GameError
+from pbm_api.games.errors import CartesNonJouables, GameError, PlafondPartiesAtteint
 from pbm_api.games.service import creer_partie
 from pbm_api.models import Game, GamePlayer
 from pbm_api.models.games import GAME_STATUS_EN_COURS
@@ -225,6 +225,11 @@ async def apparier(
        et on continue (jamais un appariement silencieux sur un deck cassé, jamais un `pass` muet) ;
     4. on retire les deux appariés de la file.
 
+    Si le serveur est à son **plafond de parties simultanées** (lot `j-charge-temps-reel`), le
+    passage s'arrête et les candidats restent en file, à leur rang : la file d'attente est la bonne
+    réponse à une saturation, là où un refus serait du bruit — le joueur n'a rien demandé de plus
+    que « trouve-moi un adversaire ».
+
     Renvoie la liste des `(partie, (user_a, user_b))` créés pendant ce passage.
     """
     maintenant = await _maintenant(maintenant)
@@ -270,6 +275,19 @@ async def apparier(
                     joueur_b=(ub, uuid.UUID(deck_b)),
                     maintenant=None,
                 )
+            except PlafondPartiesAtteint as exc:
+                # Le serveur est à sa capacité. Ici, et seulement ici, le refus ne remonte **pas**
+                # au joueur : la file d'attente *est* la réponse (lot `j-charge-temps-reel`, « file
+                # d'attente plutôt que dégradation »). Les deux candidats gardent leur place et
+                # leur rang, et seront appariés au premier passage où une place se libère. On
+                # s'arrête là pour ce passage : apparier la paire suivante échouerait pareil.
+                logger.warning(
+                    "appariement suspendu : %s — %d joueur(s) restent en file, sans perdre leur "
+                    "rang.",
+                    exc,
+                    await redis.zcard(_QUEUE),
+                )
+                break
             except CartesNonJouables as exc:
                 # Un deck vérifié à l'entrée est devenu injouable (catalogue modifié entre-temps).
                 # On retire les deux candidats en le disant (jamais un repli muet) ; à leur
