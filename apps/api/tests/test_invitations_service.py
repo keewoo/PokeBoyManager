@@ -121,8 +121,16 @@ async def test_invitation_par_pseudo_acceptee(db_session):
     deck_b = await _make_deck_jouable(db_session, b.id)
     email = _EmailMuet()
 
+    # `maintenant` explicite, en pleine journée : depuis `j-notifications-jeu`, le relais e-mail
+    # passe par le silence nocturne du destinataire (actif par défaut, 21 h → 7 h). Sans instant
+    # fixé, l'assertion « mail parti » dépendrait de l'heure à laquelle la CI tourne.
     inv = await service.inviter_par_pseudo(
-        db_session, email, inviter_id=a.id, pseudo="bob", deck_id=deck_a
+        db_session,
+        email,
+        inviter_id=a.id,
+        pseudo="bob",
+        deck_id=deck_a,
+        maintenant=datetime(2026, 10, 13, 12, 0, tzinfo=UTC),
     )
     assert inv.statut == "envoyee"
     assert inv.invitee_user_id == b.id

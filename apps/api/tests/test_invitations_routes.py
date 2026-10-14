@@ -21,6 +21,7 @@ import httpx
 
 from pbm_api.config import settings
 from pbm_api.models import User
+from pbm_api.notifications import service as notifications
 from pbm_api.security.csrf import CSRF_HEADER_NAME
 
 PASSWORD = "correct horse battery staple"
@@ -87,6 +88,11 @@ async def test_pseudo_bout_en_bout_meme_salon(api_client, db_session):
     b_email = _email("bob")
     b_id, _ = await _register_verify_login(api_client, b_email)
     await _preparer(db_session, b_id, pseudo="bob")
+    # Depuis `j-notifications-jeu`, le relais e-mail d'une invitation passe par le **silence
+    # nocturne** du destinataire (actif par défaut, 21 h → 7 h) : sans ce réglage, l'assertion
+    # « e-mail parti vers B » dépendrait de l'heure à laquelle la CI tourne. L'invitation en elle-
+    # même n'est pas concernée — le silence ne retient que les relais hors application.
+    await notifications.enregistrer_reglages(db_session, b_id, silence_actif=False)
 
     # A invite B.
     csrf_a = await _login(api_client, (await db_session.get(User, a_id)).email)

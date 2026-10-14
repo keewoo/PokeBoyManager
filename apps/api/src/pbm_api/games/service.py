@@ -58,6 +58,8 @@ from pbm_game.journal.modele import (
     ACTION_MISE_EN_PLACE_INITIALE,
     ACTION_REPONDRE_DEMANDE,
     AUTEUR_SYSTEME,
+    RAISON_ABANDON,
+    RAISON_DESERTION,
     Entree,
     Instantane,
 )
@@ -84,6 +86,7 @@ from pbm_api.games.errors import (
     PartieIntrouvable,
     PartieNonActive,
 )
+from pbm_api.models import User
 from pbm_api.models.games import (
     GAME_STATUS_EN_COURS,
     GAME_STATUS_EXPIREE,
@@ -93,11 +96,18 @@ from pbm_api.models.games import (
     GamePlayer,
     GameSnapshot,
 )
+from pbm_api.models.notifications import (
+    NOTIF_ADVERSAIRE_REVENU,
+    NOTIF_PARTIE_FORFAIT,
+    NOTIF_TEMPS_BIENTOT_ECOULE,
+    NOTIF_TON_TOUR,
+)
 from pbm_api.models.observabilite import (
     INCIDENT_ACTION_REFUSEE,
     INCIDENT_ERREUR_MOTEUR,
     INCIDENT_PARTIE_REFUSEE,
 )
+from pbm_api.notifications import service as notifications
 from pbm_api.observabilite.consignation import consigner_incident
 from pbm_api.observabilite.motifs import (
     MOTIF_CARTE_NON_SCRIPTEE,
@@ -816,6 +826,11 @@ async def _appliquer_action_verifiee(
 
     # (3) Reconstruire l'état courant et le Rng vivant.
     etat_courant, rng = await _reconstruire(db, game)
+    # Gardé pour les notifications : c'est la comparaison « qui jouait avant / qui joue après » qui
+    # dit s'il y a eu changement de tour, donc s'il faut prévenir quelqu'un (lot
+    # `j-notifications-jeu`). Le prendre ici, avant toute transition, est la seule façon de ne pas
+    # le confondre avec un état déjà avancé par l'orchestration système.
+    etat_avant_coup = etat_courant
 
     # Une partie JOUABLE (mise en place en cours ou commencée) passe par le générateur de coups
     # légaux : le coup soumis DOIT appartenir à la liste que le moteur déclare (une seule source de
@@ -881,6 +896,10 @@ async def _appliquer_action_verifiee(
         )
         evts_json += evts_bot
 
+    # Notifier ce que ce coup a changé pour l'autre joueur — avant le commit, pour que la
+    # notification partage le sort du coup (on ne prévient pas « c'est ton tour » d'un coup annulé).
+    await _notifier_apres_coup(db, game, etat_avant_coup, etat_courant, maintenant)
+
     await db.commit()
     return ResultatAction(
         numero=numero_joueur,
@@ -895,6 +914,126 @@ async def _appliquer_action_verifiee(
         horloges=_adapt_horloges.restant_json(game.horloges, maintenant.timestamp()),
         commentaires=commentaires,
     )
+
+
+# --- Notifications issues d'un coup (lot `j-notifications-jeu`) --------------
+
+#: Seuil d'alerte sur le **budget total** restant : sous une minute, le joueur dont c'est le tour
+#: est prévenu (« il te reste une minute » de la fiche du lot). On regarde le budget de la partie et
+#: non l'horloge courte du tour : celle-ci repart à chaque tour, elle ne dit rien d'une fin
+#: imminente, alors que le budget épuisé se solde par une défaite au temps (DJ4).
+SEUIL_TEMPS_BIENTOT_ECOULE_S = 60.0
+
+#: Les fins qui valent un **forfait** : l'adversaire a jeté l'éponge (R-14.3) ou n'est pas revenu
+#: avant la fin de sa grâce (R-14.6). Les autres fins sont *jouées* — le joueur était devant son
+#: écran pour les vivre, et `j-partie-fin-ui` les lui annonce déjà ; le notifier serait redondant.
+#: L'inactivité (partie fantôme) en est délibérément absente : personne ne jouait, donc personne
+#: n'attend d'être prévenu.
+RAISONS_FORFAIT: frozenset[str] = frozenset({RAISON_ABANDON, RAISON_DESERTION})
+
+
+async def _user_du_joueur(
+    db: AsyncSession, game_id: uuid.UUID, joueur: str | None
+) -> uuid.UUID | None:
+    """Le compte derrière un identifiant de joueur du moteur, ou ``None`` s'il n'y en a pas.
+
+    L'identifiant de joueur du moteur **est** ``str(user_id)``
+    (:func:`~pbm_api.games.construction.joueur_id_de`), mais on ne le convertit pas à l'aveugle :
+    les tests de plumberie fabriquent des parties aux joueurs nommés ``"A"``/``"B"``, et un
+    ``uuid.UUID("A")`` lèverait au milieu du chemin d'un coup. On interroge donc ``game_players``,
+    l'autorité sur « qui joue cette partie » — un joueur absent de cette table n'est pas un
+    compte, et il n'y a personne à notifier.
+    """
+    if joueur is None:
+        return None
+    sieges = (
+        await db.execute(select(GamePlayer.user_id).where(GamePlayer.game_id == game_id))
+    ).scalars().all()
+    for user_id in sieges:
+        if joueur_id_de(user_id) == joueur:
+            return user_id
+    logger.debug(
+        "notification : le joueur « %s » de la partie %s n'est lié à aucun compte "
+        "(état de plumberie) — personne à prévenir.",
+        joueur,
+        game_id,
+    )
+    return None
+
+
+async def _notifier_apres_coup(
+    db: AsyncSession,
+    game: Game,
+    etat_avant: EtatPartie,
+    etat_apres: EtatPartie,
+    maintenant: datetime,
+) -> None:
+    """Émet les notifications que ce coup justifie — « c'est ton tour », le temps, le forfait.
+
+    Appelée **avant le commit** du coup, pour que la notification partage son sort : on ne prévient
+    pas « c'est ton tour » pour un coup que la transaction finira par annuler.
+
+    Trois cas, et un seul à la fois :
+
+    * la partie se **termine par forfait** (abandon ou désertion) → le vainqueur est prévenu. Il
+      n'était probablement pas là pour le voir, c'est tout l'intérêt ;
+    * le **tour change de main** → le nouveau joueur actif est prévenu, et s'il lui reste moins
+      d'une minute de budget, il reçoit aussi l'alerte de temps ;
+    * rien n'a changé de ce point de vue → rien n'est émis. **C'est le cas le plus fréquent et il
+      est voulu** : notifier chaque coup transformerait le jeu en sonnerie permanente (le risque
+      nommé par la fiche du lot). Les plafonds de
+      :mod:`pbm_api.notifications.regles` bornent ensuite ce qui reste.
+
+    En **mode solo d'entraînement**, rien n'est émis : l'adversaire est un bot, il n'y a personne à
+    prévenir et aucun joueur n'attend son tour ailleurs.
+    """
+    if game.entrainement:
+        return
+
+    if etat_apres.terminee:
+        if etat_apres.raison_fin in RAISONS_FORFAIT:
+            # Le vainqueur d'un forfait est, par construction, celui qui n'a pas quitté.
+            gagnant = await _user_du_joueur(db, game.id, etat_apres.vainqueur)
+            if gagnant is not None:
+                await notifications.notifier_sans_casser(
+                    db,
+                    destinataire_id=gagnant,
+                    genre=NOTIF_PARTIE_FORFAIT,
+                    game_id=game.id,
+                    donnees={"raison": etat_apres.raison_fin},
+                    instant=maintenant,
+                )
+        return
+
+    if etat_avant.tour.joueur_actif == etat_apres.tour.joueur_actif:
+        return
+
+    destinataire = await _user_du_joueur(db, game.id, etat_apres.tour.joueur_actif)
+    if destinataire is None:
+        return
+
+    await notifications.notifier_sans_casser(
+        db,
+        destinataire_id=destinataire,
+        genre=NOTIF_TON_TOUR,
+        game_id=game.id,
+        donnees={"tour": etat_apres.tour.numero},
+        instant=maintenant,
+    )
+
+    restant = _adapt_horloges.restant_json(game.horloges, maintenant.timestamp())
+    if restant is None:
+        return  # partie sans horloges (DJ4 : les horloges sont optionnelles) — rien à alerter
+    budget = (restant.get("joueurs") or {}).get(etat_apres.tour.joueur_actif, {}).get("budget_s")
+    if budget is not None and budget < SEUIL_TEMPS_BIENTOT_ECOULE_S:
+        await notifications.notifier_sans_casser(
+            db,
+            destinataire_id=destinataire,
+            genre=NOTIF_TEMPS_BIENTOT_ECOULE,
+            game_id=game.id,
+            donnees={"budget_s": round(budget)},
+            instant=maintenant,
+        )
 
 
 # --- Application journalisée d'un coup déjà construit (hors boucle de joueur) ----
@@ -955,6 +1094,10 @@ async def _appliquer_coup(
         game.raison_fin = etat2.raison_fin
     if game.horloges is not None:
         game.horloges = _adapt_horloges.transition_json(game.horloges, etat_courant, etat2, ts)
+    # Même règle que pour un coup de joueur : on notifie avant le commit. Ce chemin porte les
+    # clôtures système (désertion, abandon, inactivité, expiration d'horloge) — c'est donc ici que
+    # naît « partie terminée par forfait ».
+    await _notifier_apres_coup(db, game, etat_courant, etat2, maintenant)
     await db.commit()
     return ResultatAction(
         numero=entree.numero,
@@ -1182,10 +1325,47 @@ async def marquer_deconnexion(
 async def marquer_reconnexion(
     db: AsyncSession, game_id: uuid.UUID, maintenant: datetime | None = None
 ) -> None:
-    """Lève la pause à la reconnexion : les horloges reprennent là où elles s'étaient gelées."""
+    """Lève la pause à la reconnexion : les horloges reprennent là où elles s'étaient gelées.
+
+    Et **prévient celui qui attendait** (lot `j-notifications-jeu`) : son adversaire est revenu,
+    la partie peut continuer. C'est la notification symétrique de la pause — sans elle, un joueur
+    qui a vu l'autre disparaître n'a aucune raison de revenir regarder.
+    """
     maintenant = maintenant or _maintenant()
     game = await _game_sous_verrou(db, game_id)
     if game is None or game.status != GAME_STATUS_EN_COURS or game.horloges is None:
         return
+    # Qui était en pause (donc qui revient) doit être lu AVANT de lever la pause.
+    revenant = await _user_du_joueur(
+        db, game.id, _adapt_horloges.joueur_en_pause(game.horloges)
+    )
     game.horloges = _adapt_horloges.reprendre_json(game.horloges, maintenant.timestamp())
+    await _notifier_retour(db, game, revenant, maintenant)
     await db.commit()
+
+
+async def _notifier_retour(
+    db: AsyncSession, game: Game, revenant: uuid.UUID | None, maintenant: datetime
+) -> None:
+    """Prévient l'adversaire de ``revenant`` que celui-ci est de retour.
+
+    Sans effet en mode solo (aucun humain en face), ni si l'on ne sait pas qui revient (partie sans
+    pause, ou joueur hors ``game_players`` — cf. :func:`_user_du_joueur`).
+    """
+    if game.entrainement or revenant is None:
+        return
+    sieges = (
+        await db.execute(select(GamePlayer.user_id).where(GamePlayer.game_id == game.id))
+    ).scalars().all()
+    for autre in sieges:
+        if autre == revenant:
+            continue
+        revenu = await db.get(User, revenant)
+        await notifications.notifier_sans_casser(
+            db,
+            destinataire_id=autre,
+            genre=NOTIF_ADVERSAIRE_REVENU,
+            game_id=game.id,
+            donnees={"pseudo": revenu.pseudo if revenu else None},
+            instant=maintenant,
+        )

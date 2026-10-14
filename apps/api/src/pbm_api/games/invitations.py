@@ -20,10 +20,11 @@ Trois exigences du lot guident le code :
   vue **symétrique** depuis l'invitation : elle est identique quel que soit le participant qui la
   demande (contrairement à une vue de partie, un salon d'attente n'a rien de caché).
 
-La notification *dans l'application* est la liste des invitations reçues (:func:`recues`) ; un
-**relais e-mail** part en plus pour une invitation par pseudo (:func:`inviter_par_pseudo`). La
-notification PWA viendra avec le lot `j-notifications-jeu` : on nomme ce relais futur, on ne
-l'approxime pas.
+La notification *dans l'application* est la liste des invitations reçues (:func:`recues`) ; une
+**notification** est en plus émise pour une invitation par pseudo (:func:`inviter_par_pseudo`), via
+le canal du lot `j-notifications-jeu` — c'est lui qui décide du relais e-mail, du silence nocturne
+et des réglages du destinataire. Le relais de notification web (PWA) reste nommé absent tant que
+`v6-pwa` n'est pas livré : on ne l'approxime pas.
 """
 
 from __future__ import annotations
@@ -36,7 +37,6 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pbm_api.config import settings
 from pbm_api.email import EmailSender
 from pbm_api.games.entry import verifier_deck  # lève DeckIntrouvable / DeckInjouable (D9)
 from pbm_api.games.errors import GameError
@@ -51,6 +51,8 @@ from pbm_api.models.invitations import (
     INVITATION_STATUT_REFUSEE,
     GameInvitation,
 )
+from pbm_api.models.notifications import NOTIF_INVITATION_RECUE
+from pbm_api.notifications import service as notifications
 from pbm_api.security.tokens import generate_opaque_token, hash_token
 
 logger = logging.getLogger(__name__)
@@ -182,12 +184,17 @@ async def inviter_par_pseudo(
     deck_id: uuid.UUID | None = None,
     maintenant: datetime | None = None,
 ) -> GameInvitation:
-    """Invite un compte invité par son pseudo, et lui envoie un rappel par e-mail.
+    """Invite un compte invité par son pseudo, et le **notifie** (en application, et par e-mail).
 
     Lève :class:`DestinataireIntrouvable` (→ 404) si aucun compte **invité** ne porte ce pseudo (pas
     de fuite), :class:`AutoInvitation` (→ 422) si on se vise soi-même, et les erreurs de deck de
     :func:`verifier_deck` (→ 404/422, cartes nommées, D9) si un deck annoncé n'est pas jouable.
-    La notification *dans l'application* reste la liste des reçues ; l'e-mail est un rappel.
+
+    La notification passe par :func:`pbm_api.notifications.service.notifier` (lot
+    `j-notifications-jeu`) : c'est elle qui décide si l'e-mail part, **y compris la nuit** — pendant
+    le silence nocturne du destinataire, l'invitation est enregistrée dans l'application (rien n'est
+    perdu : elle sera lue au réveil) et le relais e-mail attend. L'invitation reste par ailleurs
+    visible dans :func:`recues`, qui demeure la source de vérité.
     """
     maintenant = _maintenant(maintenant)
     cible = (
@@ -214,7 +221,14 @@ async def inviter_par_pseudo(
     await db.flush()
 
     inviteur = await db.get(User, inviter_id)
-    await _notifier_par_email(email_sender, destinataire=cible, inviteur=inviteur)
+    await notifications.notifier(
+        db,
+        destinataire_id=cible.id,
+        genre=NOTIF_INVITATION_RECUE,
+        donnees={"pseudo": inviteur.pseudo if inviteur else None},
+        instant=maintenant,
+        email_sender=email_sender,
+    )
     return invitation
 
 
@@ -487,25 +501,9 @@ async def salon(
 
 
 # --- Relais de notification ------------------------------------------------------------------
-
-
-async def _notifier_par_email(
-    email_sender: EmailSender, *, destinataire: User, inviteur: User | None
-) -> None:
-    """Envoie le rappel d'invitation reçue par e-mail — relais de la notification in-app.
-
-    Source de vérité de la notification : la liste :func:`recues`, dans l'application. L'e-mail est
-    un rappel ; s'il est désactivé (``SMTP_HOST`` vide), l'émetteur journalise proprement et n'émet
-    rien (``pbm_api.email.DisabledEmailSender``) — ce n'est pas un repli silencieux mais un choix de
-    configuration tracé. La notification PWA viendra avec le lot `j-notifications-jeu`.
-    """
-    nom = (inviteur.pseudo if inviteur and inviteur.pseudo else None) or "Un joueur"
-    lien = f"{settings.app_public_url.rstrip('/')}/jeu"
-    await email_sender.send(
-        to=destinataire.email,
-        subject="Invitation à jouer sur PokeBoy",
-        body=(
-            f"{nom} vous invite à jouer une partie sur PokeBoy.\n\n"
-            f"Retrouvez l'invitation dans votre espace jeu : {lien}\n"
-        ),
-    )
+#
+# Il n'y a plus de relais ici : l'e-mail d'invitation est parti dans
+# `pbm_api.notifications.relais`, derrière la décision de `pbm_api.notifications.service.notifier`
+# (lot `j-notifications-jeu`). C'était la condition pour que le **silence nocturne** s'applique
+# « y compris aux invitations » — un envoi en dur à cet endroit l'aurait contourné par construction.
+# La source de vérité de la notification reste `recues`, dans l'application.

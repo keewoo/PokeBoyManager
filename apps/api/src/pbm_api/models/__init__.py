@@ -81,6 +81,17 @@ from pbm_api.models.invitations import (
     GameInvitation,
 )
 from pbm_api.models.jobs import DataExport, Job, JobStatus
+from pbm_api.models.notifications import (
+    NOTIF_ADVERSAIRE_REVENU,
+    NOTIF_ADVERSAIRE_TROUVE,
+    NOTIF_GENRES,
+    NOTIF_INVITATION_RECUE,
+    NOTIF_PARTIE_FORFAIT,
+    NOTIF_TEMPS_BIENTOT_ECOULE,
+    NOTIF_TON_TOUR,
+    GameNotification,
+    NotificationReglages,
+)
 from pbm_api.models.observabilite import (
     INCIDENT_ACTION_REFUSEE,
     INCIDENT_ERREUR_MOTEUR,
@@ -170,4 +181,13 @@ __all__ = [
     "INCIDENT_ERREUR_MOTEUR",
     "INCIDENT_PARTIE_REFUSEE",
     "INCIDENT_GENRES",
+    "GameNotification",
+    "NotificationReglages",
+    "NOTIF_INVITATION_RECUE",
+    "NOTIF_ADVERSAIRE_TROUVE",
+    "NOTIF_TON_TOUR",
+    "NOTIF_TEMPS_BIENTOT_ECOULE",
+    "NOTIF_ADVERSAIRE_REVENU",
+    "NOTIF_PARTIE_FORFAIT",
+    "NOTIF_GENRES",
 ]
