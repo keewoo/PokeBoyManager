@@ -88,6 +88,10 @@ fait 10 ».
 
 ## Preuves
 
+**CI GitHub Actions verte sur `df897f9`** (passage `push`, celui qui fait foi) : les quatre jobs —
+`game`, `web`, `api`, `e2e` — en succès. Le passage `pull_request` reste en `action_required`
+(approbation exigée par le dépôt) : ce n'est pas un échec.
+
 ### Les quatre critères d'acceptation
 
 | Critère | Comment c'est tenu | Preuve |
@@ -104,25 +108,28 @@ Le type mesuré est **calculé**, pas choisi (`TYPE_LE_PLUS_LOURD`, aujourd'hui 
 9 particules) : le jour où un type plus chargé est ajouté, c'est lui qui est mesuré, sans que
 personne n'ait à y penser. Un test vérifie que cette constante est bien le maximum de la table.
 
-Mesuré sur **devAI**, appareil de référence (844×390, processeur bridé ×4), fenêtre de mesure
-identique à celle de `anim-fluidite.spec.ts` (la rafale entière) :
+La fenêtre de mesure est **identique** à celle de `anim-fluidite.spec.ts` (la rafale entière) : c'est
+ce qui rend les deux chiffres comparables, et c'est de leur écart qu'on apprend ce que l'effet coûte.
 
-| Passage | Effet typé (Fée, palier fort, faiblesse) | Socle seul (`anim-fluidite`, référence) |
+**Mesuré par la CI** (runner dédié, commit `df897f9`, 844×390, processeur bridé ×4) :
+
+| | Images par seconde | Échantillon |
 |---|---|---|
-| 1 | 14,5 images/s | 11,2 images/s |
-| 2 | 14,3 images/s | 9,4 images/s |
-| 3 | 10,8 images/s | — |
+| **effet typé le plus lourd** (Fée, palier fort, faiblesse) | **60,0** | 154 cadres en 2 567 ms |
+| socle seul (`anim-fluidite`, référence) | 59,9 | 148 cadres en 2 473 ms |
 
-**Les deux sont rouges sur devAI, et le socle l'était déjà sans ce lot** — c'est l'échec local connu
-de `anim-fluidite.spec.ts` (mémoire du projet : « 2 specs rouges sur devAI sans régression »).
-Vérifié en rejouant la spec de référence **avant** de conclure quoi que ce soit : 14,1 images/s sur
-`main`, sans une ligne de ce lot. La machine ne tient pas 30 images/s sous bridage ×4 ; ce n'est pas
+Plancher exigé : 30. Les deux sont au double, et surtout : **l'effet typé mesure exactement comme le
+socle seul** (60,0 contre 59,9). Les onze couches, les neuf particules et la trace ne coûtent *rien*
+de mesurable — c'est ce que le choix du CSS composé sur le processeur graphique devait donner, et
+c'est vérifié plutôt que supposé.
+
+⚠️ **Sur devAI, les deux specs sont rouges** (10–15 images/s), et le socle l'était **déjà sans ce
+lot** : vérifié en rejouant la spec de référence sur l'arbre d'origine avant de conclure quoi que ce
+soit — 14,1 images/s sans une ligne de ce lot. C'est l'échec local connu de `anim-fluidite.spec.ts`
+(mémoire du projet : « 2 specs rouges sur devAI sans régression »). À fenêtre égale, l'effet typé y
+mesurait déjà **aussi bien ou mieux** que le socle (14,5 contre 11,2 ; 14,3 contre 9,4) : le signal
+était bon avant même la CI. La machine ne tient pas 30 images/s sous bridage ×4 ; ce n'est pas
 l'effet.
-
-Ce que la comparaison dit, et c'est l'information utile : à fenêtre égale, **l'effet typé mesure
-aussi bien ou mieux que le socle seul**. Son coût est dans le bruit de mesure. Le verdict reste
-**la CI** (runner dédié, où `anim-fluidite` passe) — c'est elle qui fait foi, pas une mesure sur une
-machine chargée.
 
 ⚠️ Une faiblesse de mesure a été trouvée et corrigée pendant le lot : la première version attendait
 la fin du **premier** effet typé (420 ms) au lieu de la rafale entière. La fenêtre était alors
@@ -139,7 +146,7 @@ Un test qui conclut au hasard est pire qu'absent.
 | `apps/web` — `pnpm type-check` | propre |
 | `apps/web` — `pnpm lint` | propre (1 avertissement préexistant, `game-realtime.test.ts`) |
 | `apps/web` — `pnpm build` | propre |
-| `e2e` — `anim-attaques-typees.spec.ts` | 2 cas verts (compteurs visibles pendant l'effet, galerie complète + captures) ; le cas du plancher rouge **localement seulement**, voir ci-dessus |
+| `e2e` — `anim-attaques-typees.spec.ts` | **3 cas verts en CI** (plancher à 60,0 images/s, compteurs visibles pendant l'effet, galerie complète + captures) ; le cas du plancher rouge **sur devAI seulement**, comme le socle, voir ci-dessus |
 
 Captures jointes au rapport Playwright (`info.attach`, et non un fichier écrit dans
 `playwright-report/` — le rapporteur HTML nettoie ce dossier) : `fx-typee-plateau`,
@@ -192,9 +199,9 @@ marcher, et aucun test de rendu ne tomberait.
   la faire (`/jeu/effets`, atteignable depuis le salon) et les captures de recette. Rien n'a été
   « industrialisé » dans le dos de cette validation : si le rendu d'un type ne plaît pas, il se
   change en une ligne de `SPECS` et une teinte, sans toucher à la mécanique.
-- **Le plancher d'images par seconde n'est pas mesurable sur devAI** (ni sur chimera, qui n'a pas de
-  navigateur). Le verdict est celui de la CI. Si la CI le rendait rouge, la réponse serait de réduire
-  le nombre de particules du type le plus lourd — **pas** d'abaisser `PLANCHER_FPS`.
+- **Rien côté performance** : la CI mesure 60,0 images/s avec l'effet le plus lourd, soit le double
+  du plancher, et l'écart avec le socle seul est nul. Si un futur type faisait tomber ce chiffre, la
+  réponse serait de réduire ses particules — **jamais** d'abaisser `PLANCHER_FPS`.
 - Les types qui font trembler le plateau (Électrique, Combat, Dragon) sont les plus susceptibles de
   gêner : c'est le premier point à soumettre à JF, et le réglage « animations réduites » le coupe
   déjà entièrement.
