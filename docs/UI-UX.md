@@ -553,6 +553,41 @@ Ce qui rend le jeu compréhensible quand on apprend : « Tu attaches une Énergi
 Tests : `journal.test.ts` (traduction de chaque type, catégories, détail de dégâts, repli non traduit),
 `journal-panel.test.tsx` (filtres, dernier coup, survol, escamotage), et la parité côté `game`.
 
+## Aide en jeu — « pourquoi je ne peux pas faire ça » (lot `j-plateau-aide`)
+
+Le jeu est celui d'un enfant de onze ans : un jeu qui explique ses refus s'apprend en jouant, un jeu
+muet se désinstalle. Le tiroir d'aide (`apps/web/src/components/game/aide-panel.tsx`) porte quatre
+choses, et **aucune route** : tout se déduit de la vue que le serveur envoie déjà.
+
+- **L'objectif, toujours visible** (« Prends tes 6 cartes récompense… ») : c'est ce qu'un débutant
+  oublie en premier, avant même les règles.
+- **L'explication d'un refus.** Le moteur refuse en citant une règle ; l'aide la traduit en une phrase
+  d'enfant et nomme **ce qu'on peut faire à la place** (`alternative` — la moitié utile). Un refus
+  **ouvre le tiroir de lui-même** : un enfant ne va pas chercher l'aide. Les textes vivent dans
+  `apps/web/src/lib/game/aide.ts`, et un **test de parité** côté moteur
+  (`apps/game/tests/test_parite_aide_front.py`) **casse la CI** si une règle refusable n'y est pas
+  expliquée, ou si l'aide cite un identifiant absent de `docs/jeu/REGLES.md`.
+- **« Que puis-je faire ? »** après **12 s** sans rien faire : les coups de `vue.actions_legales`,
+  triés dans un ordre pédagogique, rendus en **lignes de texte et non en boutons**. L'aide ne joue
+  jamais à la place du joueur — une `Suggestion` ne porte même pas les `params` du coup. `abandonner`
+  n'est jamais suggéré.
+- **La première partie guidée** (cinq étapes : poser, remplir le banc, attacher, attaquer, prendre)
+  et le **glossaire** des mots du jeu.
+
+⚠️ **Le tiroir est en haut à GAUCHE et borné à 15rem, et c'est une contrainte.** Les quatre coins du
+plateau sont pris : `anim-accelere`/`anim-sauter` en haut à droite, le journal en bas sur toute la
+largeur, l'écran de fin replié en bas à gauche. Posé en haut à droite, il **recouvrait `anim-sauter`**
+sur l'écran de référence 844 × 390 — `anim-fluidite.spec.ts` le clique, Playwright aurait échoué sur
+une interception, et ni vitest ni `tsc` ne l'auraient vu. Comme ses voisins il est **`fixed`** : la
+page du plateau ne tolère aucun défilement. Un test de `aide-panel.test.tsx` garde les deux
+invariants.
+
+Détail complet, et la marche à suivre pour ajouter une explication : `docs/jeu/AIDE.md`.
+
+Tests : `aide.test.ts` (explications, glossaire, suggestions, lecture des deux formes de refus),
+`guide.test.ts` (le parcours va jusqu'au bout, ne recule jamais), `aide-panel.test.tsx` (aucun moyen
+de soumettre un coup, ouverture sur refus, hésitation, placement), et la parité côté `game`.
+
 ## Fenêtre de décision (lot `j-plateau-decisions`)
 
 Quand une carte réclame un choix à un joueur, le serveur pose une `VueDemande` dans l'état projeté
