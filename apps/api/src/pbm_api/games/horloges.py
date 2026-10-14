@@ -39,19 +39,28 @@ from pbm_game.journal.modele import (
 )
 from pbm_game.state.modele import PHASE_CHECKUP, EtatPartie
 
+from pbm_api.jeu.confort import rallonger
 
-def config_horloges(settings) -> ConfigHorloges:
+
+def config_horloges(settings, *, temps_rallonge: bool = False) -> ConfigHorloges:
     """Construit la :class:`ConfigHorloges` depuis la configuration (``settings``), DJ4 par défaut.
 
     Les cinq durées sont des réglages d'environnement : les modifier ne demande pas de redéployer le
     moteur, seulement de relancer l'API (les parties déjà lancées gardent leur config figée).
+
+    ``temps_rallonge`` (lot ``j-accessibilite-jeu``) **double** les trois durées de réflexion quand
+    au moins un des deux joueurs l'a demandé — voir :func:`pbm_api.jeu.confort.rallonger`, qui porte
+    la règle et la raison. Le défaut ``False`` garde l'appel historique intact.
     """
-    return ConfigHorloges(
-        par_tour_s=settings.horloge_par_tour_s,
-        par_joueur_s=settings.horloge_par_joueur_s,
-        par_decision_s=settings.horloge_par_decision_s,
-        tolerance_reseau_s=settings.horloge_tolerance_reseau_s,
-        pause_deconnexion_s=settings.horloge_pause_deconnexion_s,
+    return rallonger(
+        ConfigHorloges(
+            par_tour_s=settings.horloge_par_tour_s,
+            par_joueur_s=settings.horloge_par_joueur_s,
+            par_decision_s=settings.horloge_par_decision_s,
+            tolerance_reseau_s=settings.horloge_tolerance_reseau_s,
+            pause_deconnexion_s=settings.horloge_pause_deconnexion_s,
+        ),
+        temps_rallonge,
     )
 
 

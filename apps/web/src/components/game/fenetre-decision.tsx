@@ -15,6 +15,8 @@ import {
   typesPresents,
 } from "@/lib/game/decision";
 import { formatSecondes } from "@/lib/game/horloges";
+import { styleElement } from "@/lib/game/indicateurs";
+import { useModale } from "@/lib/game/use-modale";
 import type { VueDemande, VueOptionCarte, VuePartie } from "@/lib/game/plateau";
 
 /**
@@ -89,12 +91,24 @@ function phraseDefaut(demande: VueDemande): string {
   return ids.map((id) => libelleOption(demande, id)).join(", ");
 }
 
-/** Pastille de type (code d'élément), doublée du texte — lisible même sans la couleur (daltonisme). */
+/**
+ * Pastille de type d'énergie : son **nom français**, dans la couleur du type.
+ *
+ * Elle affichait le code moteur brut — « grass », « lightning » — c'est-à-dire un mot anglais à un
+ * enfant de onze ans (lot `j-accessibilite-jeu`). Le nom et la couleur viennent de la source unique
+ * `lib/game/indicateurs.ts`, celle que le plateau utilise déjà : un type ne peut pas s'appeler
+ * « Plante » sur une carte et « grass » dans une fenêtre de décision. La couleur **double** le nom,
+ * elle ne le remplace pas (daltonisme).
+ */
 function PastilleType({ type }: { type: string | null | undefined }) {
   if (!type) return null;
+  const style = styleElement(type);
   return (
-    <span className="rounded-full bg-muted px-2 py-0.5 text-[0.7rem] font-semibold uppercase text-muted-foreground">
-      {type}
+    <span
+      className="rounded-full px-2 py-0.5 text-[0.7rem] font-semibold"
+      style={{ backgroundColor: style.couleur, color: style.texte }}
+    >
+      {style.label}
     </span>
   );
 }
@@ -328,13 +342,14 @@ function SelecteurType({
           type="button"
           data-testid={`option-${t}`}
           aria-pressed={valeur === t}
+          aria-label={styleElement(t).label}
           onClick={() => onChoisir(t)}
           className={cn(
-            "rounded-full border px-3 py-1.5 text-sm font-semibold uppercase",
+            "min-h-11 rounded-full border px-3 py-1.5 text-sm font-semibold",
             valeur === t ? "border-primary bg-primary/15" : "border-border bg-background",
           )}
         >
-          {t}
+          {styleElement(t).label}
         </button>
       ))}
     </div>
@@ -459,6 +474,12 @@ function ModaleDecision({
     [onRepondre, envoi, demande.id],
   );
 
+  // Clavier de la fenêtre (lot `j-accessibilite-jeu`) : le **Tab** y reste, et le focus part sur le
+  // premier contrôle. Pas d'Échap : cette fenêtre est **obligatoire** — le moteur attend une
+  // réponse, et son horloge en donne une par défaut à l'expiration (DJ4). Une touche qui la
+  // ferait disparaître sans répondre laisserait le joueur devant un plateau bloqué.
+  const refModale = useModale({ piege: true });
+
   const basculerCarte = (id: string) => {
     setSelection((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
@@ -470,6 +491,7 @@ function ModaleDecision({
 
   return (
     <div
+      ref={refModale}
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-2 sm:items-center"
       role="dialog"
       aria-modal="true"

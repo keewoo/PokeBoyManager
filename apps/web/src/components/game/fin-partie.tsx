@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { FormNotice } from "@/components/auth/form-notice";
 import { ApiError } from "@/lib/api/client";
+import { useModale } from "@/lib/game/use-modale";
 import {
   getRecapitulatif,
   listGames,
@@ -121,6 +122,12 @@ export function FinPartie({
   // « Partie terminée », et on nomme la raison, qui elle est connue du plateau.
   const issue = recap ? issueDeFin(recap.vainqueur_user_id, moiUserId) : null;
 
+  // Clavier de la surcouche (lot `j-accessibilite-jeu`) : **Échap** replie le résumé, le **Tab** y
+  // reste tant qu'il est ouvert. `actif: !replie` — replié, ce n'est plus qu'un bouton dans un
+  // coin, il n'y a rien à piéger ni à fermer ; et le focus est repris quand on le redéploie, sinon
+  // au clavier il tombait sur le `<body>` au moment où le bouton disparaissait.
+  const refModale = useModale({ onFermer: () => setReplie(true), actif: !replie });
+
   if (replie) {
     return (
       <button
@@ -136,6 +143,7 @@ export function FinPartie({
 
   return (
     <div
+      ref={refModale}
       role="dialog"
       aria-modal="true"
       aria-labelledby="fin-partie-titre"

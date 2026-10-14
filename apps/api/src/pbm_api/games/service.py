@@ -87,6 +87,7 @@ from pbm_api.games.errors import (
     PartieIntrouvable,
     PartieNonActive,
 )
+from pbm_api.jeu.confort_service import temps_rallonge_des_joueurs
 from pbm_api.models import User
 from pbm_api.models.games import (
     GAME_STATUS_EN_COURS,
@@ -341,8 +342,16 @@ async def creer_partie(
         entrainement=entrainement,
         last_action_at=maintenant,
         expires_at=maintenant + _delai_inactivite(),
+        # Temps rallongé (lot `j-accessibilite-jeu`) : si l'un des deux joueurs l'a demandé, la
+        # partie entière l'obtient. Lu ICI et nulle part ailleurs — une partie fige ses horloges à
+        # sa création, donc un réglage changé plus tard ne vaudra que pour la partie suivante.
         horloges=_adapt_horloges.etat_initial_json(
-            _adapt_horloges.config_horloges(settings), etat_initial, maintenant.timestamp()
+            _adapt_horloges.config_horloges(
+                settings,
+                temps_rallonge=await temps_rallonge_des_joueurs(db, (user_a, user_b)),
+            ),
+            etat_initial,
+            maintenant.timestamp(),
         ),
     )
     db.add(game)

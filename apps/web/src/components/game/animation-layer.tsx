@@ -2,6 +2,8 @@
 
 import { type CSSProperties, useCallback, useEffect, useReducer, useRef, useState } from "react";
 
+import { useConfort } from "@/lib/confort-provider";
+import { ANIMATIONS_REDUITES } from "@/lib/game/confort";
 import {
   FILE_VIDE,
   type Animation,
@@ -31,6 +33,11 @@ import {
  * - **`prefers-reduced-motion`** : le réglage système passe la file en mode réduit, où les durées
  *   sont nulles et où **aucun** effet n'est rendu. La file se vide quand même, un coup après
  *   l'autre : rien ne disparaît, rien ne bloque.
+ *
+ * Le lot `j-accessibilite-jeu` y ajoute les deux façons de **couper** une animation, et elles sont
+ * complémentaires : *globalement* par le réglage du jeu (`/jeu/confort`, qui s'ajoute au réglage
+ * système — l'un des deux suffit), et *individuellement* par le bouton « Passer », qui saute
+ * l'animation en cours sans toucher aux suivantes ni à aucun réglage.
  */
 
 /** Ce que {@link useFileAnimations} rend à l'écran de partie. */
@@ -43,7 +50,11 @@ export type EtatAnimations = {
   enAttente: number;
   /** Le mode courant. */
   mode: ModeAnimation;
-  /** `true` si le système demande des animations réduites : l'accélération n'a alors plus de sens. */
+  /**
+   * `true` si les animations sont réduites — par le **système** (`prefers-reduced-motion`) ou par le
+   * réglage du **jeu** (`/jeu/confort`, lot `j-accessibilite-jeu`). L'accélération n'a alors plus de
+   * sens : il n'y a plus rien à accélérer.
+   */
   reduit: boolean;
   /** Saute l'animation en cours et enchaîne. */
   sauter: () => void;
@@ -77,7 +88,12 @@ export function useFileAnimations({
   const [file, dispatch] = useReducer(reduireFile, FILE_VIDE);
   // Réglage système : il gagne toujours sur le choix du joueur (c'est une demande d'accessibilité,
   // pas une préférence de confort).
-  const [reduit, setReduit] = useState(false);
+  const [systemeReduit, setSystemeReduit] = useState(false);
+  // Réglage du JEU (lot `j-accessibilite-jeu`, `/jeu/confort`) : il s'ajoute au système, il ne le
+  // contredit pas — l'un des deux suffit à tout arrêter. Il existe parce que tout le monde ne sait
+  // pas où se trouve « animations réduites » dans les réglages d'un téléphone.
+  const { confort } = useConfort();
+  const reduit = systemeReduit || confort.animations === ANIMATIONS_REDUITES;
   const [accelere, setAccelere] = useState(false);
   const mode: ModeAnimation = reduit ? "reduit" : accelere ? "accelere" : "normal";
   // Dernier numéro de coup déjà planifié : la borne qui évite de replanifier tout l'historique à
@@ -88,7 +104,7 @@ export function useFileAnimations({
   useEffect(() => {
     const mq = window.matchMedia?.("(prefers-reduced-motion: reduce)");
     if (!mq) return;
-    const appliquer = () => setReduit(mq.matches);
+    const appliquer = () => setSystemeReduit(mq.matches);
     appliquer();
     mq.addEventListener?.("change", appliquer);
     return () => mq.removeEventListener?.("change", appliquer);
@@ -233,6 +249,10 @@ export function CoucheAnimation({
       </div>
 
       {(onSauter || onBasculerAccelere) && (
+        // Cibles tactiles : au moins 24×24 px (WCAG 2.2, 2.5.8 — niveau AA), alors que ces deux
+        // boutons faisaient 16 px de haut. Ils sont `absolute`, donc les agrandir n'allonge pas la
+        // page — le plateau ne tolère aucun défilement (lot `j-plateau-layout`). C'est aussi pour
+        // ça que l'arène n'atteint pas les 44 px du niveau AAA : voir `docs/jeu/ACCESSIBILITE.md`.
         <div className="absolute right-2 top-2 z-30 flex items-center gap-1">
           {onBasculerAccelere && (
             <button
@@ -240,7 +260,7 @@ export function CoucheAnimation({
               data-testid="anim-accelere"
               aria-pressed={accelere}
               onClick={onBasculerAccelere}
-              className="rounded-full border border-white/25 bg-black/50 px-2 py-0.5 text-[10px] uppercase tracking-wider text-white/80 hover:bg-black/70"
+              className="min-h-6 min-w-6 rounded-full border border-white/25 bg-black/50 px-2 py-1 text-[11px] uppercase tracking-wider text-white/90 hover:bg-black/70"
             >
               {accelere ? "Vitesse normale" : "Accélérer"}
             </button>
@@ -250,7 +270,7 @@ export function CoucheAnimation({
               type="button"
               data-testid="anim-sauter"
               onClick={onSauter}
-              className="rounded-full border border-white/25 bg-black/50 px-2 py-0.5 text-[10px] uppercase tracking-wider text-white/80 hover:bg-black/70"
+              className="min-h-6 min-w-6 rounded-full border border-white/25 bg-black/50 px-2 py-1 text-[11px] uppercase tracking-wider text-white/90 hover:bg-black/70"
             >
               {enAttente > 0 ? `Passer (${enAttente})` : "Passer"}
             </button>
