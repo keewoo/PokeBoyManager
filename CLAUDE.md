@@ -88,6 +88,7 @@ existe. Détail : `docs/PLUGINS.md`.
 | `docs/infra/JOBS-LOURDS.md` | on planifie ou on diagnostique un traitement lourd |
 | `docs/catalogue/COMPLETUDE.md` | on se demande si le catalogue est complet, et où sont les trous |
 | `docs/jeu/OBSERVABILITE.md` | on se demande si le jeu va bien : métriques, alertes, sonde, runbook |
+| `docs/jeu/NOTIFICATIONS.md` | on prévient un joueur : genres, plafonds, silence nocturne, relais, « je n'ai rien reçu » |
 | `docs/roadmap/jeu/BACKLOG-JEU.md` | on travaille sur le jeu (67 lots, paliers, décisions `DJ*`) |
 
 ## Où écrire quoi

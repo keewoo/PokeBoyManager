@@ -24,6 +24,7 @@ from pbm_api.routers.invitations import router as invitations_router
 from pbm_api.routers.jeu_demandes import router as jeu_demandes_router
 from pbm_api.routers.lancement import router as lancement_router
 from pbm_api.routers.matchmaking import router as matchmaking_router
+from pbm_api.routers.notifications import router as notifications_router
 from pbm_api.routers.observabilite import router as observabilite_router
 from pbm_api.routers.profile import router as profile_router
 from pbm_api.routers.uploads import router as uploads_router
@@ -76,6 +77,9 @@ app.include_router(matchmaking_router)
 app.include_router(invitations_router)
 app.include_router(lancement_router)
 app.include_router(jeu_demandes_router)
+# Notifications du jeu (lot `j-notifications-jeu`) : le canal dans l'application et ses reglages.
+# Aucune route n'EMET de notification — elles naissent d'un evenement du jeu, jamais d'un client.
+app.include_router(notifications_router)
 # Supervision du jeu (lot `j-observabilite-jeu`) : les metriques lisibles sans SSH, reservees
 # aux comptes ayant l'acces au jeu (D11) — agregees, jamais ventilees par compte.
 app.include_router(observabilite_router)

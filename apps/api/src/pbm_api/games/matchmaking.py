@@ -41,8 +41,10 @@ from pbm_api.config import settings
 from pbm_api.games.entry import verifier_deck
 from pbm_api.games.errors import CartesNonJouables, GameError
 from pbm_api.games.service import creer_partie
-from pbm_api.models import Game, GamePlayer
+from pbm_api.models import Game, GamePlayer, User
 from pbm_api.models.games import GAME_STATUS_EN_COURS
+from pbm_api.models.notifications import NOTIF_ADVERSAIRE_TROUVE
+from pbm_api.notifications import service as notifications
 
 logger = logging.getLogger(__name__)
 
@@ -290,7 +292,40 @@ async def apparier(
     finally:
         await _liberer_verrou(redis, jeton)
 
+    # Hors du verrou (plus rien de critique) : prévenir les deux joueurs que la partie existe.
+    # « Adversaire trouvé » est le seul moment où la file cesse d'être une attente muette — sans
+    # cette notification, un joueur qui a fermé l'onglet ne sait pas qu'on l'attend.
+    await _notifier_appariements(db, cree)
     return cree
+
+
+async def _notifier_appariements(
+    db: AsyncSession, cree: list[tuple[Game, tuple[uuid.UUID, uuid.UUID]]]
+) -> None:
+    """Notifie chaque joueur apparié, en lui nommant son adversaire (lot `j-notifications-jeu`).
+
+    Appelée **après** la libération du verrou d'appariement : notifier n'est pas critique, et ne
+    doit pas rallonger la section qui, elle, l'est. Chaque émission passe par
+    :func:`~pbm_api.notifications.service.notifier_sans_casser` — un canal de notification en panne
+    ne doit pas annuler des appariements déjà commités.
+
+    Le commit final est explicite : :func:`creer_partie` a commité la partie, les notifications sont
+    écrites après et n'auraient sinon aucun porteur de transaction.
+    """
+    if not cree:
+        return
+    for game, (ua, ub) in cree:
+        joueurs = {ua: await db.get(User, ua), ub: await db.get(User, ub)}
+        for destinataire, adversaire in ((ua, ub), (ub, ua)):
+            autre = joueurs.get(adversaire)
+            await notifications.notifier_sans_casser(
+                db,
+                destinataire_id=destinataire,
+                genre=NOTIF_ADVERSAIRE_TROUVE,
+                game_id=game.id,
+                donnees={"pseudo": autre.pseudo if autre else None},
+            )
+    await db.commit()
 
 
 #: Script Lua de libération atomique : ne supprime le verrou que si c'est toujours le nôtre

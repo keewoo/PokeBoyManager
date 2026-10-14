@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import { logout } from "@/lib/api/auth";
 import { fetchDeckAlerts } from "@/lib/api/decks";
+import { listNotifications } from "@/lib/api/notifications";
 import { getProfile } from "@/lib/api/profile";
 import { cn } from "@/lib/utils";
 
@@ -124,6 +125,31 @@ export function AppShell({
     // `pathname` en dépendance : après une vente (page Collection) puis retour, le badge se réévalue.
   }, [hasSession, pathname]);
 
+  // Badge des notifications du jeu non lues, sur l'entrée « Jouer » (lot `j-notifications-jeu`).
+  // Posé DANS la pilule existante — comme celui des decks — et non comme un élément de plus : la
+  // page du plateau ne tolère aucun défilement (e2e `plateau-responsive`), et un nœud ajouté dans
+  // l'en-tête pourrait l'allonger sur un écran étroit.
+  // Best-effort, même motif que les deux lectures ci-dessus : un échec laisse le badge absent
+  // plutôt qu'un « 0 » mensonger. L'écran `/jeu/notifications` reste la source complète.
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  useEffect(() => {
+    if (!hasSession || !gameAccess) {
+      setUnreadNotifications(0);
+      return;
+    }
+    let active = true;
+    listNotifications(true)
+      .then((liste) => {
+        if (active) setUnreadNotifications(liste.nb_non_lues);
+      })
+      .catch(() => {
+        if (active) setUnreadNotifications(0);
+      });
+    return () => {
+      active = false;
+    };
+  }, [hasSession, gameAccess, pathname]);
+
   // L'état vient du serveur (cookie de session lu par `app/layout.tsx`, même source que la
   // garde de route `middleware.ts`) : jamais deviné côté client — le cookie est httpOnly. La
   // connexion (`connexion-form.tsx`) fait déjà `router.refresh()`, qui re-rend le layout et donc
@@ -184,6 +210,7 @@ export function AppShell({
               {navLinks.map((link) => {
                 const isActive = pathname === link.href;
                 const showAlerts = link.href === DECKS_HREF && unreadAlerts > 0;
+                const showNotifications = link.href === JEU_HREF && unreadNotifications > 0;
                 return (
                   <Link
                     key={link.href}
@@ -204,6 +231,15 @@ export function AppShell({
                         data-testid="decks-alert-badge"
                       >
                         {unreadAlerts}
+                      </span>
+                    )}
+                    {showNotifications && (
+                      <span
+                        className="grid min-w-[1.25rem] place-items-center rounded-full bg-[#D6006E] px-1.5 py-0.5 text-[10px] font-bold leading-none text-white"
+                        aria-label={`${unreadNotifications} notification(s) de jeu non lue(s)`}
+                        data-testid="jeu-notifications-badge"
+                      >
+                        {unreadNotifications}
                       </span>
                     )}
                   </Link>

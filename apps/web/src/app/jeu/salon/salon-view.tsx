@@ -527,11 +527,23 @@ export function SalonView() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="font-heading text-xl font-bold text-foreground">Salon de jeu</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Reprends une partie, cherche un adversaire ou invite un ami.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="font-heading text-xl font-bold text-foreground">Salon de jeu</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Reprends une partie, cherche un adversaire ou invite un ami.
+          </p>
+        </div>
+        {/* Porte d'entrée des notifications et de leurs réglages (lot `j-notifications-jeu`). Le
+            badge de la navigation signale les non lues ; il faut aussi un chemin pour les LIRE et
+            pour couper ce qu'on ne veut pas recevoir — sans quoi le réglage existerait sans être
+            atteignable. */}
+        <Link
+          href="/jeu/notifications"
+          className="rounded-full border border-[rgba(157,0,255,0.65)] px-4 py-2 font-heading text-xs font-semibold uppercase tracking-[0.08em] text-violet-clair hover:text-foreground"
+        >
+          Notifications
+        </Link>
       </div>
 
       {error && <FormNotice variant="error">{error}</FormNotice>}
