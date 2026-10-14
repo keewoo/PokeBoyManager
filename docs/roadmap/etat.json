@@ -10307,7 +10307,7 @@
       "compte_rendu": {}
     },
     "j-notifications-jeu": {
-      "statut": "a_faire",
+      "statut": "integre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
@@ -10359,8 +10359,21 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-10-14T15:05+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": "branche roadmap/j-notifications-jeu fusionnee dans main (verifie par git merge-base)"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": {
+        "quand": "2026-10-14T15:05+0200",
+        "raisons": [
+          "branche roadmap/j-notifications-jeu fusionnee dans main (verifie par git merge-base)"
+        ]
+      }
     },
     "j-tests-regles": {
       "statut": "integre",
