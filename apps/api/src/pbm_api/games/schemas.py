@@ -159,3 +159,75 @@ class PartageReplayOut(BaseModel):
     pseudo: str | None
     partage_par_user_id: uuid.UUID
     created_at: datetime
+
+
+# --- Fin de partie : récapitulatif et revanche (lot `j-partie-fin-ui`) --------
+# Le récapitulatif est **recalculé depuis le journal** à chaque demande (voir
+# `pbm_api.games.recapitulatif` et le module pur `pbm_game.journal.recapitulatif`) : aucun de ces
+# chiffres n'est stocké, donc aucun ne peut dériver.
+
+
+class StatsJoueurOut(BaseModel):
+    """Ce qu'un joueur a fait dans la partie — un siège, un compte, et ses compteurs.
+
+    ``degats_infliges`` est le total **annoncé par ses attaques** (après faiblesse, résistance et
+    modificateurs, R-10.9) : les dégâts d'un état spécial au Checkup ne sont infligés par personne
+    et ne figurent donc dans la colonne de personne. ``cartes_jouees`` **exclut** les Énergies,
+    comptées à part — « 12 cartes jouées » ne doit pas vouloir dire « dont 9 Énergies ».
+    """
+
+    seat: int
+    user_id: uuid.UUID
+    pseudo: str | None
+    degats_infliges: int
+    kos_infliges: int
+    recompenses_prises: int
+    cartes_jouees: int
+    energies_attachees: int
+    coups_joues: int
+
+
+class MeilleurCoupOut(BaseModel):
+    """Le coup qui a infligé le plus de dégâts, et s'il a mis K.O.
+
+    ``user_id`` peut être ``None`` si le coup n'a pas pu être rattaché à un siège : l'écran
+    l'affiche alors sans l'attribuer, plutôt que de l'attribuer au mauvais joueur.
+    """
+
+    numero: int
+    user_id: uuid.UUID | None
+    degats: int
+    ko: bool
+
+
+class RecapitulatifOut(BaseModel):
+    """Le récapitulatif d'une partie finie, recalculé depuis son journal.
+
+    ``duree_s`` vaut ``None`` quand les horodatages du journal ne permettent pas de la calculer :
+    l'écran dit alors « durée inconnue », jamais « 0 s ». ``joueurs`` est dans l'ordre des sièges.
+    """
+
+    game_id: uuid.UUID
+    statut: str
+    raison_fin: str | None
+    vainqueur_user_id: uuid.UUID | None
+    entrainement: bool
+    coups: int
+    tours: int
+    debut: str | None
+    fin: str | None
+    duree_s: int | None
+    joueurs: list[StatsJoueurOut]
+    meilleur_coup: MeilleurCoupOut | None
+
+
+class RevancheOut(BaseModel):
+    """La partie créée (ou retrouvée) par une demande de revanche.
+
+    ``deja_creee`` est vrai quand une partie en cours existait déjà entre ces deux comptes : les
+    deux joueurs ont cliqué « Revanche », et on les envoie au **même** plateau au lieu de créer
+    une seconde partie (voir `pbm_api.games.revanche`). La réponse est alors 200, pas 201.
+    """
+
+    game_id: uuid.UUID
+    deja_creee: bool

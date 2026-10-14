@@ -26,6 +26,7 @@
  * (D9).
  */
 
+import { raisonCourte } from "@/lib/game/fin";
 import { ETATS } from "@/lib/game/indicateurs";
 
 /** Un événement diffusé par le serveur : son type et ses données (valeurs JSON natives). */
@@ -145,18 +146,17 @@ function frPhase(code: string | undefined): string {
   return (code && phases[code]) ?? code ?? "?";
 }
 
-/** Phrase courte d'une raison de fin de partie (R-14), ou la raison brute si elle est inconnue. */
+/**
+ * Phrase courte d'une raison de fin de partie (R-14), ou la raison brute si elle est inconnue.
+ *
+ * Les libellés vivent **une seule fois**, dans le registre `RAISONS_FIN` de `lib/game/fin.ts` : le
+ * journal et l'écran de fin disent alors le même mot pour la même raison, et un test de parité
+ * côté moteur casse si le moteur en ajoute une sans libellé. Deux tables auraient divergé — et
+ * elles avaient déjà divergé : celle qui vivait ici ignorait l'égalité (`egalite`), qu'elle
+ * affichait donc en code brut au joueur.
+ */
 function frRaison(code: string | undefined): string {
-  const raisons: Record<string, string> = {
-    abandon: "abandon",
-    pioche_impossible: "pioche impossible",
-    plus_de_pokemon: "plus de Pokémon en jeu",
-    derniere_recompense: "dernière récompense prise",
-    temps_ecoule: "temps écoulé",
-    desertion: "désertion",
-    inactivite: "partie inactive",
-  };
-  return (code && raisons[code]) ?? code ?? "?";
+  return raisonCourte(code);
 }
 
 // --- Le registre des traducteurs, un par type d'événement --------------------

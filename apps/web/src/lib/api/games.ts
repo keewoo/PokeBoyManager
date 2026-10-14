@@ -22,6 +22,8 @@ export type GameSummary = {
   raison_fin: string | null;
   created_at: string;
   updated_at: string;
+  /** Partie d'entraînement contre le bot ou l'IA (DJ7) : dans l'historique, mais hors statistiques. */
+  entrainement: boolean;
 };
 
 /** Les parties du joueur courant, de la plus récente à la plus ancienne (le serveur ordonne). */
@@ -173,4 +175,76 @@ export function ouvrirPartageReplay(gameId: string, pseudo: string): Promise<Par
 /** Retire à un compte le droit de regarder ce replay (404 s'il n'y avait rien à retirer). */
 export function fermerPartageReplay(gameId: string, userId: string): Promise<void> {
   return apiJson<void>("DELETE", `/games/${gameId}/replay/partages/${userId}`);
+}
+
+
+// --- Fin de partie : récapitulatif et revanche (lot `j-partie-fin-ui`) -------
+// Contrats miroir de `apps/api/src/pbm_api/games/schemas.py` (`RecapitulatifOut`, `RevancheOut`).
+// Le récapitulatif est **recalculé par le serveur depuis le journal** à chaque demande : l'écran ne
+// compte rien lui-même, et un F5 ne peut donc pas doubler un chiffre.
+
+/** Les compteurs d'un joueur dans une partie finie (un siège, un compte, ses chiffres). */
+export type StatsJoueur = {
+  seat: number;
+  user_id: string;
+  pseudo: string | null;
+  degats_infliges: number;
+  kos_infliges: number;
+  recompenses_prises: number;
+  cartes_jouees: number;
+  energies_attachees: number;
+  coups_joues: number;
+};
+
+/** Le coup qui a infligé le plus de dégâts (`user_id` nul si non rattaché à un siège). */
+export type MeilleurCoup = {
+  numero: number;
+  user_id: string | null;
+  degats: number;
+  ko: boolean;
+};
+
+/** Le récapitulatif d'une partie finie (`duree_s` nul = durée incalculable, pas « 0 s »). */
+export type Recapitulatif = {
+  game_id: string;
+  statut: string;
+  raison_fin: string | null;
+  vainqueur_user_id: string | null;
+  entrainement: boolean;
+  coups: number;
+  tours: number;
+  debut: string | null;
+  fin: string | null;
+  duree_s: number | null;
+  joueurs: StatsJoueur[];
+  meilleur_coup: MeilleurCoup | null;
+};
+
+/**
+ * Le récapitulatif d'une partie **finie**, recalculé par le serveur depuis le journal.
+ *
+ * Lève `ApiError` 404 si le joueur ne participe pas à cette partie, 409 si elle est encore en
+ * cours (la fenêtre ne s'ouvre qu'à la fin, comme le replay).
+ */
+export function getRecapitulatif(gameId: string): Promise<Recapitulatif> {
+  return apiGet<Recapitulatif>(`/games/${gameId}/recapitulatif`);
+}
+
+/** La partie créée (ou retrouvée) par une demande de revanche. */
+export type Revanche = {
+  game_id: string;
+  /** Vrai si une partie en cours existait déjà entre ces deux comptes (les deux ont cliqué). */
+  deja_creee: boolean;
+};
+
+/**
+ * Relance la partie : mêmes joueurs, mêmes decks, **sans repasser par la file**. Le perdant
+ * commence ; sans vainqueur, les sièges sont échangés.
+ *
+ * Lève `ApiError` 409 si la partie n'est pas finie ou si un joueur est engagé ailleurs, 422 si un
+ * deck n'est plus jouable (le `detail` porte alors les cartes refusées) ou n'existe plus, 404 si
+ * le joueur ne participe pas à la partie finie.
+ */
+export function revancheGame(gameId: string): Promise<Revanche> {
+  return apiJson<Revanche>("POST", `/games/${gameId}/revanche`);
 }

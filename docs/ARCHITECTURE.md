@@ -1146,3 +1146,34 @@ de logique côté front (le risque « même règle des deux côtés » est évit
   ses énergies et son Outil (non ◇) vont à la défausse (R-13.2). `combat.ko.router_cartes_ko`,
   branché dans `combat.fin._appliquer_ko` (détecté sur le marqueur de la **fiche**, le moteur ne lit
   jamais le catalogue). Une carte en zone perdue n'en sort plus : aucune action ne l'en retire.
+
+## Fin de partie : récapitulatif et revanche (lot `j-partie-fin-ui`)
+
+Deux routes s'ajoutent à `/games`, et aucune table. Le détail des décisions est dans
+**`docs/jeu/FIN-DE-PARTIE.md`** ; voici les repères d'implémentation.
+
+| Route | Rend | Refus |
+|---|---|---|
+| `GET /games/{id}/recapitulatif` | `RecapitulatifOut` — durée, tours, et par siège : dégâts infligés, K.O., récompenses prises, cartes jouées, Énergies attachées, coups joués, plus le meilleur coup | 404 si l'appelant ne joue pas la partie · 409 si elle est en cours |
+| `POST /games/{id}/revanche` | `RevancheOut` (`game_id`, `deja_creee`) — **201** si créée, **200** si une partie en cours existait déjà entre ces deux comptes | 404 non-participant ou deck d'autrui · 409 partie en cours / joueur engagé ailleurs · 422 deck absent ou non jouable (cartes nommées) |
+
+**Aucun chiffre n'est stocké.** Le récapitulatif est **recalculé** à chaque demande par
+`pbm_game.journal.recapitulatif.construire_recapitulatif` — module **pur**, qui reçoit des `Entree`
+et rend une valeur. L'adaptateur `pbm_api.games.recapitulatif` lit le journal (`game_events`, une
+requête bornée par `current_numero`, **sans rejouer aucun état**) et nomme les joueurs. Ce choix
+ferme le risque nommé du lot : le canal temps réel rejoue la partie depuis le coup 0 à chaque
+reconnexion, donc tout compteur accumulé doublerait après un F5. Et le calcul se fait sur le journal
+**complet** en base, pas sur les événements projetés par destinataire : les deux joueurs voient
+donc le même récapitulatif.
+
+**La revanche ne crée rien de neuf** : elle relit les deux `GamePlayer` et rappelle `creer_partie` +
+`demarrer_partie`, ou `creer_partie_entrainement` quand un siège était tenu par le bot ou l'IA (DJ7).
+Ce qui lui est propre : le **perdant au siège 0** (sans vainqueur, les sièges sont échangés), le
+**recontrôle des deux decks** par `verifier_lancable` (propriété, scripts D9, possession), le refus
+nommé d'un siège sans deck (`deck_id` est `ON DELETE SET NULL`), et l'**idempotence** —
+`partie_active_entre(db, a, b)` rend la partie en cours entre ces deux comptes, de sorte que les
+deux clics simultanés mènent au même plateau au lieu d'un conflit.
+
+Les **libellés** des huit raisons de fin vivent côté front (`apps/web/src/lib/game/fin.ts`) et leur
+parité avec les constantes `RAISON_*` du moteur est gardée en CI par un test statique du job `game`
+(`apps/game/tests/test_parite_raisons_fin_front.py`) — dans les deux sens.

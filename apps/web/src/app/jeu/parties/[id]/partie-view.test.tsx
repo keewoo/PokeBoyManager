@@ -18,12 +18,25 @@ vi.mock("@/lib/game/realtime", () => ({
 }));
 
 const notFound = vi.fn();
-vi.mock("next/navigation", () => ({ notFound: () => notFound() }));
+// `useRouter` est exigé par l'écran de fin (lot `j-partie-fin-ui`), rendu quand la partie est
+// terminée : sans lui dans le mock, le rendu casserait sur la seule partie finie de ce fichier.
+const push = vi.fn();
+vi.mock("next/navigation", () => ({
+  notFound: () => notFound(),
+  useRouter: () => ({ push }),
+}));
 
 vi.mock("@/lib/api/profile", () => ({ getProfile: vi.fn() }));
 vi.mock("@/lib/api/games", async (importOriginal) => {
   const mod = await importOriginal<typeof import("@/lib/api/games")>();
-  return { ...mod, getGameState: vi.fn() };
+  // `getRecapitulatif` et `listGames` sont ceux que l'écran de fin appelle quand la partie
+  // est terminée : sans eux, le test de la fin mesurerait un vrai `fetch` absent de jsdom.
+  return {
+    ...mod,
+    getGameState: vi.fn(),
+    getRecapitulatif: vi.fn(),
+    listGames: vi.fn(),
+  };
 });
 
 const profile = vi.mocked(profileApi);
@@ -74,8 +87,12 @@ function etatMinimal() {
 
 beforeEach(() => {
   notFound.mockReset();
+  push.mockReset();
   profile.getProfile.mockReset();
   games.getGameState.mockReset();
+  games.getRecapitulatif.mockReset();
+  games.listGames.mockReset();
+  games.listGames.mockResolvedValue([]);
 });
 
 describe("PartieView — gating d'accès", () => {
@@ -102,5 +119,61 @@ describe("PartieView — chargement du plateau", () => {
     await waitFor(() => expect(screen.getByTestId("plateau")).toBeInTheDocument());
     expect(screen.getByText("Toi")).toBeInTheDocument();
     expect(notFound).not.toHaveBeenCalled();
+  });
+});
+
+describe("PartieView — fin de partie", () => {
+  it("n'affiche aucun écran de fin tant que la partie n'est pas terminée", async () => {
+    profile.getProfile.mockResolvedValue(makeProfile(true));
+    games.getGameState.mockResolvedValue(etatMinimal());
+    render(<PartieView gameId="g1" />);
+    await waitFor(() => expect(screen.getByTestId("plateau")).toBeInTheDocument());
+    expect(screen.queryByTestId("fin-partie")).not.toBeInTheDocument();
+    // Et le récapitulatif n'est même pas demandé : une partie en cours n'en a pas (409 serveur).
+    expect(games.getRecapitulatif).not.toHaveBeenCalled();
+  });
+
+  it("affiche l'écran de fin quand le serveur déclare la partie terminée", async () => {
+    // La fin est décidée par le serveur (`vue.terminee`), jamais déduite ici : c'est la seule
+    // condition de déclenchement. Les chiffres, eux, viennent du récapitulatif — le plateau ne
+    // compte rien (un F5 rejoue toute la partie, un compteur local doublerait).
+    profile.getProfile.mockResolvedValue(makeProfile(true));
+    const base = etatMinimal();
+    const etat = {
+      ...base,
+      vue: {
+        ...base.vue,
+        terminee: true,
+        vainqueur: "a",
+        raison_fin: "derniere_recompense",
+      },
+    };
+    games.getGameState.mockResolvedValue(etat);
+    games.getRecapitulatif.mockResolvedValue({
+      game_id: "g1",
+      statut: "terminee",
+      raison_fin: "derniere_recompense",
+      vainqueur_user_id: "u1",
+      entrainement: false,
+      coups: 12,
+      tours: 3,
+      debut: "2026-10-14T10:00:00+00:00",
+      fin: "2026-10-14T10:02:00+00:00",
+      duree_s: 120,
+      joueurs: [],
+      meilleur_coup: null,
+    });
+
+    render(<PartieView gameId="g1" />);
+    // L'annonce arrive d'abord sans résultat (« Partie terminée ») : le vainqueur ne vient que du
+    // récapitulatif, et on n'en invente pas un en attendant.
+    expect(await screen.findByTestId("fin-partie")).toBeInTheDocument();
+    expect(games.getRecapitulatif).toHaveBeenCalledWith("g1");
+    // Puis le récapitulatif arrive, et le profil donne `id: "u1"` : le vainqueur, c'est moi.
+    await waitFor(() =>
+      expect(screen.getByTestId("fin-partie-titre")).toHaveTextContent("Gagné"),
+    );
+    // Le plateau reste rendu derrière : l'écran de fin ne le remplace pas.
+    expect(screen.getByTestId("plateau")).toBeInTheDocument();
   });
 });

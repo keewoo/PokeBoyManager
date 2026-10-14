@@ -27,6 +27,7 @@ from pbm_api.config import settings
 from pbm_api.db import get_session
 from pbm_api.games import horloges as _adapt_horloges
 from pbm_api.games.adversaire_ia import MAX_APPELS_PAR_PARTIE
+from pbm_api.games.bot import CleIAIndisponible, NiveauBotInconnu
 from pbm_api.games.catalogue_jeu import construire_catalogue_jeu
 from pbm_api.games.coach import (
     BilanIndisponible,
@@ -38,14 +39,17 @@ from pbm_api.games.coach import (
     bilan_de_partie,
     conseil_pour_joueur,
 )
+from pbm_api.games.entry import DeckInjouable, DeckIntrouvable
 from pbm_api.games.errors import (
     ActionRefusee,
+    CartesNonJouables,
     ConflitNumero,
     PartieIntrouvable,
     PartieNonActive,
 )
 from pbm_api.games.indicateurs import catalogue_pour_etat, catalogue_pour_resultat
 from pbm_api.games.projection import projeter_resultat, vue_autoritaire
+from pbm_api.games.recapitulatif import RecapPartieEnCours, recapitulatif_de_partie
 from pbm_api.games.replay import (
     LIMITE_DEFAUT,
     LIMITE_MAX,
@@ -60,6 +64,12 @@ from pbm_api.games.replay import (
     ouvrir_partage,
     partages,
 )
+from pbm_api.games.revanche import (
+    JoueurDejaEnPartie,
+    RevanchePartieEnCours,
+    SiegeSansDeck,
+    creer_revanche,
+)
 from pbm_api.games.schemas import (
     ActionIn,
     BilanOut,
@@ -72,6 +82,8 @@ from pbm_api.games.schemas import (
     MomentBilanOut,
     PartageReplayIn,
     PartageReplayOut,
+    RecapitulatifOut,
+    RevancheOut,
 )
 from pbm_api.games.service import (
     _game_pour_participant,
@@ -474,3 +486,94 @@ async def fermer_replay_partage(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Partage introuvable.")
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# --- Fin de partie : récapitulatif et revanche (lot `j-partie-fin-ui`) --------
+
+
+@router.get("/{game_id}/recapitulatif", response_model=RecapitulatifOut)
+async def get_recapitulatif(
+    game_id: uuid.UUID,
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_game_access),
+) -> RecapitulatifOut:
+    """Le récapitulatif d'une partie **finie**, recalculé depuis son journal.
+
+    Lot `j-partie-fin-ui`.
+
+    Durée, nombre de tours, dégâts, cartes jouées, K.O., récompenses, meilleur coup : tout est
+    **recompté** depuis les entrées du journal à chaque demande, jamais accumulé pendant la
+    partie. C'est le risque nommé du lot : le canal temps réel rejoue la partie entière à chaque
+    reconnexion, donc un compteur incrémenté à l'arrivée des événements doublerait après un F5.
+
+    404 si l'utilisateur ne joue pas cette partie (jamais 403 — pas de fuite d'existence) ; 409 si
+    la partie est encore en cours (comme le replay : la fenêtre ne s'ouvre qu'à la fin).
+    """
+    try:
+        recap = await recapitulatif_de_partie(db, game_id=game_id, user_id=current_user.id)
+    except PartieIntrouvable as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, GAME_NOT_FOUND_MESSAGE) from exc
+    except RecapPartieEnCours as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
+    return RecapitulatifOut.model_validate(recap)
+
+
+@router.post(
+    "/{game_id}/revanche", response_model=RevancheOut, status_code=status.HTTP_201_CREATED
+)
+async def post_revanche(
+    game_id: uuid.UUID,
+    response: Response,
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_game_access),
+    _csrf: None = Depends(require_csrf),
+) -> RevancheOut:
+    """Relance la partie : mêmes joueurs, mêmes decks, **sans repasser par la file**.
+
+    Le **perdant commence** (siège 0) ; sans vainqueur, les sièges sont échangés. Les deux decks
+    sont recontrôlés (propriété, scripts D9, possession) : un deck vendu ou supprimé arrête la
+    revanche en nommant ce qui manque, jamais une partie fantôme. Une revanche d'entraînement
+    reste un entraînement, au même niveau et contre le même adversaire (bot ou IA du joueur).
+
+    **201** quand la partie est créée ; **200** avec ``deja_creee`` quand une partie en cours
+    existait déjà entre ces deux comptes — les deux joueurs ont cliqué en même temps, et on les
+    envoie au même plateau au lieu d'en créer deux.
+
+    404 si l'utilisateur ne joue pas la partie finie, ou si un deck n'est pas le sien ; 409 si
+    la partie n'est pas terminée ou si un des deux joueurs est engagé ailleurs ; 422 si un deck
+    n'est plus jouable (cartes nommées) ou n'existe plus.
+    """
+    try:
+        partie, deja_creee = await creer_revanche(
+            db, game_id=game_id, user_id=current_user.id
+        )
+    except PartieIntrouvable as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, GAME_NOT_FOUND_MESSAGE) from exc
+    except DeckIntrouvable as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, GAME_NOT_FOUND_MESSAGE) from exc
+    except (RevanchePartieEnCours, JoueurDejaEnPartie) as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
+    except SiegeSansDeck as exc:
+        raise HTTPException(422, str(exc)) from exc
+    except DeckInjouable as exc:
+        raise HTTPException(
+            422,
+            detail={
+                "message": "Deck non jouable.",
+                "refus": [{"carte": nom, "raison": raison} for nom, raison in exc.refus],
+            },
+        ) from exc
+    except CartesNonJouables as exc:
+        raise HTTPException(
+            422,
+            detail={
+                "message": "Deck non jouable.",
+                "refus": [{"carte": nom, "raison": raison} for nom, raison in exc.cartes],
+            },
+        ) from exc
+    except (NiveauBotInconnu, CleIAIndisponible) as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+    if deja_creee:
+        response.status_code = status.HTTP_200_OK
+    return RevancheOut(game_id=partie.id, deja_creee=deja_creee)
