@@ -1,4 +1,11 @@
-# Décors d'arène
+# Décors d'arène (maquette uniquement)
+
+> ⚠️ **Le jeu ne charge AUCUN de ces fichiers.** Depuis le lot `j-arene-decors`, les décors du
+> plateau sont peints en **dégradés CSS** (`apps/web/src/app/globals.css`, bloc « Décors d'arène »,
+> table dans `apps/web/src/lib/game/decors.ts`) : 1,24 Mo pour ces quatre JPG contre **zéro octet
+> transféré**, et un contraste qu'on peut *calculer* au lieu de l'estimer. Ces images restent ici
+> pour la maquette. Détail et raisons : `docs/jeu/DECORS.md`.
+
 
 Quatre décors originaux pour le plateau de jeu (lots `v7-plateau` et `v7-effets-visuels`), en 1600 px de large :
 

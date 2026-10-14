@@ -64,6 +64,10 @@ class ReglagesConfort:
     animations: str = ANIMATIONS_COMPLETES
     taille_texte: str = TAILLE_NORMALE
     temps_rallonge: bool = False
+    #: Décor d'arène choisi (lot ``j-arene-decors``), ou ``None`` pour le thème automatique.
+    #: Réglage d'écran, rangé ici pour la même raison que les deux premiers : il suit le compte
+    #: d'un appareil à l'autre.
+    decor: str | None = None
 
 
 def rallonger(config: ConfigHorloges, actif: bool) -> ConfigHorloges:

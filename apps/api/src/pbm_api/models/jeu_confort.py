@@ -50,6 +50,14 @@ class JeuConfortReglages(Base, TimestampMixin):
     temps_rallonge: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("false")
     )
+    #: Décor d'arène choisi (lot ``j-arene-decors``), ou ``NULL`` pour « laisse le jeu choisir
+    #: d'après mon deck ».
+    #:
+    #: Nullable **à dessein** : le défaut n'est pas un décor, c'est l'absence de choix. Écrire
+    #: ``'arene'`` par défaut rendrait le thème automatique inatteignable — on ne saurait plus
+    #: distinguer « je veux le gymnase » de « je n'ai rien demandé », exactement comme
+    #: ``decks.rendu_cartes`` distingue le choix d'un deck du défaut du compte (DJ5).
+    decor: Mapped[str | None] = mapped_column(String(24), nullable=True)
 
 
 __all__ = ["JeuConfortReglages"]

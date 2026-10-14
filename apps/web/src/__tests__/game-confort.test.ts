@@ -26,6 +26,9 @@ describe("réglages de confort (pur)", () => {
       animations: ANIMATIONS_COMPLETES,
       taille_texte: "normale",
       temps_rallonge: false,
+      // Aucun décor imposé : le thème suit le deck joué (lot `j-arene-decors`). `null` est une
+      // valeur, pas un trou — c'est elle qui distingue « automatique » de « j'ai choisi arene ».
+      decor: null,
     });
   });
 
@@ -45,7 +48,18 @@ describe("réglages de confort (pur)", () => {
       taille_texte: "normale",
       // `1` n'est pas un booléen : on ne devine pas une intention à partir d'un entier.
       temps_rallonge: false,
+      decor: null,
     });
+  });
+
+  it("garde un décor connu et ramène l'inconnu à l'automatique", () => {
+    // Un décor retiré entre deux versions reste dans le cache local du navigateur. Le garder tel
+    // quel afficherait un fond nu ; le ramener à `null` affiche le thème du deck, c'est-à-dire
+    // quelque chose de cohérent.
+    expect(normaliserConfort({ decor: "lagon" }).decor).toBe("lagon");
+    expect(normaliserConfort({ decor: "atlantide" }).decor).toBeNull();
+    expect(normaliserConfort({ decor: 42 }).decor).toBeNull();
+    expect(normaliserConfort({ decor: null }).decor).toBeNull();
   });
 
   it("publie les attributs que le CSS interprète", () => {

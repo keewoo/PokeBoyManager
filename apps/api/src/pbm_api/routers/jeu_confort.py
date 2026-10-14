@@ -1,7 +1,7 @@
 """Routes du **confort de jeu** (``/jeu/confort``) — lot ``j-accessibilite-jeu``.
 
 Deux routes, et rien d'autre : ``GET|PATCH /jeu/confort/reglages`` — mes animations, ma taille de
-texte, et le temps rallongé (DJ4).
+texte, le temps rallongé (DJ4) et mon décor d'arène (lot ``j-arene-decors``).
 
 Comme toute route du jeu, elles sont gardées par
 :func:`~pbm_api.auth.dependencies.require_game_access` (D11) : un compte sans accès au jeu reçoit un
@@ -29,6 +29,7 @@ from pbm_api.jeu.confort import (
     TAILLES_TEXTE,
     ReglagesConfort,
 )
+from pbm_api.jeu.decors import DECORS
 from pbm_api.models import User
 
 router = APIRouter(prefix="/jeu/confort", tags=["jeu-confort"])
@@ -46,8 +47,13 @@ class ConfortOut(BaseModel):
     animations: str
     taille_texte: str
     temps_rallonge: bool
+    #: Décor d'arène choisi, ou ``None`` pour le thème automatique selon le deck joué.
+    decor: str | None
     animations_possibles: list[str]
     tailles_possibles: list[str]
+    #: Les décors proposés, **dans l'ordre d'affichage** (du plus neutre au plus marqué) — c'est
+    #: pourquoi cette liste n'est pas triée alphabétiquement comme les deux précédentes.
+    decors_possibles: list[str]
     facteur_temps_rallonge: float
 
     @classmethod
@@ -57,8 +63,10 @@ class ConfortOut(BaseModel):
             animations=reglages.animations,
             taille_texte=reglages.taille_texte,
             temps_rallonge=reglages.temps_rallonge,
+            decor=reglages.decor,
             animations_possibles=sorted(ANIMATIONS),
             tailles_possibles=sorted(TAILLES_TEXTE),
+            decors_possibles=list(DECORS),
             facteur_temps_rallonge=FACTEUR_TEMPS_RALLONGE,
         )
 
@@ -79,6 +87,13 @@ class ConfortIn(BaseModel):
     temps_rallonge: bool | None = Field(
         default=None,
         description="Double les horloges des parties lancées ensuite (DJ4). Jamais rétroactif.",
+    )
+    decor: str | None = Field(
+        default=None,
+        description=(
+            "Clé du décor d'arène, ou `null` explicite pour revenir au thème automatique selon "
+            "le deck. Champ absent = réglage inchangé."
+        ),
     )
 
 
@@ -110,6 +125,10 @@ async def modifier_reglages(
             animations=corps.animations,
             taille_texte=corps.taille_texte,
             temps_rallonge=corps.temps_rallonge,
+            decor=corps.decor,
+            # `null` veut dire « reviens au thème automatique » pour ce champ, et pas « ne touche
+            # à rien » : seule la présence de la clé dans le corps distingue les deux.
+            decor_fourni="decor" in corps.model_fields_set,
         )
     except service.ConfortValeurInvalide as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
