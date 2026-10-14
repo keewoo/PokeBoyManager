@@ -349,6 +349,28 @@ export function BoardCard({
 
   const zoom = taille === "zoom";
 
+  // ⛔ Pendant un ciblage, une carte **illuminée** (cible d'un coup en cours) ne zoome plus :
+  // ni au survol, ni au focus, ni au maintien long.
+  //
+  // `CardZoom` est une surcouche **plein écran** (`fixed inset-0 z-50`) qui se referme au clic.
+  // Or cliquer une carte, à la souris, c'est : passer dessus (`mouseenter`), appuyer — ce qui la
+  // **met au focus** (`tabIndex=0`) —, puis relâcher. Le survol *et* le focus ouvraient le zoom :
+  // la surcouche apparaissait donc entre l'appui et le relâchement, le `mouseup` tombait sur elle,
+  // et le navigateur n'émettait **aucun** `click` sur la carte. Résultat : **choisir une cible au
+  // clic était impossible à la souris**, alors que c'est l'interaction que la barre d'actions
+  // annonce (« Touche ce coup puis une cible »). Mesuré : un `element.click()` programmatique
+  // passait (il n'y a ni survol ni focus), un vrai clic jamais.
+  //
+  // Resté invisible parce que rien ne l'exerçait : le réducteur (`lib/game/interactions.ts`) est
+  // pur, l'e2e du plateau ne mesurait que la mise en page, et au doigt un appui **court** n'ouvre
+  // pas le zoom (il faut un maintien). Trouvé par `j-e2e-deux-navigateurs`, premier lot à jouer
+  // une partie entière au clic dans un vrai navigateur.
+  //
+  // Le zoom reste la règle partout ailleurs : toute carte hors ciblage, et les cartes non
+  // illuminées pendant un ciblage. Le clavier n'y perd rien non plus : `onKeyDown` (Entrée /
+  // Espace) choisit la cible depuis la carte au focus.
+  const peutZoomer = !!onPeek && !illumine;
+
   return (
     <div
       className={cn(
@@ -374,7 +396,7 @@ export function BoardCard({
           .filter(Boolean)
           .join(" — ")
       }
-      onMouseEnter={onPeek ? ouvrir : undefined}
+      onMouseEnter={peutZoomer ? ouvrir : undefined}
       onMouseLeave={
         onPeek
           ? () => {
@@ -383,9 +405,9 @@ export function BoardCard({
             }
           : undefined
       }
-      onFocus={onPeek ? ouvrir : undefined}
+      onFocus={peutZoomer ? ouvrir : undefined}
       onBlur={onPeek ? fermer : undefined}
-      onPointerDown={onPeek ? demarrerMaintien : undefined}
+      onPointerDown={peutZoomer ? demarrerMaintien : undefined}
       onPointerUp={onPeek ? annulerMaintien : undefined}
       onPointerCancel={onPeek ? annulerMaintien : undefined}
       data-illumine={illumine ? "" : undefined}

@@ -233,7 +233,8 @@ async def play_action(
     catalogue = await catalogue_pour_resultat(db, resultat, game_id=game_id)
     catalogue_jeu = await construire_catalogue_jeu(db, depuis_json(resultat.etat))
     HUB.publier(
-        game_id, resultat, graine_hex=game.graine, catalogue=catalogue, catalogue_jeu=catalogue_jeu
+        game_id, resultat, graine_hex=game.graine, catalogue=catalogue,
+        catalogue_jeu=catalogue_jeu, courant=game.current_numero,
     )
     reponse = projeter_resultat(
         resultat, user_id=current_user.id, graine_hex=game.graine, catalogue=catalogue,
@@ -271,7 +272,8 @@ async def abandon_game(
     catalogue = await catalogue_pour_resultat(db, resultat, game_id=game_id)
     catalogue_jeu = await construire_catalogue_jeu(db, depuis_json(resultat.etat))
     HUB.publier(
-        game_id, resultat, graine_hex=game.graine, catalogue=catalogue, catalogue_jeu=catalogue_jeu
+        game_id, resultat, graine_hex=game.graine, catalogue=catalogue,
+        catalogue_jeu=catalogue_jeu, courant=game.current_numero,
     )
     reponse = projeter_resultat(
         resultat, user_id=current_user.id, graine_hex=game.graine, catalogue=catalogue,

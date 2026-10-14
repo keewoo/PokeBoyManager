@@ -88,8 +88,50 @@ describe("middleware", () => {
 
       const csp = middleware(requestFor("/")).headers.get("Content-Security-Policy");
 
-      expect(csp).toContain("connect-src 'self' https://pokeboy.lol;");
+      expect(csp).toContain("connect-src 'self' https://pokeboy.lol wss://pokeboy.lol;");
       expect(csp).toContain("img-src 'self' data: https://pokeboy.lol;");
+    });
+  });
+
+  // Lot `j-e2e-deux-navigateurs` : le canal temps réel du jeu ouvre un WebSocket vers l'API. Une
+  // source `http://hôte` de `connect-src` ne couvre PAS `ws://hôte` dans Chromium — sans l'origine
+  // `ws:`/`wss:` nommée, le navigateur refuse le socket, le canal replie en interrogation
+  // périodique, et la partie tourne en mode dégradé **en permanence sans que rien n'échoue**.
+  // Trouvé en ouvrant une vraie partie dans un vrai navigateur (deux contextes Playwright).
+  describe("connect-src et le WebSocket du jeu", () => {
+    const ORIGINAL = process.env.NEXT_PUBLIC_API_URL;
+
+    afterEach(() => {
+      if (ORIGINAL === undefined) delete process.env.NEXT_PUBLIC_API_URL;
+      else process.env.NEXT_PUBLIC_API_URL = ORIGINAL;
+    });
+
+    it("nomme l'origine ws:// quand l'API est sur une autre origine en http (dev, CI, e2e)", () => {
+      process.env.NEXT_PUBLIC_API_URL = "http://localhost:8100";
+
+      const csp = middleware(requestFor("/")).headers.get("Content-Security-Policy");
+
+      expect(csp).toContain("ws://localhost:8100");
+    });
+
+    it("nomme l'origine wss:// quand l'API est en https (UAT/PROD)", () => {
+      process.env.NEXT_PUBLIC_API_URL = "https://pokeboy.lol/api";
+
+      const csp = middleware(requestFor("/")).headers.get("Content-Security-Policy");
+
+      expect(csp).toContain("wss://pokeboy.lol");
+      expect(csp, "jamais de ws:// en clair quand l'API est en https").not.toContain(
+        "ws://pokeboy.lol",
+      );
+    });
+
+    it("n'ajoute aucune origine ws quand l'API est relative (le socket est alors same-origin, couvert par 'self')", () => {
+      delete process.env.NEXT_PUBLIC_API_URL;
+
+      const csp = middleware(requestFor("/")).headers.get("Content-Security-Policy");
+
+      expect(csp).toContain("connect-src 'self';");
+      expect(csp).not.toContain("ws:");
     });
   });
 
@@ -114,7 +156,9 @@ describe("middleware", () => {
 
       const csp = middleware(requestFor("/")).headers.get("Content-Security-Policy");
 
-      expect(csp).toContain("connect-src 'self' http://localhost:8000 http://localhost:59000");
+      expect(csp).toContain(
+        "connect-src 'self' http://localhost:8000 ws://localhost:8000 http://localhost:59000",
+      );
     });
 
     it("n'ajoute rien à connect-src sans NEXT_PUBLIC_UPLOAD_ORIGIN (STORAGE_BACKEND=local)", () => {
@@ -123,7 +167,9 @@ describe("middleware", () => {
 
       const csp = middleware(requestFor("/")).headers.get("Content-Security-Policy");
 
-      expect(csp).toContain("connect-src 'self' http://localhost:8000;");
+      // L'origine `ws://` du canal de jeu reste là (elle ne dépend pas du stockage objet) ; c'est
+      // bien l'origine d'envoi qui est absente.
+      expect(csp).toContain("connect-src 'self' http://localhost:8000 ws://localhost:8000;");
     });
   });
 });

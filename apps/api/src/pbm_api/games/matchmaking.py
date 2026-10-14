@@ -40,7 +40,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pbm_api.config import settings
 from pbm_api.games.entry import verifier_deck
 from pbm_api.games.errors import CartesNonJouables, GameError, PlafondPartiesAtteint
-from pbm_api.games.service import creer_partie
+from pbm_api.games.service import creer_partie, demarrer_partie
 from pbm_api.models import Game, GamePlayer, User
 from pbm_api.models.games import GAME_STATUS_EN_COURS
 from pbm_api.models.notifications import NOTIF_ADVERSAIRE_TROUVE
@@ -225,7 +225,9 @@ async def apparier(
        ou dont le deck a expiré de la file ;
     3. on crée la partie ; si un deck est devenu injouable entre-temps, on retire les deux candidats
        et on continue (jamais un appariement silencieux sur un deck cassé, jamais un `pass` muet) ;
-    4. on retire les deux appariés de la file.
+    4. on **lance sa mise en place** (R-4) — sans quoi les deux joueurs arriveraient sur un plateau
+       où le seul coup légal est « Abandonner » ;
+    5. on retire les deux appariés de la file.
 
     Si le serveur est à son **plafond de parties simultanées** (lot `j-charge-temps-reel`), le
     passage s'arrête et les candidats restent en file, à leur rang : la file d'attente est la bonne
@@ -303,6 +305,23 @@ async def apparier(
                 )
                 await redis.zrem(_QUEUE, ua_hex, ub_hex)
                 continue
+
+            # ⛔ Lancer la mise en place (R-4) **ici**, pas plus tard : une partie créée et non
+            # démarrée est une partie où le seul coup légal est « Abandonner ». Les deux joueurs
+            # arrivent sur le plateau, et il ne s'y passe rien.
+            #
+            # C'est le défaut que le lot `j-e2e-deux-navigateurs` a trouvé : les trois autres
+            # chemins de création appelaient bien `demarrer_partie` (`lancement.py` pour une
+            # invitation, `bot.py` pour l'entraînement, `revanche.py` pour une revanche) — la
+            # **file d'attente**, elle, ne l'appelait pas. Aucun test ne l'avait vu parce que tous
+            # les tests de partie complète créent la partie à la main (`creer_partie` +
+            # `demarrer_partie`) et sautent donc l'appariement.
+            #
+            # `demarrer_partie` est idempotente : la rejouer sur une partie déjà entamée ne fait
+            # rien. On reste sous le verrou pour qu'aucun joueur ne puisse voir le plateau avant
+            # que la mise en place n'y soit — un démarrage « après coup » laisserait une fenêtre
+            # où l'écran est muet.
+            await demarrer_partie(db, game)
 
             await redis.zrem(_QUEUE, ua_hex, ub_hex)
             await redis.delete(_deck_key(ua_hex), _deck_key(ub_hex))

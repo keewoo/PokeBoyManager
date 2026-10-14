@@ -85,6 +85,34 @@ describe("CanalPartie — application par numéro de séquence", () => {
     canal.arreter();
   });
 
+  it("remonte le PROCHAIN numéro attendu que porte le serveur (`courant`)", () => {
+    // Lot `j-e2e-deux-navigateurs` — non-régression. Un coup de joueur enchaîne souvent des coups
+    // **système** (pioche de début de tour, passages de phase, checkup), tous journalisés : le
+    // prochain numéro attendu n'est donc PAS `numero + 1`. Le serveur le porte dans `courant` ;
+    // le client doit le suivre. En le déduisant, il restait en retard (mesuré : 3 coups) et son
+    // coup suivant partait avec une clé d'idempotence périmée → refusé en 409 jusqu'au battement.
+    const { canal, ws, vues } = monterCanal();
+    canal.demarrer();
+    ws.ouvrir();
+    ws.recevoir({ type: "resync", numero: 0, depuis: 0, vue: {}, evenements: [] });
+    ws.recevoir({ type: "evenement", numero: 0, courant: 3, vue: {}, evenements: ["a"] });
+
+    expect(vues.at(-1)?.numero, "le client doit retenir 3, pas 1").toBe(3);
+    canal.arreter();
+  });
+
+  it("retombe sur numero + 1 quand le serveur ne porte pas `courant`", () => {
+    // Compatibilité : un serveur d'une version antérieure n'envoie pas le champ.
+    const { canal, ws, vues } = monterCanal();
+    canal.demarrer();
+    ws.ouvrir();
+    ws.recevoir({ type: "resync", numero: 0, depuis: 0, vue: {}, evenements: [] });
+    ws.recevoir({ type: "evenement", numero: 4, vue: {}, evenements: ["a"] });
+
+    expect(vues.at(-1)?.numero).toBe(5);
+    canal.arreter();
+  });
+
   it("ignore un coup en double (même numéro)", () => {
     const { canal, ws, coups } = monterCanal();
     canal.demarrer();

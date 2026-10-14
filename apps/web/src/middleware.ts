@@ -35,6 +35,19 @@ function buildCsp(nonce: string): string {
   // `null` avec `STORAGE_BACKEND=local` (UAT/PROD) : l'envoi passe alors par l'API elle-même,
   // déjà couverte par `apiOrigin`.
   const uploadOrigin = getUploadOrigin();
+  // Origine **WebSocket** du canal temps réel du jeu (`pbm_api.routers.games_ws`, lot
+  // `j-temps-reel`). Elle doit être nommée séparément : une source `http://hôte` de `connect-src`
+  // ne couvre PAS `ws://hôte` dans Chromium, et le navigateur refuse alors d'ouvrir le socket
+  // (« violates the following Content Security Policy directive: connect-src … »).
+  //
+  // Trouvé par le lot `j-e2e-deux-navigateurs`, le premier à ouvrir une vraie partie dans un vrai
+  // navigateur : le canal échouait trois fois puis repliait en interrogation périodique, sans que
+  // rien n'échoue — la partie « marchait », en mode dégradé, en permanence.
+  //
+  // Ne concerne que les déploiements où l'API a sa **propre origine** (dev, CI, e2e : page sur
+  // :3100, API sur :8100). En UAT/PROD l'API partage l'origine du site (`https://pokeboy.lol/api`)
+  // et `'self'` couvre déjà `wss:` — d'où un défaut resté invisible en ligne.
+  const wsOrigin = apiOrigin ? apiOrigin.replace(/^http/, "ws") : null;
   // `script-src` par nonce (généré à chaque requête, voir plus bas) plutôt que `'self'` seul :
   // le layout racine (`src/app/layout.tsx`) pose un petit script inline pour choisir le thème
   // avant le premier rendu (éviter un flash clair/sombre) — un nonce laisse ce seul script
@@ -48,7 +61,7 @@ function buildCsp(nonce: string): string {
     `script-src 'self' 'nonce-${nonce}'`,
     "style-src 'self' 'unsafe-inline'",
     `img-src 'self' data:${apiOrigin ? ` ${apiOrigin}` : ""}`,
-    `connect-src 'self'${apiOrigin ? ` ${apiOrigin}` : ""}${uploadOrigin ? ` ${uploadOrigin}` : ""}`,
+    `connect-src 'self'${apiOrigin ? ` ${apiOrigin}` : ""}${wsOrigin ? ` ${wsOrigin}` : ""}${uploadOrigin ? ` ${uploadOrigin}` : ""}`,
     "font-src 'self'",
     "frame-ancestors 'none'",
     "base-uri 'self'",

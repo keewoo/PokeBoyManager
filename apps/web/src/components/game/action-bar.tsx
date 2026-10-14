@@ -90,11 +90,29 @@ export function ActionBar({
       {legales.length === 0 && refusees.length === 0 && (
         <span className="text-sm italic text-muted-foreground">Aucune action pour l&apos;instant.</span>
       )}
-      {legales.map((action) => {
+      {legales.map((action, rang) => {
         const ciblee = action.cibles.length > 0;
         return (
           <button
-            key={`${action.type}:${action.etiquette}`}
+            // ⛔ Le **rang** fait partie de la clé, et il est indispensable.
+            //
+            // Deux coups légaux distincts partagent très souvent type ET étiquette : chaque
+            // Énergie de la main donne son propre `attacher_energie` « Attacher <nom> », chaque
+            // exemplaire d'un Objet son propre `jouer_objet` « Jouer <nom> ». Mesuré sur une
+            // partie réelle : 12 boutons `attacher_energie` et 9 `jouer_objet` rigoureusement
+            // identiques. Sans le rang, ils portaient donc tous la **même clé React**, et React
+            // ne réconciliait plus la liste correctement : après un coup en vol, une partie des
+            // boutons gardait l'attribut `disabled` du rendu précédent — **définitivement**.
+            // Le joueur voyait des coups grisés à côté de coups identiques jouables, et ne
+            // pouvait plus jouer les premiers.
+            //
+            // Invisible jusqu'ici : React n'avertit des clés dupliquées qu'en développement, et
+            // l'e2e tourne sur un build de production (`next build`) où l'avertissement est
+            // retiré. Trouvé par `j-e2e-deux-navigateurs` en jouant une partie entière.
+            //
+            // Le rang est une clé légitime ici : la liste vient du serveur, elle est **ordonnée**,
+            // et ses entrées sont interchangeables — aucun état local n'est attaché à un bouton.
+            key={`${action.type}:${action.etiquette}:${rang}`}
             type="button"
             data-testid={`action-${action.type}`}
             disabled={verrou}
@@ -119,9 +137,10 @@ export function ActionBar({
           </button>
         );
       })}
-      {refusees.map((refus) => (
+      {refusees.map((refus, rang) => (
         <button
-          key={`${refus.type}:${refus.etiquette}`}
+          // Même règle que pour les coups légaux : le rang garantit l'unicité de la clé.
+          key={`${refus.type}:${refus.etiquette}:${rang}`}
           type="button"
           data-testid={`refus-${refus.type}`}
           disabled
