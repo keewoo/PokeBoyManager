@@ -15,6 +15,9 @@ rejouer le journal redonne exactement le même état.
   (instantané + queue), :func:`etapes` / :func:`etapes_partie` (la suite des états, pour le
   **replay**) et :class:`RejeuDivergent` ;
 * :mod:`~pbm_game.journal.serialisation` — ``*_vers_json`` / ``*_depuis_json`` (round-trip exact) ;
+* :mod:`~pbm_game.journal.recapitulatif` — :func:`construire_recapitulatif` : la durée, les
+  tours, les dégâts et le meilleur coup d'une partie, **recalculés** depuis son journal (lot
+  ``j-partie-fin-ui``) — jamais comptés au fil de l'eau ;
 * :mod:`~pbm_game.journal.debogage` — :func:`decrire_entree` : une entrée lisible par un
   humain, identifiants de cartes résolus en noms.
 
@@ -68,6 +71,12 @@ from .modele import (
     Evenement,
     Instantane,
     Partie,
+)
+from .recapitulatif import (
+    MeilleurCoup,
+    Recapitulatif,
+    StatsJoueur,
+    construire_recapitulatif,
 )
 from .rejeu import (
     Etape,
@@ -167,6 +176,11 @@ __all__ = [
     "partie_depuis_json",
     "instantane_vers_json",
     "instantane_depuis_json",
+    # récapitulatif d'une partie (lot `j-partie-fin-ui`)
+    "Recapitulatif",
+    "StatsJoueur",
+    "MeilleurCoup",
+    "construire_recapitulatif",
     # débogage
     "decrire_entree",
     "decrire_journal",

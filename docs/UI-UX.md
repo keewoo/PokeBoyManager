@@ -560,3 +560,32 @@ Ce qu'il faut en retenir avant de toucher à `apps/web/src/components/game/` :
 - un effet nouveau s'ajoute au **registre** (`EFFETS` de `src/lib/game/animations.ts`), pas à la
   mécanique — et ses images-clés n'animent que `transform` et `opacity` (garde statique en CI) ;
 - `prefers-reduced-motion` ne rend **aucun** effet : la file se vide en silence, rien ne disparaît.
+
+## Écran de fin de partie (lot `j-partie-fin-ui`)
+
+Qui a gagné, pourquoi, et ce qu'on en retient. La mécanique complète — les huit raisons de fin et
+leurs libellés, le récapitulatif recalculé depuis le journal, la revanche — vit dans
+**`docs/jeu/FIN-DE-PARTIE.md`** ; elle n'est pas redite ici.
+
+Ce qu'il faut savoir avant de toucher à `apps/web/src/components/game/fin-partie.tsx` :
+
+- **l'écran est hors du flux** (`fixed inset-0`, `overflow-y-auto` interne) et ce n'est pas un choix
+  esthétique : la page `/jeu/parties/{id}` ne tolère aucun défilement (e2e
+  `plateau-responsive.spec.ts`, qui couvre désormais la partie finie). Un panneau en flux normal
+  casse ce job en restant vert en vitest et en type-check — même piège que le tiroir du journal ;
+- **aucun chiffre n'est calculé ici** : tous viennent de `GET /games/{id}/recapitulatif`. Un
+  compteur local doublerait après un F5 (le canal rejoue toute la partie) ;
+- **le vainqueur se compare en identifiant de compte**, jamais en identifiant moteur : `vue.vainqueur`
+  est l'identifiant du joueur côté moteur, le récapitulatif donne `vainqueur_user_id`. Les mélanger
+  donnerait, un jour, la victoire au mauvais joueur ;
+- **on ne commente pas la défaite.** Titre « C'est passé près », et une phrase par issue pour chaque
+  raison (`lib/game/fin.ts`) : on énonce un fait, jamais un jugement. Un test verrouille le
+  vocabulaire interdit ;
+- **l'écran se replie** (« Voir le plateau ») en une pastille `fixed` : la partie reste regardable, le
+  résumé reste à un clic ;
+- **un refus de revanche s'affiche** avec la raison du serveur. Pas de `catch` muet : un bouton qui
+  ne fait rien sans un mot est la panne que ce dépôt a déjà payée.
+
+Jetons employés : `.pbm-surface` (le panneau), `.pbm-surface-or` (l'action principale et l'encart
+« Sur ton compte » — la variante or est réservée à ce qui porte une valeur), `.pbm-halo-or`,
+`.pbm-titre` (trois mots au plus), `.pbm-section`. Aucune couleur nouvelle.

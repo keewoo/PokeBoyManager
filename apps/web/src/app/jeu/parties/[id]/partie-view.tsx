@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FormNotice } from "@/components/auth/form-notice";
 import { useFileAnimations } from "@/components/game/animation-layer";
 import { FenetreDecision } from "@/components/game/fenetre-decision";
+import { FinPartie } from "@/components/game/fin-partie";
 import { GameBoard } from "@/components/game/game-board";
 import { JournalPanel } from "@/components/game/journal-panel";
 import { ApiError } from "@/lib/api/client";
@@ -36,6 +37,12 @@ import { getProfile } from "@/lib/api/profile";
  * est accumulé, dédupliqué par numéro et traduit en fil français (`construireJournal`). Comme un F5
  * rouvre le canal depuis le coup 0, le journal se reconstruit entièrement — tout est rejouable.
  *
+ * La **fin de partie** (lot `j-partie-fin-ui`) se déclenche sur `vue.terminee` — décidé par le
+ * serveur, jamais déduit ici. L'écran de fin est posé **hors du flux** (`fixed`) : la page du
+ * plateau ne tolère aucun défilement, et il va chercher lui-même ses chiffres
+ * (`GET /games/{id}/recapitulatif`, recalculés depuis le journal) plutôt que de compter les
+ * coups accumulés ici — un F5 rejoue toute la partie, donc un compteur local doublerait.
+ *
  * Les **animations** (lot `j-anim-socle`) se nourrissent de ces mêmes coups, et de rien d'autre :
  * les effets suivent les événements, jamais l'inverse. La file (`useFileAnimations`) n'est branchée
  * sur aucun état du plateau — ni `vue`, ni `numeroRef` — et jouer un coup la **jette** avant même
@@ -45,6 +52,9 @@ import { getProfile } from "@/lib/api/profile";
  */
 export function PartieView({ gameId }: { gameId: string }) {
   const [denied, setDenied] = useState(false);
+  // L'identifiant du **compte** connecté : l'écran de fin compare le vainqueur à celui-là, et
+  // jamais à l'identifiant moteur du joueur (deux espaces de noms distincts).
+  const [moiUserId, setMoiUserId] = useState<string | null>(null);
   const [introuvable, setIntrouvable] = useState(false);
   const [accessReady, setAccessReady] = useState(false);
   const [vue, setVue] = useState<VuePartie | null>(null);
@@ -68,6 +78,7 @@ export function PartieView({ gameId }: { gameId: string }) {
       .then((profile) => {
         if (!active) return;
         if (!profile.game_access) setDenied(true);
+        setMoiUserId(profile.id);
       })
       .catch(() => {
         // Une panne réseau n'est pas un refus : on montre un message plutôt que de masquer la partie.
@@ -221,6 +232,13 @@ export function PartieView({ gameId }: { gameId: string }) {
           />
           <JournalPanel lignes={lignes} onSurvol={setSurligne} />
           <FenetreDecision vue={vue} onRepondre={onRepondre} />
+          {vue.terminee && moiUserId && (
+            <FinPartie
+              gameId={gameId}
+              moiUserId={moiUserId}
+              raisonFinVue={vue.raison_fin ?? null}
+            />
+          )}
         </>
       )}
     </div>

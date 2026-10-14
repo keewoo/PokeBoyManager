@@ -102,9 +102,48 @@ async function login(page: Page, email: string): Promise<void> {
   expect(res.ok(), "connexion du compte de test").toBeTruthy();
 }
 
-/** Intercepte les routes de partie pour servir la vue simulée, sans moteur ni partie réelle. */
-async function stubPartie(page: Page): Promise<void> {
-  const vue = vueSimulee();
+/**
+ * Intercepte les routes de partie pour servir la vue simulée, sans moteur ni partie réelle.
+ *
+ * `terminee: true` sert une partie **finie** : l'écran de fin (lot `j-partie-fin-ui`) se déclenche
+ * alors, et on peut mesurer qu'il n'allonge pas la page. Les deux routes qu'il appelle
+ * (`/recapitulatif` et la liste des parties) sont stubées ici aussi — sinon le panneau afficherait
+ * son message d'erreur, et le test mesurerait autre chose que ce qu'il croit.
+ */
+async function stubPartie(page: Page, options: { terminee?: boolean } = {}): Promise<void> {
+  const finie = options.terminee === true;
+  const vue = { ...vueSimulee(), terminee: finie, raison_fin: finie ? "derniere_recompense" : null };
+  if (finie) {
+    await page.route("**/games/*/recapitulatif", (route) =>
+      route.fulfill({
+        json: {
+          game_id: "simulee",
+          statut: "terminee",
+          raison_fin: "derniere_recompense",
+          vainqueur_user_id: null,
+          entrainement: false,
+          coups: 42,
+          tours: 7,
+          debut: "2026-10-14T10:00:00+00:00",
+          fin: "2026-10-14T10:07:12+00:00",
+          duree_s: 432,
+          joueurs: [0, 1].map((seat) => ({
+            seat,
+            user_id: `u${seat}`,
+            pseudo: `Joueur ${seat}`,
+            degats_infliges: 180,
+            kos_infliges: 3,
+            recompenses_prises: 6,
+            cartes_jouees: 9,
+            energies_attachees: 5,
+            coups_joues: 21,
+          })),
+          meilleur_coup: { numero: 31, user_id: "u0", degats: 120, ko: true },
+        },
+      }),
+    );
+    await page.route(/\/games(\?.*)?$/, (route) => route.fulfill({ json: [] }));
+  }
   await page.route("**/games/*/state", (route) =>
     route.fulfill({ json: { vue, evenements: [] } }),
   );
@@ -190,5 +229,33 @@ test.describe("Plateau : toutes les zones sans défilement sur un téléphone en
     await expect(page.getByTestId("plateau")).toBeVisible();
     await expect(page.getByText("mon-actif")).toBeVisible();
     await assertNoScroll(page, "plateau @ 844×390 après rotation");
+  });
+});
+
+test.describe("Fin de partie : l'écran de fin n'allonge pas la page du plateau", () => {
+  test("partie finie en paysage puis en portrait : aucun défilement", async ({ page }) => {
+    // Le risque est connu de ce dépôt : un panneau ajouté en flux normal sur `/jeu/parties/{id}`
+    // casse ce job alors que vitest et type-check restent verts. L'écran de fin est donc `fixed`,
+    // avec son propre défilement interne — et c'est ici que ça se vérifie.
+    const email = uniqueEmail();
+    seedGameAccess(email);
+    await login(page, email);
+    await stubPartie(page, { terminee: true });
+
+    await page.setViewportSize(PAYSAGE);
+    await page.goto("/jeu/parties/simulee");
+
+    await expect(page.getByTestId("fin-partie")).toBeVisible();
+    await expect(page.getByTestId("fin-partie-recap")).toBeVisible();
+    await assertNoScroll(page, "écran de fin @ 844×390 paysage");
+
+    await page.setViewportSize(PORTRAIT);
+    await expect(page.getByTestId("fin-partie")).toBeVisible();
+    await assertNoScroll(page, "écran de fin @ 390×844 portrait");
+
+    // Replié, le plateau reste regardable — et la page ne défile toujours pas.
+    await page.getByTestId("fin-partie-replier").click();
+    await expect(page.getByTestId("plateau")).toBeVisible();
+    await assertNoScroll(page, "plateau derrière l'écran de fin replié");
   });
 });
