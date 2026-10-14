@@ -31,6 +31,7 @@ from starlette.websockets import WebSocketDisconnect, WebSocketState
 from pbm_api.auth.dependencies import require_game_access
 from pbm_api.config import settings
 from pbm_api.db import async_session_factory, get_session
+from pbm_api.games.emotes_service import LIMITEUR
 from pbm_api.games.errors import PartieIntrouvable
 from pbm_api.games.service import (
     _game_pour_participant,
@@ -199,5 +200,11 @@ async def ws_game(websocket: WebSocket, game_id: uuid.UUID) -> None:
         async with async_session_factory() as db_dec:
             await marquer_deconnexion(db_dec, game_id, user.id)
         HUB.desouscrire(game_id, abonne)
+        # Dernier abonné parti : on efface le compteur de débit des emotes de cette partie. C'est
+        # la tenue de la promesse « rien d'une emote ne survit à la partie » (lot
+        # ``j-echanges-emotes``) — et, accessoirement, ce qui empêche le limiteur de grossir
+        # indéfiniment au fil des parties servies par le process.
+        if HUB.nb_abonnes(game_id) == 0:
+            LIMITEUR.oublier(game_id)
         if websocket.application_state == WebSocketState.CONNECTED:
             await websocket.close()

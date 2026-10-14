@@ -65,6 +65,7 @@ raccourci de latence.
 | `resync` | voir ci-dessus | reprise / rattrapage |
 | `evenement` | `numero`, `vue`, `evenements`, `termine`, `vainqueur_user_id`, `raison_fin` | un coup diffusé, projeté pour ce joueur |
 | `battement` | `numero` | preuve de vie (toutes les 20 s de silence) **et** numéro courant du serveur : si le client est en retard, il redemande |
+| `emote` | `code`, `de` (`"moi"`/`"adversaire"`) | une emote prédéfinie diffusée (lot `j-echanges-emotes`) — **sans numéro de séquence** |
 | `pong` | — | réponse à `ping` |
 | `erreur` | `code`, `message` | message client invalide (jamais avalé en silence) |
 
@@ -75,6 +76,13 @@ raccourci de latence.
 | `souscrire` / `resync` | `depuis` | (re)synchronisation depuis un numéro |
 | `ack` | `numero` | accusé de réception (supervision ; sans effet d'état) |
 | `ping` | — | → `pong` |
+| `emote` | `code` | envoie une emote prédéfinie — code d'une liste **fermée**, jamais du texte |
+
+⚠️ **L'`emote` est le seul message qui n'est pas un coup**, et elle sort donc de tout ce que décrit
+cette fiche : aucun numéro de séquence, rien dans le journal, donc **aucun rattrapage** — une emote
+perdue reste perdue (c'est ce qui permet de ne rien conserver au-delà de la partie). Elle ne touche
+pas `transmis`, et un refus (code hors catalogue, débit, emotes coupées) revient à son émetteur
+seul, par un message `erreur`. Le détail — catalogue, débit, coupure — est dans `docs/jeu/EMOTES.md`.
 
 Le serveur suit `transmis`, le plus grand numéro réellement émis. Une file d'abonné saturée (client
 lent) ne perd **rien** : l'abonné est marqué, et le pilote lui renvoie une resync depuis `transmis+1`.
