@@ -1246,3 +1246,33 @@ préparée se replie sur l'officielle **en le disant** (`RAISON_PAS_PRETE`).
 Migration `a1f7c3d9e5b2`. Tests : `test_jeu_rendu_qualite.py` (seuils, poids de la variante),
 `test_jeu_rendu_choix.py` (l'ordre des verdicts, la non-fuite du veto), `test_jeu_rendu_routes.py`
 (réglages, CSRF, D11, accès croisé), `test_jeu_rendu_projection.py` (la charge utile de chaque regard).
+
+## Confort et accessibilité du jeu (lot `j-accessibilite-jeu`)
+
+**Une table, deux routes, un branchement.** `jeu_confort_reglages` (une ligne par compte, **créée à
+la première modification** — même convention que `jeu_rendu_reglages` et `notification_reglages` :
+son absence vaut les défauts du code) porte trois réglages : `animations`, `taille_texte`,
+`temps_rallonge`. `GET|PATCH /jeu/confort/reglages` les lit et les modifie **partiellement**, sous
+`require_game_access` (D11 : 404, jamais 403) et CSRF. Vocabulaire fermé, **422** sur une valeur
+inconnue et **rien d'écrit** dans ce cas : un réglage qui ne règle rien est un mensonge fait au
+joueur.
+
+Pourquoi en base et non dans le navigateur : « ne pas animer » et « texte très grand » sont des
+besoins de la personne, pas de son appareil. Le client n'en garde qu'un cache local, et seulement
+pour appliquer les réglages avant le premier rendu.
+
+**Le seul des trois qui touche les règles est `temps_rallonge`** : il **double** les trois durées de
+réflexion (DJ4) via `pbm_api.jeu.confort.rallonger`, appelé par `config_horloges`. Il est lu dans
+`creer_partie`, et **nulle part ailleurs** — une partie fige sa configuration d'horloges à sa
+création (`docs/jeu/HORLOGES.md`), donc un réglage lu ailleurs n'aurait aucun effet, ou un effet au
+prochain redémarrage seulement. Il vaut pour les parties **suivantes**, et l'écran le dit.
+`temps_rallonge_des_joueurs` lit les **deux** joueurs en une requête : si l'un l'a demandé, la partie
+entière l'obtient (dissymétrie assumée — DJ4 fixe un temps *par tour*, pas par joueur ; on tranche
+en faveur de qui a demandé de l'aide). Les deux marges (tolérance réseau, grâce de déconnexion) ne
+sont **pas** rallongées : elles compensent le réseau et une déconnexion, pas la lenteur de réflexion.
+
+Migration `c4f1a8b7e2d3`. Tests : `test_jeu_confort.py` (défauts publiés sans ligne, modification
+partielle, vocabulaire refusé, CSRF, D11, accès croisé, parité des défauts code/base, et le temps
+rallongé de bout en bout dans `games.horloges` — y compris qu'une partie déjà créée ne bouge pas).
+
+Côté écran et audit d'accessibilité : **`docs/jeu/ACCESSIBILITE.md`**.

@@ -144,6 +144,21 @@ Le produit est utilisé par un enfant de onze ans et par ses parents. À chaque 
 suffisant, cibles tactiles confortables, navigation clavier complète, `prefers-reduced-motion`
 respecté, textes lisibles sans jargon. Un écran qui ne se navigue qu'à la souris n'est pas fini.
 
+Depuis le lot `j-accessibilite-jeu`, ce socle n'est plus seulement une consigne : il est **mesuré**.
+Niveau retenu, **WCAG 2.2 A et AA** — cibles ≥ 24 px (2.5.8), contraste ≥ 4,5:1 sur du petit texte
+(1.4.3). Trois gardes, et chacune prouve ce que les deux autres ne peuvent pas :
+
+| Garde | Fichier | Ce qu'elle voit |
+|---|---|---|
+| `axe` en jsdom | `apps/web/src/__tests__/a11y-jeu.test.tsx` | la structure (rôles, étiquettes, `aria-*` invalides) — job **web** |
+| `axe` dans le navigateur | `apps/web/e2e/a11y-jeu.spec.ts` | le contraste effectif, la taille réelle des cibles, le clavier — job **e2e** |
+| calcul direct | `apps/web/src/__tests__/contraste-jeu.test.ts` | le ratio des **onze** types d'énergie, là où les couleurs sont définies |
+
+Elles ne couvrent pour l'instant que les **écrans de jeu**. Les étendre au reste du produit
+(collection, fiche carte, tableau de bord, profil) demande d'ouvrir chaque écran à `axe` et de
+traiter ce qu'il trouve — l'outillage, lui, est posé et réutilisable tel quel. Réglages du joueur,
+clavier des surcouches et compromis du plateau : **`docs/jeu/ACCESSIBILITE.md`**.
+
 ## Écran de validation (lot `v3-validation`)
 
 Routes (`apps/api/src/pbm_api/routers/uploads.py`, `routers/detections.py`) : `GET
