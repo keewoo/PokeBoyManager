@@ -2,7 +2,18 @@
 
 **Lot** P2 · piste Serveur de parties · couloir J-SRV · jalon **J4** · palier 11 · taille S
 **Session** autonome `claude -p`, pilotée depuis **devAI**, worktree `~/dev/wt-j-echanges-emotes`
-sur **chimera**, branche `roadmap/j-echanges-emotes` depuis `github/main` (`cf9070f`).
+sur **chimera**, branche `roadmap/j-echanges-emotes` depuis `github/main` (`cf9070f`), puis
+fusionnée avec `main` (`88b640c`, arrivée de `j-accessibilite-jeu`) avant le push final.
+
+**Où le travail a tourné, et pourquoi.** Le code est écrit, commité, poussé et fusionné sur
+**chimera** (le couloir du lot). Les suites **front** et l'**e2e navigateur** ont été exécutées sur
+**devAI** : la WSL de chimera n'a ni Node ni pnpm, et Playwright n'y démarre pas (fait connu du
+dépôt). Les suites Python ont tourné **sur les deux**. Un arbre de travail jetable a vécu dans
+`/tmp` sur devAI (`/Volumes/Data` refuse l'écriture depuis une session agent — TCC), supprimé à la
+fin. Le refus d'écriture est signalé ici plutôt que passé sous silence : la règle de flotte veut
+`/Volumes/Data` pour tout fichier en transit, et c'est un réglage de confidentialité macOS à refaire
+par JF, pas un volume absent.
+
 **Décision appliquée** : **DJ10** (JF, 14/10/2026) — *« Emotes prédéfinies seulement ("bien joué",
 "oups", "ton tour"), désactivables, jamais de texte libre. »*
 
@@ -82,30 +93,61 @@ règle. **JF peut en retirer une d'un mot** (une ligne du tuple `CATALOGUE` + le
 
 ### Suites exécutées (sur la flotte, jamais sur le Mac de JF)
 
+Toutes les mesures ci-dessous sont celles de l'arbre **après fusion de `main`** (voir « La fusion »).
+
 | Suite | Résultat |
 |---|---|
-| `apps/api` — `uv run pytest -q` | **1 370 passés, 2 échecs** (voir « Écarts ») — dont **40 nouveaux** tests d'emotes |
+| `apps/api` — `uv run pytest -q` | **1 385 passés**, 2 échecs d'environnement + 1 erreur transitoire (voir « Écarts ») — dont **40 nouveaux** tests d'emotes |
 | `apps/game` — `uv run pytest -q` | **1 138 passés** (moteur intact) |
 | `apps/api` + `apps/game` — `ruff check .` | **All checks passed** |
 | `apps/web` — `tsc --noEmit` | propre |
 | `apps/web` — `eslint .` | 0 erreur (1 avertissement **préexistant** dans `game-realtime.test.ts`) |
-| `apps/web` — `vitest run` | **499 passés, 15 échecs préexistants** (voir « Écarts ») — dont **25** nouveaux/étendus sur les emotes |
+| `apps/web` — `vitest run` | **541 passés, 0 échec** — dont **25** nouveaux/étendus sur les emotes |
 | `apps/web` — `next build` | réussi |
-| e2e Playwright — `plateau-responsive`, `plateau-rendu`, `emotes` | **9 passés** |
-| e2e Playwright — `anim-fluidite` | 1 passé, **1 échec préexistant** (voir « Écarts ») |
+| e2e Playwright — `emotes`, `a11y-jeu`, `plateau-responsive`, `plateau-rendu` | **16 passés** |
+| e2e Playwright — `anim-fluidite` | 1 passé, **1 échec de machine** (voir « Écarts ») |
 
-Migration : `alembic upgrade head` rejoué **de zéro** sur une base neuve (`pbm_emotes_test`) puis sur
-la base e2e — `e2a7b4c1d6f9 → b8d3f0c47a51` appliquée sans incident. `alembic heads` : **une seule
-tête**, `b8d3f0c47a51`.
+L'audit d'accessibilité du plateau (`a11y-jeu.spec.ts`, arrivé sur `main` pendant ce lot) passe
+**avec la palette montée** : contraste, taille de cible minimale, parcours au clavier et texte
+agrandi sans défilement.
+
+Migrations : `alembic upgrade head` rejoué **de zéro** sur deux bases neuves (devAI et chimera) et sur
+la base e2e. `alembic heads` après fusion de `main` : **une seule tête**, `a7e4c2b9d518`.
+
+Les 40 tests d'emotes de l'API ont aussi été exécutés **sur chimera** (la machine du couloir), base
+`pbm_emotes_test` créée et migrée pour l'occasion : **40 passés**, `ruff` propre sur `apps/api` et
+`apps/game`.
+
+## La fusion — `main` avait bougé, et ça n'était pas sans conséquence
+
+`main` est passé de `cf9070f` à `88b640c` pendant le lot : **`j-accessibilite-jeu`** y a été intégré,
+et il touche le plateau (`partie-view.tsx`, `game-board.tsx`, `journal-panel.tsx`, `globals.css`) et
+ajoute un audit e2e. Trois choses à signaler :
+
+1. **Deux conflits**, tous deux « les deux lots ajoutent une ligne » : `main.py` (un routeur de plus
+   chacun) et `models/__init__.py` (un modèle de réglages de plus chacun). Résolus en gardant les
+   deux côtés, dans l'ordre du dépôt. Commit `b7b28d3`.
+2. **Deux têtes Alembic** — le piège exact que ce dépôt connaît : chaque lot avait ajouté sa
+   révision, et `alembic upgrade head` refuse alors d'avancer… **mais seulement sur `main`**, donc la
+   CI de chaque branche restait verte. Détecté en lançant `alembic heads` **dans la branche après la
+   fusion, avant de pousser**. Migration de fusion **vide** `a7e4c2b9d518`, et `upgrade head` rejoué
+   depuis une base vierge pour le prouver. Commit `c803f74`.
+3. **Toutes les suites ont été relancées** sur l'arbre fusionné, pas seulement celles du lot — c'est
+   ce qui permet d'affirmer que l'audit d'accessibilité passe avec la palette, et que les
+   15 échecs `app-shell*` constatés avant la fusion ont **disparu** (le lot d'accessibilité a corrigé
+   `vitest.setup.ts`, qui était la cause).
 
 ## Écarts, et ce qu'ils ne sont pas
 
 1. **`apps/api` : 2 échecs, `tests/test_catalogue_seed.py`.** Cause lue, pas devinée :
    `pg_dump: command not found` — le client PostgreSQL n'est pas installé sur devAI. Sans rapport
    avec ce lot (le script de seed du catalogue n'y est pas touché) ; la CI a `postgresql-client`.
-2. **`apps/web` : 15 échecs, les trois fichiers `app-shell*.test.tsx`.** `window.localStorage` est
-   `undefined` dans `theme-provider.tsx` sous le Node **26** de devAI (la CI est en Node 24).
-   Échecs **déjà connus de ce dépôt** et indépendants du lot.
+2. **`apps/api` : 1 erreur transitoire, sur un test *différent à chaque passage*.**
+   `ConnectionError: PostgreSQL server at "localhost:55432" rejected SSL upgrade`, au **setup** d'un
+   test — `test_adversaire_ia.py` au premier passage, `test_jeu_confort.py` au second. Les deux
+   passent **isolément** (11 passés pour `test_adversaire_ia.py`). C'est le Postgres local de devAI
+   qui refuse une connexion sous la charge de la suite complète, pas un défaut du code ; la CI
+   utilise un conteneur de service dédié.
 3. **`anim-fluidite.spec.ts`, plancher de 30 images/s : échec.** Mesuré **avec** la palette :
    14,5 img/s. Mesuré **sans** (la `partie-view.tsx` de `cf9070f` remise en place, serveurs e2e
    relancés) : **10,2 img/s**. L'échec est donc celui de la machine, pas du lot — et la palette
@@ -114,7 +156,8 @@ tête**, `b8d3f0c47a51`.
 4. **Point 1 de la mission (« définir la liste avec JF ») : fait sans JF**, règle écrite à la place
    (voir plus haut). **Attendu de JF** : un simple oui, ou le retrait d'une emote.
 5. **Pas de livraison en PROD.** Hors périmètre de ce lot (la PROD se livre à part, par devAI).
-   La migration `b8d3f0c47a51` sera à jouer à cette occasion.
+   Les migrations `b8d3f0c47a51` (table du réglage) et `a7e4c2b9d518` (fusion de têtes, vide) seront
+   à jouer à cette occasion.
 
 ## Décisions prises dans le lot (et pourquoi)
 
