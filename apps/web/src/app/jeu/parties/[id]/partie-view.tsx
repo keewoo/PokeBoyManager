@@ -14,6 +14,7 @@ import { getGameState, playAction } from "@/lib/api/games";
 import { CanalPartie, type Coup, type EtatConnexion } from "@/lib/game/realtime";
 import { ACTION_REPONDRE_DEMANDE } from "@/lib/game/decision";
 import { agisseurDepuisEvenements } from "@/lib/game/indicateurs";
+import { estPremierePartie, marquerGuideVu } from "@/lib/game/guide";
 import { construireJournal } from "@/lib/game/journal";
 import type { VueActionLegale, VuePartie } from "@/lib/game/plateau";
 import { getProfile } from "@/lib/api/profile";
@@ -58,6 +59,16 @@ export function PartieView({ gameId }: { gameId: string }) {
   const [introuvable, setIntrouvable] = useState(false);
   const [accessReady, setAccessReady] = useState(false);
   const [vue, setVue] = useState<VuePartie | null>(null);
+  // Première partie ? C'est ici qu'on tranche, une fois, au montage — pas dans le tiroir d'aide :
+  // `localStorage` n'existe pas au rendu serveur, et la réponse ne doit pas changer en cours de
+  // partie (le guide se refermerait sous les doigts du joueur). On note aussitôt que le guide a
+  // été vu : la partie suivante ne l'ouvrira plus d'elle-même (lot `j-plateau-aide`).
+  const [premierePartie] = useState(() => {
+    const stockage = typeof window === "undefined" ? null : window.localStorage;
+    const premiere = estPremierePartie(stockage);
+    if (premiere) marquerGuideVu(stockage);
+    return premiere;
+  });
   const [etatConnexion, setEtatConnexion] = useState<EtatConnexion>("connexion");
   // Le Pokémon qui vient d'agir, mis en évidence par un halo (lot `j-plateau-etat-visuel`).
   const [agisseur, setAgisseur] = useState<string | null>(null);
@@ -229,6 +240,7 @@ export function PartieView({ gameId }: { gameId: string }) {
             onSauterAnimation={anim.sauter}
             onBasculerAccelere={anim.reduit ? undefined : anim.basculerAccelere}
             animationAcceleree={anim.mode === "accelere"}
+            premierePartie={premierePartie}
           />
           <JournalPanel lignes={lignes} onSurvol={setSurligne} />
           <FenetreDecision vue={vue} onRepondre={onRepondre} />

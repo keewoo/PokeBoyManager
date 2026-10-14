@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 
 import { FormNotice } from "@/components/auth/form-notice";
 import { ActionBar } from "@/components/game/action-bar";
+import { AidePanel } from "@/components/game/aide-panel";
 import { CoucheAnimation } from "@/components/game/animation-layer";
 import { BoardCard, EmptySlot } from "@/components/game/board-card";
 import { CardZoom } from "@/components/game/card-zoom";
@@ -90,6 +91,12 @@ export type GameBoardProps = {
   onBasculerAccelere?: () => void;
   /** `true` si le mode accéléré est actif. */
   animationAcceleree?: boolean;
+  /**
+   * `true` pour une **première partie** : le tiroir d'aide (lot `j-plateau-aide`) s'ouvre d'emblée
+   * sur le parcours guidé. C'est le conteneur de partie qui tranche (mémoire du navigateur) ; le
+   * plateau ne fait que porter la réponse.
+   */
+  premierePartie?: boolean;
 };
 
 /** Ouvre le zoom sur une carte (avec son Pokémon porteur s'il y en a un), ou le ferme avec `null`. */
@@ -296,6 +303,7 @@ export function GameBoard({
   onSauterAnimation,
   onBasculerAccelere,
   animationAcceleree = false,
+  premierePartie = false,
 }: GameBoardProps) {
   const { moi, adversaire } = separerCamps(vue);
   const monTour = estMonTour(vue);
@@ -478,6 +486,13 @@ export function GameBoard({
 
       {/* Ma main : hors de l'arène, toujours accessible (critère « la main reste accessible »). */}
       <Main moi={moi} onZoom={onZoom} inter={inter} />
+
+      {/* Aide en jeu (lot `j-plateau-aide`) : tiroir `fixed`, donc sans effet sur la hauteur de la
+          page (l'e2e `plateau-responsive` interdit tout défilement du plateau). Seulement sur un
+          plateau jouable : sur un plateau en lecture seule, il n'y a aucun coup à expliquer. Elle
+          reçoit la vue et la raison du dernier refus — et AUCUNE fonction de jeu : elle ne peut pas
+          jouer à la place du joueur. */}
+      {onJouer && <AidePanel vue={vue} refus={refus} premierePartie={premierePartie} />}
 
       <CardZoom carte={zoom?.carte ?? null} pokemon={zoom?.pokemon} onClose={() => setZoom(null)} />
     </section>
