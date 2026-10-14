@@ -124,7 +124,13 @@ function refCiblePokemon(pokemon: VuePokemon, inter?: Interaction): string | und
 /** Les six pastilles de récompenses : pleines pour celles restant à prendre, vides pour les prises. */
 function Recompenses({ restantes, pour }: { restantes: number; pour: string }) {
   return (
+    // `role="img"` n'est pas décoratif : sans rôle, un `aria-label` sur un `<span>` est
+    // **interdit** (WCAG 4.1.2) et les lecteurs d'écran l'ignorent — le compte de récompenses,
+    // c'est-à-dire le score de la partie, n'était donc annoncé à personne. Trouvé par l'audit
+    // `axe` du lot `j-accessibilite-jeu`. « img » parce que c'est exactement ce que c'est : un
+    // dessin (six pastilles) dont le texte de remplacement est ce compte.
     <span
+      role="img"
       className="inline-grid grid-cols-3 gap-[0.15em]"
       aria-label={`${pour} : ${restantes} récompense(s) sur ${RECOMPENSES_MAX}`}
     >

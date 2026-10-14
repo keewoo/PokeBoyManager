@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { cookies, headers } from "next/headers";
 import { exo2, jetbrainsMono, pressStart2P, roboto } from "./fonts";
+import { ConfortProvider } from "@/lib/confort-provider";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { AppShell } from "@/components/app-shell";
 import { getSessionCookieName } from "@/lib/config";
@@ -56,6 +57,11 @@ export const viewport: Viewport = {
   themeColor: "#050A30",
 };
 
+// Le même script pose le thème ET les réglages de confort (lot `j-accessibilite-jeu`) : tous deux
+// doivent être appliqués AVANT le premier rendu, sous peine de montrer une animation à quelqu'un
+// qui a demandé qu'il n'y en ait pas, ou un texte minuscule à qui l'a agrandi. Les valeurs sont
+// relues du cache local ; le serveur les confirme ensuite (`ConfortProvider`). Les deux noms de
+// clés et le vocabulaire sont ceux de `lib/game/confort.ts` — s'ils changent là, ils changent ici.
 const NO_FLASH_THEME_SCRIPT = `
 (function () {
   try {
@@ -64,6 +70,16 @@ const NO_FLASH_THEME_SCRIPT = `
       ? stored
       : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
     document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {}
+  try {
+    var brut = window.localStorage.getItem("pbm.jeu.confort");
+    var c = brut ? JSON.parse(brut) : {};
+    var anim = c.animations === "reduites" ? "reduites" : "completes";
+    var texte = c.taille_texte === "grande" || c.taille_texte === "tres_grande"
+      ? c.taille_texte
+      : "normale";
+    document.documentElement.setAttribute("data-anim", anim);
+    document.documentElement.setAttribute("data-texte", texte);
   } catch (e) {}
 })();
 `;
@@ -100,7 +116,9 @@ export default async function RootLayout({
         className={`${roboto.variable} ${exo2.variable} ${jetbrainsMono.variable} ${pressStart2P.variable} font-sans antialiased`}
       >
         <ThemeProvider>
-          <AppShell hasSession={hasSession}>{children}</AppShell>
+          <ConfortProvider avecSession={hasSession}>
+            <AppShell hasSession={hasSession}>{children}</AppShell>
+          </ConfortProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -210,13 +210,71 @@ body {
   filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
 }
 
+/* ===================================================================================
+   Confort et accessibilité (lot `j-accessibilite-jeu`)
+   Deux interrupteurs, et ils se cumulent — jamais ne s'annulent :
+   - `prefers-reduced-motion` : la demande du SYSTÈME ;
+   - `html[data-anim="reduites"]` : la demande faite DANS LE JEU (`/jeu/confort`), pour
+     qui ne sait pas où se trouve le réglage du système — un enfant sur le téléphone
+     d'un parent, typiquement.
+   L'un des deux suffit à tout arrêter. Le réglage du jeu ne peut PAS rallumer ce que le
+   système demande d'éteindre : il n'existe aucune règle « completes » qui remettrait des
+   durées, seulement des règles qui les annulent.
+   `animation-iteration-count: 1` est indispensable : une animation en boucle avec une
+   durée de 0,01 ms tourne toujours — elle boucle juste très vite, et c'est pire.
+   =================================================================================== */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+html[data-anim="reduites"] *,
+html[data-anim="reduites"] *::before,
+html[data-anim="reduites"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Taille de texte réglable. On agit sur la police de la RACINE : tout le produit est dimensionné
+   en `rem`, donc tout suit, sans retoucher une seule classe. Deux crans modestes (+12,5 %,
+   +25 %) — au-delà, les écrans cessent de tenir sur un téléphone, et un écran qui déborde n'aide
+   personne ; le zoom du navigateur reste disponible pour aller plus loin.
+
+   ⛔ `:not([data-ecran="plateau"])` — la page d'une PARTIE est exclue, et ce n'est pas un oubli.
+   Mesuré à 844 × 390 (le téléphone tenu en paysage du lot `j-plateau-layout`) : en « très grande »,
+   le document passe à 432 px de haut pour 390 disponibles, donc la page défile — or le plateau ne
+   tolère **aucun** défilement, c'est son critère d'acceptation et un job e2e le garde. Réduire
+   d'autant la hauteur de l'arène pour compenser la ramènerait à une cinquantaine de pixels : un
+   plateau illisible au nom de la lisibilité. En partie, la lisibilité d'une carte passe donc par
+   son **agrandissement** (`CardZoom`, ouvert au survol comme au focus clavier) — et l'écran de
+   confort le dit au joueur plutôt que de le lui laisser découvrir.
+   L'attribut est posé par `app/jeu/parties/[id]/partie-view.tsx` à son montage. */
+html[data-texte="grande"]:not([data-ecran="plateau"]) {
+  font-size: 112.5%;
+}
+html[data-texte="tres_grande"]:not([data-ecran="plateau"]) {
+  font-size: 125%;
+}
+
+/* Focus visible au clavier sur les éléments du JEU. Les primitives (`components/ui/button`)
+   portent déjà leur anneau ; les cartes et les piles du plateau sont des éléments sur mesure, et
+   une partie entière doit se jouer au clavier seul (critère d'acceptation du lot) : sans cet
+   anneau, on ne sait pas où l'on est. `:focus-visible` et non `:focus` — à la souris, l'anneau
+   serait du bruit. */
+.pbm-board-card:focus-visible,
+[data-testid^="zone-publique"]:focus-visible,
+[data-testid^="zone-cachee"]:focus-visible,
+[data-testid="main-joueur"] [tabindex="0"]:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 0.3em;
 }
 
 /* ===================================================================================

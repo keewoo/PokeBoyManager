@@ -96,6 +96,15 @@ export function PartieView({ gameId }: { gameId: string }) {
   // ref pour que `onJouer` lise toujours la dernière valeur sans se recréer à chaque coup.
   const numeroRef = useRef(0);
 
+  // Marque le document comme « écran de plateau » le temps de la partie (lot
+  // `j-accessibilite-jeu`). Un seul réglage s'y accroche : la taille de texte réglable, que
+  // `globals.css` n'applique PAS ici — mesuré, elle fait défiler un plateau qui ne doit jamais
+  // défiler. La raison complète est dans `globals.css` et dans `docs/jeu/ACCESSIBILITE.md`.
+  useEffect(() => {
+    document.documentElement.setAttribute("data-ecran", "plateau");
+    return () => document.documentElement.removeAttribute("data-ecran");
+  }, []);
+
   // Étape 1 — autorité d'accès : droit au jeu (D11). Faux → page inexistante.
   useEffect(() => {
     let active = true;

@@ -62,7 +62,8 @@ export function JournalPanel({ lignes, onSurvol }: JournalPanelProps) {
   const [detailsOuverts, setDetailsOuverts] = useState<Record<string, boolean>>({});
 
   // La ligne la plus récente (dernier événement du dernier coup) : mise en évidence.
-  const cleDerniere = lignes.at(-1)?.cle ?? null;
+  const derniere = lignes.at(-1) ?? null;
+  const cleDerniere = derniere?.cle ?? null;
 
   // On affiche du plus récent au plus ancien : le dernier coup est en tête, visible sans défiler.
   // Une ligne non traduite est TOUJOURS montrée (un bug ne se cache pas derrière un filtre).
@@ -80,6 +81,17 @@ export function JournalPanel({ lignes, onSurvol }: JournalPanelProps) {
     // Hors flux (`fixed`) : le tiroir n'allonge jamais la page du plateau. `pointer-events-none` sur
     // l'enveloppe laisse le plateau cliquable autour ; seul le panneau capte les clics.
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center px-2 pb-2">
+      {/* Annonce des événements importants (lot `j-accessibilite-jeu`). Le tiroir est replié par
+          défaut : sans cette région, un lecteur d'écran ne disait RIEN de ce qui se passait — la
+          partie avançait en silence. On annonce la dernière phrase du journal, celle qui est déjà
+          écrite en français par `lib/game/journal.ts` : une seule formulation pour l'œil et pour
+          l'oreille, donc jamais deux versions qui divergent.
+          `polite` et non `assertive` : une annonce ne doit pas couper le joueur qui lit ses
+          options. Et c'est le DERNIER événement, pas tout le coup — réciter huit lignes à chaque
+          attaque rendrait l'annonce inutilisable. */}
+      <p role="status" aria-live="polite" data-testid="journal-annonce" className="sr-only">
+        {derniere?.texte ?? ""}
+      </p>
       <section
         data-testid="journal"
         className="pointer-events-auto flex w-full max-w-3xl flex-col rounded-2xl border border-[rgba(157,0,255,0.35)] bg-[linear-gradient(160deg,#141B5C,#0A1048)] text-foreground shadow-[0_-8px_30px_-12px_rgba(0,0,0,0.8)]"
@@ -87,7 +99,10 @@ export function JournalPanel({ lignes, onSurvol }: JournalPanelProps) {
         <header className="flex items-center justify-between gap-2 px-3 py-2">
           <button
             type="button"
-            className="flex items-center gap-2 font-heading text-sm font-bold text-gold"
+            // `min-h-6` : 24 px (WCAG 2.2, 2.5.8 niveau AA). Mesuré à 93 × **20** px avant ce lot —
+            // c'est le bouton qui ouvre tout le journal, donc la plus importante des cibles du
+            // plateau. Trouvé par `e2e/a11y-jeu.spec.ts`, qui mesure les boîtes réelles.
+            className="flex min-h-6 items-center gap-2 font-heading text-sm font-bold text-gold"
             aria-expanded={ouvert}
             aria-controls="journal-corps"
             onClick={() => setOuvert((o) => !o)}
@@ -107,7 +122,9 @@ export function JournalPanel({ lignes, onSurvol }: JournalPanelProps) {
                   data-testid={`filtre-${cle}`}
                   onClick={() => basculerFiltre(cle)}
                   className={cn(
-                    "rounded-full px-2 py-0.5 text-[0.7rem] font-semibold transition-opacity",
+                    // `min-h-6` : 24 px, le minimum WCAG 2.2 pour une cible (2.5.8, niveau AA).
+                    // Ces trois filtres faisaient 17 px de haut — lot `j-accessibilite-jeu`.
+                    "min-h-6 rounded-full px-2 py-0.5 text-[0.7rem] font-semibold transition-opacity",
                     CATEGORIES[cle].classe,
                     !filtres[cle] && "opacity-35",
                   )}

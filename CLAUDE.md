@@ -91,6 +91,7 @@ existe. Détail : `docs/PLUGINS.md`.
 | `docs/jeu/NOTIFICATIONS.md` | on prévient un joueur : genres, plafonds, silence nocturne, relais, « je n'ai rien reçu » |
 | `docs/jeu/RENDU-CARTES.md` | on touche à l'image d'une carte en jeu : ma photo / l'officielle / le dos, DJ5 et le veto de confidentialité, note de qualité, variante de jeu, « je ne vois pas ma photo » |
 | `docs/jeu/CHARGE.md` | on se demande combien de parties le serveur tient : plafond, coût d'une partie, purge |
+| `docs/jeu/ACCESSIBILITE.md` | on touche au confort ou à l'accessibilité du jeu : les trois réglages (`/jeu/confort`), les deux niveaux d'audit, le clavier des surcouches, le temps rallongé (DJ4), et les trois compromis du plateau — pourquoi ils existent et par quoi ils sont compensés |
 | `docs/jeu/FIN-COMPTE.md` | on touche à la fin de partie côté compte : résultat écrit une seule fois, statistiques recalculées depuis le journal, ce qui compte (et pas), balayage de reprise, et où brancher badges et classement |
 | `docs/jeu/EMOTES.md` | on touche aux emotes : le catalogue fermé et sa règle (aucune emote ne peut narguer), le débit, l'interrupteur « couper » (immédiat et mémorisé), pourquoi il n'y a ni texte libre ni route HTTP, et « je ne vois pas les emotes » |
 | `docs/jeu/AIDE.md` | on touche à l'aide en jeu : explication d'un refus, coups proposés, partie guidée, glossaire, et où poser un panneau sans casser l'e2e du plateau |

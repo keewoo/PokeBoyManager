@@ -64,3 +64,19 @@ honnête du dépassement) ; le budget reste ≥ 0.
 > Le plateau de jeu (où ces horloges s'affichent réellement) n'existe pas encore : ce lot livre le
 > **moteur de temps**, son autorité serveur et l'estimateur client. Le branchement visuel suit avec
 > le lot d'écran de partie.
+
+## Temps rallongé (lot `j-accessibilite-jeu`)
+
+Un joueur peut demander, dans `/jeu/confort`, que les horloges de ses parties soient **doublées**
+(`pbm_api.jeu.confort.rallonger`, facteur 2). C'est le seul réglage de confort qui touche les règles,
+et il obéit à la mécanique décrite plus haut : la configuration est **figée à la création** de la
+partie, donc il est lu dans `creer_partie` et nulle part ailleurs — il vaut pour les parties
+**suivantes**, jamais pour celle en cours.
+
+Si **l'un** des deux joueurs l'a demandé, la partie entière l'obtient : DJ4 fixe un temps *par
+tour*, pas un temps par joueur et par tour, donc il faut trancher — et on tranche en faveur de qui a
+demandé de l'aide. Les deux marges (`tolerance_reseau_s`, `pause_deconnexion_s`) ne sont **pas**
+rallongées : elles compensent le réseau et une déconnexion, pas la lenteur de réflexion ; les
+doubler laisserait une partie désertée immobile deux fois plus longtemps.
+
+Détail et raisons : `docs/jeu/ACCESSIBILITE.md`.
