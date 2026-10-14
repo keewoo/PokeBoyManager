@@ -283,3 +283,34 @@ body {
 .pbm-board-card[data-orientation="paralyse"] {
   transform: rotate(-90deg);
 }
+
+/* ===================================================================================
+   Socle d'animation (lot `j-anim-socle`)
+   Une règle, et elle est gardée par un test (`src/__tests__/anim-css-garde.test.ts`) :
+   les images-clés `pbm-anim-*` n'animent QUE `transform` et `opacity`. Ce sont les deux
+   seules propriétés que le navigateur peut composer sans refaire la mise en page ni
+   repeindre — c'est ce qui tient le plancher d'images par seconde (`PLANCHER_FPS`) sur
+   un téléphone d'entrée de gamme. Animer `width`, `top`, `box-shadow` ou `filter`
+   ferait travailler le fil principal à chaque image, et le plancher tomberait.
+   La durée vient du socle, pas d'ici (`--pbm-anim-duree`) : elle est bornée, et le mode
+   accéléré la divise. En `prefers-reduced-motion`, la couche n'est même pas rendue (le
+   crochet renvoie `null`) — la règle globale plus haut n'a donc rien à rattraper.
+   =================================================================================== */
+.pbm-anim-pastille {
+  animation: pbm-anim-pulse var(--pbm-anim-duree, 400ms) ease-out both;
+  will-change: transform, opacity;
+}
+@keyframes pbm-anim-pulse {
+  from {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.22);
+  }
+}
