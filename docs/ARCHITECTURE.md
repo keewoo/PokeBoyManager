@@ -1200,3 +1200,49 @@ deux clics simultanés mènent au même plateau au lieu d'un conflit.
 Les **libellés** des huit raisons de fin vivent côté front (`apps/web/src/lib/game/fin.ts`) et leur
 parité avec les constantes `RAISON_*` du moteur est gardée en CI par un test statique du job `game`
 (`apps/game/tests/test_parite_raisons_fin_front.py`) — dans les deux sens.
+
+## Rendu des cartes en jeu : ma photo ou l'officielle (lot `j-rendu-carte`)
+
+La règle produit (DJ5), les seuils de qualité, les poids mesurés et le diagnostic « je ne vois pas ma
+photo » vivent dans **`docs/jeu/RENDU-CARTES.md`** ; voici les repères d'implémentation côté serveur.
+
+**Trois écritures, un niveau de décision chacune.** `jeu_rendu_reglages` (une ligne par compte,
+`user_id` en PK, créée à la première modification — son absence vaut les défauts du code) porte le
+rendu par défaut et le veto `jamais_montrer_mes_photos` ; `decks.rendu_cartes` porte la préférence du
+deck, **nullable sans `server_default`** (nul = suit le compte, et non « photo » : un défaut sur la
+colonne figerait les decks existants) ; `collection_items.jeu_image_key` / `jeu_qualite` portent la
+**variante de jeu** d'une photo et sa note.
+
+**La décision est pure et vit à un seul endroit** : `pbm_api.jeu.rendu.decider_origine` rend
+`(origine, raison)`. La vue de partie **et** le constructeur de deck passent par elle — sinon
+l'avertissement montré au joueur et ce qu'il voit en jeu pourraient diverger sans qu'aucun test ne
+l'attrape. `pbm_api.jeu.rendu_service` l'alimente en données (sièges, decks, réglages, exemplaires),
+`pbm_api.games.rendu_vue.enrichir_rendu` pose le résultat sur chaque carte **visible** de la vue.
+
+**Deux propriétés de confidentialité, structurelles plutôt que surveillées.** Le veto est évalué
+**avant** toute consultation de la photo : aucune URL ne peut sortir par une erreur d'ordre, et
+l'identifiant d'exemplaire n'apparaît nulle part dans la charge utile de l'adversaire. Et la raison
+rendue est **la même** qu'une photo existe ou non — sinon le refus révélerait que le joueur a
+photographié cette carte.
+
+**Les rendus sont résolus pour les deux regards d'un coup** (`RendusPartie`, clé
+`(regard, propriétaire, ref)`). C'est imposé par le canal temps réel : `HUB.publier` projette **un**
+résultat vers **tous** les abonnés avec un seul `CatalogueAffichage` — une résolution par regard au
+moment de l'enrichissement demanderait une lecture de base par abonné. `CatalogueAffichage` gagne donc
+`ids` (`ref → cards.id`, seule façon de construire une URL d'image depuis une `ref` d'état, qui est un
+`tcgdex_id`) et `rendus` ; `catalogue_pour_etat`/`catalogue_pour_resultat` prennent un `game_id` — sans
+lui il n'y a ni propriétaire ni réglage à appliquer, donc aucune image à proposer.
+
+**La route de photo rejoue toute la décision** (`GET /jeu/rendu/parties/{game_id}/photos/{item_id}`) :
+participation du regardant, appartenance de l'exemplaire à un joueur de la partie, préférence du
+propriétaire, veto. Une URL devinée ou gardée d'une partie précédente ne sert rien. Tout refus est un
+**404** (D11) et la réponse est `Cache-Control: private`.
+
+**La variante n'est jamais fabriquée dans la projection** : un plateau se lit plusieurs fois par
+seconde. Elle est produite à l'ouverture du deck (`GET /jeu/rendu/decks/{deck_id}`), à la première
+demande de la photo, ou par `scripts/preparer_rendus_jeu.py` sur la flotte. Une photo pas encore
+préparée se replie sur l'officielle **en le disant** (`RAISON_PAS_PRETE`).
+
+Migration `a1f7c3d9e5b2`. Tests : `test_jeu_rendu_qualite.py` (seuils, poids de la variante),
+`test_jeu_rendu_choix.py` (l'ordre des verdicts, la non-fuite du veto), `test_jeu_rendu_routes.py`
+(réglages, CSRF, D11, accès croisé), `test_jeu_rendu_projection.py` (la charge utile de chaque regard).

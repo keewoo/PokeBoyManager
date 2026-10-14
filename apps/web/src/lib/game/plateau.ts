@@ -17,7 +17,42 @@
  * le serveur pour une pastille typée (lot `j-plateau-etat-visuel`) — `null`/absent quand le type
  * est inconnu du catalogue (repère neutre côté écran, jamais une couleur inventée).
  */
-export type VueCarte = { instance_id: string; ref: string; type?: string | null };
+export type VueCarte = {
+  instance_id: string;
+  ref: string;
+  type?: string | null;
+  /** Le rendu décidé par le serveur pour CE regard (lot `j-rendu-carte`) — voir {@link VueRenduCarte}. */
+  rendu?: VueRenduCarte;
+};
+
+/**
+ * Ce que l'écran doit afficher pour une carte : **le serveur l'a déjà décidé** (lot
+ * `j-rendu-carte`, décision DJ5).
+ *
+ * `origine` vaut `"photo"` (la photo personnelle de son propriétaire) ou `"officielle"` (l'image du
+ * catalogue). L'écran **ne choisit pas** : une photo que son propriétaire ne veut pas montrer n'a
+ * aucune URL dans cette charge utile — c'est ce qui rend le réglage de confidentialité réel et non
+ * décoratif. Le troisième rendu, le **dos** de carte, n'est pas ici : il ne vient pas du serveur
+ * (une carte face cachée n'a pas d'identité à révéler), c'est l'écran qui le dessine.
+ *
+ * `url` est la taille plateau, `url_zoom` la taille zoom (« lisible sans pincer l'écran ») : deux
+ * tailles données plutôt qu'une règle à redériver côté écran. `credit` est l'indicateur discret
+ * « photo de Aymeric », posé uniquement sur la photo d'un **autre** joueur. `raison` dit pourquoi
+ * l'officielle a remplacé la photo (photo trop sombre, aucune photo…) : montrée dans le
+ * constructeur de deck, pas sur le plateau — en pleine partie, c'est du bruit.
+ */
+export type VueRenduCarte = {
+  origine: "photo" | "officielle";
+  url: string;
+  url_zoom: string;
+  credit?: string | null;
+  raison?: string | null;
+  /**
+   * L'image officielle de la même carte, fournie **avec une photo** : de quoi afficher si la photo
+   * ne se charge pas (variante effacée, réseau coupé). Ne révèle rien — l'officielle est publique.
+   */
+  url_repli?: string | null;
+};
 
 /**
  * Un Pokémon en jeu (actif ou banc), entièrement public (R-3.6).
@@ -117,7 +152,15 @@ export type VueActionRefusee = {
  * de l'`id` (un `instance_id`), pour que l'écran rende une vraie carte et la laisse chercher par
  * nom et par type ; `id` est l'identifiant à renvoyer dans la réponse.
  */
-export type VueOptionCarte = { id: string; ref: string; nom: string; type?: string | null };
+export type VueOptionCarte = {
+  id: string;
+  ref: string;
+  nom: string;
+  type?: string | null;
+  /** Le rendu de cette carte (lot `j-rendu-carte`) : chercher une carte sur un nom est pénible,
+   * la reconnaître à son image est immédiat — surtout pour un enfant de onze ans. */
+  rendu?: VueRenduCarte;
+};
 
 /**
  * Une **demande de décision** en cours, telle que le serveur la projette (`pbm_game` +

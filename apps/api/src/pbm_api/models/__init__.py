@@ -80,6 +80,7 @@ from pbm_api.models.invitations import (
     INVITATION_STATUTS,
     GameInvitation,
 )
+from pbm_api.models.jeu_rendu import JeuRenduReglages
 from pbm_api.models.jobs import DataExport, Job, JobStatus
 from pbm_api.models.notifications import (
     NOTIF_ADVERSAIRE_REVENU,
@@ -182,6 +183,7 @@ __all__ = [
     "INCIDENT_PARTIE_REFUSEE",
     "INCIDENT_GENRES",
     "GameNotification",
+    "JeuRenduReglages",
     "NotificationReglages",
     "NOTIF_INVITATION_RECUE",
     "NOTIF_ADVERSAIRE_TROUVE",

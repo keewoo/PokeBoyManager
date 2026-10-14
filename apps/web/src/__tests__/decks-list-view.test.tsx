@@ -40,6 +40,7 @@ function detail(over: Partial<DeckDetail> = {}): DeckDetail {
     id: "new1",
     name: "Nouveau",
     format: "standard",
+    rendu_cartes: null,
     created_at: "2026-09-22T10:00:00Z",
     updated_at: "2026-09-22T10:00:00Z",
     cards: [],

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ApiError } from "@/lib/api/client";
+import { CardBack } from "@/components/game/board-card";
 import { cn } from "@/lib/utils";
 import {
   NON,
@@ -199,7 +200,22 @@ function SelecteurCartes({
                   !choisi && bloque && "cursor-not-allowed opacity-40",
                 )}
               >
-                <span className="min-w-0 truncate">{o.nom}</span>
+                {/* La vignette de la carte (lot `j-rendu-carte`) : ma photo ou l'image officielle,
+                    décidée par le serveur. Chercher sur un nom est pénible, reconnaître une image
+                    est immédiat. Absente quand la carte est inconnue du catalogue (D9) — le nom
+                    porte alors seul, comme avant. */}
+                {o.rendu && (
+                  // eslint-disable-next-line @next/next/no-img-element -- image servie par l'API
+                  <img
+                    src={o.rendu.url}
+                    alt=""
+                    data-testid={`option-image-${o.id}`}
+                    className="h-10 w-auto shrink-0 rounded-sm object-contain"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                )}
+                <span className="min-w-0 flex-1 truncate">{o.nom}</span>
                 <PastilleType type={o.type} />
               </button>
             </li>
@@ -481,13 +497,21 @@ function ModaleDecision({
 
         <div className="min-h-0 flex-1 overflow-y-auto">
           {ensembleCache ? (
-            <p
-              data-testid="decision-ensemble-cache"
-              className="py-6 text-center text-sm text-muted-foreground"
-            >
-              Choix parmi {demande.options_nombre} cartes cachées — la désignation à l&apos;aveugle
-              n&apos;est pas encore disponible.
-            </p>
+            <div data-testid="decision-ensemble-cache" className="py-6 text-center">
+              {/* Les cartes cachées sont montrées **de dos** (lot `j-rendu-carte`) : l'enfant voit
+                  combien il y en a et que ce sont bien des cartes, sans qu'aucune identité ne
+                  circule — le serveur n'en envoie que le nombre. Elles ne sont pas cliquables : la
+                  désignation à l'aveugle n'est pas implémentée, et on ne l'approxime pas (D9). */}
+              <span className="mx-auto flex max-w-xs flex-wrap justify-center gap-2">
+                {Array.from({ length: Math.min(demande.options_nombre ?? 0, 12) }, (_, i) => (
+                  <CardBack key={i} etiquette="carte cachée" className="w-10" />
+                ))}
+              </span>
+              <p className="mt-4 text-sm text-muted-foreground">
+                Choix parmi {demande.options_nombre} cartes cachées — la désignation à
+                l&apos;aveugle n&apos;est pas encore disponible.
+              </p>
+            </div>
           ) : demande.categorie === "oui_non" ? (
             <SelecteurOuiNon valeur={selection[0] ?? null} onChoisir={(v) => setSelection([v])} />
           ) : demande.categorie === "type" ? (

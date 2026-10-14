@@ -248,14 +248,20 @@ async def update_deck(
     *,
     name: str | None = None,
     deck_format: str | None = None,
+    rendu_cartes: str | None = None,
 ) -> Deck:
-    """Renomme et/ou change le format du deck. Les deux sont facultatifs (un `PATCH` partiel
-    ne touche que ce qu'il envoie). Un format invalide est refusé en amont par le schéma."""
+    """Renomme, change le format, et/ou choisit le rendu des cartes en jeu (DJ5).
+
+    Tous les champs sont facultatifs (un `PATCH` partiel ne touche que ce qu'il envoie) ; un format
+    ou un rendu invalide est refusé en amont par le schéma. `rendu_cartes=""` **efface** la
+    préférence du deck : il suit alors le réglage global du compte (lot `j-rendu-carte`)."""
     deck = await _get_owned_deck(session, user, deck_id)
     if name is not None:
         deck.name = name
     if deck_format is not None:
         deck.format = deck_format
+    if rendu_cartes is not None:
+        deck.rendu_cartes = rendu_cartes or None
     deck.updated_at = datetime.now(UTC)
     await session.commit()
     await session.refresh(deck)

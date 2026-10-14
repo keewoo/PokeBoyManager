@@ -9,6 +9,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+from pbm_api.jeu.rendu import RENDUS_REGLABLES
+
 # Formats de jeu (voir `pbm_api.decks.formats`). Le schéma refuse toute autre valeur (422).
 DeckFormat = Literal["standard", "expanded", "unlimited"]
 
@@ -37,10 +39,29 @@ class CreateDeckRequest(BaseModel):
 
 
 class UpdateDeckRequest(BaseModel):
-    """`PATCH` partiel : renommer et/ou changer de format. Tout champ absent reste inchangé."""
+    """`PATCH` partiel : renommer, changer de format, choisir le rendu des cartes en jeu.
+
+    Tout champ absent reste inchangé. `rendu_cartes` est la préférence DJ5 **de ce deck** (lot
+    `j-rendu-carte`) : « photo » ou « officielle ». Pour revenir au réglage global du compte, on
+    envoie la chaîne vide — `null` serait indistinguable d'un champ absent dans un PATCH partiel.
+    """
 
     name: str | None = Field(default=None, min_length=1, max_length=120)
     format: DeckFormat | None = None
+    rendu_cartes: str | None = Field(
+        default=None,
+        description="« photo », « officielle », ou \"\" pour suivre le reglage global du compte.",
+    )
+
+    @field_validator("rendu_cartes")
+    @classmethod
+    def _rendu_connu(cls, value: str | None) -> str | None:
+        """Refuse un rendu hors vocabulaire : un reglage qui ne regle rien est un mensonge."""
+        if value is None or value == "":
+            return value
+        if value not in RENDUS_REGLABLES:
+            raise ValueError(f"rendu inconnu (attendus : {sorted(RENDUS_REGLABLES)})")
+        return value
 
     @field_validator("name")
     @classmethod
@@ -127,6 +148,9 @@ class DeckDetail(BaseModel):
     id: uuid.UUID
     name: str
     format: DeckFormat
+    #: Rendu des cartes de ce deck en jeu (DJ5, lot `j-rendu-carte`) ; `None` = suit le reglage
+    #: global du compte. Le detail carte par carte vit sur `GET /jeu/rendu/decks/{id}`.
+    rendu_cartes: str | None
     created_at: datetime
     updated_at: datetime
     cards: list[DeckCardOut]

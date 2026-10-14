@@ -32,6 +32,7 @@ from pbm_game.state.serialisation import depuis_json
 from pbm_api.games.actions import actions_pour
 from pbm_api.games.construction import joueur_id_de
 from pbm_api.games.indicateurs import CatalogueAffichage
+from pbm_api.games.rendu_vue import enrichir_rendu
 from pbm_api.games.service import ResultatAction
 
 
@@ -77,6 +78,10 @@ def vue_autoritaire(
     # cartes affichables (nom, type), pour que l'écran les montre et les laisse chercher. Ne
     # touche rien sans demande, ni pour un ensemble caché (aucune identité à révéler).
     enrichir_demande(sortie["vue"], etat, noms=catalogue.noms, types=catalogue.types)
+    # Rendu de chaque carte visible (lot ``j-rendu-carte``) : ma photo ou l'image officielle, selon
+    # ce que son propriétaire a choisi de montrer (DJ5). Résolu côté serveur pour CE regard : une
+    # photo qu'on ne doit pas voir n'a aucune URL dans la charge utile.
+    enrichir_rendu(sortie["vue"], catalogue.rendus)
     # Actions légales du destinataire + commandes refusées motivées (lot j-plateau-interactions) :
     # l'écran illumine les cibles et grise les refus sans réécrire aucune règle.
     actions = actions_pour(etat, joueur_id, catalogue_jeu)
@@ -125,6 +130,10 @@ def projeter_resultat(
     # cartes affichables (nom, type), pour que l'écran les montre et les laisse chercher. Ne
     # touche rien sans demande, ni pour un ensemble caché (aucune identité à révéler).
     enrichir_demande(sortie["vue"], etat, noms=catalogue.noms, types=catalogue.types)
+    # Rendu de chaque carte visible (lot ``j-rendu-carte``) : ma photo ou l'image officielle, selon
+    # ce que son propriétaire a choisi de montrer (DJ5). Résolu côté serveur pour CE regard : une
+    # photo qu'on ne doit pas voir n'a aucune URL dans la charge utile.
+    enrichir_rendu(sortie["vue"], catalogue.rendus)
     # Actions légales du destinataire + commandes refusées motivées (lot j-plateau-interactions) :
     # l'écran illumine les cibles et grise les refus sans réécrire aucune règle.
     actions = actions_pour(etat, joueur_id, catalogue_jeu)

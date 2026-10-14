@@ -251,3 +251,67 @@ describe("FenetreDecision — demande imbriquée (une demande en remplace une au
     expect(screen.getByTestId("option-c1")).toHaveAttribute("data-choisi", "non");
   });
 });
+
+describe("FenetreDecision — vignettes des cartes (lot j-rendu-carte)", () => {
+  it("montre l'image que le serveur a décidée pour chaque option", () => {
+    // Chercher une carte sur un nom est pénible ; la reconnaître à son image est immédiat. Le
+    // rendu vient du serveur (DJ5) : l'écran ne choisit pas entre ma photo et l'officielle.
+    const options: VueOptionCarte[] = [
+      {
+        id: "c1",
+        ref: "r1",
+        nom: "Dracaufeu",
+        type: "fire",
+        rendu: {
+          origine: "photo",
+          url: "/jeu/rendu/parties/g1/photos/i1",
+          url_zoom: "/jeu/rendu/parties/g1/photos/i1",
+        },
+      },
+      { id: "c2", ref: "r2", nom: "Bulbizarre", type: "grass" },
+    ];
+    render(
+      <FenetreDecision
+        vue={vuePartie(
+          demande({
+            categorie: "cartes",
+            minimum: 1,
+            maximum: 1,
+            options: options.map((o) => o.id),
+            options_cartes: options,
+          }),
+        )}
+      />,
+    );
+    expect(screen.getByTestId("option-image-c1")).toHaveAttribute(
+      "src",
+      "/jeu/rendu/parties/g1/photos/i1",
+    );
+    // Une carte sans rendu (inconnue du catalogue, D9) garde son nom seul : aucune image inventée.
+    expect(screen.queryByTestId("option-image-c2")).toBeNull();
+    expect(screen.getByText("Bulbizarre")).toBeInTheDocument();
+  });
+
+  it("montre des dos de carte pour un ensemble caché, sans révéler aucune identité", () => {
+    render(
+      <FenetreDecision
+        vue={vuePartie(
+          demande({
+            categorie: "cartes",
+            options: undefined,
+            options_cartes: undefined,
+            options_nombre: 4,
+            minimum: 1,
+            maximum: 1,
+          }),
+        )}
+      />,
+    );
+    const cache = screen.getByTestId("decision-ensemble-cache");
+    expect(cache).toBeInTheDocument();
+    // Quatre dos : le joueur voit COMBIEN il y a de cartes, et que ce sont des cartes.
+    expect(screen.getAllByTestId("dos-carte")).toHaveLength(4);
+    // Et la désignation à l'aveugle reste annoncée comme non disponible (D9, pas approximée).
+    expect(cache).toHaveTextContent(/pas encore disponible/i);
+  });
+});

@@ -37,6 +37,8 @@ import {
 import { requestPlayCard } from "@/lib/api/play-requests";
 import { categoryLabel, scriptBlockedCardIds } from "@/lib/game/legality";
 
+import { DeckRenduPanel } from "./deck-rendu-panel";
+
 import { DeckAiAssistant } from "./deck-ai-assistant";
 import { DeckStatsPanel } from "./deck-stats-panel";
 
@@ -788,6 +790,14 @@ export function DeckBuilderView({ deckId }: { deckId: string }) {
     void runMutation(() => updateDeck(deckId, { format }), "Le changement de format a échoué.");
   }
 
+  /** Change le rendu des cartes de ce deck (DJ5) ; chaîne vide = suivre le réglage du compte. */
+  function changeRendu(rendu: string) {
+    void runMutation(
+      () => updateDeck(deckId, { rendu_cartes: rendu }),
+      "Le changement de rendu a échoué."
+    );
+  }
+
   async function handleDuplicate() {
     setMutating(true);
     setError(null);
@@ -897,6 +907,15 @@ export function DeckBuilderView({ deckId }: { deckId: string }) {
           </select>
         </div>
       </div>
+
+      {/* Avec quelles cartes ce deck se joue (lot `j-rendu-carte`) : le reglage du deck, et les
+          cartes dont la photo se repliera sur l'image officielle — dit AVANT la partie. */}
+      <DeckRenduPanel
+        deckId={deckId}
+        renduDeck={deck.rendu_cartes}
+        enCours={mutating}
+        onChangerRendu={changeRendu}
+      />
 
       <div className="mt-3 flex flex-wrap gap-2">
         <Button variant="outline" size="sm" onClick={handleDuplicate} disabled={mutating}>
