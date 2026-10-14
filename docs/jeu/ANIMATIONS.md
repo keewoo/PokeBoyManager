@@ -243,10 +243,150 @@ qui est mesuré, sans que personne n'ait à y penser. La fenêtre de mesure est 
 `anim-fluidite.spec.ts` (la rafale entière, pas le premier effet) : c'est ce qui rend les deux
 chiffres comparables, et c'est de leur écart qu'on apprend ce que l'effet typé coûte vraiment.
 
+# Les six moments clés — `lib/game/anim-moments.ts`
+
+> Lot `j-anim-evolution-ko`. Évoluer, tomber K.O., prendre une récompense, se mettre en place,
+> repiocher, lancer la pièce. Ce sont les instants qu'un joueur raconte après la partie.
+
+## Deux files, et pourquoi ce n'est pas un doublon
+
+Le socle garde la sienne : une pastille à la fois, au rythme de son registre `EFFETS`. Les moments
+ont la **leur** (`reduireMoments`), pour trois raisons qui sont des faits, pas des préférences :
+
+| | |
+|---|---|
+| Un moment dure plus que la case que le socle lui donne | le socle borne tout à `DUREE_MAX` = 900 ms ; un K.O. qui bascule, s'éteint **puis** rejoint la défausse a besoin de ses trois temps |
+| Deux moments peuvent naître du **même** événement | un `ko` porte la mise K.O. *et* `recompenses_prises` — le serveur ne les sépare pas, et le socle produit **une** entrée par événement |
+| Le socle peut avaler un événement sans l'exposer | son `avancer` enchaîne plusieurs entrées de durée nulle en un seul appel : un moment accroché à `courante` aurait disparu sans un mot (`main_revelee` et `mise_en_place_revelee` ne sont même pas à son registre) |
+
+Les deux files sont alimentées par les **mêmes** coups, chacune de son côté. Aucune ne dépend de
+l'autre, et comme le socle, **aucune ne retient l'état du plateau** : on les jette à tout instant.
+
+## Un système, pas six animations
+
+Même parade que les effets typés : **six couches**, **quatre gestes**, chacun avec *une* image-clé
+écrite une seule fois (`globals.css`, bloc « Les six moments clés »), et une **table** de six lignes
+qui dit seulement quoi composer, dans quel ordre et pendant combien de temps.
+
+| Couche | Ce qu'elle fait |
+|---|---|
+| `halo` | une auréole lumineuse qui gonfle puis retombe — l'évolution, la récompense révélée |
+| `fondu` | un fondu enchaîné de l'entrant sur le sortant — l'évolution, la révélation |
+| `voile` | un voile sombre qui éteint l'objet — le K.O. qui se désature |
+| `traine` | une traînée le long du trajet — vers la défausse, vers la main |
+| `eclat` | un éclat bref — la révélation simultanée, la pièce qui s'arrête |
+| `rotation` | la pièce qui tourne, et **elle seule** (un test le garde) |
+
+Gestes de l'objet : `pose`, `bascule`, `envol`, `retournement`. Toujours un `transform` — aucune
+boîte de disposition ne change, donc rien ne peut provoquer de défilement (`j-plateau-layout`).
+
+Un moment se découpe en **temps pondérés** plutôt qu'en durées fixes. C'est ce qui permet de
+**comprimer** une rafale sans toucher au CSS : les parts restent les mêmes, le total change.
+
+## Les six lignes
+
+| Genre | Événement du serveur | Les temps | Durée |
+|---|---|---|---|
+| `evolution` | `evolution` | montée (halo, pose) → fondu (fondu, éclat) | 620 ms |
+| `ko` | `ko` | bascule → extinction (voile) → défausse (traînée, envol) | 760 ms |
+| `recompense` | `ko` avec `recompenses_prises > 0` | vol (traînée, envol) → révélation (halo, éclat, retournement) | 680 ms |
+| `mise-en-place` | `mise_en_place_revelee` | distribution → alignement → **révélation simultanée** | 1200 ms |
+| `mulligan` | `main_revelee` | révélation (retournement) → remélange (envol) | 900 ms |
+| `piece` | `dsl_pile_ou_face`, `confusion_resolue` | rotation → arrêt | 820 ms |
+
+La mise en place a la durée la plus longue des six : c'est **le premier effet qu'un joueur voit**.
+
+## Les trois choses que ces animations ne font jamais
+
+**Durer plus qu'une seconde et demie.** `MOMENT_MAX_MS = 1500`, la borne que le lot nomme mot pour
+mot (« au-delà d'une seconde et demie, elle agace au lieu de marquer »). Tenue par construction, et
+vérifiée **pour les six genres** — pas laissée à la vigilance de qui ajoutera la septième ligne.
+
+**Ajouter une occlusion au plateau.** Un moment **remplace** la pastille du socle dans la même case
+centrale de l'arène ; il ne s'y ajoute pas. Un tableau plein écran aurait été plus spectaculaire et
+aurait masqué les compteurs de dégâts pendant une seconde et demie — exactement ce que le lot
+précédent s'était fait interdire. Un moment remplace un mot, il n'ajoute rien.
+
+**Perdre un moment.** La file ne résume jamais et ne jette jamais ce qui attend : elle **accélère**,
+bornée par `COMPRESSION_MIN` (45 %). C'est la différence de nature avec le rattrapage du socle, qui
+a vingt pastilles à condenser là où la file de moments en a quatre à faire voir.
+
+## Le double K.O., et pourquoi la clé porte le rang
+
+Un double K.O. (R-13.5) produit **quatre** moments : K.O., récompense, K.O., récompense. Ils sont
+joués un par un, et aucun ne manque. Ce qui le garantit tient dans la forme de la clé —
+`numero:rang:genre` : les deux `ko` viennent du **même coup**, donc sans le rang de l'événement le
+second écraserait le premier à l'empilage, et un K.O. disparaîtrait de l'écran sans un bruit.
+
+C'est testé dans les deux sens : la version pure prouve l'ordre et l'unicité, la version composant
+prouve que les quatre sont bien **rendus** l'un après l'autre.
+
+Le tempo d'un moment est **figé à sa prise** (`FileMoments.retard`). Lire l'attente courante aurait
+fait recalculer la durée en cours de route — l'écran aurait redémarré l'animation à chaque coup reçu.
+
+## Le pile ou face honnête — ce qui est garanti, et ce qui ne l'est pas
+
+Le critère du lot est : « le pile ou face ne donne jamais une impression de résultat prédéterminé
+côté client ». Trois faits le tiennent, tous testés :
+
+1. **Aucun tirage n'a lieu côté client.** Pas un `Math.random`, pas une graine. Le résultat vient du
+   serveur, qui fait autorité. Une garde statique relit la source du module pour s'en assurer.
+2. **La rotation ne sait rien du résultat.** Durée, nombre de tours, nombre d'objets, retards,
+   phases : tout est calculé *sans jamais lire* `faces`. Deux lancers opposés produisent un effet
+   identique au seul champ `ObjetMoment.face` près — et ça reste vrai **comprimé**, qui est le
+   chemin par lequel une dépendance aurait pu se glisser sans qu'on y pense.
+3. **Le résultat n'arrive qu'à la fin.** `revelationA` vaut la fin du temps `rotation`, donc
+   strictement plus que zéro et strictement moins que la durée totale. Le CSS ne pose la face finale
+   qu'à partir de là : avant, les deux faces ont une opacité nulle — rien ne les distingue.
+
+**Ce qui n'est pas prétendu**, et qu'il vaut mieux écrire que laisser croire : le résultat est déjà
+dans la charge utile reçue du serveur, puisque c'est le serveur qui a tranché. Un joueur qui
+ouvrirait l'inspecteur le verrait. Ce qu'une animation peut garantir, c'est qu'elle ne le laisse pas
+fuir — pas qu'elle l'ignore.
+
+> ⚠️ Le serveur n'envoie que des **comptes** (`pieces`, `faces`), pas quelle pièce est tombée sur
+> face : le moteur n'a pas d'ordre à leur donner. L'écran en fabrique un (les `faces` premières).
+> C'est de la **présentation**, pas de l'information inventée — le compte affiché est exactement
+> celui du serveur, et c'est le seul fait qui existe.
+
+## La version réduite
+
+Pour les six genres, et vérifiée genre par genre. Elle n'est pas « la même chose en plus court » :
+aucune phase, aucun objet, rien qui bouge. Toute la charge d'information passe dans `phrase` (badge
+annoncé en `role="img"` + `aria-label`) et `badge`. Elle reste une seconde à l'écran — le temps
+d'être lue, là où une animation se comprend en la voyant passer.
+
+Et elle porte **les comptes** : « 2 cartes récompenses », « 1 face sur 2 », « main de 7 cartes ».
+C'est précisément ce qui disparaîtrait si on coupait les animations sans y penser.
+
+## La galerie — `/jeu/effets`
+
+La page des effets typés porte désormais une seconde section, « Les six moments clés ». Chaque
+vignette part d'un **vrai événement du moteur**, passé par `momentsEvenement` : si la lecture d'un
+`recompenses_prises` se cassait, la galerie se casserait avec le plateau au lieu de continuer à
+montrer un joli film.
+
+Les **trois lancers de pièce** (0, 1 et 2 faces sur 2) sont côte à côte exprès : c'est comme ça
+qu'on vérifie à l'œil ce que le test affirme — les trois tournent exactement pareil.
+
+## Ajouter un moment — ce qu'il faut faire
+
+1. une ligne dans `MOMENTS` (genre, libellé, temps, durée ≤ `MOMENT_MAX_MS`) ;
+2. le `case` correspondant dans `momentsEvenement`, qui lit l'événement **réel** du serveur ;
+3. si la ligne introduit une couche ou un geste neuf : son sélecteur et son image-clé
+   `pbm-anim-fx-m-*` dans `globals.css` — `anim-moments-css-garde.test.ts` nomme la manquante ;
+4. sa phrase et son badge (`phraseMoment`, `badgeMoment`) : la version réduite est **obligatoire**.
+
+Ce qu'il ne faut **pas** faire : écrire une animation à part pour un genre. La table est ce qui fait
+qu'une couche masquant un chiffre les masquerait pour les six — donc que ça se verrait au premier
+essai, au lieu d'attendre le double K.O. du dixième tour.
+
 ## Voir aussi
 
 - `docs/jeu/JOURNAL.md` — les événements et leur format : c'est la matière première.
 - `docs/jeu/DEGATS.md` — l'ordre strict du calcul, d'où viennent dégâts, faiblesse et résistance.
 - `docs/jeu/TEMPS-REEL.md` — le canal, la resynchronisation, le repli en interrogation.
 - `docs/jeu/ACCESSIBILITE.md` — les trois réglages de confort, dont « animations réduites ».
+- `docs/jeu/REGLES.md` — R-4.1 à R-4.5 (mise en place, mulligan), R-13.1 et R-13.5 (K.O. et
+  simultanéité), R-11.5 (Confusion) : ce que les six moments mettent en images.
 - `docs/UI-UX.md` — les écrans et les jetons de style du plateau.

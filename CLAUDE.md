@@ -89,7 +89,7 @@ existe. Détail : `docs/PLUGINS.md`.
 | `docs/catalogue/COMPLETUDE.md` | on se demande si le catalogue est complet, et où sont les trous |
 | `docs/jeu/OBSERVABILITE.md` | on se demande si le jeu va bien : métriques, alertes, sonde, runbook |
 | `docs/jeu/NOTIFICATIONS.md` | on prévient un joueur : genres, plafonds, silence nocturne, relais, « je n'ai rien reçu » |
-| `docs/jeu/ANIMATIONS.md` | on touche à une animation du plateau : le socle (la file, les durées, le rattrapage, le plancher d'images par seconde) et les **effets d'attaque par type** — les six couches partagées, l'intensité tirée du résultat réel, la version réduite, la galerie `/jeu/effets` |
+| `docs/jeu/ANIMATIONS.md` | on touche à une animation du plateau : le socle (la file, les durées, le rattrapage, le plancher d'images par seconde), les **effets d'attaque par type** (six couches partagées, intensité tirée du résultat réel) et les **six moments clés** — évolution, K.O., récompense, mise en place, reprise, pile ou face honnête : leur file à part, le double K.O. qui ne perd rien, la version réduite, la galerie `/jeu/effets` |
 | `docs/jeu/RENDU-CARTES.md` | on touche à l'image d'une carte en jeu : ma photo / l'officielle / le dos, DJ5 et le veto de confidentialité, note de qualité, variante de jeu, « je ne vois pas ma photo » |
 | `docs/jeu/CHARGE.md` | on se demande combien de parties le serveur tient : plafond, coût d'une partie, purge |
 | `docs/jeu/ACCESSIBILITE.md` | on touche au confort ou à l'accessibilité du jeu : les trois réglages (`/jeu/confort`), les deux niveaux d'audit, le clavier des surcouches, le temps rallongé (DJ4), et les trois compromis du plateau — pourquoi ils existent et par quoi ils sont compensés |
