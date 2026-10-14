@@ -538,12 +538,25 @@ export function SalonView() {
             badge de la navigation signale les non lues ; il faut aussi un chemin pour les LIRE et
             pour couper ce qu'on ne veut pas recevoir — sans quoi le réglage existerait sans être
             atteignable. */}
-        <Link
-          href="/jeu/notifications"
-          className="rounded-full border border-[rgba(157,0,255,0.65)] px-4 py-2 font-heading text-xs font-semibold uppercase tracking-[0.08em] text-violet-clair hover:text-foreground"
-        >
-          Notifications
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/jeu/notifications"
+            className="rounded-full border border-[rgba(157,0,255,0.65)] px-4 py-2 font-heading text-xs font-semibold uppercase tracking-[0.08em] text-violet-clair hover:text-foreground"
+          >
+            Notifications
+          </Link>
+          {/* Même raison que pour les notifications (lot `j-accessibilite-jeu`) : des réglages de
+              confort qu'on ne peut pas atteindre n'existent pas. C'est depuis le salon qu'on entre
+              en partie, donc c'est là qu'on règle ce qu'il faut AVANT d'y entrer — le temps
+              rallongé, en particulier, ne vaut que pour les parties lancées ensuite. */}
+          <Link
+            href="/jeu/confort"
+            data-testid="salon-lien-confort"
+            className="rounded-full border border-[rgba(157,0,255,0.65)] px-4 py-2 font-heading text-xs font-semibold uppercase tracking-[0.08em] text-violet-clair hover:text-foreground"
+          >
+            Confort
+          </Link>
+        </div>
       </div>
 
       {error && <FormNotice variant="error">{error}</FormNotice>}
