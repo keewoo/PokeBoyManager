@@ -45,6 +45,13 @@ from .modele import (
     ResultatDegats,
 )
 
+#: La règle de l'étape **faiblesse** (R-10.2). Nommée pour que l'étape qui la pose et
+#: :func:`evenement_degats`, qui la relit, ne puissent pas se désaccorder sur la chaîne.
+REGLE_FAIBLESSE = "R-10.2"
+
+#: La règle de l'étape **résistance** (R-10.3) — même raison que :data:`REGLE_FAIBLESSE`.
+REGLE_RESISTANCE = "R-10.3"
+
 
 def _applicable(type_attaque: str | None, type_cible: str) -> bool:
     """La faiblesse/résistance de type ``type_cible`` s'applique-t-elle à l'attaque ?
@@ -118,7 +125,9 @@ def resoudre_degats(
         avant = total
         total = total * faiblesse.facteur
         etapes.append(
-            EtapeCalcul(f"{SIGNE_MULTIPLIE}{faiblesse.facteur} faiblesse", "R-10.2", avant, total)
+            EtapeCalcul(
+                f"{SIGNE_MULTIPLIE}{faiblesse.facteur} faiblesse", REGLE_FAIBLESSE, avant, total
+            )
         )
 
     # Étape 4 — résistance (−réduction), sauf au banc (R-10.3, R-10.5).
@@ -126,7 +135,9 @@ def resoudre_degats(
         avant = total
         total = total - resistance.reduction
         etapes.append(
-            EtapeCalcul(f"{SIGNE_MOINS}{resistance.reduction} résistance", "R-10.3", avant, total)
+            EtapeCalcul(
+                f"{SIGNE_MOINS}{resistance.reduction} résistance", REGLE_RESISTANCE, avant, total
+            )
         )
 
     # Étape 5 — modificateurs côté défenseur (réductions de dégâts).
@@ -169,7 +180,16 @@ def evenement_degats(resultat: ResultatDegats, cible: str, *, au_banc: bool = Fa
     (int / str / bool) pour que l'entrée se sérialise et se rejoue sans surprise. C'est cet
     événement que le journal de partie et l'aide en jeu affichent — « 60 base, ×2 faiblesse,
     −30 résistance = 90 ».
+
+    ``faiblesse`` et ``resistance`` disent, en **booléens**, si ces deux étapes ont réellement
+    joué. Elles sont déjà dans ``resultat.etapes`` (par leur règle, R-10.2 et R-10.3) : on les
+    expose ici parce que le seul autre moyen de les connaître, côté écran, serait de **chercher
+    un mot français dans ``detail``** — un repli silencieux qui cesserait de marcher le jour où
+    la phrase change, sans que rien ne le dise. Le lot ``j-anim-attaques-typees`` en a besoin :
+    l'effet d'une attaque est *renforcé* en cas de faiblesse et *atténué* en cas de résistance,
+    et cette différence ne se devine pas depuis le seul total de dégâts.
     """
+    regles = {e.regle for e in resultat.etapes}
     return Evenement(
         EVT_DEGATS,
         {
@@ -178,11 +198,15 @@ def evenement_degats(resultat: ResultatDegats, cible: str, *, au_banc: bool = Fa
             "compteurs": resultat.compteurs,
             "detail": resultat.detail,
             "au_banc": au_banc,
+            "faiblesse": REGLE_FAIBLESSE in regles,
+            "resistance": REGLE_RESISTANCE in regles,
         },
     )
 
 
 __all__ = [
+    "REGLE_FAIBLESSE",
+    "REGLE_RESISTANCE",
     "resoudre_degats",
     "poser_degats",
     "poser_compteurs",

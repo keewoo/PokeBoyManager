@@ -644,6 +644,28 @@ Ce qu'il faut en retenir avant de toucher à `apps/web/src/components/game/` :
   mécanique — et ses images-clés n'animent que `transform` et `opacity` (garde statique en CI) ;
 - `prefers-reduced-motion` ne rend **aucun** effet : la file se vide en silence, rien ne disparaît.
 
+## Effets d'attaque par type (lot `j-anim-attaques-typees`)
+
+Une attaque Feu brûle la carte d'en face, l'éclair fait trembler le plateau, l'onde Psy déforme
+l'image. Les onze types, leur composition, l'intensité, la version réduite et la galerie de recette
+vivent dans **`docs/jeu/ANIMATIONS.md`** — ce n'est pas redit ici.
+
+Les trois choses à savoir avant de toucher à `apps/web/src/components/game/` :
+
+- **il n'existe aucune animation par type** : six couches et quatre gestes, écrits une seule fois,
+  composés par une table de données (`SPECS` de `src/lib/game/anim-types.ts`). Un type s'ajoute en
+  ajoutant une ligne et une teinte, jamais une image-clé ;
+- **l'effet est rendu AVANT les indicateurs** dans `board-card.tsx`, donc dessous. Les deux sont
+  `absolute` : c'est l'ordre du DOM qui décide, et l'inverser ferait cacher le compteur de dégâts au
+  moment décisif. Un test garde cet ordre ;
+- **les images-clés s'appellent `pbm-anim-fx-*`** pour tomber sous la même garde statique que le
+  socle (`transform`/`opacity` uniquement). Un autre préfixe les en sortirait.
+
+Nouvel écran : **`/jeu/effets`** — la galerie des onze types × six situations (trois forces, la
+faiblesse, la résistance, le ratage), atteignable depuis le salon. Elle existe pour que JF et
+Aymeric valident le rendu sans réunir en partie un Pokémon de chaque type, et elle utilise le
+**même** code que le plateau.
+
 ## Écran de fin de partie (lot `j-partie-fin-ui`)
 
 Qui a gagné, pourquoi, et ce qu'on en retient. La mécanique complète — les huit raisons de fin et

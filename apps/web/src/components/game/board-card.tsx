@@ -1,8 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { type CSSProperties, useRef, useState } from "react";
 
+import { EffetTypeAttaque } from "@/components/game/effet-type";
 import { cn } from "@/lib/utils";
+import type { EffetAttaque } from "@/lib/game/anim-types";
 import { nombreCompteurs, styleElement, visuelEtat } from "@/lib/game/indicateurs";
 import type { VueCarte, VuePokemon } from "@/lib/game/plateau";
 
@@ -53,6 +55,19 @@ export type BoardCardProps = {
   illumine?: boolean;
   /** Choisit cette carte comme cible (tap, Entrée, ou dépôt d'un glisser) : signalé au plateau. */
   onActiver?: () => void;
+  /**
+   * L'effet d'attaque **typé** qui se joue sur cette carte (lot `j-anim-attaques-typees`), ou
+   * `null`. Il est **calculé** par le plateau depuis l'animation en cours : la carte ne fait que
+   * le dessiner, et l'effet passe **sous** les indicateurs (il ne peut donc pas cacher un
+   * compteur de dégâts).
+   */
+  effet?: EffetAttaque | null;
+  /**
+   * Clé de l'effet en cours : elle change à chaque nouvel effet pour **relancer** l'animation. Sans
+   * elle, deux attaques Feu d'affilée sur la même carte ne rejoueraient rien (le navigateur ne
+   * redémarre pas une animation déjà terminée sur un nœud réutilisé).
+   */
+  effetCle?: string;
 };
 
 /**
@@ -310,6 +325,8 @@ export function BoardCard({
   onPeek,
   illumine,
   onActiver,
+  effet = null,
+  effetCle = "",
 }: BoardCardProps) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // L'étape de chargement de l'image vit ici (et non dans `ImageCarte`) parce que c'est elle qui
@@ -387,6 +404,12 @@ export function BoardCard({
       )}
       data-orientation={pokemon?.orientation ?? "normale"}
       data-mise-en-evidence={miseEnEvidence ? "" : undefined}
+      // Le geste de la carte visée (distorsion Psy, recul de Combat, tremblement Électrique) :
+      // un `transform`, donc aucune boîte déplacée et aucun défilement provoqué.
+      data-fx-geste={effet?.gesteCarte && effet.gesteCarte !== "aucun" ? effet.gesteCarte : undefined}
+      style={
+        effet?.anime ? ({ "--pbm-fx-duree": `${effet.duree}ms` } as CSSProperties) : undefined
+      }
       role={onPeek || illumine ? "button" : undefined}
       tabIndex={onPeek || illumine ? 0 : undefined}
       aria-label={
@@ -451,6 +474,12 @@ export function BoardCard({
           Carte en jeu — aucune image pour cette carte, et le détail des attaques reste à venir.
         </span>
       )}
+      {/* ⛔ L'effet typé est rendu ICI, **avant** les indicateurs — et l'ordre n'est pas cosmétique.
+          Les deux sont `absolute` : c'est donc l'ordre du DOM qui décide lequel passe au-dessus.
+          Rendu avant, l'effet reste SOUS les compteurs de dégâts et les PV restants, et le risque
+          nommé par le lot (« l'une d'elles finira par cacher un compteur de dégâts au moment
+          décisif ») n'existe tout simplement plus. `board-card.test.tsx` garde cet ordre. */}
+      <EffetTypeAttaque effet={effet} cle={effetCle} />
       {pokemon && <Indicateurs pokemon={pokemon} zoom={zoom} />}
     </div>
   );

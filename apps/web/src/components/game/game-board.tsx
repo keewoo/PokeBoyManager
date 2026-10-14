@@ -5,7 +5,7 @@ import { useCallback, useRef, useState } from "react";
 import { FormNotice } from "@/components/auth/form-notice";
 import { ActionBar } from "@/components/game/action-bar";
 import { AidePanel } from "@/components/game/aide-panel";
-import { CoucheAnimation } from "@/components/game/animation-layer";
+import { CoucheAnimation, type EffetTypeeEnCours } from "@/components/game/animation-layer";
 import { BoardCard, EmptySlot } from "@/components/game/board-card";
 import { CardZoom } from "@/components/game/card-zoom";
 import { StatutConnexion } from "@/components/game/connection-status";
@@ -92,6 +92,14 @@ export type GameBoardProps = {
   /** `true` si le mode accéléré est actif. */
   animationAcceleree?: boolean;
   /**
+   * L'effet d'attaque **typé** en cours (lot `j-anim-attaques-typees`), ou `null` : un effet par
+   * type d'énergie, posé sur la carte visée — et dans l'arène quand l'attaque n'a touché personne.
+   *
+   * Il est fourni **même en animations réduites**, où il prend sa forme statique. Comme la couche
+   * du socle, il ne conditionne rien et ne capture aucun clic.
+   */
+  effetTypee?: EffetTypeeEnCours | null;
+  /**
    * `true` pour une **première partie** : le tiroir d'aide (lot `j-plateau-aide`) s'ouvre d'emblée
    * sur le parcours guidé. C'est le conteneur de partie qui tranche (mémoire du navigateur) ; le
    * plateau ne fait que porter la réponse.
@@ -114,6 +122,23 @@ type Interaction = {
   illumineRef: (reference: string) => boolean;
   activerRef: (reference: string) => void;
 };
+
+/**
+ * L'effet typé qui concerne **ce** Pokémon, ou `null` (lot `j-anim-attaques-typees`).
+ *
+ * La comparaison porte sur **toutes** les cartes de la pile d'évolutions, pas seulement la
+ * première : le serveur désigne la cible de dégâts par sa carte du **dessus**
+ * (`carte_active`, R-3.6) alors que le halo de l'agisseur désigne la carte de **base**. Comparer
+ * à une seule des deux ferait rater l'effet sur tout Pokémon évolué — c'est-à-dire exactement sur
+ * les cartes dont l'attaque est la plus spectaculaire.
+ */
+function effetDuPokemon(
+  pokemon: VuePokemon,
+  effetTypee?: EffetTypeeEnCours | null,
+): EffetTypeeEnCours | null {
+  if (!effetTypee?.cible) return null;
+  return pokemon.cartes.some((c) => c.instance_id === effetTypee.cible) ? effetTypee : null;
+}
 
 /** La référence (instance_id) de la carte d'un Pokémon qui est actuellement une cible illuminée, ou `undefined`. */
 function refCiblePokemon(pokemon: VuePokemon, inter?: Interaction): string | undefined {
@@ -221,12 +246,14 @@ function caseActif(
   agisseur?: string | null,
   surligne?: string | null,
   inter?: Interaction,
+  effetTypee?: EffetTypeeEnCours | null,
 ): React.ReactNode {
   const dessus = joueur.actif ? carteDessus(joueur.actif) : null;
   if (!joueur.actif || !dessus) {
     return <EmptySlot etiquette={etiquette} className={largeur} />;
   }
   const refCible = refCiblePokemon(joueur.actif, inter);
+  const fx = effetDuPokemon(joueur.actif, effetTypee);
   return (
     <span className={largeur}>
       <BoardCard
@@ -237,6 +264,8 @@ function caseActif(
         illumine={!!refCible}
         onActiver={refCible && inter ? () => inter.activerRef(refCible) : undefined}
         onPeek={(c) => onZoom(c, joueur.actif ?? undefined)}
+        effet={fx?.effet ?? null}
+        effetCle={fx?.cle ?? ""}
       />
     </span>
   );
@@ -265,6 +294,7 @@ function banc(
   agisseur?: string | null,
   surligne?: string | null,
   inter?: Interaction,
+  effetTypee?: EffetTypeeEnCours | null,
 ): React.ReactNode {
   return (
     <div className="flex justify-center gap-[0.5em]">
@@ -274,6 +304,7 @@ function banc(
           return <EmptySlot key={i} etiquette="banc" className={largeur} />;
         }
         const refCible = refCiblePokemon(p, inter);
+        const fx = effetDuPokemon(p, effetTypee);
         return (
           <span key={i} className={largeur}>
             <BoardCard
@@ -284,6 +315,8 @@ function banc(
               illumine={!!refCible}
               onActiver={refCible && inter ? () => inter.activerRef(refCible) : undefined}
               onPeek={(c) => onZoom(c, p)}
+              effet={fx?.effet ?? null}
+              effetCle={fx?.cle ?? ""}
             />
           </span>
         );
@@ -309,6 +342,7 @@ export function GameBoard({
   onSauterAnimation,
   onBasculerAccelere,
   animationAcceleree = false,
+  effetTypee = null,
   premierePartie = false,
 }: GameBoardProps) {
   const { moi, adversaire } = separerCamps(vue);
@@ -384,7 +418,18 @@ export function GameBoard({
       {/* Conteneur de requête : il reçoit la hauteur disponible (`flex-1`) et la donne à
           l'arène via `cqh` — l'arène ne peut pas interroger sa propre taille. */}
       <div className="pbm-arena-box flex min-h-0 flex-1">
-        <div className="pbm-arena relative flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-2xl bg-[radial-gradient(70%_80%_at_50%_50%,#0E2A1E,#06120B)] text-[#EAF3EE] shadow-[0_20px_50px_-30px_rgba(0,0,0,0.9)]">
+        <div
+          className="pbm-arena relative flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-2xl bg-[radial-gradient(70%_80%_at_50%_50%,#0E2A1E,#06120B)] text-[#EAF3EE] shadow-[0_20px_50px_-30px_rgba(0,0,0,0.9)]"
+          // Le plateau tremble pour les types qui le demandent (l'éclair, l'impact de Combat) :
+          // un `transform` sur une boîte déjà `overflow-hidden`, donc rien ne déborde et rien ne
+          // défile — le plateau n'accepte aucun défilement (lot `j-plateau-layout`).
+          data-fx-secousse={effetTypee?.effet.secousse ? "" : undefined}
+          style={
+            effetTypee?.effet.anime
+              ? ({ "--pbm-fx-duree": `${effetTypee.effet.duree}ms` } as React.CSSProperties)
+              : undefined
+          }
+        >
         {etatConnexion && (
           <div className="absolute left-1/2 top-2 z-10 -translate-x-1/2">
             <StatutConnexion etat={etatConnexion} />
@@ -400,6 +445,7 @@ export function GameBoard({
           onSauter={onSauterAnimation}
           onBasculerAccelere={onBasculerAccelere}
           accelere={animationAcceleree}
+          effetTypee={effetTypee}
         />
 
 
@@ -410,9 +456,9 @@ export function GameBoard({
           {/* Rang adverse */}
           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-[1em]">
             <span className="justify-self-start">
-              <Holder lab="banc adverse">{banc(adversaire, "banc adverse", "w-[4.6875em]", onZoom, agisseur, surligne, inter)}</Holder>
+              <Holder lab="banc adverse">{banc(adversaire, "banc adverse", "w-[4.6875em]", onZoom, agisseur, surligne, inter, effetTypee)}</Holder>
             </span>
-            {caseActif(adversaire, "Actif adverse", "w-[6.875em]", onZoom, agisseur, surligne, inter)}
+            {caseActif(adversaire, "Actif adverse", "w-[6.875em]", onZoom, agisseur, surligne, inter, effetTypee)}
             <span className="flex justify-self-end gap-[0.6em]">
               <Holder lab="pioche">
                 <ZoneCachee titre="pioche" nombre={adversaire.pioche_nombre} />
@@ -453,7 +499,7 @@ export function GameBoard({
                 <Recompenses restantes={moi.recompenses_nombre} pour="Toi" />
               </Holder>
             </span>
-            {caseActif(moi, "Mon actif", "w-[9.0625em]", onZoom, agisseur, surligne, inter)}
+            {caseActif(moi, "Mon actif", "w-[9.0625em]", onZoom, agisseur, surligne, inter, effetTypee)}
             <span className="flex justify-self-end gap-[0.6em]">
               <Holder lab="pioche">
                 <ZoneCachee titre="pioche" nombre={moi.pioche_nombre} />
@@ -465,7 +511,7 @@ export function GameBoard({
           </div>
 
           {/* Mon banc */}
-          {banc(moi, "Mon banc", "w-[6.5625em]", onZoom, agisseur, surligne, inter)}
+          {banc(moi, "Mon banc", "w-[6.5625em]", onZoom, agisseur, surligne, inter, effetTypee)}
           </div>
         </div>
       </div>

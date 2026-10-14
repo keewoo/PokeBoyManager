@@ -190,6 +190,7 @@ describe("CoucheAnimation — hors du flux, sans capture de clic", () => {
     camp: "moi" as const,
     resume: false,
     nombre: 1,
+    typage: null,
   };
 
   it("ne rend rien sans animation, ni pour une animation sans effet", () => {

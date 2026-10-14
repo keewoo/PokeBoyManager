@@ -2,7 +2,9 @@
 
 import { type CSSProperties, useCallback, useEffect, useReducer, useRef, useState } from "react";
 
+import { EffetTypeAttaque } from "@/components/game/effet-type";
 import { useConfort } from "@/lib/confort-provider";
+import { type EffetAttaque, effetAttaque } from "@/lib/game/anim-types";
 import { ANIMATIONS_REDUITES } from "@/lib/game/confort";
 import {
   FILE_VIDE,
@@ -40,6 +42,52 @@ import {
  * l'animation en cours sans toucher aux suivantes ni à aucun réglage.
  */
 
+/**
+ * `true` si les animations doivent être **réduites** — par le système, ou par le réglage du jeu.
+ *
+ * Les deux s'additionnent, ils ne se contredisent pas : `prefers-reduced-motion` est une demande
+ * d'accessibilité du système, `/jeu/confort` (lot `j-accessibilite-jeu`) existe parce que tout le
+ * monde ne sait pas où ce réglage se trouve dans un téléphone. L'un des deux suffit à tout arrêter.
+ *
+ * Extrait en crochet pour que la galerie d'effets (`/jeu/effets`) et le plateau répondent
+ * **exactement** la même chose : deux lectures séparées auraient fini par divergir, et la galerie
+ * aurait montré à JF des animations que son plateau ne joue pas.
+ */
+export function useAnimationsReduites(): boolean {
+  const [systeme, setSysteme] = useState(false);
+  const { confort } = useConfort();
+
+  // Lu au montage et suivi s'il change en cours de partie.
+  useEffect(() => {
+    const mq = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    if (!mq) return;
+    const appliquer = () => setSysteme(mq.matches);
+    appliquer();
+    mq.addEventListener?.("change", appliquer);
+    return () => mq.removeEventListener?.("change", appliquer);
+  }, []);
+
+  return systeme || confort.animations === ANIMATIONS_REDUITES;
+}
+
+/**
+ * Un effet d'attaque **typé** en cours, et où le poser (lot `j-anim-attaques-typees`).
+ *
+ * Il vit sa **propre** durée, indépendante de la file : c'est ce qui permet à la version réduite
+ * d'exister. En « animations réduites », la file avance instantanément (toutes les durées valent
+ * zéro) — un badge accroché à l'animation courante clignoterait sans être lisible. Celui-ci reste
+ * le temps qu'il faut pour être lu, puis disparaît ; et comme l'état affiché ne dépend jamais d'une
+ * animation, le faire vivre plus longtemps ne retient rien.
+ */
+export type EffetTypeeEnCours = {
+  /** L'effet à dessiner. */
+  effet: EffetAttaque;
+  /** La clé de l'animation d'où il vient : elle relance l'animation CSS à chaque nouvel effet. */
+  cle: string;
+  /** L'`instance_id` de la carte visée, ou `null` (l'attaque n'a touché personne). */
+  cible: string | null;
+};
+
 /** Ce que {@link useFileAnimations} rend à l'écran de partie. */
 export type EtatAnimations = {
   /** L'animation à dessiner, ou `null` (file au repos, ou mode réduit). */
@@ -62,6 +110,14 @@ export type EtatAnimations = {
   vider: () => void;
   /** Bascule le mode accéléré (sans effet quand le système demande des animations réduites). */
   basculerAccelere: () => void;
+  /**
+   * L'effet d'attaque **typé** en cours, ou `null` (lot `j-anim-attaques-typees`).
+   *
+   * Il est présent **aussi en mode réduit**, contrairement à {@link EtatAnimations.animation} : il
+   * prend alors sa forme statique, qui dit en texte ce que l'animation aurait montré. Couper les
+   * animations ne doit pas vouloir dire ne plus savoir ce qui vient de se passer.
+   */
+  effetTypee: EffetTypeeEnCours | null;
 };
 
 /**
@@ -86,29 +142,17 @@ export function useFileAnimations({
   cle?: string;
 }): EtatAnimations {
   const [file, dispatch] = useReducer(reduireFile, FILE_VIDE);
-  // Réglage système : il gagne toujours sur le choix du joueur (c'est une demande d'accessibilité,
-  // pas une préférence de confort).
-  const [systemeReduit, setSystemeReduit] = useState(false);
-  // Réglage du JEU (lot `j-accessibilite-jeu`, `/jeu/confort`) : il s'ajoute au système, il ne le
-  // contredit pas — l'un des deux suffit à tout arrêter. Il existe parce que tout le monde ne sait
-  // pas où se trouve « animations réduites » dans les réglages d'un téléphone.
-  const { confort } = useConfort();
-  const reduit = systemeReduit || confort.animations === ANIMATIONS_REDUITES;
+  // Réglage système (`prefers-reduced-motion`) **et** réglage du jeu (`/jeu/confort`) : l'un des
+  // deux suffit. Le détail est dans {@link useAnimationsReduites}, partagé avec `/jeu/effets`.
+  const reduit = useAnimationsReduites();
   const [accelere, setAccelere] = useState(false);
   const mode: ModeAnimation = reduit ? "reduit" : accelere ? "accelere" : "normal";
+  // L'effet d'attaque TYPÉ (lot `j-anim-attaques-typees`), tenu à part de la file parce qu'il vit
+  // sa propre durée — voir le commentaire de sa minuterie, plus bas.
+  const [effetTypee, setEffetTypee] = useState<EffetTypeeEnCours | null>(null);
   // Dernier numéro de coup déjà planifié : la borne qui évite de replanifier tout l'historique à
   // chaque coup reçu (et de le rejouer quand la mémoire bornée de la file a oublié ses clés).
   const dernierPlanifie = useRef(-1);
-
-  // `prefers-reduced-motion` : lu au montage et suivi s'il change en cours de partie.
-  useEffect(() => {
-    const mq = window.matchMedia?.("(prefers-reduced-motion: reduce)");
-    if (!mq) return;
-    const appliquer = () => setSystemeReduit(mq.matches);
-    appliquer();
-    mq.addEventListener?.("change", appliquer);
-    return () => mq.removeEventListener?.("change", appliquer);
-  }, []);
 
   useEffect(() => {
     dispatch({ type: "mode", mode });
@@ -118,6 +162,7 @@ export function useFileAnimations({
   useEffect(() => {
     dernierPlanifie.current = -1;
     dispatch({ type: "reinitialiser" });
+    setEffetTypee(null);
   }, [cle]);
 
   // Les coups neufs deviennent des animations. `pour` manquant (vue pas encore chargée) : on
@@ -140,17 +185,45 @@ export function useFileAnimations({
     return () => clearTimeout(minuterie);
   }, [courante, duree]);
 
+  // Une animation typée passe → on pose son effet. Il doit exister **aussi** en mode réduit, où la
+  // file avance en zéro milliseconde : un badge accroché à l'animation courante clignoterait sans
+  // jamais être lisible.
+  useEffect(() => {
+    if (!courante?.typage) return;
+    const effet = effetAttaque(courante.typage, { duree, reduit });
+    // `null` = type inconnu du serveur, ou rien à montrer : on laisse le socle à son effet neutre
+    // plutôt que d'inventer une couleur (D9). On ne touche pas non plus à l'effet précédent — il
+    // finit de vivre sa durée.
+    if (!effet) return;
+    setEffetTypee({ effet, cle: courante.cle, cible: courante.cible });
+  }, [courante, duree, reduit]);
+
+  // La minuterie de l'effet typé est accrochée à l'EFFET, pas à l'animation : si elle avait vécu
+  // dans l'effet ci-dessus, passer à une animation non typée en aurait annulé le nettoyage, et
+  // l'effet serait resté collé au plateau pour de bon.
+  useEffect(() => {
+    if (!effetTypee) return;
+    const minuterie = setTimeout(() => setEffetTypee(null), effetTypee.effet.dureeTotale);
+    return () => clearTimeout(minuterie);
+  }, [effetTypee]);
+
+  const viderTout = useCallback(() => {
+    dispatch({ type: "vider" });
+    // L'effet typé part avec la file : le joueur agit, ou l'onglet passe en arrière-plan — dans les
+    // deux cas l'écran ne doit rien garder d'une attaque qui n'est plus à l'ordre du jour.
+    setEffetTypee(null);
+  }, []);
+
   // Onglet mis de côté : on jette la file. L'état affiché ne dépend pas d'elle, il ne bouge pas.
   useEffect(() => {
     const surVisibilite = () => {
-      if (document.visibilityState === "hidden") dispatch({ type: "vider" });
+      if (document.visibilityState === "hidden") viderTout();
     };
     document.addEventListener("visibilitychange", surVisibilite);
     return () => document.removeEventListener("visibilitychange", surVisibilite);
-  }, []);
+  }, [viderTout]);
 
   const sauter = useCallback(() => dispatch({ type: "sauter" }), []);
-  const vider = useCallback(() => dispatch({ type: "vider" }), []);
   const basculerAccelere = useCallback(() => setAccelere((v) => !v), []);
 
   return {
@@ -161,8 +234,9 @@ export function useFileAnimations({
     mode,
     reduit,
     sauter,
-    vider,
+    vider: viderTout,
     basculerAccelere,
+    effetTypee,
   };
 }
 
@@ -200,6 +274,13 @@ export type CoucheAnimationProps = {
   onBasculerAccelere?: () => void;
   /** `true` si le mode accéléré est actif (pour l'état du bouton). */
   accelere?: boolean;
+  /**
+   * L'effet typé à jouer **dans l'arène** plutôt que sur une carte (lot
+   * `j-anim-attaques-typees`) : c'est le cas d'une attaque qui n'a touché personne (ratée au pile
+   * ou face, annulée par la Confusion). Il n'y a alors pas de victime, donc pas de carte à brûler
+   * — on ne va pas en désigner une au hasard.
+   */
+  effetTypee?: EffetTypeeEnCours | null;
 };
 
 /**
@@ -221,14 +302,31 @@ export function CoucheAnimation({
   onSauter,
   onBasculerAccelere,
   accelere = false,
+  effetTypee = null,
 }: CoucheAnimationProps) {
-  if (!animation || !animation.effet) return null;
+  // Un effet typé **sans cible** se joue au centre de l'arène, et il peut se jouer alors qu'aucune
+  // animation n'est dessinée (mode réduit, où `animation` vaut toujours `null`). Il est donc rendu
+  // à part, avant le test de sortie ci-dessous.
+  const sansCible = effetTypee && !effetTypee.cible ? effetTypee : null;
+  const arene = sansCible && (
+    <div
+      data-testid="anim-arene-fx"
+      className="pointer-events-none absolute inset-0 z-20 grid place-items-center text-[2.5em]"
+    >
+      <span className="relative block h-[3em] w-[2.2em]">
+        <EffetTypeAttaque effet={sansCible.effet} cle={sansCible.cle} />
+      </span>
+    </div>
+  );
+
+  if (!animation || !animation.effet) return arene || null;
   const libelle = animation.resume
     ? `${animation.nombre} coups rejoués`
     : (LIBELLES[animation.effet] ?? animation.type);
 
   return (
     <>
+      {arene}
       <div
         data-testid="anim-couche"
         data-effet={animation.effet}
