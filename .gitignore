@@ -18,3 +18,7 @@ apps/web/test-results/
 # Graphe de connaissance Graphify — artefact local, 16 Mo, reconstruit en ~25 s
 # par `graphify update .` : on ne le versionne pas (il changerait à chaque commit).
 graphify-out/
+
+# Résidus d'outils étrangers au projet (CLI Salesforce, espace de travail VS Code personnel)
+.sf/
+*.code-workspace
