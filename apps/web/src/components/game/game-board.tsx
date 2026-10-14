@@ -6,6 +6,7 @@ import { FormNotice } from "@/components/auth/form-notice";
 import { ActionBar } from "@/components/game/action-bar";
 import { AidePanel } from "@/components/game/aide-panel";
 import { CoucheAnimation, type EffetTypeeEnCours } from "@/components/game/animation-layer";
+import { type EffetMoment } from "@/lib/game/anim-moments";
 import { BoardCard, EmptySlot } from "@/components/game/board-card";
 import { CardZoom } from "@/components/game/card-zoom";
 import { StatutConnexion } from "@/components/game/connection-status";
@@ -99,6 +100,15 @@ export type GameBoardProps = {
    * du socle, il ne conditionne rien et ne capture aucun clic.
    */
   effetTypee?: EffetTypeeEnCours | null;
+  /**
+   * Le **moment clé** en cours (lot `j-anim-evolution-ko`), ou `null` : évolution, mise K.O., prise
+   * de récompense, mise en place, reprise, pile ou face.
+   *
+   * Il est fourni **même en animations réduites**, où il prend sa forme immobile et textuelle. Il
+   * remplace la pastille du socle dans la case centrale de l'arène — il ne s'y ajoute pas, donc il
+   * n'ajoute aucune occlusion au plateau.
+   */
+  moment?: EffetMoment | null;
   /**
    * `true` pour une **première partie** : le tiroir d'aide (lot `j-plateau-aide`) s'ouvre d'emblée
    * sur le parcours guidé. C'est le conteneur de partie qui tranche (mémoire du navigateur) ; le
@@ -343,6 +353,7 @@ export function GameBoard({
   onBasculerAccelere,
   animationAcceleree = false,
   effetTypee = null,
+  moment = null,
   premierePartie = false,
 }: GameBoardProps) {
   const { moi, adversaire } = separerCamps(vue);
@@ -423,11 +434,17 @@ export function GameBoard({
           // Le plateau tremble pour les types qui le demandent (l'éclair, l'impact de Combat) :
           // un `transform` sur une boîte déjà `overflow-hidden`, donc rien ne déborde et rien ne
           // défile — le plateau n'accepte aucun défilement (lot `j-plateau-layout`).
-          data-fx-secousse={effetTypee?.effet.secousse ? "" : undefined}
+          // Un K.O. (lot `j-anim-evolution-ko`) le demande pour la même raison, et par le même
+          // chemin : c'est l'instant où la carte tombe. Le socle reste maître de la durée.
+          data-fx-secousse={
+            effetTypee?.effet.secousse || (moment?.anime && moment.secousse) ? "" : undefined
+          }
           style={
             effetTypee?.effet.anime
               ? ({ "--pbm-fx-duree": `${effetTypee.effet.duree}ms` } as React.CSSProperties)
-              : undefined
+              : moment?.anime && moment.secousse
+                ? ({ "--pbm-fx-duree": `${moment.duree}ms` } as React.CSSProperties)
+                : undefined
           }
         >
         {etatConnexion && (
@@ -446,6 +463,7 @@ export function GameBoard({
           onBasculerAccelere={onBasculerAccelere}
           accelere={animationAcceleree}
           effetTypee={effetTypee}
+          moment={moment}
         />
 
 

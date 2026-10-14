@@ -678,3 +678,320 @@ html[data-texte="tres_grande"]:not([data-ecran="plateau"]) {
     transform: translate3d(calc(-0.12em * var(--pbm-fx-ampleur, 1)), 0, 0);
   }
 }
+
+/* ===================================================================================
+   LES SIX MOMENTS CLÉS (lot `j-anim-evolution-ko`)
+
+   Évoluer, tomber K.O., prendre une récompense, se mettre en place, repiocher, lancer
+   la pièce. Même parade que les effets typés, et pour la même raison : il n'y a ici
+   AUCUNE animation par moment. Il y a six couches et quatre gestes, chacun avec UNE
+   image-clé écrite une seule fois ; la table `MOMENTS` de `src/lib/game/anim-moments.ts`
+   dit seulement lesquels composer, dans quel ordre et pendant combien de temps.
+
+   Le rythme ne vient PAS d'ici : chaque temps du moment arrive avec son `--pbm-m-debut`
+   et son `--pbm-m-duree`, calculés par le module (compression comprise). Le CSS ne
+   décide d'aucune durée — c'est ce qui permet de comprimer une rafale de quatre moments
+   sans toucher à cette feuille.
+
+   Les images-clés sont nommées `pbm-anim-fx-m-*` : elles passent donc sous la MÊME garde
+   statique (`src/__tests__/anim-css-garde.test.ts`), qui n'autorise que `transform` et
+   `opacity`. Conséquence assumée : la désaturation du K.O. ne peut pas être un
+   `filter: saturate()` (hors compositeur, le plancher d'images par seconde tombe) — c'est
+   l'OPACITÉ d'un voile sombre statique qui l'exprime. Le résultat se lit pareil, et il
+   tient sur un téléphone d'entrée de gamme.
+   =================================================================================== */
+
+.pbm-m {
+  /* Taille de la scène : volontairement petite. Elle remplace la pastille du socle dans
+     la même case centrale de l'arène — un moment n'ajoute AUCUNE occlusion au plateau.
+     L'unité est l'em : toute l'arène est dimensionnée en em (lot `j-plateau-layout`). */
+  width: 7em;
+  height: 5em;
+}
+
+.pbm-m-scene,
+.pbm-m-couche {
+  position: absolute;
+  inset: 0;
+  display: block;
+  pointer-events: none;
+}
+
+.pbm-m-libelle {
+  position: relative;
+  z-index: 2;
+}
+
+/* --- Les objets qui voyagent : des cartes, ou des pièces. ------------------------- */
+
+.pbm-m-objet {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: block;
+  /* Décalage par rang : c'est ce qui fait voir DEUX récompenses plutôt qu'une pile
+     unique (critère d'acceptation n°2). Statique — seul le geste est animé. */
+  margin-top: calc(-1.1em + var(--pbm-m-index, 0) * 0.12em);
+  margin-left: calc(-0.8em + var(--pbm-m-index, 0) * 0.34em);
+  /* `will-change` prépare une couche de composition : le geste ne repassera pas par le
+     fil principal. Posé ici, jamais animé. */
+  will-change: transform, opacity;
+  animation-delay: var(--pbm-m-retard, 0ms);
+}
+
+.pbm-m-objet[data-objet="carte"] {
+  width: 1.6em;
+  height: 2.2em;
+  border: 1px solid rgba(255, 215, 0, 0.55);
+  border-radius: 0.18em;
+  background: linear-gradient(145deg, rgba(28, 44, 36, 0.96), rgba(10, 20, 15, 0.96));
+  box-shadow: 0 0 0.3em rgba(0, 0, 0, 0.55);
+}
+
+.pbm-m-objet[data-objet="piece"] {
+  width: 1.4em;
+  height: 1.4em;
+  margin-top: -0.7em;
+  border: 1px solid rgba(255, 215, 0, 0.7);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 238, 170, 0.98), rgba(176, 140, 32, 0.98));
+}
+
+/* La pose finale d'une pièce — et c'est tout le critère d'acceptation n°3.
+
+   Les deux faces sont rigoureusement IDENTIQUES tant que l'opacité vaut zéro, et
+   l'image-clé qui la fait monter ne démarre qu'à `--pbm-m-revelation`, c'est-à-dire à la
+   fin du temps de rotation. Avant cet instant, rien à l'écran ne distingue un pile d'un
+   face. La couleur, elle, est STATIQUE : elle n'a pas besoin d'être animée pour être
+   juste, et l'animer l'aurait sortie du compositeur. */
+.pbm-m-objet[data-face]::after {
+  position: absolute;
+  inset: 0.22em;
+  border-radius: 50%;
+  content: "";
+  opacity: 0;
+  animation: pbm-anim-fx-m-revele 220ms ease-out var(--pbm-m-revelation, 0ms) forwards;
+}
+
+.pbm-m-objet[data-face="face"]::after {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95), rgba(255, 214, 90, 0.9));
+}
+
+.pbm-m-objet[data-face="pile"]::after {
+  background: radial-gradient(circle, rgba(60, 70, 80, 0.95), rgba(24, 30, 38, 0.92));
+}
+
+/* --- Les six couches. Chaque dégradé est STATIQUE ; seule l'image-clé bouge. ------ */
+
+.pbm-m-couche {
+  will-change: transform, opacity;
+  animation-duration: var(--pbm-m-duree, 300ms);
+  animation-delay: var(--pbm-m-debut, 0ms);
+  animation-fill-mode: both;
+  animation-timing-function: ease-out;
+}
+
+/* `halo` : une auréole lumineuse qui gonfle puis retombe — l'évolution qui se pose, la
+   récompense qui se retourne. C'est la couche « ça compte » du lot. */
+.pbm-m-couche[data-couche="halo"] {
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 238, 160, 0.55) 0%, transparent 68%);
+  animation-name: pbm-anim-fx-m-halo;
+}
+
+/* `fondu` : un fondu enchaîné de ce qui arrive sur ce qui s'en va — l'évolution par
+   dessus la base, la carte retournée qui devient sa face. */
+.pbm-m-couche[data-couche="fondu"] {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.42) 0%, transparent 70%);
+  animation-name: pbm-anim-fx-m-fondu;
+}
+
+/* `voile` : un voile sombre qui éteint l'objet — le K.O. qui se désature. Voir l'encadré
+   en tête de bloc : c'est l'opacité qui porte l'extinction, pas un `filter`. */
+.pbm-m-couche[data-couche="voile"] {
+  background: radial-gradient(circle, rgba(4, 6, 10, 0.86) 0%, rgba(4, 6, 10, 0.5) 75%);
+  animation-name: pbm-anim-fx-m-voile;
+}
+
+/* `traine` : une traînée le long du trajet — vers la défausse, vers la main, depuis la
+   pioche. Elle dit d'où l'objet vient, ce qu'un simple déplacement ne dit pas. */
+.pbm-m-couche[data-couche="traine"] {
+  background: linear-gradient(100deg, transparent 20%, rgba(255, 232, 150, 0.4) 50%, transparent 80%);
+  animation-name: pbm-anim-fx-m-traine;
+}
+
+/* `eclat` : un éclat bref — la révélation simultanée, la récompense dévoilée, la pièce
+   qui s'arrête. */
+.pbm-m-couche[data-couche="eclat"] {
+  background: radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.72) 0%, transparent 46%);
+  animation-name: pbm-anim-fx-m-eclat;
+}
+
+/* `rotation` : la pièce qui tourne. Seul le genre `piece` l'utilise, et un test le garde
+   — un autre genre qui l'emprunterait hériterait de la révélation différée sans l'avoir
+   demandée. */
+.pbm-m-couche[data-couche="rotation"] {
+  background: linear-gradient(90deg, transparent 38%, rgba(255, 238, 170, 0.5) 50%, transparent 62%);
+  animation-name: pbm-anim-fx-m-rotation;
+  animation-timing-function: linear;
+}
+
+/* =================================================================================== */
+
+@keyframes pbm-anim-fx-m-halo {
+  0% {
+    opacity: 0;
+    transform: scale3d(0.5, 0.5, 1);
+  }
+  45% {
+    opacity: 1;
+    transform: scale3d(1.15, 1.15, 1);
+  }
+  to {
+    opacity: 0;
+    transform: scale3d(1.35, 1.35, 1);
+  }
+}
+
+@keyframes pbm-anim-fx-m-fondu {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0.3em, 0);
+  }
+  55% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, -0.12em, 0);
+  }
+}
+
+@keyframes pbm-anim-fx-m-voile {
+  0% {
+    opacity: 0;
+  }
+  70% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.82;
+  }
+}
+
+@keyframes pbm-anim-fx-m-traine {
+  0% {
+    opacity: 0;
+    transform: translate3d(-55%, 0, 0);
+  }
+  40% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(55%, 0, 0);
+  }
+}
+
+@keyframes pbm-anim-fx-m-eclat {
+  0% {
+    opacity: 0;
+    transform: scale3d(0.35, 0.35, 1);
+  }
+  30% {
+    opacity: 1;
+    transform: scale3d(1.1, 1.1, 1);
+  }
+  to {
+    opacity: 0;
+    transform: scale3d(1.5, 1.5, 1);
+  }
+}
+
+@keyframes pbm-anim-fx-m-rotation {
+  0% {
+    opacity: 0.5;
+    transform: translate3d(-40%, 0, 0);
+  }
+  50% {
+    opacity: 1;
+    transform: translate3d(40%, 0, 0);
+  }
+  to {
+    opacity: 0.5;
+    transform: translate3d(-40%, 0, 0);
+  }
+}
+
+/* La pose finale d'une pièce : zéro avant la révélation, un après. Rien d'autre. */
+@keyframes pbm-anim-fx-m-revele {
+  0% {
+    opacity: 0;
+    transform: scale3d(0.7, 0.7, 1);
+  }
+  to {
+    opacity: 1;
+    transform: scale3d(1, 1, 1);
+  }
+}
+
+/* --- Les quatre gestes de l'objet. Toujours un `transform`, jamais une boîte. ----- */
+
+/* `pose` : l'objet se pose depuis au-dessus — l'évolution sur sa base, la carte
+   distribuée, la pièce qui s'immobilise. */
+@keyframes pbm-anim-fx-m-pose {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -0.9em, 0) scale3d(1.12, 1.12, 1);
+  }
+  70% {
+    opacity: 1;
+    transform: translate3d(0, 0.05em, 0) scale3d(0.99, 0.99, 1);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
+  }
+}
+
+/* `bascule` : la carte s'incline et retombe — le premier temps du K.O. C'est ce
+   mouvement qui fait comprendre « il est tombé » avant même l'extinction. */
+@keyframes pbm-anim-fx-m-bascule {
+  0% {
+    transform: rotate3d(0, 0, 1, 0deg);
+  }
+  35% {
+    transform: rotate3d(0, 0, 1, -7deg) translate3d(0, -0.1em, 0);
+  }
+  to {
+    transform: rotate3d(0, 0, 1, 14deg) translate3d(0, 0.18em, 0);
+  }
+}
+
+/* `envol` : l'objet quitte la scène — vers la défausse, vers la main, vers la pioche
+   remélangée. Il part en biais et rétrécit : c'est ce qui donne la profondeur. */
+@keyframes pbm-anim-fx-m-envol {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(2.4em, 1.6em, 0) scale3d(0.55, 0.55, 1) rotate3d(0, 0, 1, 18deg);
+  }
+}
+
+/* `retournement` : l'objet passe du dos à la face — la récompense prise, la main
+   révélée, les placements dévoilés. */
+@keyframes pbm-anim-fx-m-retournement {
+  0% {
+    transform: rotate3d(0, 1, 0, 0deg) scale3d(1, 1, 1);
+  }
+  50% {
+    transform: rotate3d(0, 1, 0, 90deg) scale3d(1.06, 1.06, 1);
+  }
+  to {
+    transform: rotate3d(0, 1, 0, 180deg) scale3d(1, 1, 1);
+  }
+}

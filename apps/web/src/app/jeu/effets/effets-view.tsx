@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { FormNotice } from "@/components/auth/form-notice";
 import { useAnimationsReduites } from "@/components/game/animation-layer";
+import { EffetMomentCle } from "@/components/game/effet-moment";
 import { EffetTypeAttaque } from "@/components/game/effet-type";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/client";
@@ -17,6 +18,7 @@ import {
   type Typage,
   effetAttaque,
 } from "@/lib/game/anim-types";
+import { type MomentPlanifie, effetMoment, momentsEvenement } from "@/lib/game/anim-moments";
 import { EFFETS } from "@/lib/game/animations";
 import { styleElement } from "@/lib/game/indicateurs";
 import { cn } from "@/lib/utils";
@@ -81,6 +83,55 @@ const SITUATION_DEFAUT = "nette";
  * recopier, pour que la galerie montre la durée réelle du plateau et pas une durée de démonstration.
  */
 const DUREE_DEGATS = EFFETS.degats?.duree ?? 420;
+
+/**
+ * Les moments clés à donner à valider (lot `j-anim-evolution-ko`).
+ *
+ * Ils ne sont **pas** écrits à la main : chaque entrée est un vrai événement du moteur, passé par
+ * `momentsEvenement` — le même chemin qu'en partie. C'est ce qui fait qu'une validation ici vaut
+ * quelque chose : si la lecture d'un `recompenses_prises` se cassait, la galerie se casserait avec
+ * le plateau, au lieu de continuer à montrer un joli film.
+ *
+ * Les trois lancers de pièce sont là **exprès**, côte à côte : c'est comme ça qu'on vérifie à l'œil
+ * ce que le test affirme — les trois tournent exactement pareil, et seule la pose finale diffère.
+ */
+const EVENEMENTS_DEMO: { type: string; donnees: Record<string, unknown> }[] = [
+  { type: "evolution", donnees: { joueur: "moi", base: "i-1", nom: "Herbizarre" } },
+  // Un K.O. qui rapporte DEUX récompenses : il produit deux moments, et c'est le critère n°2.
+  {
+    type: "ko",
+    donnees: { joueur: "adv", pokemon: "i-2", recompenses_prises: 2, par: "moi" },
+  },
+  {
+    type: "mise_en_place_revelee",
+    donnees: { joueurs: [{ joueur: "moi", recompenses_nombre: 6 }] },
+  },
+  {
+    type: "main_revelee",
+    donnees: {
+      joueur: "moi",
+      cartes: Array.from({ length: 7 }, (_, i) => ({ ref: `demo-${i}` })),
+    },
+  },
+  { type: "dsl_pile_ou_face", donnees: { joueur: "moi", pieces: 2, faces: 0 } },
+  { type: "dsl_pile_ou_face", donnees: { joueur: "moi", pieces: 2, faces: 1 } },
+  { type: "dsl_pile_ou_face", donnees: { joueur: "moi", pieces: 2, faces: 2 } },
+];
+
+/** Les moments de démonstration, à plat — un `ko` en donne deux, et c'est le but. */
+const MOMENTS_DEMO: MomentPlanifie[] = EVENEMENTS_DEMO.flatMap((evt, i) =>
+  momentsEvenement(evt, i + 1, 0, "moi"),
+);
+
+/** Le titre d'une vignette de moment : le libellé, et le compte quand il y en a un. */
+function titreMoment(m: MomentPlanifie): string {
+  if (m.genre === "piece" && m.piece) {
+    return `${m.piece.faces} face${m.piece.faces > 1 ? "s" : ""} sur ${m.piece.pieces}`;
+  }
+  if (m.genre === "recompense") return `${m.objets} récompense${m.objets > 1 ? "s" : ""}`;
+  if (m.genre === "mulligan") return `Main de ${m.objets} cartes`;
+  return effetMoment(m, { reduit: true }).libelle;
+}
 
 /** Une carte de démonstration : la boîte d'une carte du plateau, sans vraie carte dedans. */
 function Vignette({
@@ -252,6 +303,52 @@ export function EffetsView() {
           );
         })}
       </ul>
+
+      <section className="mt-12" aria-labelledby="titre-moments">
+        <h2 id="titre-moments" className="font-heading text-lg font-bold">
+          Les six moments clés
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Évoluer, tomber K.O., prendre une récompense, se mettre en place, repiocher, lancer la
+          pièce. Là aussi c&apos;est le code du plateau, et chaque vignette part d&apos;un vrai
+          événement du serveur.
+        </p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Les trois lancers de pièce sont côte à côte&nbsp;: regarde-les tourner. Ils sont
+          rigoureusement identiques jusqu&apos;à l&apos;arrêt — c&apos;est le résultat du serveur qui
+          décide, et rien à l&apos;écran ne permet de le deviner avant la fin.
+        </p>
+        <Button
+          type="button"
+          className="mt-3"
+          variant="outline"
+          data-testid="fx-rejouer-moments"
+          onClick={() => rejouer(situation)}
+        >
+          Rejouer les moments
+        </Button>
+
+        <ul className="mt-6 grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
+          {MOMENTS_DEMO.map((m) => (
+            <li key={m.cle} className="flex flex-col gap-2">
+              <div
+                data-testid={`fx-moment-demo-${m.genre}`}
+                className="relative mx-auto grid h-[9rem] w-[7.5rem] place-items-center overflow-hidden rounded-[0.5em] border border-[rgba(157,0,255,0.45)] bg-[linear-gradient(160deg,#141B5C,#0A1048)] text-[1.1rem]"
+              >
+                <EffetMomentCle
+                  effet={effetMoment(
+                    // La génération entre dans la clé : c'est elle qui redémarre les animations
+                    // CSS (le navigateur ne rejoue pas une animation déjà finie sur le même nœud).
+                    { ...m, cle: `${m.cle}:${generation}` },
+                    { reduit },
+                  )}
+                />
+              </div>
+              <p className="text-center text-xs text-muted-foreground">{titreMoment(m)}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       <p className="mt-10 text-xs text-muted-foreground">
         Pour couper les animations partout, c&apos;est dans{" "}

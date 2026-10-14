@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { FormNotice } from "@/components/auth/form-notice";
-import { useFileAnimations } from "@/components/game/animation-layer";
+import { useFileAnimations, useFileMoments } from "@/components/game/animation-layer";
 import { EmoteBar } from "@/components/game/emote-bar";
 import { FenetreDecision } from "@/components/game/fenetre-decision";
 import { FinPartie } from "@/components/game/fin-partie";
@@ -201,7 +201,25 @@ export function PartieView({ gameId }: { gameId: string }) {
    */
   // La file d'animations, alimentée par les coups diffusés et par eux seuls.
   const anim = useFileAnimations({ coups, pour: vue?.pour ?? "", cle: gameId });
-  const viderAnimations = anim.vider;
+  // Les SIX MOMENTS CLÉS (lot `j-anim-evolution-ko`), sur une file à part : un `ko` en produit deux
+  // (la mise K.O. et la prise de récompenses), et un double K.O. doit les jouer tous les quatre
+  // sans en perdre un. Voir `useFileMoments` pour pourquoi ce n'est pas la file du socle.
+  const moments = useFileMoments({ coups, pour: vue?.pour ?? "", cle: gameId });
+  // Le joueur agit : les DEUX files se jettent. N'en vider qu'une aurait laissé un moment clé
+  // tourner au-dessus d'un plateau qui a déjà changé.
+  const viderAnim = anim.vider;
+  const viderMoments = moments.vider;
+  const viderAnimations = useCallback(() => {
+    viderAnim();
+    viderMoments();
+  }, [viderAnim, viderMoments]);
+  // « Passer » passe ce qui est à l'écran, quelle que soit la file qui l'y a mis.
+  const sauterAnim = anim.sauter;
+  const sauterMoment = moments.sauter;
+  const onSauterAnimation = useCallback(() => {
+    sauterAnim();
+    sauterMoment();
+  }, [sauterAnim, sauterMoment]);
 
   const onJouer = useCallback(
     async (action: VueActionLegale) => {
@@ -276,11 +294,12 @@ export function PartieView({ gameId }: { gameId: string }) {
             onJouer={onJouer}
             animation={anim.animation}
             animationDuree={anim.duree}
-            animationsEnAttente={anim.enAttente}
-            onSauterAnimation={anim.sauter}
+            animationsEnAttente={anim.enAttente + moments.enAttente}
+            onSauterAnimation={onSauterAnimation}
             onBasculerAccelere={anim.reduit ? undefined : anim.basculerAccelere}
             animationAcceleree={anim.mode === "accelere"}
             effetTypee={anim.effetTypee}
+            moment={moments.moment}
             premierePartie={premierePartie}
           />
           <JournalPanel lignes={lignes} onSurvol={setSurligne} />
