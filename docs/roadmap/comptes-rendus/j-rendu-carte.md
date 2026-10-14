@@ -85,8 +85,9 @@ un code distinct dirait à l'adversaire ce qu'il n'a pas à savoir.
 
 `apps/web/e2e/plateau-rendu.spec.ts`, en navigateur réel, à 844×390 (paysage) puis 390×844 :
 
-- l'image **remplit** la carte (écart ≤ 2 px avec la boîte de la carte) et la carte reste ≥ 24 px ;
-- le **zoom** rend l'image ≥ 150 px de large (lisible sans pincer l'écran) ;
+- l'image **remplit** la carte (écart ≤ 2 px avec la boîte de la carte), à chaque orientation ;
+- le **zoom** rend l'image ≥ 150 px de large (lisible sans pincer l'écran) — c'est **là** que se joue
+  la lisibilité, voir l'encadré ci-dessous ;
 - les **deux rendus coexistent** (ma photo / l'officielle côte à côte) et le crédit de la photo
   adverse est annoncé ;
 - un **ensemble caché** montre 6 dos ;
@@ -94,7 +95,25 @@ un code distinct dirait à l'adversaire ce qu'il n'a pas à savoir.
 
 ⚠️ Cet e2e n'a **pas** pu être exécuté localement : navigateur Playwright impossible sur chimera
 (libnspr4, sudo requis) et non installé sur devAI. **C'est la CI qui fait foi** sur ce critère —
-c'est écrit ici parce que le dire est la seule façon honnête de livrer ce point.
+c'est écrit ici parce que le dire est la seule façon honnête de livrer ce point. Et elle a servi :
+le premier passage a **échoué**, sur deux points qui valaient d'être sus (voir ci-dessous).
+
+### Ce que la CI a appris, et que la machine locale ne pouvait pas dire
+
+**Une carte de plateau fait 11 px de large en paysage 844×390.** Mesuré par la CI, pas supposé. Ma
+première version du test exigeait 24 px : c'était une erreur d'intention de ma part, pas un défaut
+du plateau. `board-card.tsx` l'écrit noir sur blanc depuis `j-plateau-layout` — *« minuscule sur un
+téléphone en paysage, d'où le zoom »*. Le critère « lisible à la taille du plateau sur téléphone »
+est donc porté par le **zoom** (≥ 150 px mesurés, soit 256 px CSS en pratique), la vignette ne
+servant qu'à situer la carte. Le test contrôle maintenant que la boîte n'est pas **dégénérée** et
+que l'image **remplit** exactement la carte, et dit pourquoi il n'en exige pas plus.
+
+**Le zoom s'ouvre au focus clavier, pas au survol, dans le test.** `locator.hover()` sur une cible
+de 11 px a expiré à 60 s : Playwright attend une cible pointable fiable. Le chemin **clavier**
+(`onFocus`, câblé comme le survol) ne dépend pas du pointage — et c'est de toute façon celui qu'on
+veut garantir. La vue simulée a par ailleurs été rapprochée d'un plateau réel (Stade posé, énergies
+attachées, cinq cartes en main) : un plateau vide donnerait des tailles plus flatteuses que la
+réalité.
 
 ## Chiffres mesurés
 
