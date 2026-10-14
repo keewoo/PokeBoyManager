@@ -60,6 +60,8 @@ tiers n'ont rien à faire sur la machine qui répond aux visiteurs.
 | `ai.upgreg.pbm-prices-daily` | 05:30 Europe/Paris | `~/dev/pbm/jobs/prices-daily.sh` | relève+exporte sur chimera, rapatrie, importe en PROD, compte |
 | `ai.upgreg.pbm-catalog-weekly` | Lundi 04:30 | `~/dev/pbm/jobs/catalog-weekly.sh` | import incrémental + tournoi sur chimera, exporte, importe |
 | `ai.upgreg.pbm-prices-probe` | 09:00 Europe/Paris | `~/dev/pbm/jobs/prices-probe.sh` | **sonde honnête** : si 0 prix du jour en PROD → PANNE visible |
+| `ai.upgreg.pbm-jeu-probe` | 08:30 Europe/Paris | `apps/api/scripts/sonde_jeu.py --mode quotidien` | **sonde du jeu** : erreur de moteur, rafale de refus, parties qui n'aboutissent pas → alerte |
+| `ai.upgreg.pbm-jeu-hebdo` | Lundi 07:00 | `apps/api/scripts/sonde_jeu.py --mode hebdo` | récapitulatif des parties jouées — **part toujours**, son absence est un signal |
 
 - SSH de chimera **coupe souvent** : chaque appel est réessayé (`~/dev/pbm/cw.sh`), et le relevé
   long tourne **détaché** sur chimera (marqueur de fin), sondé jusqu'à complétion — une coupure ne
@@ -105,6 +107,8 @@ sudo -u postgres psql -d pokeboy_prod -c \
 
 | Symptôme | Cause probable | Quoi faire |
 |---|---|---|
+| Sonde du jeu : alerte `erreur_moteur` | un bug du moteur a planté un coup | `docs/jeu/OBSERVABILITE.md` § runbook — lire `jeu_incidents`, reproduire par un test du moteur AVANT de corriger |
+| **Aucun récapitulatif hebdo du jeu depuis 8 jours** | la sonde du jeu ne tourne plus (ou n'écrit plus son état) | lancer `sonde_jeu.py --mode quotidien --a-blanc` à la main ; c'est l'homme mort du dispositif, son silence n'est jamais « rien à signaler » |
 | Sonde 09:00 : 0 prix du jour | chimera injoignable la nuit / relevé échoué / import échoué | lire `~/dev/logs/pbm-prices-daily.log` ; relancer `prices-daily.sh` à la main (idempotent) |
 | `relevé vide` dans le journal chimera | TCGdex/PTCG en panne réseau | réessayer plus tard ; ne PAS importer un bundle vide (le script refuse déjà) |
 | `lignes_sans_carte_en_prod` > 0 à l'import | une extension existe sur chimera mais pas en PROD | lancer d'abord `catalog-weekly.sh` (ajoute les cartes), puis rejouer les prix |

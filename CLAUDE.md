@@ -87,6 +87,7 @@ existe. Détail : `docs/PLUGINS.md`.
 | `docs/infra/DOMAINE-POKEBOY-LOL.md` | on touche au domaine `pokeboy.lol` : DNS, Caddy, URL figées dans le build, e-mails Resend |
 | `docs/infra/JOBS-LOURDS.md` | on planifie ou on diagnostique un traitement lourd |
 | `docs/catalogue/COMPLETUDE.md` | on se demande si le catalogue est complet, et où sont les trous |
+| `docs/jeu/OBSERVABILITE.md` | on se demande si le jeu va bien : métriques, alertes, sonde, runbook |
 | `docs/roadmap/jeu/BACKLOG-JEU.md` | on travaille sur le jeu (67 lots, paliers, décisions `DJ*`) |
 
 ## Où écrire quoi

@@ -80,6 +80,7 @@ from pbm_api.games.errors import (
     ActionRefusee,
     CartesNonJouables,
     ConflitNumero,
+    GameError,
     PartieIntrouvable,
     PartieNonActive,
 )
@@ -91,6 +92,18 @@ from pbm_api.models.games import (
     GameEvent,
     GamePlayer,
     GameSnapshot,
+)
+from pbm_api.models.observabilite import (
+    INCIDENT_ACTION_REFUSEE,
+    INCIDENT_ERREUR_MOTEUR,
+    INCIDENT_PARTIE_REFUSEE,
+)
+from pbm_api.observabilite.consignation import consigner_incident
+from pbm_api.observabilite.motifs import (
+    MOTIF_CARTE_NON_SCRIPTEE,
+    detail_borne,
+    motif_d_erreur,
+    motif_de_refus,
 )
 
 logger = logging.getLogger(__name__)
@@ -142,7 +155,7 @@ def reinitialiser_alerte_refus() -> None:
     _refus_recents.clear()
 
 
-def _journaliser_refus(
+async def _journaliser_refus(
     game_id: uuid.UUID, user_id: uuid.UUID, type_action: str, motif: str, maintenant: datetime
 ) -> int:
     """Trace un coup refusé et **alerte** en cas de rafale ; renvoie le nombre de refus récents.
@@ -151,6 +164,12 @@ def _journaliser_refus(
     sa cause. Si un même joueur accumule les coups illégaux dans :data:`FENETRE_REFUS`, on émet une
     alerte — signe d'un client modifié. On ne bloque pas le joueur pour autant : le serveur fait
     déjà autorité (l'état n'a pas bougé), l'alerte sert la supervision, pas le refus.
+
+    Depuis le lot ``j-observabilite-jeu``, le refus est aussi **consigné en base** : le compteur en
+    mémoire ci-dessous ne détecte qu'une rafale immédiate et disparaît au redémarrage, alors que le
+    jalon J5 demande de voir une règle qui casse *dans une métrique*. Le motif enregistré est la
+    **règle citée** par le moteur (``R-x.y``), ce qui rend le compteur agrégeable (voir
+    :mod:`pbm_api.observabilite.motifs`).
     """
     logger.warning(
         "coup refusé — partie %s, joueur %s, action « %s » : %s",
@@ -172,6 +191,15 @@ def _journaliser_refus(
             user_id,
             game_id,
         )
+    await consigner_incident(
+        genre=INCIDENT_ACTION_REFUSEE,
+        motif=motif_de_refus(motif),
+        game_id=game_id,
+        user_id=user_id,
+        type_action=type_action,
+        detail=detail_borne(motif),
+        horodatage=maintenant,
+    )
     return len(recents)
 
 
@@ -253,6 +281,19 @@ async def creer_partie(
     cartes_b, refus_b = await resoudre_deck(db, deck_b, id_b)
     refus = refus_a + refus_b
     if refus:
+        # D9 : on refuse plutôt que d'approximer — et on le COMPTE. Une partie qu'un joueur n'a
+        # pas pu lancer est le signal « couverture des cartes insuffisante » du jalon J5 ; sans
+        # cette trace il n'existait que dans l'écran du joueur, qui ne le signalera pas forcément.
+        await consigner_incident(
+            genre=INCIDENT_PARTIE_REFUSEE,
+            motif=MOTIF_CARTE_NON_SCRIPTEE,
+            user_id=user_a,
+            detail=detail_borne(
+                f"{len(refus)} carte(s) non jouable(s) : "
+                + " ; ".join(f"{nom} ({raison})" for nom, raison in refus[:5])
+            ),
+            horodatage=maintenant,
+        )
         raise CartesNonJouables(refus)
 
     etat_initial = construire_etat_initial((id_a, cartes_a), (id_b, cartes_b))
@@ -649,6 +690,67 @@ async def appliquer_action(
     maintenant: datetime | None = None,
     intervalle_instantane: int = INTERVALLE_INSTANTANE,
 ) -> ResultatAction:
+    """Applique un coup (:func:`_appliquer_action_verifiee`) en **traitant tout bug du moteur**.
+
+    Une erreur de moteur n'est pas un coup illégal : c'est un défaut du jeu, et comme le moteur
+    fait autorité, elle a pu laisser un état faux. Elle est donc consignée en **incident** de
+    genre ``erreur_moteur``, ce qui en fait une alerte *critique* de la supervision (lot
+    ``j-observabilite-jeu``) — jamais une simple ligne de journal que personne ne relit.
+
+    Les erreurs **attendues** du service (:class:`GameError` et ses filles : refus, conflit de
+    numéro, partie inactive) traversent sans être touchées : ce sont des réponses normales, déjà
+    typées et déjà tracées, pas des pannes.
+
+    Le ``rollback`` avant d'écrire la trace abandonne explicitement le coup à moitié appliqué — il
+    l'aurait été de toute façon (la session de requête se ferme sans commit), mais le dire ici
+    garantit qu'on ne travaille pas sur une transaction déjà cassée.
+    """
+    try:
+        return await _appliquer_action_verifiee(
+            db,
+            game_id=game_id,
+            user_id=user_id,
+            type=type,
+            params=params,
+            numero_attendu=numero_attendu,
+            maintenant=maintenant,
+            intervalle_instantane=intervalle_instantane,
+        )
+    except GameError:
+        raise
+    except Exception as exc:
+        logger.exception(
+            "ERREUR DE MOTEUR — partie %s, joueur %s, action « %s » : coup abandonné.",
+            game_id,
+            user_id,
+            type,
+        )
+        await db.rollback()
+        # `type` est ici le nom du paramètre (le type d'action) : la classe de l'exception se lit
+        # donc par `exc.__class__`, jamais par l'appel `type(exc)` — qui échouerait.
+        await consigner_incident(
+            genre=INCIDENT_ERREUR_MOTEUR,
+            motif=motif_d_erreur(exc),
+            game_id=game_id,
+            user_id=user_id,
+            type_action=type,
+            detail=detail_borne(f"{exc.__class__.__name__}: {exc}"),
+            horodatage=maintenant,
+        )
+        raise
+
+
+async def _appliquer_action_verifiee(
+    db: AsyncSession,
+    *,
+    game_id: uuid.UUID,
+    user_id: uuid.UUID,
+    type: str,
+    params: dict | None = None,
+    numero_attendu: int,
+    maintenant: datetime | None = None,
+    intervalle_instantane: int = INTERVALLE_INSTANTANE,
+) -> ResultatAction:
     """Applique un coup à une partie, dans une transaction, sous verrou, avec idempotence.
 
     Déroulé (le serveur fait autorité) :
@@ -730,7 +832,7 @@ async def appliquer_action(
             verdict = valider(etat_courant, action, familles=familles_jeu(catalogue))
             if verdict.refuse:
                 motif = f"{verdict.message} ({verdict.regle})"
-                _journaliser_refus(game_id, user_id, type, motif, maintenant)
+                await _journaliser_refus(game_id, user_id, type, motif, maintenant)
                 raise ActionRefusee(motif)
 
     # Les effets d'un **vrai joueur** passent en mode « décision » : un ``choisir`` du script ouvre
@@ -748,7 +850,7 @@ async def appliquer_action(
     except ValueError as exc:
         # Le serveur fait autorité : un coup illégal est refusé, l'état n'a pas bougé (rien n'est
         # écrit, le commit est plus bas). On le trace, et on alerte si c'est une rafale.
-        _journaliser_refus(game_id, user_id, type, str(exc), maintenant)
+        await _journaliser_refus(game_id, user_id, type, str(exc), maintenant)
         raise ActionRefusee(str(exc)) from exc
 
     numero_joueur = game.current_numero

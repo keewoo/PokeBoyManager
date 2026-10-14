@@ -1146,3 +1146,27 @@ de logique côté front (le risque « même règle des deux côtés » est évit
   ses énergies et son Outil (non ◇) vont à la défausse (R-13.2). `combat.ko.router_cartes_ko`,
   branché dans `combat.fin._appliquer_ko` (détecté sur le marqueur de la **fiche**, le moteur ne lit
   jamais le catalogue). Une carte en zone perdue n'en sort plus : aucune action ne l'en retire.
+
+## Supervision du jeu (lot `j-observabilite-jeu`)
+
+Le jeu se joue à deux ou trois : une règle qui casse doit se voir dans une **métrique** avant de se
+voir dans une plainte. Trois faits n'existaient que dans la sortie du serveur — perdus au
+redémarrage, invisibles sans SSH, incomptables — et ont désormais une table.
+
+| Pièce | Ce qu'elle porte |
+|---|---|
+| table `jeu_incidents` | un incident horodaté : `genre` (`action_refusee`, `erreur_moteur`, `partie_refusee`), `motif` **borné** (la règle `R-x.y` citée par le moteur, ou la classe d'exception), `game_id`/`user_id` en **SET NULL** (la purge des parties n'efface pas la trace), `detail` tronqué |
+| `GET /jeu/metriques` | le relevé agrégé, ses alertes et son verdict (`OK`/`A_SURVEILLER`/`PANNE`). Réservé aux comptes ayant l'accès au jeu (D11) — **404** sinon, comme toute route du jeu. Agrégé : aucune ventilation par compte (ce serait une fuite entre joueurs) |
+| `apps/api/scripts/sonde_jeu.py` | la sonde : alerte quotidienne (seulement s'il y a à dire) et récapitulatif hebdomadaire (**toujours**, d'où son absence qui devient un signal) |
+
+Tout le reste des métriques est **lu là où il vit déjà** (`games`, `game_events`) : rien n'est
+dupliqué. Les seuils (`pbm_api.observabilite.regles`) sont **purs** et partagés par la route et la
+sonde — un relevé lu à l'écran ne peut pas contredire l'e-mail du matin.
+
+Deux choix qui se paient à l'usage et sont donc écrits : la trace est consignée dans une **session
+autonome** (un refus lève une exception, donc une trace écrite dans la session de la requête
+serait annulée avec le coup refusé), et une erreur de moteur est **toujours** une alerte critique,
+sans seuil — le moteur fait autorité, s'il plante il a pu produire un état faux.
+
+Détail, seuils, runbook et ce qui n'est **pas** mesuré (les tours, les déconnexions passagères) :
+`docs/jeu/OBSERVABILITE.md`.
