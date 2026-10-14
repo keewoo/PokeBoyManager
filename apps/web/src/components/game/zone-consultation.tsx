@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { BoardCard } from "@/components/game/board-card";
+import { useModale } from "@/lib/game/use-modale";
 import { cn } from "@/lib/utils";
 import type { VueCarte } from "@/lib/game/plateau";
 
@@ -84,13 +85,40 @@ export function ZonePublique({
         data-testid={`zone-publique-${titre}`}
       />
       {ouvert && (
+        <PanneauZone titre={titre} cartes={cartes} onFermer={() => setOuvert(false)} />
+      )}
+    </>
+  );
+}
+
+/**
+ * Le panneau ouvert d'une zone publique. Il est modal (`aria-modal`), donc son clavier l'est aussi
+ * (lot `j-accessibilite-jeu`, {@link useModale}) : **Échap** ferme, le **Tab** reste dedans, et le
+ * focus revient sur la pile qu'on a ouverte. Avant, au clavier, on tabulait dans le plateau
+ * **derrière** un panneau qu'on ne pouvait pas fermer.
+ *
+ * Composant séparé pour que ce crochet ne soit monté que quand le panneau existe (un crochet ne
+ * peut pas vivre derrière une condition).
+ */
+function PanneauZone({
+  titre,
+  cartes,
+  onFermer,
+}: {
+  titre: string;
+  cartes: VueCarte[];
+  onFermer: () => void;
+}) {
+  const ref = useModale({ onFermer });
+  return (
         <div
+          ref={ref}
           className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(5,10,48,0.8)] p-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
-          aria-label={`${titre} — ${cartes.length} carte(s)`}
+          aria-label={`${titre} — ${cartes.length} carte(s). Échap pour fermer.`}
           data-testid={`zone-contenu-${titre}`}
-          onClick={() => setOuvert(false)}
+          onClick={onFermer}
         >
           <div
             className="max-h-[80vh] w-full max-w-2xl overflow-auto rounded-2xl border border-border bg-card p-5"
@@ -100,8 +128,9 @@ export function ZonePublique({
               <h2 className="font-heading text-lg font-bold capitalize text-gold">{titre}</h2>
               <button
                 type="button"
-                onClick={() => setOuvert(false)}
-                className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:text-foreground"
+                data-testid={`zone-fermer-${titre}`}
+                onClick={onFermer}
+                className="min-h-8 min-w-8 rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:text-foreground"
               >
                 Fermer
               </button>
@@ -119,8 +148,6 @@ export function ZonePublique({
             )}
           </div>
         </div>
-      )}
-    </>
   );
 }
 

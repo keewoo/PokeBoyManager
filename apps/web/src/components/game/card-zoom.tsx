@@ -2,6 +2,7 @@
 
 import { BoardCard } from "@/components/game/board-card";
 import type { VueCarte, VuePokemon } from "@/lib/game/plateau";
+import { useModale } from "@/lib/game/use-modale";
 
 /**
  * Agrandissement d'une carte **sans quitter la partie** (lot `j-plateau-layout`, critère « le texte
@@ -20,13 +21,35 @@ export function CardZoom({
   pokemon?: VuePokemon;
   onClose: () => void;
 }) {
+  // Le contenu est un composant à part pour que son clavier (`useModale`) ne soit monté que quand la
+  // surcouche existe : un crochet ne peut pas vivre après un `return null` conditionnel.
   if (!carte) return null;
+  return <ZoomOuvert carte={carte} pokemon={pokemon} onClose={onClose} />;
+}
+
+/**
+ * La surcouche réellement ouverte. **Échap la ferme** (lot `j-accessibilite-jeu`) : c'est la touche
+ * que tout le monde essaie, et au clavier il n'y avait aucune autre sortie — le zoom s'ouvre au
+ * focus d'une carte, donc en tabulant. Le Tab n'est **pas** piégé ici : la surcouche est non modale
+ * (le plateau reste autoritaire derrière), en sortir au clavier est le comportement attendu.
+ */
+function ZoomOuvert({
+  carte,
+  pokemon,
+  onClose,
+}: {
+  carte: VueCarte;
+  pokemon?: VuePokemon;
+  onClose: () => void;
+}) {
+  const ref = useModale({ onFermer: onClose, piege: false });
   return (
     <div
+      ref={ref}
       className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(5,10,48,0.72)] p-4 backdrop-blur-sm"
       role="dialog"
       aria-modal="false"
-      aria-label={`Carte agrandie : ${carte.ref}`}
+      aria-label={`Carte agrandie : ${carte.ref}. Échap pour fermer.`}
       data-testid="card-zoom"
       onClick={onClose}
     >
