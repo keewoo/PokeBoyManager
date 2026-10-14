@@ -156,6 +156,13 @@ qu'un trou se voie au lieu de se confondre avec une carte nommée.
 #0 [2026-10-01T12:00:00Z] alice · piocher({'nombre': 1}) → alice pioche 1 : Dracaufeu [c-7]
 ```
 
+## Ce que le journal rend possible ailleurs
+
+- **Le replay** d'une partie finie — `docs/jeu/REPLAY.md` : le lot `j-replay` ajoute
+  `etapes` / `etapes_partie` à `rejeu.py` pour obtenir la **suite** des états (un rang par
+  coup) au lieu du seul état final, avec les mêmes contrôles d'empreinte au coup près.
+- **La reprise** d'une partie en cours et sa persistance — `docs/jeu/PARTIES.md`.
+
 ## Ce que le lot ne fait pas
 
 - Il ne **génère pas** les actions légales ni ne valide la légalité d'un coup au sens des

@@ -6,17 +6,23 @@ toujours **bornée au participant** : une partie à laquelle l'utilisateur ne jo
 adversaire, tirage au sort) est le lot `j-lancement-partie` ; appliquer un coup, `j-autorite-vues` ;
 sa diffusion temps réel, `j-temps-reel` (canal WebSocket + repli HTTP, `routers/games_ws.py`).
 On ne les approxime pas ici.
+
+Le **replay** d'une partie finie (lot `j-replay`) vit aussi ici, sous `/{game_id}/replay` : il est
+le seul accès que des comptes **non participants** peuvent avoir à une partie, et seulement si un
+joueur le leur a ouvert — toute la mécanique, et pourquoi elle est bâtie ainsi, est dans
+`pbm_api.games.replay`.
 """
 
 import uuid
 from datetime import UTC, datetime
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pbm_game.state.serialisation import depuis_json
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pbm_api.auth.dependencies import require_game_access
+from pbm_api.auth.dependencies import require_csrf, require_game_access
 from pbm_api.config import settings
 from pbm_api.db import get_session
 from pbm_api.games import horloges as _adapt_horloges
@@ -40,6 +46,20 @@ from pbm_api.games.errors import (
 )
 from pbm_api.games.indicateurs import catalogue_pour_etat, catalogue_pour_resultat
 from pbm_api.games.projection import projeter_resultat, vue_autoritaire
+from pbm_api.games.replay import (
+    LIMITE_DEFAUT,
+    LIMITE_MAX,
+    VUE_MOI,
+    AutoPartage,
+    DestinatairePartageIntrouvable,
+    ReplayPartieEnCours,
+    VueInconnue,
+    VueMoiHorsParticipant,
+    composer_replay,
+    fermer_partage,
+    ouvrir_partage,
+    partages,
+)
 from pbm_api.games.schemas import (
     ActionIn,
     BilanOut,
@@ -50,6 +70,8 @@ from pbm_api.games.schemas import (
     GameSummaryOut,
     IaCoutOut,
     MomentBilanOut,
+    PartageReplayIn,
+    PartageReplayOut,
 )
 from pbm_api.games.service import (
     _game_pour_participant,
@@ -320,3 +342,135 @@ async def get_bilan(
         resume=res.resume,
         moments=[MomentBilanOut(**m) for m in res.moments],
     )
+
+
+# --- Replay d'une partie finie (lot `j-replay`) -------------------------------
+
+
+@router.get("/{game_id}/replay")
+async def get_replay(
+    game_id: uuid.UUID,
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_game_access),
+    vue: str = VUE_MOI,
+    depuis: Annotated[int, Query(ge=0)] = 0,
+    limite: Annotated[int, Query(ge=1, le=LIMITE_MAX)] = LIMITE_DEFAUT,
+) -> dict:
+    """Le replay d'une partie **finie** : une page de rangs, chacun avec son état projeté.
+
+    Accessible aux **deux joueurs** et aux comptes à qui un joueur a ouvert ce replay ; à tout
+    autre compte, **404** — pas 403 : pour lui, ce replay n'existe pas (c'est le critère
+    « le lien de replay n'est pas accessible à un compte non autorisé »).
+
+    Une partie **encore en cours** répond **409** et ne porte aucun rang : le risque nommé du lot
+    est précisément de servir le journal d'une partie en cours « au titre du replay ». `vue=moi`
+    donne ce que le joueur courant a vu ; `vue=complete` donne les deux vues de joueur — jamais
+    autre chose : il n'existe pas de sortie non projetée (voir `pbm_api.games.replay`). Un
+    spectateur qui demande `moi` reçoit 422 (il n'a pas de siège), jamais un repli silencieux sur
+    la vue complète.
+
+    La réponse dit toujours `total` et `complet` : un client enchaîne les pages (`depuis`) jusqu'à
+    `complet`, et l'écran sait dire ce qu'il n'a pas encore chargé plutôt que de laisser croire
+    que la partie s'arrête là.
+    """
+    try:
+        return await composer_replay(
+            db,
+            game_id=game_id,
+            user_id=current_user.id,
+            vue=vue,
+            depuis=depuis,
+            limite=limite,
+        )
+    except PartieIntrouvable as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, GAME_NOT_FOUND_MESSAGE) from exc
+    except ReplayPartieEnCours as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
+    except (VueInconnue, VueMoiHorsParticipant) as exc:
+        raise HTTPException(422, str(exc)) from exc
+    except ValueError as exc:
+        # Pagination hors bornes (`depuis` au-delà du dernier coup) : le client a demandé une
+        # page qui n'existe pas. On le dit, on ne rend pas une page vide qui ressemblerait à
+        # « la partie finit ici ».
+        raise HTTPException(422, str(exc)) from exc
+
+
+@router.get("/{game_id}/replay/partages", response_model=list[PartageReplayOut])
+async def list_replay_partages(
+    game_id: uuid.UUID,
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_game_access),
+) -> list[PartageReplayOut]:
+    """Les comptes à qui le replay de cette partie est ouvert (réservé à ses deux joueurs).
+
+    404 pour qui n'y joue pas — y compris un compte à qui le replay est ouvert : regarder n'est
+    pas administrer. Relire ses partages est ce qui permet de penser à les fermer.
+    """
+    try:
+        lignes = await partages(db, game_id=game_id, user_id=current_user.id)
+    except PartieIntrouvable as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, GAME_NOT_FOUND_MESSAGE) from exc
+    return [PartageReplayOut(**ligne) for ligne in lignes]
+
+
+@router.post(
+    "/{game_id}/replay/partages",
+    response_model=PartageReplayOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def ouvrir_replay_partage(
+    game_id: uuid.UUID,
+    body: PartageReplayIn,
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_game_access),
+    _csrf: None = Depends(require_csrf),
+) -> PartageReplayOut:
+    """Ouvre le replay de cette partie à un **compte invité**, désigné par son pseudo.
+
+    Réservé aux deux joueurs (404 sinon). 404 si aucun compte invité ne porte ce pseudo — on ne
+    révèle pas l'existence d'un compte ordinaire. 422 si la cible joue déjà cette partie (elle y a
+    droit de toute façon). Idempotent : ouvrir deux fois ne crée qu'un partage.
+    """
+    try:
+        partage = await ouvrir_partage(
+            db, game_id=game_id, user_id=current_user.id, pseudo=body.pseudo
+        )
+    except PartieIntrouvable as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, GAME_NOT_FOUND_MESSAGE) from exc
+    except DestinatairePartageIntrouvable as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+    except AutoPartage as exc:
+        raise HTTPException(422, str(exc)) from exc
+    await db.commit()
+    pseudo = (await db.get(User, partage.user_id)).pseudo
+    return PartageReplayOut(
+        user_id=partage.user_id,
+        pseudo=pseudo,
+        partage_par_user_id=partage.created_by_user_id,
+        created_at=partage.created_at,
+    )
+
+
+@router.delete("/{game_id}/replay/partages/{cible_user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def fermer_replay_partage(
+    game_id: uuid.UUID,
+    cible_user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_game_access),
+    _csrf: None = Depends(require_csrf),
+) -> Response:
+    """Retire à un compte le droit de regarder ce replay (réservé aux deux joueurs).
+
+    404 quand il n'y avait rien à retirer : on ne prétend pas avoir fermé un partage inexistant.
+    Un droit qui s'accorde doit se reprendre aussi simplement, sinon on hésite à l'accorder.
+    """
+    try:
+        ferme = await fermer_partage(
+            db, game_id=game_id, user_id=current_user.id, cible_user_id=cible_user_id
+        )
+    except PartieIntrouvable as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, GAME_NOT_FOUND_MESSAGE) from exc
+    if not ferme:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Partage introuvable.")
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
