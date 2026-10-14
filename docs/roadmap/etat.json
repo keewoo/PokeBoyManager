@@ -10049,7 +10049,7 @@
       "compte_rendu": {}
     },
     "j-arene-decors": {
-      "statut": "a_faire",
+      "statut": "integre",
       "machine": null,
       "branche": null,
       "debut_reel": null,
@@ -10101,8 +10101,21 @@
           "maj": null
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-10-14T21:34+0200",
+          "machine": "?",
+          "evenement": "statut → integre",
+          "detail": "branche roadmap/j-arene-decors fusionnee dans main (verifie par git merge-base)"
+        }
+      ],
+      "compte_rendu": {},
+      "attente": {
+        "quand": "2026-10-14T21:34+0200",
+        "raisons": [
+          "branche roadmap/j-arene-decors fusionnee dans main (verifie par git merge-base)"
+        ]
+      }
     },
     "j-son": {
       "statut": "a_faire",
