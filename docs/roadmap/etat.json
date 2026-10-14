@@ -11262,6 +11262,21 @@
       "prise": "JF le 04/10/2026 (choix « IA + tests + relecture IA », budget « 50 € ») : l'IA propose le script d'effet d'une carte ET ses cas de test à partir du texte de la carte ; le script n'entre en jeu que si ses tests passent ET qu'une seconde IA, chargée de le contredire, l'a validé — sans relecture humaine carte par carte ; un rapport par famille d'effets est fait à JF, qui peut retirer une famille d'un mot. Clé plateforme uniquement, jamais celle d'Aymeric : fichier ~/.pokeboy-secrets/platform-anthropic-key sur devAI (transmise au traitement par entrée standard ou fichier chmod 600 temporaire, jamais dans le dépôt, un journal ou une sortie). Plafond cumulé 50 € : le lot s'arrête au plafond sans redemander. Clé absente : le lot livre l'outillage, ses tests et une mesure sur un fournisseur factice, puis s'arrête avant toute dépense en le disant. Priorité DJ2 : cartes possédées d'abord, puis les plus fréquentes.",
       "par": "JF",
       "quand": "2026-10-04T11:31+0200"
+    },
+    "DJ5": {
+      "prise": "Oui par défaut côté joueur, et réglage par deck : « mes cartes telles que je les ai photographiées » ou « images officielles ». L'adversaire voit ce que le joueur a choisi de montrer ; un réglage « ne jamais montrer mes photos » existe. (JF a retenu la proposition du plan, 14/10/2026)",
+      "par": "JF",
+      "quand": "2026-10-14T14:26+0200"
+    },
+    "DJ6": {
+      "prise": "Historique et statistiques d'office ; classement privé et badges en option, activables par JF, sans saison ni perte de points. (JF a retenu la proposition du plan, 14/10/2026)",
+      "par": "JF",
+      "quand": "2026-10-14T14:26+0200"
+    },
+    "DJ10": {
+      "prise": "Emotes prédéfinies seulement (« bien joué », « oups », « ton tour »), désactivables, jamais de texte libre. (JF a retenu la proposition du plan, 14/10/2026)",
+      "par": "JF",
+      "quand": "2026-10-14T14:26+0200"
     }
   }
 }
