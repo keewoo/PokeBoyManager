@@ -92,6 +92,7 @@ existe. Détail : `docs/PLUGINS.md`.
 | `docs/jeu/RENDU-CARTES.md` | on touche à l'image d'une carte en jeu : ma photo / l'officielle / le dos, DJ5 et le veto de confidentialité, note de qualité, variante de jeu, « je ne vois pas ma photo » |
 | `docs/jeu/CHARGE.md` | on se demande combien de parties le serveur tient : plafond, coût d'une partie, purge |
 | `docs/jeu/FIN-COMPTE.md` | on touche à la fin de partie côté compte : résultat écrit une seule fois, statistiques recalculées depuis le journal, ce qui compte (et pas), balayage de reprise, et où brancher badges et classement |
+| `docs/jeu/EMOTES.md` | on touche aux emotes : le catalogue fermé et sa règle (aucune emote ne peut narguer), le débit, l'interrupteur « couper » (immédiat et mémorisé), pourquoi il n'y a ni texte libre ni route HTTP, et « je ne vois pas les emotes » |
 | `docs/jeu/AIDE.md` | on touche à l'aide en jeu : explication d'un refus, coups proposés, partie guidée, glossaire, et où poser un panneau sans casser l'e2e du plateau |
 | `docs/jeu/E2E-PARTIE.md` | on touche au jeu et on veut la preuve de bout en bout : les cinq parcours à deux navigateurs, comment le pilote décide, et les pièges (mise en place à deux, pas de minuteur d'horloge, forme de `/state`) |
 | `docs/roadmap/jeu/BACKLOG-JEU.md` | on travaille sur le jeu (67 lots, paliers, décisions `DJ*`) |

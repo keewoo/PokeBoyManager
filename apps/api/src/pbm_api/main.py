@@ -22,6 +22,7 @@ from pbm_api.routers.imports import router as imports_router
 from pbm_api.routers.in_game_study import router as in_game_study_router
 from pbm_api.routers.invitations import router as invitations_router
 from pbm_api.routers.jeu_demandes import router as jeu_demandes_router
+from pbm_api.routers.jeu_emotes import router as jeu_emotes_router
 from pbm_api.routers.jeu_rendu import router as jeu_rendu_router
 from pbm_api.routers.lancement import router as lancement_router
 from pbm_api.routers.matchmaking import router as matchmaking_router
@@ -84,6 +85,9 @@ app.include_router(notifications_router)
 # Rendu des cartes en jeu (lot `j-rendu-carte`) : reglages DJ5, apercu de deck, photos servies
 # dans le cadre d'une partie.
 app.include_router(jeu_rendu_router)
+# Emotes en jeu (lot `j-echanges-emotes`, DJ10) : le catalogue ferme et l'interrupteur « j'echange
+# des emotes ». L'envoi, lui, n'a aucune route : il passe par le canal temps reel.
+app.include_router(jeu_emotes_router)
 # Supervision du jeu (lot `j-observabilite-jeu`) : les metriques lisibles sans SSH, reservees
 # aux comptes ayant l'acces au jeu (D11) — agregees, jamais ventilees par compte.
 app.include_router(observabilite_router)

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { FormNotice } from "@/components/auth/form-notice";
 import { useFileAnimations } from "@/components/game/animation-layer";
+import { EmoteBar } from "@/components/game/emote-bar";
 import { FenetreDecision } from "@/components/game/fenetre-decision";
 import { FinPartie } from "@/components/game/fin-partie";
 import { GameBoard } from "@/components/game/game-board";
@@ -12,6 +13,7 @@ import { JournalPanel } from "@/components/game/journal-panel";
 import { ApiError } from "@/lib/api/client";
 import { getGameState, playAction } from "@/lib/api/games";
 import { CanalPartie, type Coup, type EtatConnexion } from "@/lib/game/realtime";
+import type { CodeEmote, EmoteRecue } from "@/lib/game/emotes";
 import { ACTION_REPONDRE_DEMANDE } from "@/lib/game/decision";
 import { agisseurDepuisEvenements } from "@/lib/game/indicateurs";
 import { estPremierePartie, marquerGuideVu } from "@/lib/game/guide";
@@ -43,6 +45,12 @@ import { getProfile } from "@/lib/api/profile";
  * plateau ne tolère aucun défilement, et il va chercher lui-même ses chiffres
  * (`GET /games/{id}/recapitulatif`, recalculés depuis le journal) plutôt que de compter les
  * coups accumulés ici — un F5 rejoue toute la partie, donc un compteur local doublerait.
+ *
+ * Les **emotes** (lot `j-echanges-emotes`, DJ10) sont le seul message qui n'est **pas** un coup :
+ * elles ne portent aucun numéro, n'entrent ni dans `coups` ni dans le journal, et on n'en garde
+ * qu'**une** — la dernière reçue, le temps de sa bulle. Rien n'en survit à la partie, pas même un
+ * compteur. L'envoi passe par le canal (`envoyerEmote`) et par lui seul : aucune route HTTP, donc
+ * aucune file d'attente, donc rien à stocker.
  *
  * Les **animations** (lot `j-anim-socle`) se nourrissent de ces mêmes coups, et de rien d'autre :
  * les effets suivent les événements, jamais l'inverse. La file (`useFileAnimations`) n'est branchée
@@ -76,6 +84,12 @@ export function PartieView({ gameId }: { gameId: string }) {
   const [surligne, setSurligne] = useState<string | null>(null);
   // Les coups diffusés, dans l'ordre, pour alimenter le journal de partie.
   const [coups, setCoups] = useState<Coup[]>([]);
+  // La dernière emote reçue (lot `j-echanges-emotes`) : **une seule**, jamais un historique. Rien
+  // d'une emote ne survit à la partie, pas même ici. `cle` rend la référence nouvelle à chaque
+  // réception, pour que deux emotes identiques de suite rallument bien la bulle.
+  const [emoteRecue, setEmoteRecue] = useState<(EmoteRecue & { cle: number }) | null>(null);
+  const [emoteRefus, setEmoteRefus] = useState<{ code: string; message: string } | null>(null);
+  const emoteCle = useRef(0);
   const [error, setError] = useState<string | null>(null);
   const canal = useRef<CanalPartie | null>(null);
   // Numéro d'action courant (prochain attendu) : clé d'idempotence pour soumettre un coup. Tenu en
@@ -150,6 +164,14 @@ export function PartieView({ gameId }: { gameId: string }) {
       onEtat: (e) => {
         if (active) setEtatConnexion(e);
       },
+      onEmote: (emote) => {
+        if (!active) return;
+        emoteCle.current += 1;
+        setEmoteRecue({ ...emote, cle: emoteCle.current });
+      },
+      onEmoteRefusee: (code, message) => {
+        if (active) setEmoteRefus({ code, message });
+      },
     });
     canal.current = c;
     c.demarrer();
@@ -208,6 +230,15 @@ export function PartieView({ gameId }: { gameId: string }) {
     [gameId, viderAnimations],
   );
 
+  /**
+   * Envoie une emote prédéfinie par le canal temps réel (lot `j-echanges-emotes`). Renvoie `false`
+   * si le canal direct n'est pas ouvert — la palette le dit alors au joueur. Aucun texte ne passe
+   * par ici : le type `CodeEmote` est une union fermée, et le serveur revalide le code.
+   */
+  const onEnvoyerEmote = useCallback((code: CodeEmote) => {
+    return canal.current?.envoyerEmote(code) ?? false;
+  }, []);
+
   // Le fil du journal, reconstruit quand un coup arrive ou que la vue change de destinataire.
   const lignes = useMemo(
     () => (vue ? construireJournal(coups, vue.pour) : []),
@@ -243,6 +274,13 @@ export function PartieView({ gameId }: { gameId: string }) {
             premierePartie={premierePartie}
           />
           <JournalPanel lignes={lignes} onSurvol={setSurligne} />
+          {/* Emotes (lot `j-echanges-emotes`, DJ10) : palette fermée, hors flux, désactivable. */}
+          <EmoteBar
+            onEnvoyer={onEnvoyerEmote}
+            recue={emoteRecue}
+            refus={emoteRefus}
+            direct={etatConnexion === "direct"}
+          />
           <FenetreDecision vue={vue} onRepondre={onRepondre} />
           {vue.terminee && moiUserId && (
             <FinPartie
