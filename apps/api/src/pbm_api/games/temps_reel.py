@@ -14,7 +14,9 @@ Trois briques, chacune testable sans socket réel :
 * :class:`Hub` — un bus de diffusion **en mémoire du process** : quand un coup est appliqué, chaque
   abonné d'une partie reçoit l'événement **projeté pour lui** (jamais la main adverse). Le journal
   reste le filet : un message perdu (abonné saturé, process distinct) est rattrapé par une
-  resynchronisation côté client, qui détecte le trou par le numéro de séquence ;
+  resynchronisation côté client, qui détecte le trou par le numéro de séquence. Le hub porte aussi
+  les **emotes** (lot ``j-echanges-emotes``) — qui, elles, n'ont pas de filet : elles ne sont pas
+  journalisées, donc pas rattrapables, par construction (rien ne survit à la partie) ;
 * :func:`piloter_canal` — la boucle de pilotage d'un canal abstrait (:class:`Canal`) : resync
   initiale, diffusion des coups, battement de cœur (détection de coupure) et resynchronisation à la
   demande ou après saturation. Le WebSocket réel n'en est qu'un adaptateur mince.
@@ -50,6 +52,11 @@ from pbm_api.games import horloges as _adapt_horloges
 from pbm_api.games.actions import actions_pour
 from pbm_api.games.catalogue_jeu import construire_catalogue_jeu
 from pbm_api.games.construction import joueur_id_de
+from pbm_api.games.emotes_service import (
+    BusEmotes,
+    LimiteurEmotes,
+    diffuser_emote,
+)
 from pbm_api.games.indicateurs import (
     CatalogueAffichage,
     catalogue_affichage,
@@ -228,6 +235,62 @@ class Hub:
         """Nombre d'abonnés à une partie (supervision et tests)."""
         return len(self._abonnes.get(game_id, ()))
 
+    def user_ids(self, game_id: uuid.UUID) -> frozenset[uuid.UUID]:
+        """Les **comptes** actuellement abonnés à une partie (un compte peut avoir deux onglets).
+
+        Sert aux diffusions qui doivent consulter un réglage par compte avant d'émettre — les
+        emotes (lot ``j-echanges-emotes``) : on lit le réglage une fois par compte, pas une fois
+        par socket.
+        """
+        return frozenset(abonne.user_id for abonne in self._abonnes.get(game_id, ()))
+
+    def publier_emote(
+        self,
+        game_id: uuid.UUID,
+        *,
+        code: str,
+        de_user_id: uuid.UUID,
+        coupes: frozenset[uuid.UUID],
+    ) -> int:
+        """Dépose une emote chez les abonnés qui ne l'ont pas coupée ; renvoie le nombre servis.
+
+        Une emote n'est **pas un coup** : elle ne porte aucun numéro de séquence, n'entre pas dans
+        le journal et n'est donc **pas rattrapable**. C'est voulu — le lot ``j-echanges-emotes``
+        exige de ne rien conserver au-delà de la partie, et une emote rejouée dix secondes trop
+        tard ne veut plus rien dire.
+
+        ``de`` vaut ``"moi"`` pour l'émetteur (confirmation de son geste) et ``"adversaire"`` pour
+        les autres : l'écran n'a ainsi aucun identifiant de compte à manipuler, et ne peut pas se
+        tromper de côté.
+
+        ⚠️ File saturée (client très lent) : l'emote est **perdue**, et on l'écrit dans le journal
+        technique. Ce n'est pas un repli silencieux mais un choix nommé : la seule alternative
+        serait de la rejouer plus tard, c'est-à-dire d'afficher « Bien joué ! » sur un coup qui
+        n'est plus le bon.
+        """
+        servis = 0
+        for abonne in list(self._abonnes.get(game_id, ())):
+            if abonne.user_id in coupes:
+                continue
+            message = {
+                "type": "emote",
+                "code": code,
+                "de": "moi" if abonne.user_id == de_user_id else "adversaire",
+            }
+            try:
+                abonne.file.put_nowait(message)
+            except asyncio.QueueFull:
+                logger.warning(
+                    "file de diffusion saturée pour le joueur %s sur la partie %s — emote %s "
+                    "perdue (une emote n'est pas rattrapable : elle n'est pas journalisée).",
+                    abonne.user_id,
+                    game_id,
+                    code,
+                )
+                continue
+            servis += 1
+        return servis
+
     def publier(
         self,
         game_id: uuid.UUID,
@@ -356,6 +419,8 @@ async def piloter_canal(
     graine_hex: str,
     depuis: int,
     intervalle_battement: float = INTERVALLE_BATTEMENT,
+    bus_emotes: BusEmotes | None = None,
+    limiteur_emotes: LimiteurEmotes | None = None,
 ) -> None:
     """Pilote un canal : resync initiale, diffusion des coups, battement, resync à la demande.
 
@@ -363,9 +428,14 @@ async def piloter_canal(
     boucle en attendant, de front, un message du client et un message du hub, avec un délai de
     battement. Les messages du client gérés : ``souscrire``/``resync`` (le client redemande tout
     depuis un numéro — reconnexion ou trou détecté), ``ack`` (accusé de réception, pour la
-    supervision), ``ping`` (→ ``pong``). À chaque silence de ``intervalle_battement`` secondes, un
-    ``battement`` porte le numéro courant du serveur : le client y lit une éventuelle diffusion
-    manquée et détecte une coupure s'il n'arrive plus.
+    supervision), ``ping`` (→ ``pong``) et ``emote`` (lot ``j-echanges-emotes`` : un code du
+    catalogue fermé, diffusé aux abonnés qui ne l'ont pas coupé). À chaque silence de
+    ``intervalle_battement`` secondes, un ``battement`` porte le numéro courant du serveur : le
+    client y lit une éventuelle diffusion manquée et détecte une coupure s'il n'arrive plus.
+
+    ``bus_emotes``/``limiteur_emotes`` valent par défaut le hub et le limiteur du process ; ils sont
+    injectables pour que les tests exercent la diffusion d'emotes sur un bus local, sans toucher
+    l'état partagé.
 
     ``transmis`` est le plus grand numéro de coup réellement émis au client ; une resynchronisation
     après saturation repart de ``transmis + 1`` — donc sans rien perdre, et sans dépendre de
@@ -433,7 +503,15 @@ async def piloter_canal(
                 if message is None:
                     break  # déconnexion : fin propre du pilotage
                 transmis = await _traiter_message_client(
-                    canal, message, fabrique_session, game_id, abonne.user_id, graine_hex, transmis
+                    canal,
+                    message,
+                    fabrique_session,
+                    game_id,
+                    abonne.user_id,
+                    graine_hex,
+                    transmis,
+                    bus_emotes=bus_emotes if bus_emotes is not None else HUB,
+                    limiteur_emotes=limiteur_emotes,
                 )
                 tache_recv = asyncio.ensure_future(canal.recevoir())
 
@@ -456,12 +534,20 @@ async def _traiter_message_client(
     user_id: uuid.UUID,
     graine_hex: str,
     transmis: int,
+    *,
+    bus_emotes: BusEmotes | None = None,
+    limiteur_emotes: LimiteurEmotes | None = None,
 ) -> int:
     """Traite un message du client et renvoie le nouveau ``transmis``.
 
     Un message mal formé ou d'un type inconnu n'est pas avalé : il reçoit une erreur explicite
     (jamais un repli silencieux). Les types reconnus : ``souscrire``/``resync`` (resynchronisation
-    depuis un numéro), ``ack`` (accusé, sans effet d'état) et ``ping`` (→ ``pong``).
+    depuis un numéro), ``ack`` (accusé, sans effet d'état), ``ping`` (→ ``pong``) et ``emote``.
+
+    L'**emote** (lot ``j-echanges-emotes``) ne touche pas ``transmis`` : elle ne porte aucun numéro
+    de séquence, parce qu'elle n'est pas un coup. Le serveur valide le code contre le catalogue
+    fermé, le réglage de l'émetteur et son débit, puis diffuse ; un refus revient à l'émetteur seul,
+    avec sa raison.
     """
     type_message = message.get("type") if isinstance(message, dict) else None
     if type_message in ("resync", "souscrire"):
@@ -480,6 +566,22 @@ async def _traiter_message_client(
         return transmis
     if type_message == "ping":
         await canal.envoyer({"type": "pong"})
+        return transmis
+    if type_message == "emote":
+        # Une session courte, le temps de lire les réglages — on n'immobilise pas une connexion de
+        # base pour la durée du canal (même choix que la resynchronisation).
+        async with fabrique_session() as db_emote:
+            refus = await diffuser_emote(
+                bus_emotes if bus_emotes is not None else HUB,
+                db_emote,
+                game_id=game_id,
+                de_user_id=user_id,
+                code=message.get("code"),
+                maintenant=datetime.now(UTC).timestamp(),
+                limiteur=limiteur_emotes,
+            )
+        if refus is not None:
+            await canal.envoyer(refus)
         return transmis
     await canal.envoyer(
         {

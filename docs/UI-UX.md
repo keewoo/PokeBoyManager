@@ -603,6 +603,26 @@ Tests : `aide.test.ts` (explications, glossaire, suggestions, lecture des deux f
 `guide.test.ts` (le parcours va jusqu'au bout, ne recule jamais), `aide-panel.test.tsx` (aucun moyen
 de soumettre un coup, ouverture sur refus, hésitation, placement), et la parité côté `game`.
 
+## Palette d'emotes (lot `j-echanges-emotes`, DJ10)
+
+Dix phrases prédéfinies, un interrupteur pour les couper, **aucun champ de saisie** :
+`apps/web/src/components/game/emote-bar.tsx`. Un bouton `💬` ouvre la liste ; une emote reçue
+s'affiche en bulle 4 s puis disparaît (ni historique, ni compteur). Hors connexion directe, le
+bouton est désactivé **et le dit** : une emote ne circule que sur le canal temps réel.
+
+⚠️ **Flanc droit, à mi-hauteur, et `fixed`** — le dernier emplacement libre : l'aide occupe le haut
+gauche, le statut de connexion le haut centre, `anim-accelere`/`anim-sauter` le haut droite, le
+journal le bas centré et l'écran de fin replié le bas gauche. Comme ses voisins elle est hors flux :
+la page du plateau ne tolère aucun défilement, et l'e2e le mesure **palette ouverte**.
+
+⛔ **Jamais de texte libre dans le plateau.** Un inventaire figé des champs de saisie
+(`apps/api/tests/test_jeu_emotes_parite.py`) et l'e2e `emotes.spec.ts` font rougir la CI si un
+`input`/`textarea` y apparaît : c'est le risque nommé du lot (« juste un petit chat »), mécanisé
+pour qu'il n'arrive pas par inadvertance.
+
+Tests : `emotes.test.ts` (catalogue), `game-realtime.test.ts` (l'emote n'est pas un coup),
+`emote-bar.test.tsx`, `e2e/emotes.spec.ts`. Détail complet : `docs/jeu/EMOTES.md`.
+
 ## Fenêtre de décision (lot `j-plateau-decisions`)
 
 Quand une carte réclame un choix à un joueur, le serveur pose une `VueDemande` dans l'état projeté

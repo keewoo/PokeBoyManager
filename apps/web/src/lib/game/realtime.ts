@@ -10,6 +10,7 @@
 // `maintenant`) : elle se teste intégralement en mémoire, sans vrai socket ni vrai réseau.
 
 import { getApiBaseUrl } from "@/lib/config";
+import { type CodeEmote, type EmoteRecue, estErreurEmote } from "@/lib/game/emotes";
 import { type HorlogesServeur } from "@/lib/game/horloges";
 
 /** État de la connexion temps réel, tel qu'affiché au joueur. */
@@ -54,6 +55,17 @@ export type OptionsCanal = {
   onCoup: (coup: Coup) => void;
   /** Changement de l'état de connexion (pour l'écran). */
   onEtat: (etat: EtatConnexion) => void;
+  /**
+   * Une emote reçue (lot `j-echanges-emotes`). `de: "moi"` est l'écho de mon propre envoi : c'est
+   * le serveur qui confirme, l'écran n'affiche donc jamais une emote qu'il n'a pas vue partir.
+   *
+   * Pas de numéro de séquence ici, et c'est voulu : une emote n'est pas un coup. Elle n'entre pas
+   * dans le journal, ne se rejoue pas, et une emote manquée reste manquée (rien ne survit à la
+   * partie).
+   */
+  onEmote?: (emote: EmoteRecue) => void;
+  /** Mon emote a été refusée par le serveur (code hors catalogue, débit, emotes coupées). */
+  onEmoteRefusee?: (code: string, message: string) => void;
   // --- Points d'injection (tests / environnements sans navigateur) ---
   creerWebSocket?: (url: string) => WebSocketLike;
   fetchSync?: (url: string) => Promise<Response>;
@@ -137,6 +149,21 @@ export class CanalPartie {
   /** Dernier numéro appliqué (exposé pour l'écran et les tests). */
   get numeroApplique(): number {
     return this.applique;
+  }
+
+  /**
+   * Envoie une emote prédéfinie (lot `j-echanges-emotes`). Renvoie `false` si le canal direct n'est
+   * pas ouvert — l'écran le dit alors au joueur au lieu de faire semblant.
+   *
+   * Le paramètre est un `CodeEmote` : **aucun texte ne peut passer par ici**, c'est le type qui
+   * l'interdit, et le serveur revalide le code contre son propre catalogue. Il n'y a pas de repli
+   * HTTP : une emote n'a de sens qu'en direct, et lui donner une file d'attente obligerait à la
+   * stocker — ce que le lot interdit.
+   */
+  envoyerEmote(code: CodeEmote): boolean {
+    if (!this.ws || this.etat !== "direct") return false;
+    this.envoyer({ type: "emote", code });
+    return true;
   }
 
   // --- WebSocket -------------------------------------------------------------
@@ -229,8 +256,22 @@ export class CanalPartie {
           this.envoyer({ type: "resync", depuis: this.applique + 1 });
         }
         break;
+      case "emote":
+        // Une emote ne porte pas de numéro : elle ne touche ni `applique`, ni la vue, ni le
+        // journal. Un code inconnu de cet écran est filtré par `emoteDuCode` à l'affichage.
+        this.o.onEmote?.({
+          code: String(message.code ?? ""),
+          de: message.de === "moi" ? "moi" : "adversaire",
+        });
+        break;
       case "pong":
+        break;
       case "erreur":
+        // Un refus d'emote revient à son émetteur, et à lui seul : on le remonte à la palette pour
+        // qu'elle dise pourquoi (débit, emotes coupées) plutôt que de rester muette.
+        if (estErreurEmote(message.code)) {
+          this.o.onEmoteRefusee?.(String(message.code), String(message.message ?? ""));
+        }
         break;
       default:
         break;

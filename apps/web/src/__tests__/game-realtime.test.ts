@@ -182,3 +182,97 @@ describe("CanalPartie — repli en interrogation périodique", () => {
     canal.arreter();
   });
 });
+
+describe("CanalPartie — emotes (lot `j-echanges-emotes`, DJ10)", () => {
+  beforeEach(() => vi.restoreAllMocks());
+
+  /** Un canal ouvert et resynchronisé : il est alors « en direct », seul état où une emote part. */
+  function canalEnDirect(rappels: {
+    onEmote?: (e: { code: string; de: string }) => void;
+    onEmoteRefusee?: (code: string, message: string) => void;
+  }) {
+    const ws = new FauxWebSocket();
+    const coups: { numero: number }[] = [];
+    const canal = new CanalPartie({
+      gameId: "g1",
+      depuis: 0,
+      onCoup: (c) => coups.push(c),
+      onVue: () => {},
+      onEtat: () => {},
+      creerWebSocket: () => ws,
+      intervalleSondage: 100000,
+      ...rappels,
+    });
+    canal.demarrer();
+    ws.ouvrir();
+    ws.recevoir({ type: "resync", numero: 0, depuis: 0, vue: {}, evenements: [] });
+    return { canal, ws, coups };
+  }
+
+  it("envoie un code d'emote — et jamais de texte (le type l'interdit, le serveur revalide)", () => {
+    const { canal, ws } = canalEnDirect({});
+    expect(canal.envoyerEmote("bien_joue")).toBe(true);
+    expect(ws.derniersEnvois.at(-1)).toEqual({ type: "emote", code: "bien_joue" });
+    canal.arreter();
+  });
+
+  it("refuse d'envoyer hors connexion directe, et le dit (pas d'envoi muet dans le vide)", () => {
+    const ws = new FauxWebSocket();
+    const canal = new CanalPartie({
+      gameId: "g1",
+      onCoup: () => {},
+      onVue: () => {},
+      onEtat: () => {},
+      creerWebSocket: () => ws,
+      intervalleSondage: 100000,
+    });
+    canal.demarrer(); // socket jamais ouvert : état « connexion », pas « direct »
+    expect(canal.envoyerEmote("oups")).toBe(false);
+    expect(ws.derniersEnvois.filter((m) => m.type === "emote")).toHaveLength(0);
+    canal.arreter();
+  });
+
+  it("remonte une emote reçue SANS la confondre avec un coup", () => {
+    // Avant ce lot, `realtime.ts` n'avait aucun `case "emote"` : le message tombait dans le
+    // `default` et disparaissait sans un mot. Et une emote ne doit surtout pas avancer le numéro de
+    // séquence : elle n'est pas journalisée, donc il n'y aurait rien à rejouer à ce numéro.
+    const onEmote = vi.fn();
+    const { canal, ws, coups } = canalEnDirect({ onEmote });
+    const avant = canal.numeroApplique;
+
+    ws.recevoir({ type: "emote", code: "ton_tour", de: "adversaire" });
+
+    expect(onEmote).toHaveBeenCalledWith({ code: "ton_tour", de: "adversaire" });
+    expect(coups).toHaveLength(0);
+    expect(canal.numeroApplique).toBe(avant);
+    canal.arreter();
+  });
+
+  it("normalise l'émetteur : tout ce qui n'est pas « moi » est l'adversaire", () => {
+    const onEmote = vi.fn();
+    const { canal, ws } = canalEnDirect({ onEmote });
+    ws.recevoir({ type: "emote", code: "merci", de: "moi" });
+    ws.recevoir({ type: "emote", code: "merci" });
+    expect(onEmote.mock.calls.map(([e]) => e.de)).toEqual(["moi", "adversaire"]);
+    canal.arreter();
+  });
+
+  it("remonte un refus d'emote à la palette, et ignore les autres erreurs du canal", () => {
+    const onEmoteRefusee = vi.fn();
+    const { canal, ws } = canalEnDirect({ onEmoteRefusee });
+
+    ws.recevoir({
+      type: "erreur",
+      code: "emote_trop_rapide",
+      message: "Doucement — attends 2 s avant la prochaine emote.",
+    });
+    ws.recevoir({ type: "erreur", code: "depuis_invalide", message: "« depuis » attendu ≥ 0." });
+
+    expect(onEmoteRefusee).toHaveBeenCalledTimes(1);
+    expect(onEmoteRefusee).toHaveBeenCalledWith(
+      "emote_trop_rapide",
+      "Doucement — attends 2 s avant la prochaine emote.",
+    );
+    canal.arreter();
+  });
+});

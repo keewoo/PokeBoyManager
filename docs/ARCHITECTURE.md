@@ -955,6 +955,22 @@ diffusion live passe par un bus **en mémoire du process** (`games/temps_reel.py
 rattrapé par une resync). Protocole, messages et garanties : `docs/jeu/TEMPS-REEL.md`. Sécurité du
 canal (anti-CSWSH) : `docs/SECURITE.md`. Bandeau « connexion dégradée » : `docs/UI-UX.md`.
 
+## Emotes prédéfinies (lot `j-echanges-emotes`, DJ10)
+
+Le canal porte **un** message qui n'est pas un coup : une **emote**, c'est-à-dire un `code` d'une
+liste fermée de dix phrases (`games/emotes.py`). Jamais de texte libre — DJ10 : un chat libre entre
+un adulte et un enfant demanderait une modération que ce projet n'aura pas. Le serveur valide le
+code, le réglage de l'émetteur et son débit (1 s minimum, 5 par 20 s), puis diffuse aux abonnés qui
+ne l'ont pas coupé.
+
+**Rien n'est persisté d'une emote** : ni journal (donc pas de rejeu, pas de replay, pas de
+rattrapage), ni table, ni compteur. Le seul octet en base est le réglage du joueur —
+`jeu_emote_reglages.recevoir_emotes`, ligne créée à la première modification,
+`GET|PATCH /jeu/emotes/reglages`. Un **seul interrupteur pour les deux sens** (coupé : ni reçu, ni
+envoyé), relu à **chaque** emote pour que la coupure soit immédiate. Et **aucune route HTTP
+n'envoie d'emote**, volontairement : pas de route, pas de file d'attente, rien à stocker. Détail,
+règle du catalogue et dépannage : `docs/jeu/EMOTES.md`.
+
 ## Déconnexion, abandon, désertion, inactivité (lot `j-deconnexion-abandon`)
 
 Une partie ne reste **jamais** suspendue. Le serveur distingue trois cas, aux conséquences
