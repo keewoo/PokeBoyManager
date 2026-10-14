@@ -208,7 +208,18 @@ export class CanalPartie {
         });
         if ("vue" in message) {
           // Un événement porte aussi la vue courante : elle prime (le serveur fait autorité).
-          this.o.onVue(message.vue, (message.numero as number) + 1, message as unknown as Resync);
+          //
+          // Le **prochain numéro attendu** vient du serveur (`courant`) et n'est pas toujours
+          // `numero + 1` : un coup de joueur enchaîne souvent des coups système (pioche de début
+          // de tour, passages de phase, checkup), tous journalisés. En le déduisant, le client se
+          // retrouvait en retard — constaté : 3 coups de retard en permanence — et son coup
+          // suivant était refusé en 409 jusqu'à ce que le battement de cœur (20 s) le rattrape.
+          // Repli sur `numero + 1` si le serveur ne porte pas le champ.
+          const suivant =
+            typeof message.courant === "number"
+              ? message.courant
+              : (message.numero as number) + 1;
+          this.o.onVue(message.vue, suivant, message as unknown as Resync);
         }
         break;
       case "battement":

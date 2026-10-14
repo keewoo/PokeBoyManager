@@ -285,7 +285,12 @@ jobs:
       - working-directory: apps/web
         run: pnpm exec playwright test
 
-      - if: failure()
+      # `always()` et non `failure()` : le parcours à deux navigateurs
+      # (`partie-deux-navigateurs.spec.ts`, lot `j-e2e-deux-navigateurs`) **joint des captures** de
+      # la partie au rapport — plateau d'ouverture, écran de fin des deux côtés, historique du
+      # compte, connexion dégradée. Ces captures sont la preuve demandée par le lot, et une preuve
+      # qui n'est publiée qu'en cas d'échec n'existe pas quand tout va bien.
+      - if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
