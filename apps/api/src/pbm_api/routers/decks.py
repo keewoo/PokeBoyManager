@@ -153,6 +153,7 @@ def _detail_response(
         id=deck.id,
         name=deck.name,
         format=deck.format,
+        rendu_cartes=deck.rendu_cartes,
         created_at=deck.created_at,
         updated_at=deck.updated_at,
         cards=cards,
@@ -365,10 +366,16 @@ async def update_deck(
     current_user: Annotated[User, Depends(get_current_user)],
     _csrf: Annotated[None, Depends(require_csrf)],
 ) -> DeckDetail:
-    """Renomme un deck et/ou change son format ; un deck d'un autre utilisateur renvoie 404."""
+    """Renomme un deck, change son format et/ou le rendu de ses cartes en jeu (DJ5) ; un deck
+    d'un autre utilisateur renvoie 404."""
     try:
         await service.update_deck(
-            session, current_user, deck_id, name=payload.name, deck_format=payload.format
+            session,
+            current_user,
+            deck_id,
+            name=payload.name,
+            deck_format=payload.format,
+            rendu_cartes=payload.rendu_cartes,
         )
         deck, loaded, report = await service.deck_detail(session, current_user, deck_id)
     except DeckNotFoundError:

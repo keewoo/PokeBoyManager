@@ -56,6 +56,7 @@ from pbm_api.games.indicateurs import (
     catalogue_pour_resultat,
 )
 from pbm_api.games.projection import projeter_resultat
+from pbm_api.games.rendu_vue import enrichir_rendu
 from pbm_api.games.service import (
     GAME_STATUS_EN_COURS,
     ResultatAction,
@@ -145,7 +146,7 @@ async def resynchroniser(
     )
     # Indicateurs d'affichage sur la vue de resynchronisation (lot ``j-plateau-etat-visuel``) :
     # la reprise après F5 doit montrer PV restants, énergies typées et Outil comme le temps réel.
-    catalogue = await catalogue_affichage(db, refs_en_jeu(etat_final))
+    catalogue = await catalogue_affichage(db, refs_en_jeu(etat_final), game_id=game.id)
     enrichir_indicateurs(
         vue,
         etat_final,
@@ -153,6 +154,9 @@ async def resynchroniser(
         types=catalogue.types,
         registre=catalogue.registre,
     )
+    # Rendu des cartes sur la vue de resynchronisation (lot ``j-rendu-carte``) : une reprise après
+    # F5 doit remontrer les mêmes cartes — les photos permises comme les images officielles.
+    enrichir_rendu(vue, catalogue.rendus)
     # Coups légaux sur la vue de resynchronisation : après un F5, le plateau doit pouvoir rejouer
     # (le /state les porte déjà ; sans eux ici, une reprise par le canal temps réel serait muette).
     catalogue_jeu = await construire_catalogue_jeu(db, etat_final)
@@ -382,7 +386,7 @@ async def piloter_canal(
                 async with fabrique_session() as db_exp:
                     resultat_exp = await expirer_horloge(db_exp, game_id)
                     catalogue_exp = (
-                        await catalogue_pour_resultat(db_exp, resultat_exp)
+                        await catalogue_pour_resultat(db_exp, resultat_exp, game_id=game_id)
                         if resultat_exp is not None
                         else None
                     )

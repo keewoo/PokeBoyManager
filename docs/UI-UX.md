@@ -425,17 +425,50 @@ l'adversaire en haut, soi en bas, les deux actifs dominants.
 - **Consultation des zones** (`zone-consultation.tsx`) : `ZonePublique` (défausse, zone perdue) s'ouvre en
   panneau listant les cartes ; `ZoneCachee` (pioche, récompenses, main adverse) n'affiche qu'un **compteur**
   — leur contenu n'existe pas côté client (le serveur fait autorité, anti-triche).
-- **Limites de périmètre** : les cartes sont des **repères de disposition** (référence + pastilles
-  minimales). L'image réelle (photo ou image officielle) et le détail jouable (attaques, coûts) sont le lot
-  aval `j-rendu-carte` ; le rendu fin des dégâts/énergies/états est `j-plateau-etat-visuel` ; jouer un coup
-  est `j-plateau-interactions`. `BoardCard` est le point d'extension unique — on n'y fabrique aucun contenu
-  qu'on n'a pas (D9).
+- **Limites de périmètre** : le rendu fin des dégâts/énergies/états est `j-plateau-etat-visuel` ; jouer
+  un coup est `j-plateau-interactions`. **L'image de la carte est livrée** par `j-rendu-carte` (voir la
+  section plus bas) ; le détail jouable (attaques, coûts) ne l'est toujours pas — on n'y fabrique aucun
+  contenu qu'on n'a pas (D9). `BoardCard` reste le point d'extension unique.
 
 Tests : `plateau.test.ts` (aides pures), `board-card.test.tsx` + `zone-consultation.test.tsx`
 (zoom, consultation), `game-board.test.tsx` (disposition, zones cachées en compteur, main adverse en
 nombre seulement), `partie-view.test.tsx` (gating). Le critère « sans défilement sur 390 px en paysage »
 et le redessin après rotation sont vérifiés en navigateur réel par `e2e/plateau-responsive.spec.ts` (la
 CI fait foi — e2e navigateur impossible en local sur chimera).
+
+## Image de la carte sur le plateau (lot `j-rendu-carte`)
+
+« On joue avec SES cartes. » `BoardCard` affiche l'image que **le serveur** a décidée (`carte.rendu`) :
+la photo personnelle de son propriétaire, ou l'image officielle. L'écran ne choisit pas — il n'a
+d'ailleurs pas l'URL d'une photo qu'il n'a pas le droit de montrer (DJ5). La règle produit, les seuils
+de qualité et le diagnostic « je ne vois pas ma photo » vivent dans **`docs/jeu/RENDU-CARTES.md`** ;
+voici ce qui est propre à l'écran :
+
+- **l'image est en fond absolu** de la boîte de la carte, en `object-contain` : les indicateurs d'état
+  restent dessus, rien ne se déplace, et une carte n'est jamais rognée (la rogner couperait son nom ou
+  ses PV). C'est ce qui permet d'ajouter une image sans introduire de défilement sur
+  `/jeu/parties/{id}` — contrainte dure de cette page ;
+- **deux replis, dans cet ordre** : la photo ne charge pas → l'image officielle (`url_repli`) ; elle
+  non plus → le **nom de la carte redevient visible**. Jamais une carte vide. L'étape de chargement
+  vit dans `BoardCard` (et non dans l'image), indexée par `instance_id` pour qu'un emplacement de banc
+  réutilisé ne garde pas l'échec de la carte précédente ;
+- **le crédit « photo de Aymeric »** est écrit dans le **zoom** et annoncé par l'`aria-label` sur le
+  plateau : à 60 px de large, un bandeau de texte serait illisible et recouvrirait les énergies.
+  Discret ne veut pas dire absent ;
+- **le dos de carte** (`CardBack`) est **dessiné**, jamais chargé : identité propre (aucun logo
+  officiel Pokémon), même boîte `aspect-[63/88]` qu'une carte visible, lisible à 1 em de large. Il
+  sert la fenêtre de décision sur un **ensemble caché** (N dos, sans aucune identité) ;
+- **l'écran « Mes cartes en jeu »** (`/jeu/rendu`) règle le défaut du compte et le veto, et **dit ce
+  que le veto implique** — un réglage de confidentialité qu'on ne comprend pas n'est pas un réglage.
+  Le **constructeur de deck** (`deck-rendu-panel.tsx`) règle le deck et nomme les cartes qui se
+  replieront, avec la raison : un repli muet ferait croire que les photos n'ont pas été prises en
+  compte.
+
+Tests : `board-card-rendu.test.tsx` (les trois rendus, les deux replis, le crédit),
+`rendu-view.test.tsx`, `deck-rendu-panel.test.tsx`. Le critère « lisible à la taille du plateau sur
+téléphone » est mesuré en navigateur réel par `e2e/plateau-rendu.spec.ts` — boîte de l'image comparée
+à celle de la carte, zoom ≥ 150 px, et **aucun défilement** en paysage comme en portrait (la CI fait
+foi : e2e navigateur impossible en local sur chimera).
 
 ## Indicateurs d'état du plateau (lot `j-plateau-etat-visuel`)
 

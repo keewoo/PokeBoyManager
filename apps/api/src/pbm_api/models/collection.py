@@ -129,4 +129,15 @@ class CollectionItem(Base, TimestampMixin):
     purchase_price: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
     purchase_currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
     photo_s3_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    # --- Rendu en jeu (lot `j-rendu-carte`) -------------------------------------------------
+    # La photo de `photo_s3_key` est le recadrage redressé **pleine résolution** (630×880, JPEG
+    # 92) : **178 Ko par carte**, mesuré sur une carte réelle — soit 3,5 Mo pour les vingt cartes
+    # visibles d'un plateau et 10,5 Mo pour un deck de soixante (risque nommé du lot).
+    # `jeu_image_key` porte donc la **variante de jeu** (420×587, WebP 80, **44 Ko** : /4,1),
+    # produite une fois et réutilisée ; `None` = aucune variante (pas de photo, ou inexploitable).
+    jeu_image_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    # La note de qualité de la photo (`pbm_api.jeu.rendu_qualite.NotePhoto.en_json`) : netteté,
+    # luminosité, cadrage, et la **raison** d'un repli sur l'image officielle. Gardée en base pour
+    # que le constructeur de deck la dise au joueur sans redécoder l'image à chaque affichage.
+    jeu_qualite: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     acquired_at: Mapped[date | None] = mapped_column(Date, nullable=True)

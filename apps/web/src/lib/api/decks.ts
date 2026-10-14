@@ -70,6 +70,12 @@ export type DeckDetail = {
   id: string;
   name: string;
   format: DeckFormat;
+  /**
+   * Rendu des cartes de CE deck en jeu (DJ5, lot `j-rendu-carte`) : `"photo"`, `"officielle"`, ou
+   * `null` = suit le réglage global du compte. Le détail carte par carte (et la raison d'un repli)
+   * vit sur `GET /jeu/rendu/decks/{id}` — voir `lib/api/rendu.ts`.
+   */
+  rendu_cartes: string | null;
   created_at: string;
   updated_at: string;
   cards: DeckCard[];
@@ -163,7 +169,9 @@ export function createDeck(payload: {
 /** Renomme un deck ou change son format (`PATCH /me/decks/{id}`) ; la légalité est recalculée côté serveur. */
 export function updateDeck(
   deckId: string,
-  payload: { name?: string; format?: DeckFormat }
+  // `rendu_cartes: ""` **efface** la préférence du deck (il suit alors le réglage global) : dans un
+  // PATCH partiel, `null` serait indistinguable d'un champ absent.
+  payload: { name?: string; format?: DeckFormat; rendu_cartes?: string }
 ): Promise<DeckDetail> {
   return apiJson<DeckDetail>("PATCH", `/me/decks/${deckId}`, payload);
 }

@@ -27,6 +27,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.catalog.element_type import element_code
+from pbm_api.jeu.rendu_service import RendusPartie, rendus_de_partie
 from pbm_api.models import Card
 
 
@@ -45,15 +46,31 @@ class CatalogueAffichage:
     types: dict[str, str | None] = field(default_factory=dict)
     noms: dict[str, str] = field(default_factory=dict)
     registre: RegistreContinus = field(default_factory=dict)
+    #: ``ref → cards.id`` des cartes visibles : la seule façon de construire l'URL d'une image
+    #: (``/img/cards/{id}``) depuis une ``ref`` d'état, qui est un ``tcgdex_id`` (lot
+    #: ``j-rendu-carte``). Une ref inconnue du catalogue n'y figure pas — donc n'a aucune image.
+    ids: dict[str, uuid.UUID] = field(default_factory=dict)
+    #: Les rendus résolus de la partie, pour les deux regards (lot ``j-rendu-carte``). **Vide**
+    #: hors d'une partie (aucun ``game_id`` fourni) : il n'y a alors ni propriétaire ni réglage à
+    #: appliquer, donc aucune image à proposer.
+    rendus: RendusPartie = field(default_factory=lambda: RendusPartie(par_regard={}))
 
 
 async def catalogue_affichage(
-    db: AsyncSession, refs: Iterable[str], *, registre: RegistreContinus | None = None
+    db: AsyncSession,
+    refs: Iterable[str],
+    *,
+    registre: RegistreContinus | None = None,
+    game_id: uuid.UUID | None = None,
 ) -> CatalogueAffichage:
-    """Lit le catalogue pour les ``refs`` données et en tire PV imprimés et code d'élément.
+    """Lit le catalogue pour les ``refs`` données et en tire PV imprimés, type, nom et rendu.
 
     Une requête unique bornée aux refs visibles (``tcgdex_id`` ou ``ptcg_id``). Tolérante : une ref
     absente du catalogue est simplement omise (l'indicateur manquera plutôt que de mentir).
+
+    ``game_id`` déclenche la résolution des **rendus de cartes** (lot ``j-rendu-carte``) : elle a
+    besoin de la partie pour savoir qui possède quoi, avec quel deck et quels réglages. Sans lui,
+    les rendus restent vides — un appel hors partie (test, outil) n'a rien à montrer.
     """
     refs_set = {r for r in refs if r}
     if not refs_set:
@@ -85,10 +102,12 @@ async def catalogue_affichage(
     pv_imprimes: dict[str, int] = {}
     types: dict[str, str | None] = {}
     noms: dict[str, str] = {}
+    ids: dict[str, uuid.UUID] = {}
     for ref in refs_set:
         card = index.get(ref)
         if card is None:
             continue  # ref inconnue du catalogue : jamais devinée (D9)
+        ids[ref] = card.id
         if card.hp is not None:
             pv_imprimes[ref] = card.hp
         # ``element_type`` est déjà le code normalisé (fire/water/…) pour un Pokémon comme pour une
@@ -97,25 +116,46 @@ async def catalogue_affichage(
         # Nom lisible pour les fenêtres de décision (lot ``j-plateau-decisions``) : chercher une
         # carte dans une pioche de soixante se fait sur le nom, pas sur un identifiant opaque.
         noms[ref] = card.name
+    rendus = (
+        await rendus_de_partie(db, game_id, ids_par_ref=ids)
+        if game_id is not None
+        else RendusPartie(par_regard={})
+    )
     return CatalogueAffichage(
-        pv_imprimes=pv_imprimes, types=types, noms=noms, registre=dict(registre or {})
+        pv_imprimes=pv_imprimes,
+        types=types,
+        noms=noms,
+        registre=dict(registre or {}),
+        ids=ids,
+        rendus=rendus,
     )
 
 
-async def catalogue_pour_etat(db: AsyncSession, etat: EtatPartie) -> CatalogueAffichage:
+async def catalogue_pour_etat(
+    db: AsyncSession, etat: EtatPartie, *, game_id: uuid.UUID | None = None
+) -> CatalogueAffichage:
     """Les cartes visibles d'un état **et** les cartes des options d'une demande en cours.
 
     En plus du visible (:func:`refs_en_jeu`), on charge les cartes désignées par une demande en
     cours (:func:`refs_demande`) — même dans une zone cachée qu'on fait fouiller (la pioche) : la
     fenêtre de décision doit afficher de vraies cartes (lot ``j-plateau-decisions``).
+
+    ``game_id`` est ce qui permet de résoudre le **rendu** des cartes (lot ``j-rendu-carte``) : le
+    passer est la règle, l'omettre ne laisse que les indicateurs (aucune image).
     """
-    return await catalogue_affichage(db, refs_en_jeu(etat) | refs_demande(etat))
+    return await catalogue_affichage(
+        db, refs_en_jeu(etat) | refs_demande(etat), game_id=game_id
+    )
 
 
-async def catalogue_pour_resultat(db: AsyncSession, resultat) -> CatalogueAffichage:
+async def catalogue_pour_resultat(
+    db: AsyncSession, resultat, *, game_id: uuid.UUID | None = None
+) -> CatalogueAffichage:
     """Les cartes visibles d'un résultat d'action **et** les options de sa demande en cours."""
     etat = depuis_json(resultat.etat)
-    return await catalogue_affichage(db, refs_en_jeu(etat) | refs_demande(etat))
+    return await catalogue_affichage(
+        db, refs_en_jeu(etat) | refs_demande(etat), game_id=game_id
+    )
 
 
 __all__ = [

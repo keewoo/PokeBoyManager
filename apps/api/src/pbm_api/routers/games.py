@@ -176,7 +176,7 @@ async def get_game_state(
     except PartieIntrouvable as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, GAME_NOT_FOUND_MESSAGE) from exc
     etat, rng = await reprendre_partie(db, game)
-    catalogue = await catalogue_pour_etat(db, etat)
+    catalogue = await catalogue_pour_etat(db, etat, game_id=game_id)
     catalogue_jeu = await construire_catalogue_jeu(db, etat)
     vue = vue_autoritaire(
         etat, rng, user_id=current_user.id, graine_hex=game.graine,
@@ -230,7 +230,7 @@ async def play_action(
     # `appliquer_action` a commité ; on relit la partie pour sa graine (secret serveur, jamais
     # renvoyé — seuls les jetons opaques en dérivent) et pour re-vérifier la participation.
     game = await _game_pour_participant(db, game_id, current_user.id)
-    catalogue = await catalogue_pour_resultat(db, resultat)
+    catalogue = await catalogue_pour_resultat(db, resultat, game_id=game_id)
     catalogue_jeu = await construire_catalogue_jeu(db, depuis_json(resultat.etat))
     HUB.publier(
         game_id, resultat, graine_hex=game.graine, catalogue=catalogue, catalogue_jeu=catalogue_jeu
@@ -268,7 +268,7 @@ async def abandon_game(
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
 
     game = await _game_pour_participant(db, game_id, current_user.id)
-    catalogue = await catalogue_pour_resultat(db, resultat)
+    catalogue = await catalogue_pour_resultat(db, resultat, game_id=game_id)
     catalogue_jeu = await construire_catalogue_jeu(db, depuis_json(resultat.etat))
     HUB.publier(
         game_id, resultat, graine_hex=game.graine, catalogue=catalogue, catalogue_jeu=catalogue_jeu

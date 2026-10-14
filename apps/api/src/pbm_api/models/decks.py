@@ -35,6 +35,12 @@ class Deck(Base, TimestampMixin):
     format: Mapped[str] = mapped_column(
         String(16), nullable=False, default="standard", server_default=text("'standard'")
     )
+    # Rendu des cartes de CE deck en jeu (lot `j-rendu-carte`, décision DJ5) : "photo" (mes cartes
+    # telles que je les ai photographiées) ou "officielle" (les images du catalogue). **Nul par
+    # défaut**, et c'est volontaire : nul signifie « suit mon réglage global »
+    # (`jeu_rendu_reglages.rendu_defaut`), pas « photo » — sans quoi changer le réglage global
+    # n'aurait aucun effet sur les decks déjà construits.
+    rendu_cartes: Mapped[str | None] = mapped_column(String(16), nullable=True)
 
 
 class DeckCard(Base, TimestampMixin):
