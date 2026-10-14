@@ -44,6 +44,15 @@ from pbm_api.models.decks import (
     DeckCard,
     DeckEvent,
 )
+from pbm_api.models.fin_compte import (
+    RESULTAT_DEFAITE,
+    RESULTAT_EGALITE,
+    RESULTAT_VICTOIRE,
+    RESULTATS,
+    GameResult,
+    GameResultPlayer,
+    PlayerStats,
+)
 from pbm_api.models.game_launch import (
     LANCEMENT_STATUT_ABANDONNE,
     LANCEMENT_STATUT_LANCE,
@@ -153,6 +162,13 @@ __all__ = [
     "GAME_STATUS_TERMINEE",
     "GAME_STATUS_EXPIREE",
     "GAME_STATUTS",
+    "GameResult",
+    "GameResultPlayer",
+    "PlayerStats",
+    "RESULTAT_VICTOIRE",
+    "RESULTAT_DEFAITE",
+    "RESULTAT_EGALITE",
+    "RESULTATS",
     "GameInvitation",
     "INVITATION_MODE_PSEUDO",
     "INVITATION_MODE_LIEN",
