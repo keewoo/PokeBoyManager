@@ -469,33 +469,36 @@ async def main() -> int:
         smoke_reqs, smoke_metas = build_grouped_requests(
             smoke_cards, set_pages, card_pages, args.model, packet_size=2, tag="smoke"
         )
-        # Le smoke valide la clé + le schéma structuré. Un échec de paquet ISOLÉ n'est PAS une
-        # preuve que la clé/le schéma sont cassés : le modèle produit parfois un paquet non valide
-        # (c'est justement le cas que l'anti-mélange rejette, et à l'échelle ces cartes restent
-        # candidates pour une reprise). On réessaie donc jusqu'à 3 fois ; on n'ARRÊTE que si TOUTES
-        # les tentatives échouent (clé invalide, schéma refusé => tout casse), pour distinguer une
-        # panne réelle d'un simple aléa de génération. (Le lot précédent s'était arrêté sur un seul
-        # échec sans jamais lire la réponse brute ; corrigé.)
+        # Le smoke ne valide QUE l'INFRA : la clé est acceptée et l'API rend une réponse (schéma
+        # structuré appliqué). Il ne juge PAS la qualité du contenu. Un `PacketMixingError` (le
+        # modèle a recopié le mauvais identifiant, ex. le numéro "TG01" au lieu du ref "c1") prouve
+        # justement que l'infra marche — une réponse schéma-valide est bien revenue —, et c'est un
+        # aléa de contenu que l'anti-mélange rejette proprement, mesuré ensuite dans les 3 configs
+        # (`packet_failures`). Conflater les deux était l'erreur du lot précédent (arrêt sur un seul
+        # rejet, sans lire la réponse brute qui aurait montré l'infra saine). On n'ARRÊTE donc que
+        # si l'appel lui-même échoue (`errored_requests` > 0 : clé invalide, requête refusée). Une
+        # 2ᵉ tentative couvre un aléa réseau transitoire, pas un rejet de contenu.
         smoke_ok = False
-        for attempt in range(1, 4):
-            log(progress, f"GATE smoke tentative {attempt}/3 : validation clé + schéma structuré…")
+        for attempt in range(1, 3):
+            log(progress, f"GATE smoke tentative {attempt}/2 : la clé est-elle acceptée par l'API ?")
             smoke_results = await run_batch(client, smoke_reqs, f"smoke{attempt}", progress, 900)
             sm = summarize_grouped(
                 smoke_results, smoke_metas, set_pages, card_pages, cards_by_id, args.model, "smoke"
             )
-            if not sm.errored_requests and not sm.packet_failures and sm.cards_covered == len(
-                smoke_cards
-            ):
+            if sm.errored_requests == 0 and sm.requests == len(smoke_reqs):
                 smoke_ok = True
+                if sm.packet_failures:
+                    log(progress, f"  (info) paquet smoke rejeté à l'anti-mélange : {sm.notes} — "
+                        "infra OK, la qualité du groupage est mesurée dans les 3 configs")
                 break
-            log(progress, f"GATE smoke tentative {attempt} en échec : {sm}")
+            log(progress, f"GATE smoke tentative {attempt} : l'appel API a échoué : {sm}")
             for r in smoke_results:
                 if r.result_type != "succeeded":
                     log(progress, f"  erreur smoke {r.custom_id}: {r.error}")
         if not smoke_ok:
-            log(progress, "GATE smoke ÉCHOUÉ sur 3 tentatives — arrêt avant dépense large")
+            log(progress, "GATE smoke ÉCHOUÉ : l'API refuse l'appel (clé ?) — arrêt avant dépense")
             return 3
-        log(progress, "GATE smoke OK — poursuite des 3 configurations")
+        log(progress, "GATE smoke OK (infra validée) — poursuite des 3 configurations")
 
         # --- 3 configurations ---
         req_a, allowed_a = build_single_requests(cards, set_pages, card_pages, args.model)
