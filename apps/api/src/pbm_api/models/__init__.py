@@ -81,6 +81,13 @@ from pbm_api.models.invitations import (
     GameInvitation,
 )
 from pbm_api.models.jobs import DataExport, Job, JobStatus
+from pbm_api.models.observabilite import (
+    INCIDENT_ACTION_REFUSEE,
+    INCIDENT_ERREUR_MOTEUR,
+    INCIDENT_GENRES,
+    INCIDENT_PARTIE_REFUSEE,
+    JeuIncident,
+)
 from pbm_api.models.pricing import ExchangeRateDaily
 from pbm_api.models.users import AiCredential, AiProvider, EmailToken, EmailTokenKind, Session, User
 from pbm_api.models.wishlist import WishlistItem
@@ -158,4 +165,9 @@ __all__ = [
     "LANCEMENT_STATUT_LANCE",
     "LANCEMENT_STATUT_ABANDONNE",
     "LANCEMENT_STATUTS",
+    "JeuIncident",
+    "INCIDENT_ACTION_REFUSEE",
+    "INCIDENT_ERREUR_MOTEUR",
+    "INCIDENT_PARTIE_REFUSEE",
+    "INCIDENT_GENRES",
 ]

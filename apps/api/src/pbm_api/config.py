@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     smtp_user: str = ""
     smtp_password: str = ""
     smtp_from: str = "no-reply@pokeboymanager.local"
+    # Destinataire des alertes et du recapitulatif hebdomadaire du jeu (lot
+    # `j-observabilite-jeu`). Meme boite que la sonde d'infrastructure de la flotte, pour
+    # qu'une panne du jeu arrive la ou on regarde deja : ce n'est pas un secret, c'est une
+    # adresse de service, surchargeable par `SUPERVISION_EMAIL`.
+    supervision_email: str = "direction@upgreg.ai"
 
     # --- Comptes (lot v1-auth) ---
     # Valeur de dev uniquement : aucun secret réel, à surcharger par variable d'environnement
