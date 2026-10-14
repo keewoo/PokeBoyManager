@@ -25,6 +25,9 @@ import pytest
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
+from pbm_api.games.actions import actions_pour
+from pbm_api.games.catalogue_jeu import construire_catalogue_jeu
+from pbm_api.games.construction import joueur_id_de
 from pbm_api.games.entry import DeckInjouable, DeckIntrouvable
 from pbm_api.games.matchmaking import (
     _LOCK,
@@ -39,6 +42,7 @@ from pbm_api.games.matchmaking import (
     quitter,
     rejoindre,
 )
+from pbm_api.games.service import reprendre_partie
 from pbm_api.models import Card, Deck, DeckCard, Game, GamePlayer, Set, User
 from pbm_api.security.rate_limit import get_redis
 
@@ -136,6 +140,49 @@ async def test_deux_joueurs_sont_apparies(db_session):
     # La file est vide, les deux sont « en partie », plus en attente.
     assert await partie_active_de(db_session, user_a.id) == game.id
     assert await partie_active_de(db_session, user_b.id) == game.id
+
+
+async def test_partie_appariee_est_jouable_mise_en_place_lancee(db_session):
+    """Une partie née de la file est **jouable** : sa mise en place est lancée (R-4).
+
+    Non-régression du défaut trouvé par le lot `j-e2e-deux-navigateurs` : `apparier` créait la
+    partie sans appeler `demarrer_partie`, alors que les trois autres chemins de création le
+    faisaient (`lancement.py`, `bot.py`, `revanche.py`). Les deux joueurs arrivaient donc sur un
+    plateau resté au coup 0, où le **seul** coup légal est « Abandonner » — la partie existait,
+    s'affichait, et ne pouvait pas être jouée.
+
+    Aucun test ne l'attrapait : toutes les parties complètes de la suite sont fabriquées à la main
+    (`creer_partie` + `demarrer_partie`) et sautent l'appariement. On vérifie donc ici ce que voit
+    le joueur, pas l'appel : le numéro de coup a avancé, et le serveur lui propose de **placer**.
+    """
+    redis = get_redis()
+    user_a, deck_a = await _joueur_jouable(db_session)
+    user_b, deck_b = await _joueur_jouable(db_session)
+
+    await rejoindre(db_session, redis, user_id=user_a.id, deck_id=deck_a.id, maintenant=1000.0)
+    r_b = await rejoindre(
+        db_session, redis, user_id=user_b.id, deck_id=deck_b.id, maintenant=1001.0
+    )
+    assert isinstance(r_b, Apparie)
+
+    game = await db_session.get(Game, r_b.game_id)
+    # La mise en place est un coup système journalisé : le numéro courant a donc quitté 0.
+    assert game.current_numero > 0, (
+        "la partie appariée n'a pas été démarrée : son journal est vide, le plateau sera muet"
+    )
+
+    etat, _rng = await reprendre_partie(db_session, game)
+    assert etat.mise_en_place is not None, "la partie appariée n'attend pas de placement (R-4)"
+
+    catalogue = await construire_catalogue_jeu(db_session, etat)
+    for user in (user_a, user_b):
+        types = {
+            coup["type"]
+            for coup in actions_pour(etat, joueur_id_de(user.id), catalogue)["legales"]
+        }
+        assert "placer_mise_en_place" in types, (
+            f"le joueur {user.id} ne peut que {sorted(types)} — il devrait pouvoir placer"
+        )
 
 
 async def test_fifo_ordre_arrivee(db_session):

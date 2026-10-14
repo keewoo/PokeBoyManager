@@ -56,7 +56,6 @@ from pbm_api.games.indicateurs import (
     catalogue_pour_resultat,
 )
 from pbm_api.games.projection import projeter_resultat
-from pbm_api.games.rendu_vue import enrichir_rendu
 from pbm_api.games.service import (
     GAME_STATUS_EN_COURS,
     ResultatAction,
@@ -146,7 +145,7 @@ async def resynchroniser(
     )
     # Indicateurs d'affichage sur la vue de resynchronisation (lot ``j-plateau-etat-visuel``) :
     # la reprise après F5 doit montrer PV restants, énergies typées et Outil comme le temps réel.
-    catalogue = await catalogue_affichage(db, refs_en_jeu(etat_final), game_id=game.id)
+    catalogue = await catalogue_affichage(db, refs_en_jeu(etat_final))
     enrichir_indicateurs(
         vue,
         etat_final,
@@ -154,9 +153,6 @@ async def resynchroniser(
         types=catalogue.types,
         registre=catalogue.registre,
     )
-    # Rendu des cartes sur la vue de resynchronisation (lot ``j-rendu-carte``) : une reprise après
-    # F5 doit remontrer les mêmes cartes — les photos permises comme les images officielles.
-    enrichir_rendu(vue, catalogue.rendus)
     # Coups légaux sur la vue de resynchronisation : après un F5, le plateau doit pouvoir rejouer
     # (le /state les porte déjà ; sans eux ici, une reprise par le canal temps réel serait muette).
     catalogue_jeu = await construire_catalogue_jeu(db, etat_final)
@@ -240,12 +236,30 @@ class Hub:
         graine_hex: str,
         catalogue: CatalogueAffichage,
         catalogue_jeu=None,
+        courant: int | None = None,
     ) -> None:
         """Diffuse un coup appliqué à tous les abonnés d'une partie, projeté pour chacun.
 
         Un rejeu idempotent (``resultat.rejoue``) n'ajoute aucun coup au journal : il n'est pas
         diffusé (rien de nouveau). Pour chaque abonné, la vue et les événements sont projetés pour
         **son** identité par le point de sortie unique du moteur — jamais l'état brut.
+
+        ``courant`` est le **prochain numéro d'action attendu** par le serveur après ce coup, et il
+        n'est pas toujours ``resultat.numero + 1`` : un coup de joueur entraîne souvent des coups
+        **système** enchaînés dans la même foulée (pioche de début de tour, passages de phase,
+        checkup), tous journalisés. ``resultat.numero`` nomme le coup du joueur ; le journal, lui, a
+        pu avancer de plusieurs crans.
+
+        ⛔ Pourquoi c'est porté explicitement (lot ``j-e2e-deux-navigateurs``). Le client s'en sert
+        comme clé d'idempotence de son **prochain** coup. Tant que le message ne portait que
+        ``numero``, il en déduisait ``numero + 1`` — donc un numéro **en retard** dès qu'un coup
+        système s'était enchaîné, et son coup suivant était refusé en 409 (« Conflit de numéro »).
+        Mesuré sur une partie réelle : un retard **constant de 3 coups**, un refus à presque chaque
+        tour, et jusqu'à **20 s** d'attente avant que le battement de cœur ne resynchronise. Le jeu
+        « marchait » — en refusant un coup sur deux.
+
+        ``None`` laisse le client retomber sur ``numero + 1`` (compatibilité : un abonné d'une
+        version antérieure n'est pas cassé par l'ajout du champ).
         """
         if resultat.rejoue:
             return
@@ -260,6 +274,9 @@ class Hub:
             message = {
                 "type": "evenement",
                 "numero": resultat.numero,
+                # Prochain numéro attendu par le serveur (voir la docstring) : le client y lit la
+                # clé d'idempotence de son coup suivant, au lieu de la deviner.
+                "courant": courant,
                 "vue": projete["vue"],
                 "evenements": projete["evenements"],
                 "termine": resultat.terminee,
@@ -386,7 +403,14 @@ async def piloter_canal(
                 async with fabrique_session() as db_exp:
                     resultat_exp = await expirer_horloge(db_exp, game_id)
                     catalogue_exp = (
-                        await catalogue_pour_resultat(db_exp, resultat_exp, game_id=game_id)
+                        await catalogue_pour_resultat(db_exp, resultat_exp)
+                        if resultat_exp is not None
+                        else None
+                    )
+                    # Numéro courant relu dans la même session : une expiration peut, elle aussi,
+                    # enchaîner des coups système (fin de tour puis début du tour suivant).
+                    courant_exp = (
+                        (await db_exp.get(Game, game_id)).current_numero
                         if resultat_exp is not None
                         else None
                     )
@@ -396,6 +420,7 @@ async def piloter_canal(
                         resultat_exp,
                         graine_hex=graine_hex,
                         catalogue=catalogue_exp,
+                        courant=courant_exp,
                     )
                 # Silence : battement de cœur, porteur du numéro courant (détection de coupure +
                 # rattrapage d'une dernière diffusion manquée côté client).
