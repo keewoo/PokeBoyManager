@@ -23,6 +23,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from pbm_api.games.capacite import plafond
 from pbm_api.models import GAME_STATUS_EN_COURS, Game, GameEvent
 from pbm_api.models.observabilite import (
     INCIDENT_ACTION_REFUSEE,
@@ -62,12 +63,16 @@ async def relever(
     depuis = maintenant - timedelta(hours=fenetre_heures)
     silence = maintenant - timedelta(hours=seuil_blocage_heures)
 
-    # (1) État de l'instant : parties en cours, et celles qui n'aboutissent pas.
+    # (1) État de l'instant : parties en cours, celles qui n'aboutissent pas, et celles qui
+    # **occupent une place** au sens du plafond de capacité (lot `j-charge-temps-reel` : en cours
+    # ET non échues). Le troisième compteur tient dans la même requête — une métrique de capacité
+    # qui coûterait un aller-retour de plus serait une métrique qu'on hésite à relever.
     etat = (
         await db.execute(
             select(
                 func.count().label("en_cours"),
                 func.count(case((Game.last_action_at < silence, 1))).label("bloquees"),
+                func.count(case((Game.expires_at > maintenant, 1))).label("actives"),
             ).where(Game.status == GAME_STATUS_EN_COURS)
         )
     ).one()
@@ -148,6 +153,8 @@ async def relever(
         fenetre_heures=fenetre_heures,
         parties_en_cours=etat.en_cours,
         parties_bloquees=etat.bloquees,
+        parties_actives=etat.actives,
+        capacite_plafond=plafond(),
         parties_creees=creees,
         parties_terminees=parties_terminees,
         fins_par_raison=fins_par_raison,

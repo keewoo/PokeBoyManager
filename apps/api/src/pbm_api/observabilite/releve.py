@@ -39,6 +39,13 @@ class Releve:
     fenetre_heures: int
     parties_en_cours: int = 0
     parties_bloquees: int = 0
+    #: Parties qui **occupent une place** au sens du plafond de capacité : en cours *et* non
+    #: échues (lot ``j-charge-temps-reel``). Toujours ≤ ``parties_en_cours`` — l'écart, ce sont les
+    #: parties fantômes qui attendent le prochain balayage, et qui ne consomment rien.
+    parties_actives: int = 0
+    #: Le plafond configuré au moment du relevé. Dans le relevé plutôt que relu par les règles :
+    #: un relevé archivé doit rester interprétable même si le réglage a changé depuis.
+    capacite_plafond: int = 0
     parties_creees: int = 0
     parties_terminees: int = 0
     fins_par_raison: dict[str, int] = field(default_factory=dict)
@@ -74,6 +81,18 @@ class Releve:
         return self.refus / soumis
 
     @property
+    def capacite_taux(self) -> float:
+        """Part du plafond de parties simultanées occupée, entre 0 et 1 (0 si pas de plafond connu).
+
+        C'est le chiffre qui prévient *avant* la plainte : à 0,8 on sait qu'il reste cinq places,
+        donc qu'il faut parler de la taille du serveur maintenant plutôt que le soir où des joueurs
+        reçoivent un 503.
+        """
+        if self.capacite_plafond <= 0:
+            return 0.0
+        return self.parties_actives / self.capacite_plafond
+
+    @property
     def motif_dominant(self) -> tuple[str, int] | None:
         """Le motif de refus le plus fréquent et son compte, ou ``None`` s'il n'y a aucun refus."""
         if not self.refus_par_motif:
@@ -91,6 +110,9 @@ class Releve:
             "fenetre_heures": self.fenetre_heures,
             "parties_en_cours": self.parties_en_cours,
             "parties_bloquees": self.parties_bloquees,
+            "parties_actives": self.parties_actives,
+            "capacite_plafond": self.capacite_plafond,
+            "capacite_taux": round(self.capacite_taux, 4),
             "parties_creees": self.parties_creees,
             "parties_terminees": self.parties_terminees,
             "fins_par_raison": dict(sorted(self.fins_par_raison.items())),

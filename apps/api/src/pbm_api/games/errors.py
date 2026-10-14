@@ -62,3 +62,25 @@ class ActionRefusee(GameError):
 
 class PartieNonActive(GameError):
     """Action demandée sur une partie qui n'est plus en cours (terminée ou expirée) (→ 409)."""
+
+
+class PlafondPartiesAtteint(GameError):
+    """Le serveur tient déjà son plafond de parties simultanées (→ 503 + ``Retry-After``).
+
+    Refus **transitoire**, et c'est ce qui le distingue des autres : il ne dit pas « votre demande
+    est mauvaise » mais « la machine est pleine, réessayez ». D'où 503 (indisponibilité du service)
+    plutôt que 429 — il n'y a aucun quota attaché au joueur, c'est la capacité de la machine qui
+    plafonne, et deux joueurs sur un serveur vide ne sont jamais limités.
+
+    Le plafond et le détail de sa mesure sont dans ``docs/jeu/CHARGE.md`` ; la décision de refuser
+    plutôt que de dégrader est celle du lot ``j-charge-temps-reel``.
+    """
+
+    def __init__(self, actives: int, plafond: int) -> None:
+        self.actives = actives
+        self.plafond = plafond
+        super().__init__(
+            f"Le serveur tient déjà {actives} parties en même temps, pour un plafond de "
+            f"{plafond} : impossible d'en lancer une de plus pour l'instant. Réessaie dans un "
+            "instant — les parties en cours, elles, ne sont pas ralenties."
+        )

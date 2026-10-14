@@ -29,8 +29,10 @@ from pbm_api.auth.dependencies import require_csrf, require_game_access
 from pbm_api.db import get_session
 from pbm_api.games import bot, matchmaking
 from pbm_api.games.entry import DeckInjouable, DeckIntrouvable, verifier_deck
+from pbm_api.games.errors import PlafondPartiesAtteint
 from pbm_api.games.matchmaking import Apparie, DejaEnPartie, EnAttente
 from pbm_api.models import User
+from pbm_api.routers.capacite_http import erreur_capacite
 from pbm_api.security.rate_limit import get_redis
 
 router = APIRouter(prefix="/matchmaking", tags=["matchmaking"])
@@ -311,6 +313,11 @@ async def entrainement(
         raise HTTPException(422, str(exc)) from exc
     except bot.NiveauBotInconnu as exc:
         raise HTTPException(422, str(exc)) from exc
+    except PlafondPartiesAtteint as exc:
+        # 503 : le serveur tient déjà son plafond de parties simultanées. Contrairement à la file
+        # d'attente (`POST /queue`), l'entraînement est un acte immédiat du joueur : il doit savoir
+        # tout de suite, avec le délai pour réessayer (lot `j-charge-temps-reel`).
+        raise erreur_capacite(exc) from exc
     return EntrainementOut(
         game_id=game.id,
         niveau=body.niveau,
