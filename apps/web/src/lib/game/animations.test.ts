@@ -176,6 +176,7 @@ describe("modes — accéléré et réduit", () => {
     camp: "auto",
     resume: false,
     nombre: 1,
+    typage: null,
   };
 
   it("accéléré divise la durée, réduit la supprime", () => {
@@ -278,5 +279,172 @@ describe("plancher d'images par seconde — ses deux conditions, mesurées", () 
     // d'une image perdue. Seuil large à dessein — il attrape une régression d'un ordre de
     // grandeur (une copie de tableau devenue quadratique), pas le bruit d'une machine chargée.
     expect(total / pas).toBeLessThan(1);
+  });
+});
+
+/**
+ * Le **typage** des animations (lot `j-anim-attaques-typees`) : ce que le planificateur retient des
+ * événements d'un coup pour qu'un effet par type soit jouable.
+ *
+ * **Le test qui mord sans le changement** : `Animation.typage` n'existait pas, et le planificateur
+ * ne regardait chaque événement qu'isolément. Or ni le **type** de l'attaque ni son **échec** ne
+ * sont sur l'événement qui s'anime — ils sont sur ses voisins du même coup. Tout ce bloc échoue
+ * sans la lecture du coup entier.
+ */
+describe("typage des animations — l'effet par type se déduit du coup entier", () => {
+  /** Un coup d'attaque complet, dans l'ordre RÉEL du moteur : `degats` AVANT `attaque_declaree`. */
+  function coupAttaque(
+    donneesDegats: Record<string, unknown>,
+    type = "fire",
+    extra: { type: string; donnees: Record<string, unknown> }[] = [],
+  ): CoupAnimation {
+    return {
+      numero: 1,
+      evenements: [
+        ...extra,
+        { type: "degats", donnees: donneesDegats },
+        { type: "attaque_declaree", donnees: { joueur: "b", degats: 60, type } },
+      ],
+    };
+  }
+
+  function typageDe(coup: CoupAnimation, typeEvt: string) {
+    return planifierCoup(coup, "a").find((anim) => anim.type === typeEvt)?.typage ?? null;
+  }
+
+  it("lit le type sur `attaque_declaree`, qui vient APRÈS les dégâts dans le coup", () => {
+    // Le piège : `degats` précède `attaque_declaree` dans la liste du moteur. Un planificateur qui
+    // avancerait événement par événement ne connaîtrait pas encore le type au moment des dégâts —
+    // et aucun effet typé ne se jouerait jamais.
+    const typage = typageDe(coupAttaque({ cible: "i-pika", degats: 60 }, "water"), "degats");
+    expect(typage?.type).toBe("water");
+    expect(typage?.degats).toBe(60);
+  });
+
+  it("reporte faiblesse et résistance telles que le serveur les a annoncées", () => {
+    const faible = typageDe(
+      coupAttaque({ cible: "i-pika", degats: 120, faiblesse: true, resistance: false }),
+      "degats",
+    );
+    expect(faible?.faiblesse).toBe(true);
+    expect(faible?.resistance).toBe(false);
+
+    const resiste = typageDe(
+      coupAttaque({ cible: "i-pika", degats: 30, faiblesse: false, resistance: true }),
+      "degats",
+    );
+    expect(resiste?.faiblesse).toBe(false);
+    expect(resiste?.resistance).toBe(true);
+  });
+
+  it("sans booléens dans l'événement, ni faiblesse ni résistance — jamais une supposition", () => {
+    // Un serveur plus ancien (ou le chemin sans catalogue) n'envoie pas ces champs : on n'invente
+    // pas un renforcement d'effet à partir d'un total de dégâts élevé.
+    const typage = typageDe(coupAttaque({ cible: "i-pika", degats: 120 }), "degats");
+    expect(typage?.faiblesse).toBe(false);
+    expect(typage?.resistance).toBe(false);
+  });
+
+  it("aucun `attaque_declaree` → aucun typage : le coup n'est pas une attaque (D9)", () => {
+    const coup: CoupAnimation = {
+      numero: 1,
+      evenements: [{ type: "degats", donnees: { cible: "i-pika", degats: 60 } }],
+    };
+    expect(typageDe(coup, "degats")).toBeNull();
+  });
+
+  it("un type vide (chemin sans catalogue) ne donne aucun typage non plus", () => {
+    expect(typageDe(coupAttaque({ cible: "i-pika", degats: 60 }, ""), "degats")).toBeNull();
+  });
+
+  it("un pile ou face perdu rend l'attaque RATÉE, pour le coup entier", () => {
+    const coup = coupAttaque({ cible: "i-pika", degats: 0 }, "lightning", [
+      { type: "dsl_pile_ou_face", donnees: { pieces: 1, faces: 0 } },
+    ]);
+    const rate = typageDe(coup, "dsl_pile_ou_face");
+    expect(rate?.echec).toBe(true);
+    expect(rate?.type).toBe("lightning");
+    // L'attaque déclarée porte aussi l'échec : c'est elle qui se joue dans l'arène quand l'attaque
+    // n'a touché personne (pas de cible, donc pas de carte à brûler).
+    expect(typageDe(coup, "attaque_declaree")?.echec).toBe(true);
+  });
+
+  it("un pile ou face GAGNÉ n'est pas un échec", () => {
+    const coup = coupAttaque({ cible: "i-pika", degats: 60 }, "lightning", [
+      { type: "dsl_pile_ou_face", donnees: { pieces: 2, faces: 1 } },
+    ]);
+    expect(typageDe(coup, "dsl_pile_ou_face")).toBeNull();
+    expect(typageDe(coup, "degats")?.echec).toBe(false);
+  });
+
+  it("zéro pièce lancée n'est pas un échec : il n'y a pas eu de tirage", () => {
+    const coup = coupAttaque({ cible: "i-pika", degats: 60 }, "fire", [
+      { type: "dsl_pile_ou_face", donnees: { pieces: 0, faces: 0 } },
+    ]);
+    expect(typageDe(coup, "dsl_pile_ou_face")).toBeNull();
+  });
+
+  it("une Confusion tombée sur pile est un échec (R-11.5)", () => {
+    const coup = coupAttaque({ cible: "i-pika", degats: 0 }, "psychic", [
+      { type: "confusion_resolue", donnees: { joueur: "b", attaque_annulee: true, degats: 30 } },
+    ]);
+    expect(typageDe(coup, "confusion_resolue")?.echec).toBe(true);
+  });
+
+  it("une Confusion tombée sur face n'est pas un échec", () => {
+    const coup = coupAttaque({ cible: "i-pika", degats: 60 }, "psychic", [
+      { type: "confusion_resolue", donnees: { joueur: "b", attaque_annulee: false } },
+    ]);
+    expect(typageDe(coup, "confusion_resolue")).toBeNull();
+  });
+
+  it("les événements qui ne sont pas un coup porté n'ont AUCUN typage", () => {
+    // Une pioche ou une évolution dans le même coup n'a pas de type d'attaque : lui en inventer un
+    // ferait brûler une carte sans raison.
+    const coup: CoupAnimation = {
+      numero: 1,
+      evenements: [
+        { type: "cartes_piochees", donnees: { joueur: "b", nombre: 1 } },
+        { type: "evolution", donnees: { joueur: "b", base: "i-pika" } },
+        { type: "ko", donnees: { cible: "i-pika" } },
+        { type: "attaque_declaree", donnees: { joueur: "b", degats: 60, type: "fire" } },
+      ],
+    };
+    for (const evt of ["cartes_piochees", "evolution", "ko"]) {
+      expect(typageDe(coup, evt), `${evt} ne devrait pas être typé`).toBeNull();
+    }
+  });
+
+  it("une animation de rattrapage n'a jamais de typage", () => {
+    // Un résumé représente plusieurs coups, peut-être de plusieurs types : lui donner celui du
+    // dernier ferait brûler le plateau pour des dégâts déjà encaissés.
+    const coups: CoupAnimation[] = Array.from({ length: 12 }, (_, i) => ({
+      numero: i + 1,
+      evenements: [
+        { type: "degats", donnees: { cible: "i-pika", degats: 60, faiblesse: true } },
+        { type: "attaque_declaree", donnees: { joueur: "b", degats: 60, type: "fire" } },
+      ],
+    }));
+    const resumees = rattraper(planifier(coups, "a"));
+    const resume = resumees.find((a) => a.resume);
+    expect(resume).toBeDefined();
+    expect(resume?.typage).toBeNull();
+  });
+
+  it("tout événement planifié porte le champ, quitte à valoir `null`", () => {
+    // Le champ est obligatoire à dessein : un `typage` oublié par un producteur ferait disparaître
+    // l'effet typé en silence, et le plateau continuerait d'avoir l'air de marcher.
+    const plan = planifierCoup(coupAttaque({ cible: "i-pika", degats: 60 }), "a");
+    for (const anim of plan) {
+      expect(anim).toHaveProperty("typage");
+    }
+  });
+
+  it("les types d'événement lus par le typage sont tous connus du journal", () => {
+    // Parité avec `journal.ts` : un nom mal orthographié ici ne casserait rien — l'effet typé
+    // cesserait juste de se déclencher, sans un mot.
+    for (const type of ["degats", "attaque_declaree", "dsl_pile_ou_face", "confusion_resolue"]) {
+      expect(TYPES_EVENEMENT_CONNUS, `${type} inconnu du journal`).toContain(type);
+    }
   });
 });

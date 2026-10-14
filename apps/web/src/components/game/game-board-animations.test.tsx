@@ -89,6 +89,7 @@ const EN_COURS: Animation = {
   camp: "adversaire",
   resume: false,
   nombre: 1,
+  typage: null,
 };
 
 describe("GameBoard — une animation en cours n'empêche rien", () => {

@@ -124,8 +124,129 @@ Ce qu'il ne faut pas faire, et qui annulerait tout le lot :
 - **capturer les clics** : la couche reste `pointer-events-none`, seuls ses boutons sont
   cliquables.
 
+---
+
+# Les effets d'attaque par type — `lib/game/anim-types.ts`
+
+> Lot `j-anim-attaques-typees`. Le socle ci-dessus dit *quand* une animation se joue ; cette
+> partie dit *à quoi elle ressemble* quand l'animation est une attaque. Une attaque Feu brûle la
+> carte d'en face, l'éclair fait trembler le plateau, l'onde Psy déforme l'image.
+
+## Un système, pas dix animations
+
+Le risque était nommé : « dix animations écrites séparément : impossible à maintenir, et l'une
+d'elles finira par cacher un compteur de dégâts au moment décisif ». Il n'y a donc **aucune
+animation par type**. Il y a :
+
+| Pièce | Où | Quoi |
+|---|---|---|
+| **six couches** | `globals.css`, images-clés `pbm-anim-fx-*` | `nappe`, `balayage`, `onde`, `particules`, `flash`, `etreinte` — une image-clé chacune, écrite une seule fois |
+| **quatre gestes de carte** | idem | `aucun`, `distorsion`, `recul`, `tremblement` — toujours un `transform`, donc aucun défilement provoqué |
+| **une table** | `SPECS` dans `anim-types.ts` | onze lignes de **donnée** : quelles couches, combien de particules, quel geste, trace ou non |
+| **une fonction** | `effetAttaque()` | module la composition par une **intensité** calculée sur le résultat réel de l'attaque |
+
+Ajouter un type, c'est ajouter une ligne de table. Et comme les onze types partagent les mêmes
+couches, une couche qui masquerait un compteur les masquerait **tous les onze** : ça se verrait au
+premier essai, au lieu d'attendre la carte Dragon du dixième tour.
+
+**Pourquoi du CSS et pas un canvas** (le lot disait « shaders/canvas légers ») : c'est le plancher
+d'images par seconde qui tranche. Le socle tient ses 30 images/s *parce que* rien ne passe par le
+fil principal. Un canvas redessinerait à la main, chaque image, sur ce fil — il reprendrait
+exactement ce qu'on a économisé. Les images-clés sont nommées `pbm-anim-fx-*` pour tomber sous la
+**même** garde statique que le socle (`src/__tests__/anim-css-garde.test.ts`, `transform`/`opacity`
+uniquement) : un autre préfixe les en aurait sorties, ce qu'un garde-fou interdit de faire.
+
+## L'intensité vient du serveur, jamais de l'écran
+
+Trois faits décident de la force d'un effet, et **aucun** ne peut être deviné côté client :
+
+| Fait | D'où il vient |
+|---|---|
+| le **type** de l'attaque | `attaque_declaree.donnees.type` — ajouté par ce lot (`combat/attaque.py`) |
+| les **dégâts** réels | `degats.donnees.degats` |
+| **faiblesse** / **résistance** | `degats.donnees.faiblesse` / `.resistance`, booléens ajoutés par ce lot (`combat/resolution.py`) |
+| l'**échec** | un `dsl_pile_ou_face` sans aucune face, ou une Confusion sur pile (R-11.5) |
+
+⚠️ Les deux booléens existent pour une raison précise : le seul autre moyen de savoir si la
+faiblesse a joué serait de **chercher le mot « faiblesse » dans la phrase `detail`**. Ce serait un
+repli silencieux — il cesserait de marcher le jour où la phrase change, l'effet continuerait de
+s'afficher, simplement faux, et personne ne le verrait.
+
+⚠️ Le type ne se déduit **pas** de l'Actif courant côté client : la vue a pu bouger entre l'attaque
+et l'animation. Le serveur fait autorité, y compris là-dessus.
+
+La faiblesse et la résistance pèsent **en plus** du doublement / de la réduction qu'elles ont déjà
+produit sur les dégâts. Sans ce supplément, une attaque de 60 doublée par faiblesse serait
+visuellement identique à une attaque de 120 sans faiblesse — et le joueur ne verrait pas *pourquoi*
+ça a fait mal. Un **échec** court-circuite tout : l'effet part et retombe, sans particule, sans
+secousse, sans déformation. Sinon on ne distinguerait pas « ça a raté » de « ça a fait 10 ».
+
+Les événements lus par le planificateur sont ceux du **coup entier**, pas de l'événement isolé :
+`degats` arrive **avant** `attaque_declaree` dans la liste du moteur, et c'est ce dernier qui porte
+le type.
+
+## Les trois choses que l'effet ne fait jamais
+
+1. **Il ne masque pas le plateau plus d'une seconde** (`TOTAL_MAX_MS`). Tenu par construction :
+   `effetAttaque` rabote la **trace** résiduelle pour que `animation + trace` ne dépasse jamais la
+   borne, quelle que soit la durée que le socle donne. C'est la trace qui cède, jamais l'animation
+   — une animation tronquée se voit, une trace écourtée non.
+2. **Il ne couvre pas les compteurs de dégâts.** La parade n'est pas une consigne mais un **ordre
+   de DOM** : dans `board-card.tsx`, l'effet est rendu **avant** les indicateurs, donc dessous.
+   Inverser les deux lignes fait tomber un test (`board-card.test.tsx`).
+3. **Il n'invente pas un type.** Un type absent de `SPECS` ne donne **aucun** effet typé : le socle
+   garde son effet neutre (D9). Pareil pour une attaque sans dégât et sans échec — elle se lit dans
+   le journal, pas en fanfare.
+
+## La version réduite
+
+En « animations réduites » (réglage système `prefers-reduced-motion` **ou** réglage du jeu,
+`/jeu/confort`), l'effet prend une forme **immobile** : aucune couche, aucun geste, aucune secousse,
+et à la place un **badge** qui dit en texte ce que l'animation aurait montré — « Feu — attaque
+violente, 120 dégâts : c'est une faiblesse, ça fait double mal ». Le badge porte l'**abréviation**
+du type (jamais la couleur seule : daltonisme), et il est **annoncé** aux lecteurs d'écran
+(`role="img"` + `aria-label`), contrairement à la couche animée qui est `aria-hidden` — en réduit,
+c'est le seul canal visuel qui reste.
+
+⚠️ Il **vit sa propre durée**, hors de la file. En mode réduit la file avance en zéro milliseconde :
+un badge accroché à l'animation courante clignoterait sans jamais être lisible. Comme l'état affiché
+ne dépend jamais d'une animation, le faire vivre plus longtemps ne retient rien.
+
+## La galerie — `/jeu/effets`
+
+Le lot demandait de « faire valider le rendu par JF et par Aymeric ». Le faire en partie
+demanderait de réunir un Pokémon de chacun des onze types, avec la bonne faiblesse, la bonne
+résistance et un pile ou face perdu : autant dire jamais. `/jeu/effets` montre les onze types × six
+situations, d'un clic, avec le **même** code que le plateau (`effetAttaque` et `EffetTypeAttaque`,
+rien de reproduit) — une galerie qui redessinerait les effets à sa façon ne vaudrait aucune
+validation. Elle respecte le réglage « animations réduites » comme le plateau, et elle est
+atteignable depuis le salon.
+
+## Ajouter un type — ce qu'il faut faire
+
+1. ajouter la ligne dans `SPECS` (couches, particules, geste, trace) ;
+2. ajouter sa **teinte** dans `globals.css` (`.pbm-fx[data-fx="<cle>"]`) — sans elle l'effet serait
+   transparent, donc invisible, donc mensonger. `anim-types-css-garde.test.ts` nomme la manquante ;
+3. s'assurer que le code existe dans `ELEMENTS` (`lib/game/indicateurs.ts`) : c'est de là que vient
+   l'abréviation du badge réduit, et le contraste y est déjà mesuré pour les onze types ;
+4. rien d'autre — les couches, les gestes, l'intensité et les bornes sont déjà là.
+
+Ce qu'il ne faut **pas** faire : écrire une image-clé propre à un type (c'est le retour aux dix
+animations séparées), ou nommer une image-clé autrement que `pbm-anim-fx-*` (elle échapperait à la
+garde `transform`/`opacity`).
+
+## Le plancher, avec l'effet le plus lourd
+
+`e2e/anim-attaques-typees.spec.ts` mesure le plancher sur le type **le plus lourd de la table** —
+calculé (`TYPE_LE_PLUS_LOURD`), pas choisi : le jour où un type plus chargé est ajouté, c'est lui
+qui est mesuré, sans que personne n'ait à y penser. La fenêtre de mesure est **exactement** celle de
+`anim-fluidite.spec.ts` (la rafale entière, pas le premier effet) : c'est ce qui rend les deux
+chiffres comparables, et c'est de leur écart qu'on apprend ce que l'effet typé coûte vraiment.
+
 ## Voir aussi
 
 - `docs/jeu/JOURNAL.md` — les événements et leur format : c'est la matière première.
+- `docs/jeu/DEGATS.md` — l'ordre strict du calcul, d'où viennent dégâts, faiblesse et résistance.
 - `docs/jeu/TEMPS-REEL.md` — le canal, la resynchronisation, le repli en interrogation.
+- `docs/jeu/ACCESSIBILITE.md` — les trois réglages de confort, dont « animations réduites ».
 - `docs/UI-UX.md` — les écrans et les jetons de style du plateau.

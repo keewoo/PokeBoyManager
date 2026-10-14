@@ -280,6 +280,7 @@ export function PartieView({ gameId }: { gameId: string }) {
             onSauterAnimation={anim.sauter}
             onBasculerAccelere={anim.reduit ? undefined : anim.basculerAccelere}
             animationAcceleree={anim.mode === "accelere"}
+            effetTypee={anim.effetTypee}
             premierePartie={premierePartie}
           />
           <JournalPanel lignes={lignes} onSurvol={setSurligne} />

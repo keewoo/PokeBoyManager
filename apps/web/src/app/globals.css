@@ -372,3 +372,309 @@ html[data-texte="tres_grande"]:not([data-ecran="plateau"]) {
     transform: scale(1.22);
   }
 }
+
+/* ===================================================================================
+   Effets d'attaque TYPÉS (lot `j-anim-attaques-typees`)
+
+   Dix types (plus Incolore), et pourtant AUCUNE animation par type. Il y a six couches
+   et quatre gestes de carte, chacun avec UNE image-clé, écrite ici une seule fois ; la
+   table `SPECS` de `src/lib/game/anim-types.ts` dit seulement laquelle composer pour
+   quel type. C'est la parade au risque nommé par le lot : dix animations séparées
+   seraient impossibles à maintenir, et l'une d'elles finirait par cacher un compteur de
+   dégâts. Ici, une couche qui masquerait un chiffre les masquerait pour les ONZE types —
+   donc ça se verrait au premier essai.
+
+   La règle du socle s'applique telle quelle, et c'est pour ça que ces images-clés sont
+   nommées `pbm-anim-fx-*` : elles passent sous la MÊME garde statique
+   (`src/__tests__/anim-css-garde.test.ts`), qui n'autorise que `transform` et `opacity`.
+   Un autre préfixe les aurait fait échapper au contrôle — ce qui est exactement ce qu'un
+   garde-fou interdit de faire.
+
+   La couleur, les dégradés et les flous sont donc tous STATIQUES : seules la position et
+   l'opacité bougent. La teinte d'un type arrive par deux variables (`--pbm-fx-a` et
+   `--pbm-fx-b`), posées par le sélecteur `[data-fx="…"]` plus bas, et les couches ne
+   savent rien du type qu'elles dessinent.
+   =================================================================================== */
+
+/* La teinte de chacun des onze types — deux tons : le dominant et l'éclat. Toute ligne
+   ajoutée à `SPECS` doit avoir la sienne ici : `anim-types-css-garde.test.ts` nomme la
+   manquante (un type sans teinte s'afficherait transparent, donc mentirait). */
+.pbm-fx[data-fx="feu"] { --pbm-fx-a: rgba(255, 132, 48, 0.85); --pbm-fx-b: rgba(255, 228, 120, 0.95); }
+.pbm-fx[data-fx="eau"] { --pbm-fx-a: rgba(72, 150, 255, 0.78); --pbm-fx-b: rgba(190, 236, 255, 0.95); }
+.pbm-fx[data-fx="plante"] { --pbm-fx-a: rgba(88, 198, 110, 0.80); --pbm-fx-b: rgba(214, 255, 190, 0.92); }
+.pbm-fx[data-fx="electrique"] { --pbm-fx-a: rgba(255, 232, 92, 0.85); --pbm-fx-b: rgba(255, 255, 255, 0.98); }
+.pbm-fx[data-fx="psy"] { --pbm-fx-a: rgba(190, 124, 220, 0.80); --pbm-fx-b: rgba(255, 196, 245, 0.92); }
+.pbm-fx[data-fx="combat"] { --pbm-fx-a: rgba(216, 128, 56, 0.82); --pbm-fx-b: rgba(255, 214, 150, 0.92); }
+.pbm-fx[data-fx="obscurite"] { --pbm-fx-a: rgba(12, 16, 28, 0.90); --pbm-fx-b: rgba(126, 104, 180, 0.80); }
+.pbm-fx[data-fx="metal"] { --pbm-fx-a: rgba(186, 200, 214, 0.80); --pbm-fx-b: rgba(255, 255, 255, 0.96); }
+.pbm-fx[data-fx="dragon"] { --pbm-fx-a: rgba(206, 168, 60, 0.82); --pbm-fx-b: rgba(142, 196, 255, 0.86); }
+.pbm-fx[data-fx="fee"] { --pbm-fx-a: rgba(246, 150, 196, 0.82); --pbm-fx-b: rgba(255, 246, 180, 0.95); }
+.pbm-fx[data-fx="incolore"] { --pbm-fx-a: rgba(226, 222, 212, 0.72); --pbm-fx-b: rgba(255, 255, 255, 0.90); }
+
+/* L'amplitude du geste, par palier : c'est le SEUL endroit où l'intensité devient une
+   distance. Un échec reste visible mais ne porte pas — c'est tout l'objet de son palier. */
+.pbm-fx { --pbm-fx-ampleur: 1; }
+.pbm-fx[data-palier="echec"] { --pbm-fx-ampleur: 0.45; }
+.pbm-fx[data-palier="faible"] { --pbm-fx-ampleur: 0.7; }
+.pbm-fx[data-palier="moyen"] { --pbm-fx-ampleur: 1; }
+.pbm-fx[data-palier="fort"] { --pbm-fx-ampleur: 1.35; }
+
+.pbm-fx-couche,
+.pbm-fx-trace,
+.pbm-fx-gerbe {
+  position: absolute;
+  inset: 0;
+  display: block;
+  pointer-events: none;
+  /* `will-change` prépare une couche de composition : l'animation ne repassera pas par le
+     fil principal. Posé ici, jamais animé. */
+  will-change: transform, opacity;
+}
+
+/* --- Les six couches. Chaque dégradé est STATIQUE ; seule l'image-clé bouge. --- */
+
+/* `nappe` : un voile teinté qui monte depuis le bas puis retombe — les flammes qui
+   lèchent la carte, l'ombre qui l'engloutit, l'eau qui la trempe. */
+.pbm-fx-couche[data-couche="nappe"] {
+  background: linear-gradient(0deg, var(--pbm-fx-a) 0%, transparent 85%);
+  animation: pbm-anim-fx-nappe var(--pbm-fx-duree, 400ms) ease-out both;
+}
+
+/* `balayage` : une bande claire qui traverse en diagonale — la vague, l'éclat, le souffle. */
+.pbm-fx-couche[data-couche="balayage"] {
+  background: linear-gradient(
+    115deg,
+    transparent 38%,
+    var(--pbm-fx-b) 50%,
+    transparent 62%
+  );
+  animation: pbm-anim-fx-balayage var(--pbm-fx-duree, 400ms) ease-in-out both;
+}
+
+/* `onde` : deux anneaux concentriques qui s'élargissent depuis le point d'impact. */
+.pbm-fx-couche[data-couche="onde"] {
+  border: 0.14em solid var(--pbm-fx-b);
+  border-radius: 999px;
+  inset: 22%;
+  box-shadow: 0 0 0.6em var(--pbm-fx-a);
+  animation: pbm-anim-fx-onde var(--pbm-fx-duree, 400ms) ease-out both;
+}
+
+/* `flash` : un blanchiment très bref de toute la carte — l'arc électrique. */
+.pbm-fx-couche[data-couche="flash"] {
+  background: var(--pbm-fx-b);
+  animation: pbm-anim-fx-flash var(--pbm-fx-duree, 400ms) ease-out both;
+}
+
+/* `etreinte` : deux pans opaques qui se referment depuis les bords — les lianes. */
+.pbm-fx-couche[data-couche="etreinte"] {
+  background:
+    linear-gradient(90deg, var(--pbm-fx-a) 0 18%, transparent 18%),
+    linear-gradient(270deg, var(--pbm-fx-a) 0 18%, transparent 18%);
+  animation: pbm-anim-fx-etreinte var(--pbm-fx-duree, 400ms) ease-out both;
+}
+
+/* `particules` : une gerbe d'éclats partant du centre (braises, pétales, étincelles,
+   étoiles). Leur nombre vient de l'intensité, leur angle de leur indice — rien n'est
+   tiré au hasard, pour qu'une capture de recette soit reproductible. */
+.pbm-fx-particule {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: 0.22em;
+  height: 0.22em;
+  border-radius: 999px;
+  background: var(--pbm-fx-b);
+  box-shadow: 0 0 0.35em var(--pbm-fx-a);
+  animation: pbm-anim-fx-particule var(--pbm-fx-duree, 400ms) ease-out both;
+  animation-delay: var(--pbm-fx-retard, 0ms);
+  will-change: transform, opacity;
+}
+
+/* La trace résiduelle : ce qui RESTE une fraction de seconde après le coup — bords
+   noircis d'une attaque Feu, carte trempée d'une attaque Eau. Sa durée est calculée pour
+   que `animation + trace` ne dépasse jamais une seconde (`TOTAL_MAX_MS`), et elle est
+   rendue SOUS les indicateurs : elle ne peut pas cacher un compteur de dégâts. */
+.pbm-fx-trace {
+  background: radial-gradient(120% 100% at 50% 110%, var(--pbm-fx-a) 0%, transparent 70%);
+  animation: pbm-anim-fx-trace var(--pbm-fx-trace, 0ms) ease-in both;
+  animation-delay: var(--pbm-fx-duree, 400ms);
+}
+
+/* --- Les gestes de la CARTE visée. Toujours un `transform` : il ne déplace aucune boîte
+   de disposition, donc il ne peut pas provoquer de défilement — le plateau n'en tolère
+   aucun (lot `j-plateau-layout`). Même raisonnement que l'orientation des cartes
+   endormies, déjà en place plus haut. --- */
+.pbm-board-card[data-fx-geste="distorsion"] {
+  animation: pbm-anim-fx-distorsion var(--pbm-fx-duree, 400ms) ease-in-out both;
+}
+.pbm-board-card[data-fx-geste="recul"] {
+  animation: pbm-anim-fx-recul var(--pbm-fx-duree, 400ms) ease-out both;
+}
+.pbm-board-card[data-fx-geste="tremblement"] {
+  animation: pbm-anim-fx-tremblement var(--pbm-fx-duree, 400ms) linear both;
+}
+
+/* Le plateau qui tremble (l'éclair, l'impact de Combat). Sur l'arène, pas sur la page :
+   l'arène est `overflow-hidden`, donc rien ne déborde et rien ne défile. */
+.pbm-arena[data-fx-secousse] {
+  animation: pbm-anim-fx-secousse var(--pbm-fx-duree, 400ms) linear both;
+}
+
+/* --- Les images-clés. `transform` et `opacity` UNIQUEMENT (garde statique). --- */
+
+@keyframes pbm-anim-fx-nappe {
+  from {
+    opacity: 0;
+    transform: translateY(40%) scaleY(0.6);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-14%) scaleY(1.1);
+  }
+}
+
+@keyframes pbm-anim-fx-balayage {
+  from {
+    opacity: 0;
+    transform: translate3d(-130%, -30%, 0);
+  }
+  30% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(130%, 30%, 0);
+  }
+}
+
+@keyframes pbm-anim-fx-onde {
+  from {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  25% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.1);
+  }
+}
+
+@keyframes pbm-anim-fx-flash {
+  from {
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.92;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes pbm-anim-fx-etreinte {
+  from {
+    opacity: 0;
+    transform: scaleX(0.25);
+  }
+  45% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  to {
+    opacity: 0;
+    transform: scaleX(1.05);
+  }
+}
+
+@keyframes pbm-anim-fx-particule {
+  from {
+    opacity: 0;
+    transform: rotate(var(--pbm-fx-angle, 0deg)) translateY(0) scale(0.5);
+  }
+  25% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: rotate(var(--pbm-fx-angle, 0deg))
+      translateY(calc(-2.6em * var(--pbm-fx-ampleur, 1))) scale(1);
+  }
+}
+
+@keyframes pbm-anim-fx-trace {
+  from {
+    opacity: 0.85;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes pbm-anim-fx-distorsion {
+  from {
+    transform: skewX(0deg) scale(1);
+  }
+  30% {
+    transform: skewX(calc(5deg * var(--pbm-fx-ampleur, 1))) scale(1.03);
+  }
+  65% {
+    transform: skewX(calc(-4deg * var(--pbm-fx-ampleur, 1))) scale(0.98);
+  }
+  to {
+    transform: skewX(0deg) scale(1);
+  }
+}
+
+@keyframes pbm-anim-fx-recul {
+  from {
+    transform: translateX(0);
+  }
+  22% {
+    transform: translateX(calc(0.5em * var(--pbm-fx-ampleur, 1)));
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes pbm-anim-fx-tremblement {
+  0%,
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+  20% {
+    transform: translate3d(calc(-0.18em * var(--pbm-fx-ampleur, 1)), 0, 0);
+  }
+  45% {
+    transform: translate3d(calc(0.18em * var(--pbm-fx-ampleur, 1)), 0, 0);
+  }
+  70% {
+    transform: translate3d(calc(-0.09em * var(--pbm-fx-ampleur, 1)), 0, 0);
+  }
+}
+
+@keyframes pbm-anim-fx-secousse {
+  0%,
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+  15% {
+    transform: translate3d(calc(-0.25em * var(--pbm-fx-ampleur, 1)), 0, 0);
+  }
+  35% {
+    transform: translate3d(calc(0.25em * var(--pbm-fx-ampleur, 1)), 0, 0);
+  }
+  55% {
+    transform: translate3d(0, calc(0.18em * var(--pbm-fx-ampleur, 1)), 0);
+  }
+  78% {
+    transform: translate3d(calc(-0.12em * var(--pbm-fx-ampleur, 1)), 0, 0);
+  }
+}

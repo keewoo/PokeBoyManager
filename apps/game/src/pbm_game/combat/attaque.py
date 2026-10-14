@@ -40,6 +40,26 @@ from .resolution import evenement_degats, poser_degats, resoudre_degats
 from .valeur import est_valeur_dynamique, valeur_depuis
 
 
+def _type_attaque(action: Action) -> str:
+    """Le **type d'énergie** de l'attaque déclarée, ou ``""`` quand il n'est pas connu.
+
+    C'est le type du Pokémon attaquant (``def_actif.type``, posé par la famille d'action) : celui
+    qui décide de la faiblesse et de la résistance (R-10.2/R-10.3). Il est **public** — l'Actif est
+    visible des deux joueurs — et il part donc tel quel dans l'événement.
+
+    Il y est parce que l'écran en a besoin et ne peut pas l'inventer : le lot
+    ``j-anim-attaques-typees`` joue un effet **par type** (une attaque Feu brûle la carte d'en
+    face). Le déduire côté client de l'Actif *courant* serait faux dès que la vue a bougé entre
+    l'attaque et l'animation ; le serveur fait autorité, y compris là-dessus.
+
+    Chaîne vide plutôt qu'absence quand le type manque (chemin sans catalogue) : l'écran n'a alors
+    aucun effet typé à jouer et garde l'effet neutre du socle — on n'approxime pas un type qu'on ne
+    connaît pas (D9).
+    """
+    valeur = action.params.get("type_attaque")
+    return valeur if isinstance(valeur, str) else ""
+
+
 def _index_joueur(etat: EtatPartie, jid: str) -> int:
     for i, joueur in enumerate(etat.joueurs):
         if joueur.id == jid:
@@ -272,7 +292,12 @@ def resoudre_attaque_declaree(
     if degats_annules or base == 0 or cible is None:
         # Pas de dégâts principaux à poser : attaque annulée (R-16), attaque sans dégât sec, ou
         # aucun Actif adverse à toucher (R-9.1). L'attaque reste déclarée (le tour se termine).
-        evenements.append(Evenement(EVT_ATTAQUE_DECLAREE, {"joueur": jid, "degats": 0}))
+        evenements.append(
+            Evenement(
+                EVT_ATTAQUE_DECLAREE,
+                {"joueur": jid, "degats": 0, "type": _type_attaque(action)},
+            )
+        )
         etat, evts_ko = resoudre_kos(etat, action.params.get("fiches", {}), (jid, adversaire))
         evenements.extend(evts_ko)
         return etat, evenements
@@ -292,7 +317,12 @@ def resoudre_attaque_declaree(
     adv = replace(adv, actif=poser_degats(cible, resultat.degats))
     etat = _remplacer_joueur(etat, idx_adv, adv)
     evenements.append(evenement_degats(resultat, carte_active(cible).instance_id))
-    evenements.append(Evenement(EVT_ATTAQUE_DECLAREE, {"joueur": jid, "degats": resultat.degats}))
+    evenements.append(
+        Evenement(
+            EVT_ATTAQUE_DECLAREE,
+            {"joueur": jid, "degats": resultat.degats, "type": _type_attaque(action)},
+        )
+    )
 
     # K.O., récompenses et conditions de victoire (R-13/R-14) — ordre (attaquant, défenseur). Le
     # résolveur voit AUSSI les K.O. d'auto-dégâts et de dégâts au banc posés par le script.

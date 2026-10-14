@@ -556,6 +556,17 @@ export function SalonView() {
           >
             Confort
           </Link>
+          {/* Même raison encore (lot `j-anim-attaques-typees`) : la galerie des effets existe pour
+              être REGARDÉE — par JF et Aymeric pour valider le rendu, et par un joueur curieux de
+              voir à quoi ressemble une attaque de chaque type. Une page qu'on ne peut pas atteindre
+              n'existe pas. */}
+          <Link
+            href="/jeu/effets"
+            data-testid="salon-lien-effets"
+            className="rounded-full border border-[rgba(157,0,255,0.65)] px-4 py-2 font-heading text-xs font-semibold uppercase tracking-[0.08em] text-violet-clair hover:text-foreground"
+          >
+            Effets
+          </Link>
         </div>
       </div>
 

@@ -26,6 +26,8 @@
  * accéléré (le joueur est pressé) ou réduit (`prefers-reduced-motion`, où tout devient instantané).
  */
 
+import { type Typage } from "@/lib/game/anim-types";
+
 /** Mode de restitution des animations. `reduit` gagne toujours sur `accelere`. */
 export type ModeAnimation = "normal" | "accelere" | "reduit";
 
@@ -66,6 +68,16 @@ export type Animation = {
   resume: boolean;
   /** Nombre d'événements que l'animation représente (1 hors rattrapage). */
   nombre: number;
+  /**
+   * Ce que le serveur dit de l'attaque, quand cette animation en est une — ou `null`.
+   *
+   * C'est ce qui permet l'effet **par type** (lot `j-anim-attaques-typees`) : type d'énergie,
+   * dégâts, faiblesse, résistance, échec. Le champ est **obligatoire** (quitte à valoir `null`)
+   * pour qu'aucun producteur d'animation ne puisse l'oublier sans que TypeScript le dise : un
+   * `typage` oublié ferait disparaître l'effet typé en silence, et le plateau continuerait
+   * d'avoir l'air de marcher.
+   */
+  typage: Typage | null;
 };
 
 /** Durée maximale d'une animation, en millisecondes : au-delà, le jeu attend l'écran. */
@@ -176,15 +188,96 @@ export function campEvenement(donnees: Record<string, unknown>, pour: string): C
   return joueur === pour ? "moi" : "adversaire";
 }
 
+/** Lit un entier de `donnees`, ou `undefined` (jamais une supposition). */
+function entier(d: Record<string, unknown>, cle: string): number | undefined {
+  const v = d[cle];
+  return typeof v === "number" && Number.isFinite(v) ? v : undefined;
+}
+
+/**
+ * Ce que le **coup entier** dit de l'attaque en cours : son type, et si elle a raté.
+ *
+ * Ces deux faits ne sont pas sur l'événement qui s'anime, mais sur ses voisins du même coup :
+ * `attaque_declaree` porte le **type** (lot `j-anim-attaques-typees`, côté moteur), et c'est un
+ * `dsl_pile_ou_face` sans aucune face — ou une Confusion tombée sur pile (R-11.5) — qui dit
+ * l'**échec**. On lit donc le coup en entier avant de planifier ses événements un par un.
+ *
+ * Sans `attaque_declaree`, pas de type : le coup n'est pas une attaque (ou vient d'un chemin sans
+ * catalogue), et aucun effet typé ne sera joué (D9).
+ */
+function contexteAttaque(evenements: unknown[]): { type: string; echec: boolean } {
+  let type = "";
+  let echec = false;
+  for (const brut of evenements) {
+    const evt = (brut ?? {}) as EvenementAnimation;
+    const donnees = evt.donnees && typeof evt.donnees === "object" ? evt.donnees : {};
+    if (evt.type === "attaque_declaree") {
+      type = chaine(donnees, "type") ?? type;
+    } else if (evt.type === "dsl_pile_ou_face") {
+      // Zéro face sur au moins une pièce lancée : le hasard a tranché contre l'attaquant.
+      const pieces = entier(donnees, "pieces") ?? 0;
+      if (pieces > 0 && (entier(donnees, "faces") ?? 0) === 0) echec = true;
+    } else if (evt.type === "confusion_resolue" && donnees.attaque_annulee === true) {
+      echec = true;
+    }
+  }
+  return { type, echec };
+}
+
+/**
+ * Le typage d'**un** événement, ou `null` quand cet événement n'est pas un coup porté.
+ *
+ * Trois événements seulement sont typés, et chacun pour une raison :
+ *
+ * - `degats` — le coup a porté : type, dégâts réels, faiblesse et résistance viennent du serveur ;
+ * - `attaque_declaree` avec un échec dans le coup — l'attaque est partie et n'a rien touché ;
+ * - `dsl_pile_ou_face` / `confusion_resolue` perdus — le moment même du ratage.
+ *
+ * Tous les autres valent `null` : une pioche ou une évolution n'a pas de type d'attaque, et lui en
+ * inventer un ferait brûler une carte sans raison.
+ */
+function typageEvenement(
+  typeEvt: string,
+  donnees: Record<string, unknown>,
+  contexte: { type: string; echec: boolean },
+): Typage | null {
+  if (!contexte.type) return null;
+  if (typeEvt === "degats") {
+    return {
+      type: contexte.type,
+      degats: entier(donnees, "degats") ?? 0,
+      faiblesse: donnees.faiblesse === true,
+      resistance: donnees.resistance === true,
+      echec: false,
+    };
+  }
+  if (!contexte.echec) return null;
+  if (
+    typeEvt === "attaque_declaree" ||
+    typeEvt === "dsl_pile_ou_face" ||
+    typeEvt === "confusion_resolue"
+  ) {
+    return { type: contexte.type, degats: 0, faiblesse: false, resistance: false, echec: true };
+  }
+  return null;
+}
+
 /**
  * Planifie les animations d'**un** coup : une entrée par événement, dans l'ordre, sans exception.
  *
  * Un événement dont le type est absent du registre {@link EFFETS} produit tout de même son entrée
  * (`effet: null`, `duree: 0`) : c'est le critère « un événement sans animation définie ne bloque ni
  * ne disparaît ». Il traverse la file en un instant, et le journal en porte la phrase.
+ *
+ * Chaque entrée reçoit en plus son {@link Animation.typage} — ce que le serveur a dit de l'attaque,
+ * d'où l'effet typé se déduit entièrement. Le contexte est lu sur le **coup entier** d'abord :
+ * l'événement `degats` précède `attaque_declaree` dans la liste, et c'est ce dernier qui porte le
+ * type.
  */
 export function planifierCoup(coup: CoupAnimation, pour: string): Animation[] {
-  return (coup.evenements ?? []).map((brut, rang) => {
+  const evenements = coup.evenements ?? [];
+  const contexte = contexteAttaque(evenements);
+  return evenements.map((brut, rang) => {
     const evt = (brut ?? {}) as EvenementAnimation;
     const type = typeof evt.type === "string" ? evt.type : "";
     const donnees = evt.donnees && typeof evt.donnees === "object" ? evt.donnees : {};
@@ -200,6 +293,7 @@ export function planifierCoup(coup: CoupAnimation, pour: string): Animation[] {
       camp: campEvenement(donnees, pour),
       resume: false,
       nombre: 1,
+      typage: typageEvenement(type, donnees, contexte),
     };
   });
 }
@@ -256,6 +350,9 @@ export function rattraper(animations: Animation[], options: OptionsRattrapage = 
     // fait résumer à son tour (deux coupures de suite) continue de dire combien d'événements réels
     // il représente, et non « 1 ».
     nombre: resumees.reduce((s, a) => s + a.nombre, 0),
+    // Un résumé n'a pas de type : il représente plusieurs coups, peut-être de plusieurs types. Lui
+    // donner celui du dernier ferait brûler le plateau pour des dégâts déjà encaissés.
+    typage: null,
   };
   const restantes = animations.filter((a) => a.effet === null || conservees.has(a.cle));
   return [resume, ...restantes];
