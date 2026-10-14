@@ -2,8 +2,8 @@
 
 Migration **vide**, et c'est tout ce qu'elle doit être. Deux lots menés en parallèle
 (`j-accessibilite-jeu` et `j-fin-effets-compte`) ont chacun ajouté une révision depuis la même tête
-``a1f7c3d9e5b2``. Les deux sont légitimes et indépendantes — l'une crée une table de réglages, l'autre
-écrit le résultat d'une partie sur le compte — mais leur coexistence donne **deux têtes**, et
+``a1f7c3d9e5b2``. Les deux sont légitimes et indépendantes — l'une crée une table de réglages,
+l'autre écrit le résultat d'une partie sur le compte — mais leur coexistence donne **deux têtes**, et
 ``alembic upgrade head`` refuse alors d'avancer (« Multiple head revisions are present »). La CI le
 voit sur ``main``, pas sur les branches : chacune n'a que sa propre tête.
 
