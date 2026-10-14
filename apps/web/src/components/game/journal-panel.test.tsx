@@ -68,7 +68,11 @@ describe("JournalPanel", () => {
     fireEvent.click(screen.getByTestId("filtre-adversaire"));
     expect(screen.getAllByTestId("ligne-journal")).toHaveLength(2);
     expect(screen.queryByText("L'adversaire pioche.")).toBeNull();
-    expect(screen.getByText("Poison sur ton Actif : 10 dégâts.")).toBeInTheDocument();
+    // La requête est bornée à la LISTE : depuis le lot `j-accessibilite-jeu`, la dernière phrase
+    // est aussi rendue dans la région d'annonce pour lecteur d'écran (`journal-annonce`), donc le
+    // même texte existe à deux endroits — c'est voulu, et le filtre ne concerne que la liste.
+    const liste = screen.getByTestId("journal-liste");
+    expect(within(liste).getByText("Poison sur ton Actif : 10 dégâts.")).toBeInTheDocument();
   });
 
   it("rend le détail du calcul des dégâts consultable à la demande", () => {

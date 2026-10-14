@@ -35,14 +35,22 @@ const NEUTRE: StyleElement = {
   texte: "#FFFFFF",
 };
 
-/** Les onze types du jeu (codes de `pbm_api.catalog.element_type`), chacun avec son signe propre. */
+/**
+ * Les onze types du jeu (codes de `pbm_api.catalog.element_type`), chacun avec son signe propre.
+ *
+ * ⚠️ Toute couleur ajoutée ou modifiée ici doit garder un contraste d'au moins **4,5:1** entre
+ * `couleur` et `texte` (WCAG 2.2, 1.4.3 niveau AA — l'abréviation est du petit texte). Le test
+ * `src/__tests__/contraste-jeu.test.ts` le calcule pour les onze types et nomme le fautif. Il a
+ * déjà mordu : « Psy » (3,99:1) et « Combat » (3,98:1) étaient sous le seuil, invisibles à l'œil
+ * mais réels — leurs fonds ont été éclaircis d'un cran (lot `j-accessibilite-jeu`).
+ */
 export const ELEMENTS: Record<string, StyleElement> = {
   grass: { code: "grass", abbr: "Pl", label: "Plante", couleur: "#3FA34D", texte: "#06220E" },
   fire: { code: "fire", abbr: "Fe", label: "Feu", couleur: "#E2503B", texte: "#2A0A06" },
   water: { code: "water", abbr: "Ea", label: "Eau", couleur: "#3B82E2", texte: "#04142E" },
   lightning: { code: "lightning", abbr: "Él", label: "Électrique", couleur: "#E2C43B", texte: "#2A2206" },
-  psychic: { code: "psychic", abbr: "Psy", label: "Psy", couleur: "#9B59B6", texte: "#1E0A26" },
-  fighting: { code: "fighting", abbr: "Co", label: "Combat", couleur: "#B5651D", texte: "#2A1606" },
+  psychic: { code: "psychic", abbr: "Psy", label: "Psy", couleur: "#AE72C7", texte: "#1E0A26" },
+  fighting: { code: "fighting", abbr: "Co", label: "Combat", couleur: "#C97428", texte: "#2A1606" },
   darkness: { code: "darkness", abbr: "Ob", label: "Obscurité", couleur: "#2C3E50", texte: "#E6EAF0" },
   metal: { code: "metal", abbr: "Mé", label: "Métal", couleur: "#8694A3", texte: "#0E1620" },
   dragon: { code: "dragon", abbr: "Dr", label: "Dragon", couleur: "#C9A227", texte: "#241B04" },
