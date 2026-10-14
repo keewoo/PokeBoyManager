@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { FormNotice } from "@/components/auth/form-notice";
+import { useFileAnimations } from "@/components/game/animation-layer";
 import { FenetreDecision } from "@/components/game/fenetre-decision";
 import { GameBoard } from "@/components/game/game-board";
 import { JournalPanel } from "@/components/game/journal-panel";
@@ -34,6 +35,13 @@ import { getProfile } from "@/lib/api/profile";
  * Le **journal de partie** (lot `j-plateau-journal`) est tenu ici : chaque coup diffusé (`onCoup`)
  * est accumulé, dédupliqué par numéro et traduit en fil français (`construireJournal`). Comme un F5
  * rouvre le canal depuis le coup 0, le journal se reconstruit entièrement — tout est rejouable.
+ *
+ * Les **animations** (lot `j-anim-socle`) se nourrissent de ces mêmes coups, et de rien d'autre :
+ * les effets suivent les événements, jamais l'inverse. La file (`useFileAnimations`) n'est branchée
+ * sur aucun état du plateau — ni `vue`, ni `numeroRef` — et jouer un coup la **jette** avant même
+ * de soumettre. Une animation ne peut donc, à aucun instant, retarder une action légale ni montrer
+ * un état que le serveur n'a pas décidé. Un F5 arrive avec toute la partie d'un bloc : la file la
+ * résume (rattrapage) au lieu de rejouer cent coups un par un.
  */
 export function PartieView({ gameId }: { gameId: string }) {
   const [denied, setDenied] = useState(false);
@@ -138,8 +146,14 @@ export function PartieView({ gameId }: { gameId: string }) {
    * numéro (l'état n'a pas bougé côté serveur). L'action du moteur porte déjà tout ce qu'il faut
    * journaliser ; la cible choisie ne sert qu'à illuminer côté écran (lot aval côté cartes).
    */
+  // La file d'animations, alimentée par les coups diffusés et par eux seuls.
+  const anim = useFileAnimations({ coups, pour: vue?.pour ?? "", cle: gameId });
+  const viderAnimations = anim.vider;
+
   const onJouer = useCallback(
     async (action: VueActionLegale) => {
+      // Le joueur agit : on jette ce qui restait à animer. L'écran ne se met jamais en travers.
+      viderAnimations();
       const rep = await playAction(gameId, {
         type: action.type,
         params: action.params,
@@ -148,7 +162,7 @@ export function PartieView({ gameId }: { gameId: string }) {
       setVue(rep.vue);
       numeroRef.current = typeof rep.numero === "number" ? rep.numero : numeroRef.current + 1;
     },
-    [gameId],
+    [gameId, viderAnimations],
   );
 
   /**
@@ -160,6 +174,7 @@ export function PartieView({ gameId }: { gameId: string }) {
    */
   const onRepondre = useCallback(
     async (demandeId: string, choix: string[]) => {
+      viderAnimations();
       const rep = await playAction(gameId, {
         type: ACTION_REPONDRE_DEMANDE,
         params: { demande_id: demandeId, choix },
@@ -168,7 +183,7 @@ export function PartieView({ gameId }: { gameId: string }) {
       setVue(rep.vue);
       numeroRef.current = typeof rep.numero === "number" ? rep.numero : numeroRef.current + 1;
     },
-    [gameId],
+    [gameId, viderAnimations],
   );
 
   // Le fil du journal, reconstruit quand un coup arrive ou que la vue change de destinataire.
@@ -197,6 +212,12 @@ export function PartieView({ gameId }: { gameId: string }) {
             agisseur={agisseur}
             surligne={surligne}
             onJouer={onJouer}
+            animation={anim.animation}
+            animationDuree={anim.duree}
+            animationsEnAttente={anim.enAttente}
+            onSauterAnimation={anim.sauter}
+            onBasculerAccelere={anim.reduit ? undefined : anim.basculerAccelere}
+            animationAcceleree={anim.mode === "accelere"}
           />
           <JournalPanel lignes={lignes} onSurvol={setSurligne} />
           <FenetreDecision vue={vue} onRepondre={onRepondre} />

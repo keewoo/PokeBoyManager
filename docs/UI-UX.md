@@ -545,3 +545,18 @@ Quand une carte réclame un choix à un joueur, le serveur pose une `VueDemande`
   `reponseValide`, `filtrerOptions`, `typesPresents`, `deplacer`), sans React.
 - **Soumission** : `partie-view.tsx` → `onRepondre` envoie `repondre_demande` par la **même** route
   que tout coup (`POST /games/{id}/actions`, idempotence par numéro).
+
+## Socle d'animation (lot `j-anim-socle`)
+
+Les animations du plateau **suivent les événements du serveur, jamais l'inverse** : une animation est
+une transition, pas une source de vérité. La mécanique complète (file, durées, modes accéléré/réduit,
+rattrapage à la reconnexion, plancher d'images par seconde) vit dans **`docs/jeu/ANIMATIONS.md`** —
+elle n'est pas redite ici.
+
+Ce qu'il faut en retenir avant de toucher à `apps/web/src/components/game/` :
+
+- la couche d'animation est `absolute` **dans l'arène** et `pointer-events-none` : aucune animation ne
+  peut empêcher un coup légal d'être joué, et la page de partie n'acquiert aucun défilement ;
+- un effet nouveau s'ajoute au **registre** (`EFFETS` de `src/lib/game/animations.ts`), pas à la
+  mécanique — et ses images-clés n'animent que `transform` et `opacity` (garde statique en CI) ;
+- `prefers-reduced-motion` ne rend **aucun** effet : la file se vide en silence, rien ne disparaît.

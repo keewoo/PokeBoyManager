@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 
 import { FormNotice } from "@/components/auth/form-notice";
 import { ActionBar } from "@/components/game/action-bar";
+import { CoucheAnimation } from "@/components/game/animation-layer";
 import { BoardCard, EmptySlot } from "@/components/game/board-card";
 import { CardZoom } from "@/components/game/card-zoom";
 import { StatutConnexion } from "@/components/game/connection-status";
@@ -19,6 +20,7 @@ import {
   ciblesIlluminees,
   reduire,
 } from "@/lib/game/interactions";
+import type { Animation } from "@/lib/game/animations";
 import type { EtatConnexion } from "@/lib/game/realtime";
 import {
   BANC_MAX,
@@ -72,6 +74,22 @@ export type GameBoardProps = {
    * l'affiche telle quelle.
    */
   onJouer?: (action: VueActionLegale, cible: VueCible | null) => Promise<void>;
+  /**
+   * L'animation en cours (lot `j-anim-socle`), dessinée **au-dessus** de l'arène. Elle ne
+   * conditionne rien : la vue affichée reste celle du serveur, et la couche est
+   * `pointer-events-none` — aucune animation ne peut empêcher un coup légal d'être joué.
+   */
+  animation?: Animation | null;
+  /** Durée réelle de cette animation (mode accéléré/réduit compris), injectée au CSS. */
+  animationDuree?: number;
+  /** Nombre d'animations en attente derrière, affiché sur le bouton « passer ». */
+  animationsEnAttente?: number;
+  /** Saute l'animation en cours. Absent → pas de bouton. */
+  onSauterAnimation?: () => void;
+  /** Bascule le mode accéléré. Absent → pas de bouton. */
+  onBasculerAccelere?: () => void;
+  /** `true` si le mode accéléré est actif. */
+  animationAcceleree?: boolean;
 };
 
 /** Ouvre le zoom sur une carte (avec son Pokémon porteur s'il y en a un), ou le ferme avec `null`. */
@@ -266,7 +284,19 @@ function banc(
  * en compteur. Tient l'état d'interaction (sélection, verrou anti double-envoi, raison d'un refus) et
  * le zoom. Sans `onJouer`, reste en lecture seule — aucune barre d'actions, aucune cible saisissable.
  */
-export function GameBoard({ vue, etatConnexion, agisseur, surligne, onJouer }: GameBoardProps) {
+export function GameBoard({
+  vue,
+  etatConnexion,
+  agisseur,
+  surligne,
+  onJouer,
+  animation = null,
+  animationDuree = 0,
+  animationsEnAttente = 0,
+  onSauterAnimation,
+  onBasculerAccelere,
+  animationAcceleree = false,
+}: GameBoardProps) {
   const { moi, adversaire } = separerCamps(vue);
   const monTour = estMonTour(vue);
   const [zoom, setZoom] = useState<Agrandie | null>(null);
@@ -346,6 +376,18 @@ export function GameBoard({ vue, etatConnexion, agisseur, surligne, onJouer }: G
             <StatutConnexion etat={etatConnexion} />
           </div>
         )}
+
+        {/* Socle d'animation (lot `j-anim-socle`) : hors du flux, sans capture de clic — elle
+            raconte ce que le serveur a déjà décidé, elle n'empêche jamais d'agir. */}
+        <CoucheAnimation
+          animation={animation}
+          duree={animationDuree}
+          enAttente={animationsEnAttente}
+          onSauter={onSauterAnimation}
+          onBasculerAccelere={onBasculerAccelere}
+          accelere={animationAcceleree}
+        />
+
 
         <VsBar moi={moi} adversaire={adversaire} monTour={monTour} />
 
