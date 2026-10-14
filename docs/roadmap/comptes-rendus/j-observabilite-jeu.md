@@ -122,6 +122,7 @@ SONDE EN ÉCHEC : ConnectionRefusedError — [Errno 111] Connect call failed ('1
 | `pytest tests/test_observabilite.py` | **31 passed** |
 | Suite API complète | **1181 passed**, 2 échecs **environnementaux** `test_catalogue_seed.py` (`pg_dump: command not found` dans la WSL de chimera — sans rapport avec le lot, la CI a le client Postgres) |
 | `alembic upgrade head` sur base neuve | passe ; `alembic heads` → **une seule tête** `b7d4e2f8a1c3` |
+| **CI GitHub Actions** (elle fait foi) | **verte** sur `a991f7f` — `CI` / event `push` → `success`. Le passage `CI` / event `pull_request` du même SHA reste en `action_required` (le dépôt exige une approbation pour les PR du bot) : ce n'est pas un échec, et ce n'est pas lui qui fait foi |
 | Base de test | `pbm_jobsv_test`, créée pour ce lot ; `pbm_catalogue_ref` **jamais touchée** |
 | Isolation / secrets | aucun secret dans le code ni les sorties ; le `motif` est borné par expression régulière et ne peut pas transporter de donnée d'utilisateur (`test_motif_d_erreur_est_la_classe_jamais_le_message`) ; `jeu_incidents.user_id` existe pour le SQL d'administration et n'est **jamais** servi par l'API |
 
