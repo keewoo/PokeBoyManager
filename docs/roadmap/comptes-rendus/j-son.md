@@ -144,11 +144,23 @@ binaires appelés directement).
 | Passage | SHA | Verdict |
 |---|---|---|
 | Branche `roadmap/j-son` (evenement `push` — celui qui fait foi) | `4f192a1` | ✅ `success` |
-| Branche, evenement `pull_request` | `4f192a1` | `action_required` — l'approbation exigee par le depot, **pas un echec** |
+| Branche, evenement `pull_request` | `4f192a1` | `failure` avec **zero job execute** — le portail d'approbation du depot expire sans rien lancer, voir ci-dessous |
 | `main` apres fusion | `002097d` | ✅ `success` |
 
 `main` avait avance a `db16790` entre le push et la fusion (un autre lot) : la fusion `--no-ff` l'a
 integree sans conflit.
+
+⚠️ **Le passage `pull_request` finit en `failure`, et ce n'est pas le code.** Verifie par l'API :
+ce passage a executé **0 job** (`/actions/runs/38727667509/jobs` → `total_count: 0`). Le depot exige
+une approbation pour les passages declenches par une PR du bot ; faute d'approbation, le passage
+expire en `failure` sans avoir rien lance. Le meme etat terminal se lit sur les trois lots
+precedents — `j-stats-joueur`, `j-classement-prive`, `j-anim-pokemon-apparition` — tous fusionnes
+sans incident. **Le passage qui fait foi est celui de l'evenement `push`**, qui execute les cinq
+jobs : ✅ `success`.
+
+Le prompt du lot annonçait cet etat comme `action_required` ; il s'agit du meme phenomene observe
+plus tard dans son cycle de vie. La distinction utile n'est pas le mot du `conclusion`, c'est le
+**nombre de jobs executes** : zero job = le portail, pas une suite rouge.
 
 ## Grille
 
