@@ -14,6 +14,7 @@ import {
   reponseValide,
   typesPresents,
 } from "@/lib/game/decision";
+import { useMinuterieSonore } from "@/components/game/son-layer";
 import { formatSecondes } from "@/lib/game/horloges";
 import { styleElement } from "@/lib/game/indicateurs";
 import { useModale } from "@/lib/game/use-modale";
@@ -609,6 +610,14 @@ export function FenetreDecision({ vue, onRepondre, maintenant }: FenetreDecision
   const horloge = maintenant ?? (() => Date.now());
   const demande = vue.demande;
   const restantMs = useRestant(demande?.id ?? null, demande?.temps_restant_ms ?? null, horloge);
+  // La minuterie se fait entendre quand le temps presse (lot `j-son`) — une fois, au passage du
+  // seuil, et seulement si c'est à MOI de décider. Appelé avant tout retour conditionnel : c'est un
+  // Hook, et la règle des Hooks ne souffre pas d'exception.
+  useMinuterieSonore({
+    cle: demande?.id ?? null,
+    restantMs,
+    actif: !!demande && demande.destinataire === vue.pour,
+  });
 
   if (!demande) return null;
   if (demande.destinataire !== vue.pour) {
