@@ -159,6 +159,40 @@ uv run pytest -q
 pnpm gen:api
 ```
 
+### ⚠️ Le lint du front ne se contourne pas — et il se reproduit hors du dépôt (15/10/2026)
+
+**`next build` n'est pas un substitut à `pnpm lint`.** Un lot livré depuis une copie jetable a vu son
+`next build` passer et sa CI échouer **deux fois pour la même cause** : sept apostrophes nues dans du
+texte JSX (`react/no-unescaped-entities`) et une directive `eslint-disable-next-line` posée deux
+lignes au-dessus de sa balise (donc inopérante). Les deux jobs `web` **et** `e2e` sont tombés — le
+serveur web de Playwright compile le front, et refuse de démarrer sur une erreur de lint.
+
+Deux règles qui mordent souvent, et qu'aucun type-check ne voit :
+
+- une apostrophe dans un **texte** JSX s'écrit `&apos;` (`Tu n&apos;as pas…`) ; dans un attribut,
+  une chaîne ou un commentaire, elle est libre ;
+- `// eslint-disable-next-line …` doit être sur la ligne **immédiatement** avant la ligne visée. Une
+  explication sur deux lignes la décale : mettre l'explication **d'abord**, la directive ensuite.
+
+**Pour lancer le vrai lint depuis une copie hors du dépôt** (atelier `/tmp`, où `node_modules` est un
+lien) : la résolution des plugins ESLint ne peut pas remonter jusqu'au `node_modules` de la racine,
+et `next lint` échoue sur « couldn't find the plugin », ce qui se lit à tort comme « pas lintable ».
+On expose les plugins du magasin pnpm par `NODE_PATH` :
+
+```bash
+mkdir -p eslint-plugins
+for pkg in "@next/eslint-plugin-next" eslint-plugin-react eslint-plugin-react-hooks \
+           eslint-plugin-jsx-a11y eslint-plugin-import "@typescript-eslint/eslint-plugin"; do
+  esc=${pkg//\//+}
+  cible=$(ls -d <depot>/node_modules/.pnpm/${esc}@*/node_modules/${pkg} | head -1)
+  mkdir -p "$(dirname eslint-plugins/$pkg)" && ln -sfn "$cible" "eslint-plugins/$pkg"
+done
+NODE_PATH=$PWD/eslint-plugins ./node_modules/.bin/eslint src e2e
+```
+
+Deux avertissements préexistants (`_url`, `pokemon` non utilisés) sont le bruit de fond normal : la
+CI échoue sur les **erreurs**, pas sur eux.
+
 ## Stockage S3 de dev/CI — SeaweedFS (depuis le 01/10/2026)
 
 `docker-compose.yml` et la CI servent le S3 avec **`chrislusf/seaweedfs:4.48`** (`server -s3`),
