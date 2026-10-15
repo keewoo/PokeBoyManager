@@ -11420,6 +11420,16 @@
       "prise": "Emotes prédéfinies seulement (« bien joué », « oups », « ton tour »), désactivables, jamais de texte libre. (JF a retenu la proposition du plan, 14/10/2026)",
       "par": "JF",
       "quand": "2026-10-14T14:26+0200"
+    },
+    "DJ9": {
+      "prise": "Bruitages activés, musique coupée, réglage mémorisé par appareil. (JF a retenu la proposition du plan, 14/10/2026)",
+      "par": "JF",
+      "quand": "2026-10-15T10:02+0200"
+    },
+    "DJ3": {
+      "prise": "Par défaut, l'apparition est fabriquée à partir de l'illustration de la carte elle-même (découpe du Pokémon par segmentation, détourage, mise en volume, particules) : aucune image nouvelle n'est introduite, ni sprite ni modèle officiel. Une liste restreinte de Pokémon « vedettes » reçoit une animation soignée. (JF a retenu la proposition du plan, 14/10/2026)",
+      "par": "JF",
+      "quand": "2026-10-15T10:02+0200"
     }
   }
 }
