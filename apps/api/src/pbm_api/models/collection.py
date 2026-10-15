@@ -133,11 +133,16 @@ class CollectionItem(Base, TimestampMixin):
     # La photo de `photo_s3_key` est le recadrage redressé **pleine résolution** (630×880, JPEG
     # 92) : **178 Ko par carte**, mesuré sur une carte réelle — soit 3,5 Mo pour les vingt cartes
     # visibles d'un plateau et 10,5 Mo pour un deck de soixante (risque nommé du lot).
-    # `jeu_image_key` porte donc la **variante de jeu** (420×587, WebP 80, **44 Ko** : /4,1),
-    # produite une fois et réutilisée ; `None` = aucune variante (pas de photo, ou inexploitable).
+    # `jeu_image_key` porte donc la variante de **zoom** (420×587, WebP 80, 45 Ko : /4,1), produite
+    # une fois et réutilisée ; `None` = aucune variante (pas de photo, ou inexploitable).
+    # Le lot `j-assets-pipeline` a ajouté la variante de **plateau** (192×268, 12 Ko), celle que le
+    # plateau charge jusqu'à 120 fois : sa clé se **dérive** de celle-ci
+    # (`pbm_api.jeu.rendu_image.cle_variante`), elle n'a donc pas sa propre colonne.
     jeu_image_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
     # La note de qualité de la photo (`pbm_api.jeu.rendu_qualite.NotePhoto.en_json`) : netteté,
     # luminosité, cadrage, et la **raison** d'un repli sur l'image officielle. Gardée en base pour
     # que le constructeur de deck la dise au joueur sans redécoder l'image à chaque affichage.
+    # Porte aussi la liste des variantes réellement produites (`rendu_service.CLE_VARIANTES`) :
+    # c'est elle qui distingue un exemplaire préparé avant le dédoublement des variantes.
     jeu_qualite: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     acquired_at: Mapped[date | None] = mapped_column(Date, nullable=True)

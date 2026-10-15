@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FormNotice } from "@/components/auth/form-notice";
 import { useFileAnimations, useFileMoments } from "@/components/game/animation-layer";
 import { EmoteBar } from "@/components/game/emote-bar";
+import { BandeauPrechargement } from "@/components/game/bandeau-prechargement";
 import { FenetreDecision } from "@/components/game/fenetre-decision";
 import { FinPartie } from "@/components/game/fin-partie";
 import { GameBoard } from "@/components/game/game-board";
@@ -319,6 +320,9 @@ export function PartieView({ gameId }: { gameId: string }) {
             direct={etatConnexion === "direct"}
           />
           <FenetreDecision vue={vue} onRepondre={onRepondre} />
+          {/* Pré-chargement des images (lot `j-assets-pipeline`) : hors flux (`fixed`), car la
+              page de partie n'admet aucun défilement. S'efface dès qu'il n'a plus rien à dire. */}
+          <BandeauPrechargement vue={vue} />
           {vue.terminee && moiUserId && (
             <FinPartie
               gameId={gameId}

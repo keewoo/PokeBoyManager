@@ -194,7 +194,11 @@ async def test_l_adversaire_recoit_l_url_de_ma_photo_par_defaut(api_client, db_s
     vue_b = await ctx.vue_pour(db_session, ctx.b_id)
     rendu = _carte_de(vue_b, id_a, "actif")["rendu"]
     assert rendu["origine"] == "photo"
-    assert rendu["url"] == f"/jeu/rendu/parties/{ctx.game.id}/photos/{ctx.item.id}"
+    # Deux variantes depuis `j-assets-pipeline` : le plateau est léger (12 Ko), le zoom lourd
+    # (45 Ko) et demandé une carte à la fois. Avant ce lot, les deux URL étaient identiques.
+    base = f"/jeu/rendu/parties/{ctx.game.id}/photos/{ctx.item.id}"
+    assert rendu["url"] == f"{base}?v=plateau"
+    assert rendu["url_zoom"] == f"{base}?v=zoom"
     # Et le crédit nomme son propriétaire : on joue contre les cartes de quelqu'un.
     assert rendu["credit"] == "photo de aymeric"
 

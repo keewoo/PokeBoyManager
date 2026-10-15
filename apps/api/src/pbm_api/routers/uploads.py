@@ -371,15 +371,23 @@ async def confirm_all_detections(
     upload_id: uuid.UUID,
     db: Annotated[AsyncSession, Depends(get_session)],
     current_user: Annotated[User, Depends(get_current_user)],
+    arq_pool: Annotated[ArqRedis, Depends(get_arq_pool)],
     _csrf: Annotated[None, Depends(require_csrf)],
 ) -> ConfirmAllResponse:
     """« Tout ajouter » (mission point 2) : ajoute à la collection les détections dont le
-    premier candidat est présélectionné, laisse `pending` (dans `skipped`) tout le reste."""
+    premier candidat est présélectionné, laisse `pending` (dans `skipped`) tout le reste.
+
+    Enfile la préparation des **variantes de jeu** (lot `j-assets-pipeline`) : c'est précisément la
+    route qui justifie un job plutôt qu'un traitement en ligne — elle peut ajouter cent quarante-
+    trois exemplaires d'un coup, et autant de photos à décoder."""
     try:
         result = await confirm_all(db, current_user, upload_id)
     except UploadNotFoundError:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "envoi introuvable") from None
 
+    if result.confirmed:
+        # Le nom doit correspondre à la fonction enregistrée dans `pbm_api.worker.WorkerSettings`.
+        await arq_pool.enqueue_job("preparer_variantes_jeu_task", str(current_user.id))
     return ConfirmAllResponse(
         upload_id=upload_id, confirmed=result.confirmed, skipped=result.skipped
     )

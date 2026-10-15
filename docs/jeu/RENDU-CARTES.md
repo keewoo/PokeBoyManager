@@ -65,7 +65,8 @@ propre main, Stade, options d'une décision) reçoit un champ `rendu` :
 ```
 
 - `url` est la taille **plateau**, `url_zoom` la taille **zoom** : deux tailles données plutôt
-  qu'une règle de taille à redériver côté écran ;
+  qu'une règle de taille à redériver côté écran. Depuis `j-assets-pipeline`, ce sont **deux images
+  distinctes** (12 Ko et 45 Ko) et non deux noms pour la même — voir [`ASSETS.md`](ASSETS.md) ;
 - `credit` est l'indicateur discret « photo de Aymeric », posé **seulement** sur la photo d'un autre
   joueur. Il est **écrit dans le zoom** et **annoncé par l'`aria-label`** sur le plateau : sur une
   carte de 60 px de large, un bandeau de texte serait illisible et recouvrirait les énergies ;
@@ -109,31 +110,26 @@ Calibrage : une image de carte réelle (Dracaufeu base1-4, redressée) note **ne
 **luminosité 130**, **0 % brûlé** — très loin des seuils. Ils ont été posés sur des images
 synthétiques puis vérifiés contre cette carte réelle.
 
-## La variante de jeu, et où elle est produite
+## Les variantes de jeu, et où elles sont produites
 
 Servir la photo d'origine serait le piège du lot. Mesuré sur une carte réelle :
 
-| | Taille | Poids | Un plateau (20 cartes) | Un deck (60) |
-|---|---|---|---|---|
-| photo stockée (`photo_s3_key`) | 630×880 JPEG 92 | 178 Ko | 3,5 Mo | 10,5 Mo |
-| **variante de jeu** (`jeu_image_key`) | 420×587 WebP 80 | **44 Ko** | **0,86 Mo** | 2,6 Mo |
+| | Taille | Poids | Une partie (120 cartes) |
+|---|---|---|---|
+| photo stockée (`photo_s3_key`) | 630×880 JPEG 92 | 178 Ko | 21 Mo |
+| variante **plateau** | 192×268 WebP 76 | **12 Ko** | **1,4 Mo** |
+| variante **zoom** (`jeu_image_key`) | 420×587 WebP 80 | 45 Ko | une à la fois |
 
-420 px de large, parce que le pire cas d'affichage n'est pas le plateau (≈ 60 px) mais le **zoom**
-(`min(70vw, 16rem)` = 256 px, soit 512 px à densité double). Au-delà, on paierait des pixels que
-personne ne voit.
+⚠️ `j-rendu-carte` n'avait qu'**une** variante (420 px), servie au plateau comme au zoom : 5,2 Mo par
+partie. `j-assets-pipeline` l'a dédoublée et a posé un **plafond de poids par variante**, tenu par
+construction et contrôlé en CI. Le détail — largeurs, plafonds, budget d'une partie, cache avec
+empreinte, pré-chargement — est dans [`ASSETS.md`](ASSETS.md) ; cette fiche ne le redit pas.
 
-**Où elle est produite**, et pourquoi là :
-
-- au **constructeur de deck** (`GET /jeu/rendu/decks/{deck_id}`) : c'est le moment « à l'avance » —
-  le joueur regarde son deck avant de jouer, la fabrication est bornée à ses cartes, et c'est là
-  qu'on lui **dit** ce qui se repliera ;
-- à la **première demande** d'une photo (`GET /jeu/rendu/parties/{game_id}/photos/{item_id}`) : une
-  seule image, pour l'exemplaire demandé ;
-- par le script `apps/api/scripts/preparer_rendus_jeu.py`, **sur la flotte**, pour rattraper le
-  corpus existant (reprenable, `--a-blanc` pour voir ce qu'il ferait) ;
-- **jamais dans la projection d'une partie.** Un plateau se lit plusieurs fois par seconde : on n'y
-  fabrique pas d'image. Une photo pas encore préparée s'y replie sur l'officielle **en le disant**
-  (`RAISON_PAS_PRETE`) — le critère est « sans trou ni attente », pas « coûte que coûte ».
+**Où elles sont produites** : à l'ajout en collection (job `preparer_variantes_jeu_task`), au
+constructeur de deck (`GET /jeu/rendu/decks/{deck_id}`, où l'on **dit** au joueur ce qui se
+repliera), et par lots sur la flotte. **Jamais pendant une partie** — ni dans la projection, ni sur
+la route qui sert la photo : une variante absente rend 404 et l'écran prend `url_repli`. Voir
+[`ASSETS.md`](ASSETS.md) § « Où les variantes sont produites ».
 
 Un exemplaire possédé en plusieurs copies : c'est la **plus lisible** qui représente la carte (prête
 et exploitable d'abord, puis la plus nette), pas la plus récente. Sur un plateau de téléphone, la
