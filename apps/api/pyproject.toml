@@ -30,6 +30,14 @@ dependencies = [
     "pbm-game",
 ]
 
+[project.optional-dependencies]
+# Chaîne de détourage des Pokémon vedettes (lot `j-anim-pokemon-apparition`, DJ3).
+# ⛔ DÉLIBÉRÉMENT HORS de la CI et hors de l'image de production : ce moteur d'inférence ne sert
+# qu'à `scripts/decouper_apparitions.py`, qui tourne sur la flotte. Le module de découpe reçoit son
+# segmenteur en paramètre, donc il se teste sans rien de tout ça — et c'est ce qui permet de ne pas
+# imposer 40 Mo de dépendance à un serveur qui ne segmente jamais.
+decoupe = ["onnxruntime>=1.20.0"]
+
 [dependency-groups]
 dev = [
     "ruff>=0.8.4",

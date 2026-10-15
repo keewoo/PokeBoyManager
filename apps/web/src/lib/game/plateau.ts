@@ -52,6 +52,17 @@ export type VueRenduCarte = {
    * ne se charge pas (variante effacée, réseau coupé). Ne révèle rien — l'officielle est publique.
    */
   url_repli?: string | null;
+  /**
+   * L'URL de la **découpe du Pokémon** détouré dans l'illustration officielle, quand cette carte
+   * fait partie des vedettes (décision DJ3, lot `j-anim-pokemon-apparition`). C'est elle qui rend
+   * possible l'apparition au-dessus de la carte.
+   *
+   * Absente pour la quasi-totalité du catalogue, et ce n'est pas un manque : sans elle, l'écran
+   * joue l'effet de type générique, sans trou ni message. Elle ne dépend pas de `origine` — la
+   * découpe vient toujours de l'illustration officielle, elle est donc la même que le joueur
+   * montre sa photo ou non.
+   */
+  apparition?: string | null;
 };
 
 /**

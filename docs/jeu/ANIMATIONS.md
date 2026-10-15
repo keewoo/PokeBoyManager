@@ -390,3 +390,142 @@ essai, au lieu d'attendre le double K.O. du dixième tour.
 - `docs/jeu/REGLES.md` — R-4.1 à R-4.5 (mise en place, mulligan), R-13.1 et R-13.5 (K.O. et
   simultanéité), R-11.5 (Confusion) : ce que les six moments mettent en images.
 - `docs/UI-UX.md` — les écrans et les jetons de style du plateau.
+
+---
+
+# L'apparition du Pokémon au-dessus de sa carte — `lib/game/anim-apparition.ts`
+
+> Lot `j-anim-pokemon-apparition` (jalon J3), décision **DJ3**. Le socle dit *quand* une animation
+> se joue, les effets typés disent *à quoi elle ressemble* ; cette partie-ci dit **qui** apparaît.
+> C'est le moment que raconte un enfant de onze ans après sa partie : la carte n'est plus un carton,
+> le Pokémon en sort.
+
+## Ce que DJ3 autorise, et ce qu'elle interdit
+
+JF, le 15/10/2026 : *« l'apparition est fabriquée à partir de l'illustration de la carte elle-même
+(découpe du Pokémon par segmentation, détourage, mise en volume, particules) : aucune image
+nouvelle n'est introduite, ni sprite ni modèle officiel. Une liste restreinte de Pokémon vedettes
+reçoit une animation soignée. »*
+
+La contrainte est juridique autant qu'esthétique, et elle est **tenue par construction** : il
+n'existe aucun chemin de code qui charge une image venue d'ailleurs. La seule source est
+`/img/cards/{id}`, l'illustration que le joueur voit déjà sur sa propre carte.
+
+## La chaîne, en deux moitiés qui ne se touchent pas
+
+| Moitié | Où | Quand |
+|---|---|---|
+| **la découpe** | `apps/api/src/pbm_api/jeu/decoupe.py` + `scripts/decouper_apparitions.py` | hors ligne, sur la flotte |
+| **la mise en scène** | `apps/web/src/lib/game/anim-apparition.ts` + `components/game/apparition-pokemon.tsx` | à l'écran, pendant la partie |
+
+Rien n'est fabriqué pendant une partie — même règle que les variantes d'image
+([`ASSETS.md`](ASSETS.md)), et pour la même raison : la machine qui sert a deux cœurs et des
+joueurs à servir.
+
+## Le détourage : pourquoi un modèle appris, et pourquoi pas de repli
+
+La question a été tranchée **par la mesure**, sur six illustrations réelles :
+
+| Méthode | Aire gardée | Compacité | Verdict |
+|---|---|---|---|
+| GrabCut, init. par rectangle | 0,41 → 0,67 | 0,41 → 0,79 | le fond holographique est gardé **en entier** |
+| GrabCut, init. par masque (pourtour = fond sûr) | 0,46 → 0,68 | 0,47 → 0,78 | pas mieux |
+| **U²-Net (u2netp, 4,6 Mo, ONNX)** | **0,12 → 0,44** | **0,14 → 0,42** | silhouettes exploitables |
+
+Une compacité de 0,78 ne veut pas dire « découpe moyenne » : elle veut dire **rectangle**, c'est-à-dire
+la fenêtre d'illustration recopiée telle quelle. Le fond d'une illustration peinte est aussi coloré
+et aussi texturé que le Pokémon ; un modèle de mélange de couleurs ne peut pas les séparer.
+
+⛔ **GrabCut n'a donc pas été gardé comme repli.** Un repli dont on sait qu'il produit de mauvaises
+découpes est un repli silencieux : les vedettes partiraient en ligne avec un carré de fond collé
+au-dessus de la carte. Sans modèle, la chaîne **s'arrête et le dit** (code 3). `onnxruntime` est un
+extra `decoupe` de `apps/api`, **délibérément hors CI et hors image de production** : le module de
+découpe reçoit son segmenteur en paramètre, donc il se teste sans lui.
+
+## Six critères nommés, jamais un score moyen
+
+`NoteDecoupe` mesure l'aire, la compacité, le contact avec les bords, le nombre de morceaux, le flou
+du bord et l'**allongement** — et chaque dépassement produit une phrase complète. Une moyenne aurait
+accepté une découpe en deux morceaux au prétexte que son aire et son contour étaient bons.
+
+Le critère d'allongement est né d'un vrai raté, et il mérite d'être raconté : avec une fenêtre
+d'illustration qui descendait à 57,5 % de la hauteur, la découpe de Raichu était **la ligne de texte**
+« Pokémon Souris. Taille : 0,8 m, poids : 30 kg » — bien détourée, compacte, d'un seul tenant, donc
+acceptée par tous les autres critères. Le segmenteur l'avait trouvée plus saillante que le Pokémon.
+La fenêtre est descendue à 52 %, et aucun Pokémon n'est désormais autorisé à être quatre fois plus
+large que haut.
+
+## Rien n'est publié sans qu'un œil l'ait vu
+
+⛔ `verdict_oeil == "accepte"` est **obligatoire** pour publier, en plus de la note. La mesure ne
+sait pas dire qu'une aile a été coupée ni qu'un morceau de fond sombre est resté accroché à une
+oreille — seul l'œil le voit, sur la planche de contrôle (`--planche`). Le registre
+`apps/api/src/pbm_api/jeu/apparitions.json` porte les deux, et le motif du refus quand il y en a un :
+c'est ce dont le lot suivant a besoin pour savoir quoi reprendre.
+
+Au 15/10/2026 : **17 vedettes candidates, 14 découpes produites, 11 publiées.** Trois refusées par la
+note (Magnéton éclaté, Mewtwo trop petit et éclaté, Électhor au bord vaporeux), trois refusées à
+l'œil (Mélofée, Mackogneur et Pikachu gardent du fond). Poids : médiane 20,9 Ko, maximum 23,3 Ko,
+pour un plafond de 40 Kio.
+
+## À l'écran : quatre calques, une seule image
+
+« Mise en volume » ne veut pas dire 3D. Quatre calques partagent la **même** image et se déplacent
+d'amplitudes différentes — c'est toute la parallaxe, et elle ne coûte que des `transform` composés.
+
+| Calque | Profondeur | Ce qu'il fait |
+|---|---|---|
+| `halo` | 0,15 | la silhouette remplie d'une lueur, posée en **masque** pour épouser le Pokémon au lieu de faire un rond derrière lui |
+| `echo` | 0,45 | la même découpe en retrait et plus pâle : c'est elle qui donne l'épaisseur |
+| `sujet` | 1 | la découpe nette, celle qu'on regarde |
+| `particules` | 0,75 | l'ancre des points, dont le nombre vient du type de l'attaque |
+
+Les calques du fond **partent les premiers** : ce décalage, et pas une différence d'échelle, est ce
+qui fait lire du relief.
+
+## Trois moments, et seulement trois
+
+`pokemon_pose`, `evolution`, `attaque_declaree`. Un Pokémon qui jaillirait à chaque énergie attachée
+cesserait d'être un événement.
+
+⛔ **Jamais pendant la mise en place.** Les placements du début de partie passent par
+`mise_en_place_revelee`, qui n'est pas dans la table : six apparitions d'affilée feraient de la
+première impression une bousculade, et les découpes feraient exploser le budget de mise en place
+(432 Kio, 2,2 s en 4G). C'est aussi pourquoi le budget serveur ne compte **qu'une** apparition par
+partie — une à la fois, comme le zoom.
+
+## Le plafond de fluidité n'a pas été relevé : l'effet s'y est plié
+
+`COUT_LE_PLUS_LOURD` compte les nœuds animés simultanément. La première version en avait **douze**
+(quatre calques + huit particules), soit un de plus que l'effet typé le plus lourd (`fairy`, coût 11)
+— celui sur lequel le plancher de 30 images/s a été mesuré au navigateur. Le test l'a refusé.
+
+La réponse n'a pas été de relever le plafond, qui n'est pas un réglage mais le résultat d'une
+mesure : `PARTICULES_MAX` est passé à **sept**. On ne voit pas la différence entre sept et huit
+particules ; on verrait un plateau qui saccade.
+
+## La dégradation est le cas courant
+
+Onze cartes ont une découpe, le catalogue en compte plus de vingt-deux mille : `apparitionDe` rend
+`null` la quasi-totalité du temps. Ce `null` ne laisse **aucun trou** — pas de cadre vide, pas
+d'icône « image manquante », pas de message. L'effet de type générique joue exactement comme avant
+et le journal porte la même phrase. C'est D9 appliqué au graphisme : on préfère ne rien montrer de
+spécial plutôt que de montrer quelque chose d'approximatif.
+
+En animations réduites, aucune apparition : le socle rend déjà `animation: null`, et un badge
+statique n'apprendrait rien de plus que l'image déjà posée sur la carte.
+
+## Ajouter une vedette
+
+```bash
+cd apps/api
+uv sync --extra decoupe
+uv run python scripts/decouper_apparitions.py --telecharger-modele
+# 1. ajouter la ligne dans src/pbm_api/jeu/apparitions.json (tcgdex_id, nom, type, illustration)
+uv run python scripts/decouper_apparitions.py --planche /tmp/planche.png --sans-publier --ecrire-registre
+# 2. REGARDER la planche, poser verdict_oeil (accepte|refuse) et motif_oeil
+uv run python scripts/decouper_apparitions.py --ecrire-registre   # dépose et publie
+```
+
+Les illustrations officielles et la planche ne sont **pas** versionnées : ce sont des artefacts de
+travail. Seuls le registre et ses mesures entrent dans le dépôt.

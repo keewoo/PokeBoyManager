@@ -1,0 +1,396 @@
+{
+  "version": 1,
+  "commentaire": "Registre des Pokemon vedettes (DJ3). Le champ publie est ecrit par scripts/decouper_apparitions.py apres une decoupe reussie : ne jamais le passer a true a la main.",
+  "moteur": "u2netp",
+  "vedettes": [
+    {
+      "tcgdex_id": "base1-1",
+      "nom": "Alakazam",
+      "type": "Psy",
+      "illustration": "https://assets.tcgdex.net/fr/base/base1/1",
+      "publie": true,
+      "note": {
+        "moteur": "u2netp",
+        "aire": 0.207,
+        "compacite": 0.233,
+        "bords": 0.0,
+        "morceaux": 1,
+        "flou": 0.043,
+        "allongement": 1.07,
+        "score": 0.75,
+        "refus": [],
+        "largeur": 278,
+        "hauteur": 296,
+        "octets": 21714
+      },
+      "verdict_oeil": "accepte",
+      "motif_oeil": ""
+    },
+    {
+      "tcgdex_id": "base1-2",
+      "nom": "Tortank",
+      "type": "Eau",
+      "illustration": "https://assets.tcgdex.net/fr/base/base1/2",
+      "publie": true,
+      "note": {
+        "moteur": "u2netp",
+        "aire": 0.269,
+        "compacite": 0.439,
+        "bords": 0.0,
+        "morceaux": 1,
+        "flou": 0.03,
+        "allongement": 1.01,
+        "score": 0.61,
+        "refus": [],
+        "largeur": 271,
+        "hauteur": 271,
+        "octets": 21354
+      },
+      "verdict_oeil": "accepte",
+      "motif_oeil": ""
+    },
+    {
+      "tcgdex_id": "base1-3",
+      "nom": "Leveinard",
+      "type": "Incolore",
+      "illustration": "https://assets.tcgdex.net/fr/base/base1/3",
+      "publie": true,
+      "note": {
+        "moteur": "u2netp",
+        "aire": 0.322,
+        "compacite": 0.45,
+        "bords": 0.0,
+        "morceaux": 1,
+        "flou": 0.016,
+        "allongement": 1.11,
+        "score": 0.62,
+        "refus": [],
+        "largeur": 288,
+        "hauteur": 260,
+        "octets": 14436
+      },
+      "verdict_oeil": "accepte",
+      "motif_oeil": ""
+    },
+    {
+      "tcgdex_id": "base1-4",
+      "nom": "Dracaufeu",
+      "type": "Feu",
+      "illustration": "https://assets.tcgdex.net/fr/base/base1/4",
+      "publie": true,
+      "note": {
+        "moteur": "u2netp",
+        "aire": 0.182,
+        "compacite": 0.273,
+        "bords": 0.0,
+        "morceaux": 1,
+        "flou": 0.065,
+        "allongement": 1.07,
+        "score": 0.69,
+        "refus": [],
+        "largeur": 284,
+        "hauteur": 265,
+        "octets": 21218
+      },
+      "verdict_oeil": "accepte",
+      "motif_oeil": ""
+    },
+    {
+      "tcgdex_id": "base1-5",
+      "nom": "Mélofée",
+      "type": "Incolore",
+      "illustration": "https://assets.tcgdex.net/fr/base/base1/5",
+      "publie": false,
+      "note": {
+        "moteur": "u2netp",
+        "aire": 0.286,
+        "compacite": 0.441,
+        "bords": 0.0,
+        "morceaux": 1,
+        "flou": 0.06,
+        "allongement": 1.12,
+        "score": 0.56,
+        "refus": [],
+        "largeur": 288,
+        "hauteur": 258,
+        "octets": 17666
+      },
+      "verdict_oeil": "refuse",
+      "motif_oeil": "un morceau de fond sombre reste accroche a l'oreille droite"
+    },
+    {
+      "tcgdex_id": "base1-6",
+      "nom": "Léviator",
+      "type": "Eau",
+      "illustration": "https://assets.tcgdex.net/fr/base/base1/6",
+      "publie": true,
+      "note": {
+        "moteur": "u2netp",
+        "aire": 0.252,
+        "compacite": 0.269,
+        "bords": 0.0,
+        "morceaux": 1,
+        "flou": 0.126,
+        "allongement": 1.02,
+        "score": 0.61,
+        "refus": [],
+        "largeur": 273,
+        "hauteur": 278,
+        "octets": 23100
+      },
+      "verdict_oeil": "accepte",
+      "motif_oeil": "un leger reste de fond sous la queue, invisible a la taille d'affichage"
+    },
+    {
+      "tcgdex_id": "base1-7",
+      "nom": "Tygnon",
+      "type": "Combat",
+      "illustration": "https://assets.tcgdex.net/fr/base/base1/7",
+      "publie": true,
+      "note": {
+        "moteur": "u2netp",
+        "aire": 0.153,
+        "compacite": 0.157,
+        "bords": 0.0,
+        "morceaux": 1,
+        "flou": 0.056,
+        "allongement": 1.37,
+        "score": 0.8,
+        "refus": [],
+        "largeur": 221,
+        "hauteur": 303,
+        "octets": 15770
+      },
+      "verdict_oeil": "accepte",
+      "motif_oeil": ""
+    },
+    {
+      "tcgdex_id": "base1-8",
+      "nom": "Mackogneur",
+      "type": "Combat",
+      "illustration": "https://assets.tcgdex.net/fr/base/base1/8",
+      "publie": false,
+      "note": {
+        "moteur": "u2netp",
+        "aire": 0.288,
+        "compacite": 0.393,
+        "bords": 0.0,
+        "morceaux": 1,
+        "flou": 0.079,
+        "allongement": 1.05,
+        "score": 0.57,
+        "refus": [],
+        "largeur": 288,
+        "hauteur": 304,
+        "octets": 28562
+      },
+      "verdict_oeil": "refuse",
+      "motif_oeil": "le fond holographique bleu est garde tout autour du sujet"
+    },
+    {
+      "tcgdex_id": "base1-9",
+      "nom": "Magnéton",
+      "type": "Électrique",
+      "illustration": "https://assets.tcgdex.net/fr/base/base1/9",
+      "publie": false,
+      "note": {
+        "moteur": "u2netp",
+        "aire": 0.067,
+        "compacite": 0.345,
+        "bords": 0.0,
+        "morceaux": 2,
+        "flou": 0.161,
+        "allongement": 1.38,
+        "score": 0.4,
+        "refus": [
+          "découpe éclatée en 2 morceaux"
+        ]
+      },
+      "verdict_oeil": "refuse",
+      "motif_oeil": "decoupe eclatee : la note l'avait deja refusee"
+    },
+    {
+      "tcgdex_id": "base1-10",
+      "nom": "Mewtwo",
+      "type": "Psy",
+      "illustration": "https://assets.tcgdex.net/fr/base/base1/10",
+      "publie": false,
+      "note": {
+        "moteur": "u2netp",
+        "aire": 0.032,
+        "compacite": 0.616,
+        "bords": 0.0,
+        "morceaux": 2,
+        "flou": 0.11,
+        "allongement": 1.08,
+        "score": 0.25,
+        "refus": [
+          "sujet trop petit (0.03 de la fenêtre, minimum 0.06)",
+          "découpe éclatée en 2 morceaux"
+        ]
+      },
+      "verdict_oeil": "refuse",
+      "motif_oeil": "sujet trop petit et eclate : la note l'avait deja refusee"
+    },
+    {
+      "tcgdex_id": "base1-11",
+      "nom": "Nidoking",
+      "type": "Plante",
+      "illustration": "https://assets.tcgdex.net/fr/base/base1/11",
+      "publie": true,
+      "note": {
+        "moteur": "u2netp",
+        "aire": 0.314,
+        "compacite": 0.333,
+        "bords": 0.0,
+        "morceaux": 1,
+        "flou": 0.034,
+        "allongement": 1.11,
+        "score": 0.68,
+        "refus": [],
+        "largeur": 288,
+        "hauteur": 258,
+        "octets": 23274
+      },
+      "verdict_oeil": "accepte",
+      "motif_oeil": ""
+    },
+    {
+      "tcgdex_id": "base1-12",
+      "nom": "Feunard",
+      "type": "Feu",
+      "illustration": "https://assets.tcgdex.net/fr/base/base1/12",
+      "publie": true,
+      "note": {
+        "moteur": "u2netp",
+        "aire": 0.329,
+        "compacite": 0.331,
+        "bords": 0.0,
+        "morceaux": 1,
+        "flou": 0.05,
+        "allongement": 1.1,
+        "score": 0.67,
+        "refus": [],
+        "largeur": 288,
+        "hauteur": 262,
+        "octets": 22578
+      },
+      "verdict_oeil": "accepte",
+      "motif_oeil": ""
+    },
+    {
+      "tcgdex_id": "base1-13",
+      "nom": "Tartard",
+      "type": "Eau",
+      "illustration": "https://assets.tcgdex.net/fr/base/base1/13",
+      "publie": true,
+      "note": {
+        "moteur": "u2netp",
+        "aire": 0.305,
+        "compacite": 0.37,
+        "bords": 0.0,
+        "morceaux": 1,
+        "flou": 0.041,
+        "allongement": 1.08,
+        "score": 0.65,
+        "refus": [],
+        "largeur": 288,
+        "hauteur": 266,
+        "octets": 18882
+      },
+      "verdict_oeil": "accepte",
+      "motif_oeil": "fin lisere bleu clair sur le contour, acceptable"
+    },
+    {
+      "tcgdex_id": "base1-14",
+      "nom": "Raichu",
+      "type": "Électrique",
+      "illustration": "https://assets.tcgdex.net/fr/base/base1/14",
+      "publie": true,
+      "note": {
+        "moteur": "u2netp",
+        "aire": 0.15,
+        "compacite": 0.102,
+        "bords": 0.0,
+        "morceaux": 1,
+        "flou": 0.188,
+        "allongement": 1.46,
+        "score": 0.66,
+        "refus": [],
+        "largeur": 288,
+        "hauteur": 198,
+        "octets": 16990
+      },
+      "verdict_oeil": "accepte",
+      "motif_oeil": "fine trace de queue en bas a gauche, invisible a la taille d'affichage"
+    },
+    {
+      "tcgdex_id": "base1-15",
+      "nom": "Florizarre",
+      "type": "Plante",
+      "illustration": "https://assets.tcgdex.net/fr/base/base1/15",
+      "publie": true,
+      "note": {
+        "moteur": "u2netp",
+        "aire": 0.457,
+        "compacite": 0.551,
+        "bords": 0.0,
+        "morceaux": 1,
+        "flou": 0.024,
+        "allongement": 1.46,
+        "score": 0.52,
+        "refus": [],
+        "largeur": 288,
+        "hauteur": 199,
+        "octets": 16258
+      },
+      "verdict_oeil": "accepte",
+      "motif_oeil": ""
+    },
+    {
+      "tcgdex_id": "base1-16",
+      "nom": "Électhor",
+      "type": "Électrique",
+      "illustration": "https://assets.tcgdex.net/fr/base/base1/16",
+      "publie": false,
+      "note": {
+        "moteur": "u2netp",
+        "aire": 0.167,
+        "compacite": 0.064,
+        "bords": 0.0,
+        "morceaux": 1,
+        "flou": 0.323,
+        "allongement": 1.36,
+        "score": 0.65,
+        "refus": [
+          "bord vaporeux (0.32 de pixels à demi transparents > 0.22)"
+        ]
+      },
+      "verdict_oeil": "refuse",
+      "motif_oeil": "bord vaporeux : la note l'avait deja refusee (plumes d'eclair diffuses)"
+    },
+    {
+      "tcgdex_id": "base1-58",
+      "nom": "Pikachu",
+      "type": "Électrique",
+      "illustration": "https://assets.tcgdex.net/fr/base/base1/58",
+      "publie": false,
+      "note": {
+        "moteur": "u2netp",
+        "aire": 0.492,
+        "compacite": 0.605,
+        "bords": 0.098,
+        "morceaux": 1,
+        "flou": 0.131,
+        "allongement": 1.13,
+        "score": 0.33,
+        "refus": [],
+        "largeur": 288,
+        "hauteur": 257,
+        "octets": 23330
+      },
+      "verdict_oeil": "refuse",
+      "motif_oeil": "le fond violet est garde autour de la tete et des oreilles"
+    }
+  ]
+}

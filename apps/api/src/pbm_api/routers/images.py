@@ -1,6 +1,10 @@
 """Proxy `/img/cards/{id}` : sert l'image officielle, mise en cache dans le stockage objet au
 premier accès (mission `v2-catalogue`, point 3). Pas de repli silencieux : une carte sans image
 ou une image officielle injoignable renvoie une erreur explicite, jamais un succès vide.
+
+La même famille d'URL sert aussi `/img/apparitions/{tcgdex_id}` (lot `j-anim-pokemon-apparition`) :
+la découpe du Pokémon utilisée par l'animation d'apparition. Elle, en revanche, ne fabrique **rien**
+— voir :func:`get_apparition`.
 """
 
 import uuid
@@ -15,6 +19,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pbm_api.catalog.tcgdex_client import TcgdexClient
 from pbm_api.db import get_session
 from pbm_api.http_images import reponse_image
+from pbm_api.jeu import vedettes
+from pbm_api.jeu.decoupe import TYPE_MIME_APPARITION
 from pbm_api.models import Card
 from pbm_api.storage import StorageBackend, build_storage
 
@@ -79,3 +85,54 @@ async def get_card_image(
 
     await storage.put(object_key, image_bytes, "image/webp")
     return reponse_image(image_bytes, "image/webp", if_none_match=if_none_match, immuable=True)
+
+
+#: Le **seul** message de refus de la route d'apparition. Un identifiant mal formé, un identifiant
+#: absent du registre et une découpe absente du stockage rendent tous les trois exactement ce
+#: texte : la route est publique, et distinguer « mal formé » de « non publié » donnerait à qui
+#: sonde la route de quoi reconstituer la liste des vedettes sans jamais charger une image.
+DETAIL_APPARITION_INTROUVABLE = "aucune apparition pour cette carte"
+
+
+@router.get("/img/apparitions/{tcgdex_id}")
+async def get_apparition(
+    tcgdex_id: str,
+    storage: Annotated[StorageBackend, Depends(get_storage)],
+    if_none_match: Annotated[str | None, Header(alias="If-None-Match")] = None,
+) -> Response:
+    """Sert la découpe du Pokémon d'une carte vedette (route publique) — **sans rien fabriquer**.
+
+    ⛔ **Une découpe absente est un 404, point.** Ni segmentation à la volée, ni proxy vers
+    l'illustration officielle. La segmentation coûte un modèle U²-Net et plusieurs secondes de CPU
+    (:mod:`pbm_api.jeu.segmentation`) : la déclencher depuis une route d'image, c'est-à-dire depuis
+    un plateau qui s'affiche, mettrait à genoux la machine qui sert — le VPS a deux cœurs. Et
+    proxyfier l'illustration entière à la place donnerait une carte complète là où l'écran attend
+    un sujet détouré sur fond transparent : l'animation afficherait un rectangle, ce qui est pire
+    qu'une animation absente. Une carte sans découpe n'a pas d'apparition et son attaque joue
+    l'effet de type générique (D9) : la dégradation est prévue, et elle ne laisse aucun trou.
+
+    Les découpes sont produites hors ligne par ``scripts/decouper_apparitions.py`` et publiées par
+    le registre :mod:`pbm_api.jeu.vedettes`.
+
+    **Le registre tranche avant le stockage.** Deux gardes, dans cet ordre, et toutes deux avant la
+    moindre lecture d'objet : le motif d'identifiant (qui empêche de fabriquer une clé hors du
+    préfixe ``jeu/apparitions/``) et l'appartenance au registre (qui empêche de transformer la
+    route en sonde d'existence sur le stockage). Lire d'abord et vérifier ensuite aurait rendu le
+    temps de réponse bavard.
+
+    **Cache immuable** : comme l'image officielle d'une carte, une découpe publiée ne change pas
+    pour un identifiant donné — une reprise de découpe passe par un nouveau déploiement du
+    registre. Un an de validité, et le navigateur ne redemande rien.
+    """
+    if not vedettes.MOTIF_ID.match(tcgdex_id) or tcgdex_id not in vedettes.publiees():
+        raise HTTPException(status_code=404, detail=DETAIL_APPARITION_INTROUVABLE)
+
+    decoupe = await storage.get(vedettes.cle_apparition(tcgdex_id))
+    if decoupe is None:
+        # Le registre annonce une découpe que le stockage n'a pas : une incohérence réelle (objet
+        # effacé, déploiement partiel), et on la dit par le même 404 plutôt que de la rattraper.
+        raise HTTPException(status_code=404, detail=DETAIL_APPARITION_INTROUVABLE)
+
+    return reponse_image(
+        decoupe, TYPE_MIME_APPARITION, if_none_match=if_none_match, immuable=True
+    )
