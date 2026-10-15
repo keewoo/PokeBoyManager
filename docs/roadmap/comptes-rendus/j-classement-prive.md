@@ -94,7 +94,8 @@ python -m pbm_api.admin set-reglage-jeu classement_bareme victoires
 | Suite API **complète** (chimera) | **1439 passed, 2 failed** en 4 min 35 — les deux échecs sont `test_catalogue_seed.py`, tombés sur `pg_dump: command not found` : **la WSL de chimera n'a pas `postgresql-client`**, aucun rapport avec ce lot (ils ne touchent ni le classement ni les réglages) |
 | `ruff check .` | **All checks passed** |
 | `alembic upgrade head` | passe ; **une seule tête** après la migration (`c2d9b4e7f315`) |
-| CI GitHub Actions | verte sur la branche (voir le SHA en fin de compte rendu) |
+| CI GitHub Actions | **verte** sur la branche — commit `1ee8847`, passage `CI` déclenché par le push (le passage `pull_request` reste en `action_required` : c'est le garde d'approbation du dépôt, pas un échec) |
+| CI GitHub Actions sur `main` | **verte** sur le commit de fusion `dd225e5` |
 
 **Les tests mordent — vérifié par mutation**, pas supposé. Deux défauts introduits exprès dans le
 recalcul complet, puis retirés :
