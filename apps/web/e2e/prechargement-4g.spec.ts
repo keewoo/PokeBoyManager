@@ -182,14 +182,21 @@ test.describe("Pré-chargement des images d'une partie en 4G simulée", () => {
     /** Les requêtes d'image vues : la preuve qu'on charge le léger, jamais le zoom. */
     const demandees: string[] = [];
 
+    // ⚠️ Les images sont servies AVEC leur en-tête de cache, comme en production (c'est ce que ce
+    // lot ajoute aux deux routes d'images). Sans lui, chaque carte serait téléchargée **deux
+    // fois** — une par le pré-chargeur, une par la balise `<img>` du plateau — et le test
+    // mesurerait un gaspillage qui n'existe pas en vrai. Avec lui, le pré-chargement **remplit le
+    // cache** et le plateau peint depuis le cache : c'est tout le mécanisme, et le compte de
+    // requêtes ci-dessous le prouve.
+    const entetes = { "cache-control": "private, max-age=60" };
     await page.route("**/jeu/rendu/parties/**", async (route) => {
       demandees.push(new URL(route.request().url()).search);
       await servir(CORPS_IMAGE.byteLength);
-      await route.fulfill({ body: CORPS_IMAGE, contentType: "image/webp" });
+      await route.fulfill({ body: CORPS_IMAGE, contentType: "image/webp", headers: entetes });
     });
     await page.route("**/img/cards/**", async (route) => {
       await servir(CORPS_IMAGE.byteLength);
-      await route.fulfill({ body: CORPS_IMAGE, contentType: "image/webp" });
+      await route.fulfill({ body: CORPS_IMAGE, contentType: "image/webp", headers: entetes });
     });
     await page.route("**/games/*/state", (route) =>
       route.fulfill({ json: { vue, evenements: [], numero: 1 } }),
@@ -238,5 +245,13 @@ test.describe("Pré-chargement des images d'une partie en 4G simulée", () => {
         "v=plateau",
       );
     }
+    // Le cache fait son travail : on ne paie pas deux fois la même carte. Le plafond est large
+    // (une marge pour une éventuelle revalidation) mais très en dessous du double.
+    const distinctes = new Set(demandees).size;
+    expect(
+      demandees.length,
+      `${demandees.length} requêtes pour ${distinctes} images distinctes : le pré-chargement ` +
+        "doit remplir le cache du navigateur, pas doubler le trafic",
+    ).toBeLessThan(distinctes * 1.5);
   });
 });

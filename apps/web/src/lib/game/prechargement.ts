@@ -49,6 +49,25 @@ export const ETAT_INITIAL: EtatPrechargement = {
 };
 
 /**
+ * L'avancée **cumulée sur toute la partie**, celle que lit la barre de progression.
+ *
+ * Distincte de {@link EtatPrechargement}, qui ne décrit qu'**un lot**. La vue d'une partie change à
+ * chaque coup et à chaque resynchronisation : de nouvelles cartes deviennent visibles, donc de
+ * nouveaux lots démarrent. Afficher l'état du dernier lot ferait reculer la barre — et, pire, la
+ * laisserait figée si un lot en cours était abandonné au profit d'un lot vide (c'est le défaut que
+ * l'e2e en 4G a trouvé).
+ */
+export type AvanceeGlobale = {
+  /** Total d'images demandées depuis le début de la partie. */
+  total: number;
+  /** Images arrivées ou définitivement manquées — dans les deux cas, plus rien à attendre d'elles. */
+  faits: number;
+};
+
+/** Aucune image demandée : la barre n'a rien à dire. */
+export const AVANCEE_INITIALE: AvanceeGlobale = { total: 0, faits: 0 };
+
+/**
  * Nombre d'images chargées **en parallèle**.
  *
  * Six : c'est la limite de connexions simultanées par origine des navigateurs en HTTP/1.1, et au
@@ -214,6 +233,16 @@ export async function precharger(
  * qui n'existe pas.
  */
 export function pourcentage(etat: EtatPrechargement): number {
-  if (etat.total === 0) return 100;
-  return Math.round(((etat.chargees + etat.echouees) / etat.total) * 100);
+  return pourcentageDe(etat.chargees + etat.echouees, etat.total);
+}
+
+/**
+ * La part de ``faits`` sur ``total``, en pourcentage entier — la primitive des deux compteurs.
+ *
+ * 100 quand il n'y a rien à charger : une barre vide qui annonce 0 % ferait croire à une attente
+ * qui n'existe pas.
+ */
+export function pourcentageDe(faits: number, total: number): number {
+  if (total <= 0) return 100;
+  return Math.max(0, Math.min(100, Math.round((faits / total) * 100)));
 }

@@ -84,7 +84,7 @@ aurait donné un test vert qui ne mesure rien. Le modèle explicite est sériali
 | tests purs du lot seuls | **17 passed** |
 | `vitest run` (toute la suite front, sur devAI) | **842 passed / 94 fichiers** |
 | `tsc --noEmit` (apps/web) | **0 erreur** |
-| CI GitHub Actions | voir ci-dessous |
+| CI GitHub Actions | 1er passage (`b90af65`) : `api` ✅ `web` ✅ `game` ✅, `e2e` ❌ → défaut réel corrigé (voir plus bas) ; 2e passage : voir fin de compte rendu |
 
 ### Poids mesurés sur une **vraie** carte
 
@@ -115,6 +115,35 @@ photos synthétiques variées :
 ⚠️ Ces 3,3 / 23,7 Kio sont ceux de **photos synthétiques**, qui compressent mieux qu'une photo
 d'appareil : les chiffres à retenir sont ceux de la carte réelle ci-dessus (12,2 / 45,2 Ko). Les deux
 sont très en dessous des plafonds.
+
+## Un défaut réel trouvé par la CI, et corrigé dans la foulée
+
+Le premier passage de CI a été **rouge** sur la seule nouvelle spec e2e : le bandeau de
+pré-chargement restait visible au-delà de 6 s. Ce n'était pas le test qui était trop strict, c'était
+un **vrai blocage** :
+
+> La vue d'une partie est un objet neuf à chaque sondage et à chaque resynchronisation. L'effet du
+> composant se relançait donc, **interrompait** le lot en cours — et le lot suivant, vide puisque
+> toutes les URL étaient déjà vues, rendait la main sans rien signaler. La barre restait figée à
+> 50 % pour l'éternité, soit exactement ce que ce composant promet de ne jamais faire.
+
+Correctif : `interrompu` ne regarde plus que le **démontage**, et l'avancée est **cumulée sur la
+partie** (`AvanceeGlobale`) au lieu d'être celle du dernier lot — sinon un lot suivant ferait
+reculer la barre. Deux tests l'encadrent, et le premier a été **vérifié rouge** en recassant
+volontairement le correctif (règle du dépôt) :
+
+- `une vue qui change ne FIGE pas la barre` ;
+- `une carte qui apparaît en cours de partie s'ajoute sans faire reculer la barre`.
+
+⚠️ Aucun test unitaire ne l'aurait trouvé — il fallait un navigateur et un vrai enchaînement de
+resynchronisations. C'est le deuxième enseignement du lot : la spec e2e a payé son coût du premier
+coup.
+
+Le même passage a révélé un second effet mesurable : les images étaient demandées **deux fois** (une
+par le pré-chargeur, une par la balise `<img>` du plateau). La spec sert donc désormais les images
+**avec leur en-tête de cache**, comme en production — le pré-chargement remplit le cache, le plateau
+peint depuis le cache — et **asserte** que le nombre de requêtes reste sous 1,5 × le nombre d'images
+distinctes. Le mécanisme de cache de ce lot est ainsi prouvé, et plus seulement déclaré.
 
 ## Décisions prises dans le lot
 
@@ -173,6 +202,6 @@ sont très en dessous des plafonds.
 - **Trou connu, assumé** : un joueur qui photographie une carte déjà dans son deck et va jouer
   **avant** que le job ne soit passé verra l'image officielle pour cette carte. Le job est enfilé à
   l'ajout, donc la fenêtre est de quelques secondes.
-- **Lint front non rejoué localement** : `next lint` ne peut pas résoudre ses plugins ESLint depuis
+- **Lint front non rejoué localement** (le job `web` de la CI, lint compris, est passé vert) : `next lint` ne peut pas résoudre ses plugins ESLint depuis
   un atelier `/tmp` à `node_modules` lié (artefact pnpm, pas le code). `tsc` et les 842 tests vitest
   sont verts ; c'est la CI qui tranche le lint.

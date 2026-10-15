@@ -118,6 +118,48 @@ describe("BandeauPrechargement", () => {
     await waitFor(() => expect(screen.queryByTestId("prechargement-bandeau")).toBeNull());
   });
 
+  it("une vue qui change ne FIGE pas la barre", async () => {
+    // ⛔ Régression trouvée par l'e2e en 4G, le 15/10/2026. La vue d'une partie est un objet neuf à
+    // chaque sondage et à chaque resynchronisation : l'effet se relançait, interrompait le lot en
+    // cours, et le lot suivant — vide, puisque toutes les URL étaient déjà vues — rendait la main
+    // sans rien signaler. La barre restait à 50 % pour l'éternité, soit exactement ce que ce
+    // composant promet de ne jamais faire.
+    const tenu = chargeurTenu();
+    const { rerender } = render(
+      <BandeauPrechargement vue={vueAvec(["/a", "/b"])} charger={tenu.charger} />,
+    );
+    await waitFor(() => expect(screen.getByTestId("prechargement-bandeau")).toBeTruthy());
+    tenu.relacherUne();
+    await waitFor(() =>
+      expect(screen.getByTestId("prechargement-compte").textContent).toBe("1/2"),
+    );
+
+    // Un coup est joué : même partie, mêmes cartes, objet de vue DIFFÉRENT.
+    rerender(<BandeauPrechargement vue={vueAvec(["/a", "/b"])} charger={tenu.charger} />);
+
+    // La seconde image était déjà en vol : elle doit encore pouvoir conclure, et la barre finir.
+    tenu.relacherUne();
+    await waitFor(() => expect(screen.queryByTestId("prechargement-bandeau")).toBeNull());
+  });
+
+  it("une carte qui apparaît en cours de partie s'ajoute sans faire reculer la barre", async () => {
+    const tenu = chargeurTenu();
+    const { rerender } = render(
+      <BandeauPrechargement vue={vueAvec(["/a", "/b"])} charger={tenu.charger} />,
+    );
+    await waitFor(() => expect(screen.getByTestId("prechargement-bandeau")).toBeTruthy());
+    tenu.relacherUne();
+    await waitFor(() =>
+      expect(screen.getByTestId("prechargement-compte").textContent).toBe("1/2"),
+    );
+
+    // Une carte piochée devient visible : le total monte, le fait acquis ne retombe pas.
+    rerender(<BandeauPrechargement vue={vueAvec(["/a", "/b", "/c"])} charger={tenu.charger} />);
+    await waitFor(() =>
+      expect(screen.getByTestId("prechargement-compte").textContent).toBe("1/3"),
+    );
+  });
+
   it("est HORS FLUX : la page de partie n'admet aucun défilement", async () => {
     const tenu = chargeurTenu();
     render(<BandeauPrechargement vue={vueAvec(["/a"])} charger={tenu.charger} />);

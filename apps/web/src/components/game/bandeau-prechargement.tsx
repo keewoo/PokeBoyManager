@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 
 import {
-  ETAT_INITIAL,
+  AVANCEE_INITIALE,
+  type AvanceeGlobale,
   type ChargeurImage,
-  type EtatPrechargement,
-  pourcentage,
+  pourcentageDe,
   precharger,
   urlsAPrecharger,
 } from "@/lib/game/prechargement";
@@ -39,29 +39,45 @@ export function BandeauPrechargement({
   /** Chargeur injectable — les tests n'ont pas de réseau, et l'e2e veut pouvoir ralentir. */
   charger?: ChargeurImage;
 }) {
-  const [etat, setEtat] = useState<EtatPrechargement>(ETAT_INITIAL);
-  /** Les URL déjà pré-chargées : une vue qui change (un coup joué) ne relance pas tout. */
+  const [avancee, setAvancee] = useState<AvanceeGlobale>(AVANCEE_INITIALE);
+  /** Les URL déjà demandées : une vue qui change (un coup joué) ne relance pas tout. */
   const dejaVues = useRef<Set<string>>(new Set());
+  /** Le cumul **sur toute la partie**, et pas sur le dernier lot — voir l'avertissement ci-dessous. */
+  const cumul = useRef({ total: 0, faits: 0 });
+  /** Faux seulement au démontage : c'est la seule raison d'abandonner un chargement en vol. */
+  const monte = useRef(true);
+  useEffect(() => () => void (monte.current = false), []);
 
   useEffect(() => {
     const urls = urlsAPrecharger(vue).filter((url) => !dejaVues.current.has(url));
     if (urls.length === 0) return;
     urls.forEach((url) => dejaVues.current.add(url));
+    cumul.current.total += urls.length;
 
-    let demonte = false;
-    void precharger(urls, (avancee) => setEtat(avancee), {
-      charger,
-      interrompu: () => demonte,
-    });
-    return () => {
-      demonte = true;
-    };
+    // ⚠️ `interrompu` ne regarde QUE le démontage, jamais le changement de `vue`. La vue de partie
+    // est un objet neuf à chaque sondage et à chaque resynchronisation : interrompre ici arrêtait
+    // le lot en cours, et comme le lot suivant ne contenait plus aucune URL neuve (toutes déjà
+    // dans `dejaVues`), il rendait la main sans rien signaler — la barre restait figée à 40 %
+    // pour toujours. Trouvé par l'e2e en 4G, pas par un test unitaire.
+    let precedent = 0;
+    void precharger(
+      urls,
+      (lot) => {
+        // Le lot rend des compteurs qui lui sont propres : on n'en prend que le **delta**, sinon
+        // un second lot ferait reculer la barre.
+        const faits = lot.chargees + lot.echouees;
+        cumul.current.faits += faits - precedent;
+        precedent = faits;
+        if (monte.current) setAvancee({ ...cumul.current });
+      },
+      { charger, interrompu: () => !monte.current },
+    );
   }, [vue, charger]);
 
-  if (etat.total === 0 || etat.termine) return null;
+  const restantes = avancee.total - avancee.faits;
+  if (avancee.total === 0 || restantes <= 0) return null;
 
-  const pct = pourcentage(etat);
-  const restantes = etat.total - etat.chargees - etat.echouees;
+  const pct = pourcentageDe(avancee.faits, avancee.total);
   return (
     <div
       data-testid="prechargement-bandeau"
@@ -71,7 +87,7 @@ export function BandeauPrechargement({
         <p className="flex items-baseline justify-between text-[0.75rem] leading-tight">
           <span>Préparation des cartes…</span>
           <span data-testid="prechargement-compte" className="tabular-nums">
-            {etat.chargees + etat.echouees}/{etat.total}
+            {avancee.faits}/{avancee.total}
           </span>
         </p>
         <div
