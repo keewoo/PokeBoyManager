@@ -7,6 +7,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 from fastapi.responses import Response as RawResponse
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.ai.errors import UnsupportedImageFormatError
@@ -41,6 +42,7 @@ from pbm_api.profile.schemas import (
     SessionResponse,
     UpdateProfileRequest,
 )
+from pbm_api.routers.matchmaking import get_redis_client
 from pbm_api.security.compromised import CompromisedPasswordChecker, get_compromised_checker
 from pbm_api.storage import StorageBackend, build_storage
 
@@ -267,13 +269,20 @@ async def delete_account(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
     storage: StorageBackend = Depends(get_storage),
+    redis: Redis = Depends(get_redis_client),
     _csrf: None = Depends(require_csrf),
 ) -> None:
-    """Supprime définitivement le compte de l'utilisateur courant (données et avatar) après
-    vérification du mot de passe, puis efface les cookies de session/CSRF. Lève 401 si le
-    mot de passe est incorrect."""
+    """Supprime définitivement le compte de l'utilisateur courant (données, avatar, **parties et
+    journaux de partie**) après vérification du mot de passe, puis efface les cookies de
+    session/CSRF. Lève 401 si le mot de passe est incorrect.
+
+    ``redis`` sert à retirer la place du joueur dans la file d'attente du jeu : une entrée de file
+    qui survit à son compte fait tenter un appariement sur un utilisateur inexistant (revue de
+    sécurité du jeu, lot ``j-securite-jeu``)."""
     try:
-        await service.delete_account(db, current_user, payload.password, storage)
+        await service.delete_account(
+            db, current_user, payload.password, storage, redis=redis
+        )
     except InvalidCredentialsError:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, INVALID_PASSWORD_MESSAGE) from None
     response.delete_cookie(settings.session_cookie_name)

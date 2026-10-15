@@ -68,6 +68,19 @@ from pbm_api.models import (
     Set,
     User,
 )
+from pbm_api.security.csrf import CSRF_HEADER_NAME
+
+
+def _entete_csrf(client) -> dict[str, str]:
+    """Le jeton CSRF de la session courante, en en-tête — exactement ce que fait le front.
+
+    Les mutations du jeu (``/actions``, ``/abandon``, ``/conseil``) exigent le jeton depuis la revue
+    de sécurité du lot ``j-securite-jeu`` ; `apps/web/src/lib/api/client.ts::apiJson` le relit du
+    cookie et le pose sur chaque écriture. Le lire ici depuis le client, plutôt que de le faire
+    remonter par chaque fonction d'aide, garde ces tests lisibles : le cookie est toujours celui de
+    la dernière session ouverte, donc du joueur censé jouer.
+    """
+    return {CSRF_HEADER_NAME: client.cookies.get(settings.csrf_cookie_name) or ""}
 
 BOT_JID = joueur_id_de(BOT_USER_ID)
 PASSWORD = "correct horse battery staple"
@@ -532,7 +545,9 @@ async def test_route_conseil_happy_et_acces_croise(api_client, db_session, monke
     )
 
     # A (session courante) : un conseil légal.
-    reponse = await api_client.post(f"/games/{game.id}/conseil")
+    reponse = await api_client.post(
+        f"/games/{game.id}/conseil", headers=_entete_csrf(api_client)
+    )
     assert reponse.status_code == 200, reponse.text
     corps = reponse.json()
     assert corps["coup"] is not None
@@ -541,7 +556,9 @@ async def test_route_conseil_happy_et_acces_croise(api_client, db_session, monke
 
     # B devient la session courante (register + login) → non-participant → 404 (pas de fuite).
     await _register_verify_login(api_client, _email("coachb"))
-    reponse_b = await api_client.post(f"/games/{game.id}/conseil")
+    reponse_b = await api_client.post(
+        f"/games/{game.id}/conseil", headers=_entete_csrf(api_client)
+    )
     assert reponse_b.status_code == 404, reponse_b.text
 
 

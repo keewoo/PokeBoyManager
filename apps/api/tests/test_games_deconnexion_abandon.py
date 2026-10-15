@@ -31,6 +31,20 @@ from pbm_api.games.service import (
     reprendre_partie,
 )
 from pbm_api.models import Card, Deck, DeckCard, Game, GameEvent, Set, User
+from pbm_api.security.csrf import CSRF_HEADER_NAME
+
+
+def _entete_csrf(client) -> dict[str, str]:
+    """Le jeton CSRF de la session courante, en en-tête — exactement ce que fait le front.
+
+    Les mutations du jeu (``/actions``, ``/abandon``, ``/conseil``) exigent le jeton depuis la revue
+    de sécurité du lot ``j-securite-jeu`` ; `apps/web/src/lib/api/client.ts::apiJson` le relit du
+    cookie et le pose sur chaque écriture. Le lire ici depuis le client, plutôt que de le faire
+    remonter par chaque fonction d'aide, garde ces tests lisibles : le cookie est toujours celui de
+    la dernière session ouverte, donc du joueur censé jouer.
+    """
+    return {CSRF_HEADER_NAME: client.cookies.get(settings.csrf_cookie_name) or ""}
+
 
 PASSWORD = "correct horse battery staple"
 
@@ -238,14 +252,18 @@ async def test_route_abandon_forfait_acces_croise_et_historique(api_client, db_s
     game = await creer_partie(db_session, joueur_a=(a_id, deck_a), joueur_b=(b_id, deck_b))
 
     # L'intrus C (connecté en dernier) ne participe pas : 404, pas de fuite d'existence.
-    r_intrus = await api_client.post(f"/games/{game.id}/abandon")
+    r_intrus = await api_client.post(
+        f"/games/{game.id}/abandon", headers=_entete_csrf(api_client)
+    )
     assert r_intrus.status_code == 404, r_intrus.text
     await db_session.refresh(game)
     assert game.status == "en_cours"  # l'intrus n'a rien pu clore
 
     # Le participant B abandonne : forfait, A gagne.
     await _login(api_client, email_b)
-    r_ab = await api_client.post(f"/games/{game.id}/abandon")
+    r_ab = await api_client.post(
+        f"/games/{game.id}/abandon", headers=_entete_csrf(api_client)
+    )
     assert r_ab.status_code == 200, r_ab.text
     await db_session.refresh(game)
     assert game.status == "terminee"
@@ -253,7 +271,9 @@ async def test_route_abandon_forfait_acces_croise_et_historique(api_client, db_s
     assert game.vainqueur_user_id == a_id
 
     # Abandonner une seconde fois : la partie n'est plus en cours → 409 (jamais clos deux fois).
-    r_encore = await api_client.post(f"/games/{game.id}/abandon")
+    r_encore = await api_client.post(
+        f"/games/{game.id}/abandon", headers=_entete_csrf(api_client)
+    )
     assert r_encore.status_code == 409, r_encore.text
 
     # L'historique de A porte le motif « abandon » (critère : dans l'historique).

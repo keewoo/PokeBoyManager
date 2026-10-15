@@ -84,17 +84,32 @@ chacun **doit** figurer au registre. Leur décision de visibilité, citée à `R
 ainsi que phase, tour, attaque, confusion, dégâts, K.O., promotion, retraite, échange, checkup,
 expiration d'effet, pose et évolution de Pokémon, mélange, fin de partie.
 
-### Le système d'effets de carte — différé, nommément
+### Le système d'effets de carte — livré, et corrigé par la revue de sécurité
 
-Les événements du DSL et des **demandes de décision** (`demande_emise`, `demande_repondue`,
-`demande_expiree`, `dsl_choix`, `dsl_primitive`) peuvent porter des **identités cachées** — p. ex.
-une primitive `piocher`/`chercher` nomme la carte tirée, secrète à l'adversaire. Leur projection
-n'est donc **pas** publique : elle se fera **par destinataire**, et c'est le **lot des effets de
-carte** qui la livrera, le jour où une carte au script DSL entrera réellement en jeu (aucune partie
-J1 ne les émet). Ils sont tenus **hors** de `PROJECTEURS` et listés **nommément** dans
-`DIFFERES_SYSTEME_EFFETS` (test `test_parite_evenements_projecteurs`) — pas ignorés : tant qu'ils
-n'ont pas de projecteur par destinataire, `projeter_evenement` les **refuse** (500 bruyant plutôt
-que fuite), ce qui est le comportement voulu avant leur livraison.
+> Cette section décrivait un report (`DIFFERES_SYSTEME_EFFETS`, vide depuis le câblage des effets).
+> Elle dit maintenant l'état réel. Détail des fuites trouvées : **`docs/jeu/SECURITE-JEU.md`**.
+
+Les événements du DSL et des **demandes de décision** peuvent porter des **identités cachées**.
+Ils sont tous dans `PROJECTEURS` ; trois s'y projettent **par destinataire** :
+
+| Événement | Qui voit quoi |
+|---|---|
+| `demande_emise` | le destinataire voit `options` (sauf ensemble caché → `options_nombre`) ; l'autre n'a que `options_nombre` |
+| `demande_repondue` / `demande_expiree` | **seul celui qui a tranché** revoit son `choix` ; l'autre n'a que `choix_nombre` |
+| `dsl_primitive`, `dsl_choix` | ne portent que des nombres, des `ref` publiables ou des identités de Pokémon en jeu |
+
+Deux de ces filtres ont été posés par le lot `j-securite-jeu`, qui a trouvé la fuite que cette
+section croyait reportée :
+
+- un `choisir` du DSL sur une zone cachée livrait les `instance_id` au joueur qui tranche
+  (`DemandeDecision.ensemble_cache` existait et n'était **jamais posé**) ;
+- `demande_repondue` diffusait le `choix` retenu **aux deux** joueurs.
+
+Et une classe de script reste **refusée au chargement** plutôt que projetée de travers : un
+`chercher` dans une zone cachée d'autrui publierait des `ref` vers une main
+(`pbm_game.effets.dsl.audit`). La règle de fond ne change pas : un type d'événement sans projecteur
+est **refusé** par `projeter_evenement` (arrêt bruyant plutôt que fuite), et le test de parité
+`test_parite_evenements_projecteurs` casse en CI si un `EVT_*` du moteur arrive sans le sien.
 
 ### La garde de parité (lot `fix-projection-evenements`)
 

@@ -400,12 +400,29 @@ async def _game_pour_participant(
     On ne distingue pas « n'existe pas » de « pas la vôtre » (→ 404, jamais 403) : pas de fuite
     d'existence. `verrou=True` pose un `SELECT ... FOR UPDATE` sur la ligne de partie — c'est le
     point de sérialisation des écritures concurrentes (idempotence par numéro).
+
+    **Le refus est journalisé** (lot ``j-securite-jeu``, critère « toute action sur une partie
+    étrangère est refusée *et journalisée* »). Le client, lui, reçoit toujours le même 404 muet :
+    ce qui change, c'est que le serveur en garde une trace. Et la trace distingue deux choses que
+    le 404 confond volontairement :
+
+    * **partie inconnue** — un identifiant périmé, un signet, une partie purgée : banal, en INFO ;
+    * **partie étrangère** — la partie existe, le demandeur n'y joue pas : c'est le signal
+      intéressant (énumération d'identifiants, client modifié), en WARNING.
+
+    Sans ce partage, on avait le choix entre un journal muet et un journal qui crie à chaque
+    signet — et un journal qui crie pour rien est un journal que personne ne lit.
     """
     requete = select(Game).where(Game.id == game_id)
     if verrou:
         requete = requete.with_for_update()
     game = (await db.execute(requete)).scalar_one_or_none()
     if game is None:
+        logger.info(
+            "accès refusé — partie %s inconnue (demandeur %s) : identifiant périmé ou purgé.",
+            game_id,
+            user_id,
+        )
         raise PartieIntrouvable(f"Partie {game_id} introuvable.")
     participe = (
         await db.execute(
@@ -415,6 +432,12 @@ async def _game_pour_participant(
         )
     ).first()
     if participe is None:
+        logger.warning(
+            "accès refusé — partie ÉTRANGÈRE %s demandée par le joueur %s, qui n'y participe "
+            "pas : 404 rendu, aucune donnée servie.",
+            game_id,
+            user_id,
+        )
         raise PartieIntrouvable(f"Partie {game_id} introuvable.")
     return game
 
@@ -835,7 +858,20 @@ async def _appliquer_action_verifiee(
                     GameEvent.game_id == game_id, GameEvent.numero == numero_attendu
                 )
             )
-        ).scalar_one()
+        ).scalar_one_or_none()
+        # `scalar_one()` levait ici un `NoResultFound` **non rattrapé** — donc un 500 — dès que le
+        # numéro demandé était en retard SANS correspondre à un événement réel. Le cas n'était pas
+        # théorique : `numero_attendu = -1` suffisait (trouvé par la revue de sécurité du jeu, lot
+        # `j-securite-jeu`, en éprouvant le canal). Le schéma de la route borne désormais à `ge=0`,
+        # mais la garde reste ici : un journal troué par une purge partielle produirait le même
+        # effet, et un appel interne (bot, revanche) ne passe pas par le schéma. Un conflit de
+        # numéro est un refus **nommé** (409), jamais une erreur de serveur.
+        if existante is None:
+            raise ConflitNumero(
+                numero_attendu,
+                game.current_numero,
+                "ce numéro est en retard et ne correspond à aucun coup du journal",
+            )
         if _memes_actions(existante.action, action):
             etat, rng = await _reconstruire(db, game)
             return ResultatAction(

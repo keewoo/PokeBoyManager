@@ -65,6 +65,57 @@ def _id_cible(cible: CibleCarte | CiblePokemon) -> str:
     return cible.identite if isinstance(cible, CiblePokemon) else cible.instance_id
 
 
+#: Les zones de cartes **cachées à tout le monde**, y compris à leur propriétaire : la pioche (son
+#: ordre et son contenu sont secrets pendant le tour) n'y figure **pas**, parce qu'une carte qui dit
+#: « cherchez dans votre deck » donne explicitement le droit de le regarder (R-5.2) — alors qu'une
+#: récompense reste face cachée pour les deux joueurs jusqu'à ce qu'on la prenne (R-3.4). Projeter
+#: les identités d'une récompense à son propre propriétaire lui dirait laquelle prendre : c'est
+#: l'anti-triche le plus élémentaire du jeu.
+_ZONES_CACHEES_A_TOUS = frozenset({"recompenses"})
+
+#: Les zones de cartes cachées **à qui n'en est pas le propriétaire** : la main (R-3.3) et la pioche
+#: (R-3.2). Leur propriétaire a le droit de les voir quand une carte l'y invite ; son adversaire,
+#: jamais.
+_ZONES_CACHEES_A_L_AUTRE = frozenset({"main", "pioche"})
+
+
+def ensemble_cache_pour(
+    candidats: list[CibleCarte | CiblePokemon], destinataire: str
+) -> bool:
+    """L'ensemble de ``candidats`` est-il **caché** au joueur qui doit trancher ?
+
+    Une demande de décision expose ses options au destinataire — c'est ce qui lui permet de choisir.
+    Mais un ``choisir`` du DSL peut parfaitement viser une zone que le destinataire n'a **pas** le
+    droit de voir : « choisissez une carte de la main de votre adversaire », « choisissez une de vos
+    récompenses ». Livrer les ``instance_id`` dans ce cas-là fuiterait l'information cachée, et
+    ``enrichir_demande`` les résoudrait même en ``ref``/``nom`` — on tomberait de l'anti-triche
+    direct dans l'écran du joueur.
+
+    Cette fonction est la **dérivation** qui manquait : le champ ``ensemble_cache`` de
+    :class:`~pbm_game.demandes.modele.DemandeDecision` existait, la projection l'honorait
+    (``options_nombre`` au lieu de ``options``), le moteur l'honorait dans le journal — mais aucun
+    appelant ne le posait jamais. Un choix sur une zone cachée livrait donc les identités. Revue de
+    sécurité du jeu, lot ``j-securite-jeu``.
+
+    Un Pokémon en jeu (Actif, banc) est **public** (R-3.1) : il ne cache jamais rien. Une carte de
+    la défausse, de la zone perdue ou le Stade non plus. Restent les trois zones cachées, qui ne le
+    sont pas de la même façon — voir :data:`_ZONES_CACHEES_A_TOUS` et
+    :data:`_ZONES_CACHEES_A_L_AUTRE`.
+
+    Choisir « à l'aveugle » dans un ensemble caché est le comportement **juste**, pas un repli : le
+    TCG lui-même fait choisir au hasard dans une main adverse. Le destinataire reçoit le *nombre*
+    d'options, l'interface lui fait désigner une position, et le moteur tranche.
+    """
+    for cible in candidats:
+        if not isinstance(cible, CibleCarte):
+            continue  # un Pokémon en jeu est public — il n'y a rien à cacher
+        if cible.zone in _ZONES_CACHEES_A_TOUS:
+            return True
+        if cible.zone in _ZONES_CACHEES_A_L_AUTRE and cible.joueur != destinataire:
+            return True
+    return False
+
+
 def strategie_demande(
     gestionnaire,
     *,
@@ -104,6 +155,10 @@ def strategie_demande(
             minimum=combien,
             maximum=combien,
             obligatoire=obligatoire,
+            # Un choix sur une zone cachée au destinataire ne lui livre que le NOMBRE d'options
+            # (lot `j-securite-jeu`) : sans cette dérivation, « choisissez une carte de la main
+            # adverse » lui donnait les `instance_id`, et la vue les enrichissait en `ref`/`nom`.
+            ensemble_cache=ensemble_cache_pour(candidats, destinataire),
             delai_ms=delai_ms,
             temps_restant_ms=delai_ms,
         )
@@ -151,4 +206,9 @@ class Execution:
             )
 
 
-__all__ = ["Execution", "StrategieChoix", "strategie_canonique"]
+__all__ = [
+    "Execution",
+    "StrategieChoix",
+    "ensemble_cache_pour",
+    "strategie_canonique",
+]

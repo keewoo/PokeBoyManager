@@ -98,6 +98,35 @@ def _demande_emise(evt: Evenement, pour: str, jetonneur: Jetonneur | None) -> Ev
     return Evenement(evt.type, donnees)
 
 
+def _demande_tranchee(evt: Evenement, pour: str, jetonneur: Jetonneur | None) -> Evenement:
+    """Décision **prise** ou **expirée** : seul celui qui a tranché revoit son ``choix`` ; tout
+    autre joueur n'apprend que le **nombre** d'identités retenues.
+
+    C'est la symétrie de :func:`_demande_emise`, et elle manquait. ``choix`` porte les
+    ``instance_id`` effectivement retenus parmi les options — or un ``choisir`` du DSL peut viser
+    une zone cachée (« choisissez une carte de la main de votre adversaire », « une de vos
+    récompenses ») : diffuser le ``choix`` tel quel révélait alors à l'adversaire une identité qu'il
+    n'a pas le droit de connaître. L'ancien commentaire affirmait que ces événements « ne portent
+    jamais une carte d'une zone cachée » — c'était une *convention d'écriture des scripts*, que rien
+    n'imposait, et le lot ``j-securite-jeu`` l'a trouvée fausse dès que le DSL a su poser de vraies
+    demandes.
+
+    **On ne perd rien en route.** La *conséquence* publique d'une décision est toujours publiée par
+    son propre événement : ``changer_actif`` annonce le nouvel Actif, ``defausser`` les ``ref``
+    défaussées, ``degats`` les dégâts subis. Ce qui reste privé ici, c'est la **décision** — et il
+    n'y a pas de raison que l'adversaire la lise avant d'en voir l'effet. Le journal moteur, à part,
+    garde la trace complète (rejouabilité).
+
+    ``demande_id`` reste public : savoir *qu'*une décision a été prise, et laquelle, c'est ce qui
+    évite un écran muet (même règle que :func:`_demande_emise`).
+    """
+    if pour == evt.donnees.get("destinataire"):
+        return evt
+    donnees = {cle: valeur for cle, valeur in evt.donnees.items() if cle != "choix"}
+    donnees["choix_nombre"] = len(evt.donnees.get("choix", []))
+    return Evenement(evt.type, donnees)
+
+
 def _cartes_piochees(evt: Evenement, pour: str, jetonneur: Jetonneur | None) -> Evenement:
     """Pioche (R-5.2) : le **propriétaire** voit les ``instance_id`` tirés (ils sont dans sa main
     qu'il voit) ; l'adversaire n'apprend que le **nombre**, jamais les identités.
@@ -193,13 +222,14 @@ PROJECTEURS: dict[str, Projecteur] = {
     EVT_DSL_PRIMITIVE: _public,
     EVT_DSL_CHOIX: _public,  # un choix d'effet : source + nombres demandé/choisi, aucune identité
     EVT_COUT_IMPAYABLE: _public,  # un coût d'effet n'a pas pu être payé — fait public
-    # Fenêtres de décision (lots j-effets-choix / j-plateau-decisions), enfin empruntées en partie
-    # réelle par le câblage des effets : la demande posée cache ses options à qui n'est pas le
-    # destinataire ; la réponse et l'expiration ne portent que l'id de la demande et le choix retenu
-    # (options déjà publiques ou identités de banc — jamais une carte d'une zone cachée ici).
+    # Fenêtres de décision (lots j-effets-choix / j-plateau-decisions), empruntées en partie réelle
+    # par le câblage des effets : les trois se projettent **par destinataire**. La demande posée
+    # cache ses options à qui n'est pas le destinataire ; la réponse et l'expiration ne rendent le
+    # `choix` qu'à celui qui a tranché (lot `j-securite-jeu` : un `choisir` du DSL peut viser une
+    # zone cachée, donc le choix retenu peut être l'identité d'une carte secrète).
     EVT_DEMANDE_EMISE: _demande_emise,
-    EVT_DEMANDE_REPONDUE: _public,
-    EVT_DEMANDE_EXPIREE: _public,
+    EVT_DEMANDE_REPONDUE: _demande_tranchee,
+    EVT_DEMANDE_EXPIREE: _demande_tranchee,
 }
 
 

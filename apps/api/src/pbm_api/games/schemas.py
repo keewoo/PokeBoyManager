@@ -26,7 +26,13 @@ class ActionIn(BaseModel):
 
     type: str
     params: dict = Field(default_factory=dict)
-    numero_attendu: int
+    # `ge=0` : un numéro de coup négatif n'existe pas. Sans cette borne, `numero_attendu: -1`
+    # entrait dans le chemin de rejeu idempotent (« numéro déjà joué »), n'y trouvait aucun
+    # événement et remontait un `NoResultFound` **non rattrapé** — donc un 500, déclenchable par
+    # n'importe quel client avec un seul entier. Trouvé en éprouvant le canal, revue de sécurité
+    # du jeu (lot `j-securite-jeu`). La garde du service est doublée côté `appliquer_action` : une
+    # borne de schéma protège la route, pas les appels internes (bots, revanche, scripts).
+    numero_attendu: int = Field(ge=0)
 
 
 class GamePlayerOut(BaseModel):

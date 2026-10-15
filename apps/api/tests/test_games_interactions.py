@@ -30,9 +30,24 @@ from pbm_game.state import (
     Tour,
 )
 
+from pbm_api.config import settings
 from pbm_api.games.actions import actions_pour
 from pbm_api.games.service import creer_partie
 from pbm_api.models import Card, Deck, DeckCard, Set, User
+from pbm_api.security.csrf import CSRF_HEADER_NAME
+
+
+def _entete_csrf(client) -> dict[str, str]:
+    """Le jeton CSRF de la session courante, en en-tête — exactement ce que fait le front.
+
+    Les mutations du jeu (``/actions``, ``/abandon``, ``/conseil``) exigent le jeton depuis la revue
+    de sécurité du lot ``j-securite-jeu`` ; `apps/web/src/lib/api/client.ts::apiJson` le relit du
+    cookie et le pose sur chaque écriture. Le lire ici depuis le client, plutôt que de le faire
+    remonter par chaque fonction d'aide, garde ces tests lisibles : le cookie est toujours celui de
+    la dernière session ouverte, donc du joueur censé jouer.
+    """
+    return {CSRF_HEADER_NAME: client.cookies.get(settings.csrf_cookie_name) or ""}
+
 
 PASSWORD = "correct horse battery staple"
 
@@ -189,7 +204,9 @@ async def test_state_porte_actions_legales_refusees_et_numero(api_client, db_ses
 
     # Un coup légal fait avancer le numéro renvoyé (le client enchaîne sans relire l'état).
     r_coup = await api_client.post(
-        f"/games/{game.id}/actions", json={"type": "piocher", "numero_attendu": 0}
+        f"/games/{game.id}/actions",
+        json={"type": "piocher", "numero_attendu": 0},
+        headers=_entete_csrf(api_client),
     )
     assert r_coup.status_code == 200, r_coup.text
     assert r_coup.json()["numero"] == 1

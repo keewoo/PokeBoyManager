@@ -43,6 +43,7 @@ from pbm_api.games.service import creer_partie, demarrer_partie, reprendre_parti
 from pbm_api.games.temps_reel import HUB
 from pbm_api.models import Card, Deck, DeckCard, Game, Set, User
 from pbm_api.models.games import GameEvent
+from pbm_api.security.csrf import CSRF_HEADER_NAME, compute_csrf_token
 
 PASSWORD = "correct horse battery staple"
 # Identifiants **fixes** : ``joueur_id_de`` dérive le flux de mélange de l'``user_id``, donc des
@@ -264,6 +265,10 @@ async def test_partie_complete_par_http_et_ws_sans_fuite_ni_500(api_client, db_s
                     "params": action.params,
                     "numero_attendu": numero_attendu,
                 },
+                # Jeton CSRF = HMAC du jeton de session (`pbm_api.security.csrf`). Ce test bascule
+                # de session à la main (`_devenir`) sans repasser par `/auth/login` : il le calcule
+                # plutôt que de relire un cookie resté sur l'autre joueur.
+                headers={CSRF_HEADER_NAME: compute_csrf_token(token)},
             )
             # Le cœur du correctif : le coup passe la projection (plus de 500), y compris le tout
             # premier — placer_mise_en_place — qui faisait échouer la livraison.
