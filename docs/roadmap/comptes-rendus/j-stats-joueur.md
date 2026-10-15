@@ -71,8 +71,8 @@ aurait laissé passer un agrégat quadratique. Trois requêtes SQL au total, auc
 | `vitest run …/mes-parties-view.test.tsx` | **12 passed** |
 | `tsc --noEmit` (devAI) | aucun diagnostic |
 | `eslint` sur les fichiers du lot (devAI) | aucune sortie (vert) |
-| CI GitHub Actions — branche | SHA `__SHA_BRANCHE__` → **__CI_BRANCHE__** |
-| CI GitHub Actions — `main` après fusion | SHA `__SHA_MAIN__` → **__CI_MAIN__** |
+| CI GitHub Actions — branche | SHA `32ffad9` → **verte (`success` sur l'événement `push` — le passage `pull_request` reste en `action_required`, approbation exigée par le dépôt, ce n'est pas un échec)** |
+| CI GitHub Actions — `main` après fusion | SHA `8a4a440` → **verte (`success`)** |
 
 **Isolation (exigence du dépôt).** `test_je_ne_vois_pas_les_parties_d_un_autre_compte` : l'autre
 compte a six victoires et un pseudo, le compte de la session une seule défaite — la liste comme les
