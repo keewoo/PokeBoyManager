@@ -174,6 +174,20 @@ installé dans la WSL de chimera. La CI, elle, en dispose. Rien dans ce lot ne t
 ni `partie-view` ni `lib/api/games.ts` ; l'ajout de sept tests change seulement l'ordonnancement.
 C'est donc un test sensible au temps, pas une régression — mais il est signalé ici plutôt que passé sous silence.
 
+## Les passages de CI, nommés
+
+| Passage | Commit | Verdict |
+|---|---|---|
+| branche, 1er push | `f0b0e2e` | ❌ **échec** — `web (lint)` et le serveur web de l'`e2e`, **une seule cause** : sept apostrophes nues dans du texte JSX et une directive `eslint-disable` décalée d'une ligne |
+| branche, après correctif | `9d08aa9` | ✅ **success** (les quatre jobs) |
+| `main` (commit de fusion) | `ee67faf` | ✅ **success** |
+
+**La leçon est écrite dans `docs/CODE.md`** (§ « Le lint du front ne se contourne pas ») plutôt que
+seulement ici : `next build` passait dans l'atelier `/tmp` parce que la résolution des plugins ESLint
+y échoue silencieusement, ce qui se lit à tort comme « pas lintable ». La fiche donne la recette qui
+expose les plugins du magasin pnpm par `NODE_PATH` — avec elle, le lint a été rejoué **avant** le
+second push, et il est passé du premier coup.
+
 ## Écarts au plan
 
 - **La liste des badges n'a pas été arrêtée « avec JF et Aymeric »** : la session est autonome,
