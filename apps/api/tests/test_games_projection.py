@@ -23,6 +23,7 @@ from datetime import date, datetime
 import httpx
 import pytest
 
+from pbm_api.config import settings
 from pbm_api.games.errors import ActionRefusee
 from pbm_api.games.service import (
     appliquer_action,
@@ -30,6 +31,20 @@ from pbm_api.games.service import (
     reinitialiser_alerte_refus,
 )
 from pbm_api.models import Card, Deck, DeckCard, Game, Set, User
+from pbm_api.security.csrf import CSRF_HEADER_NAME
+
+
+def _entete_csrf(client) -> dict[str, str]:
+    """Le jeton CSRF de la session courante, en en-tête — exactement ce que fait le front.
+
+    Les mutations du jeu (``/actions``, ``/abandon``, ``/conseil``) exigent le jeton depuis la revue
+    de sécurité du lot ``j-securite-jeu`` ; `apps/web/src/lib/api/client.ts::apiJson` le relit du
+    cookie et le pose sur chaque écriture. Le lire ici depuis le client, plutôt que de le faire
+    remonter par chaque fonction d'aide, garde ces tests lisibles : le cookie est toujours celui de
+    la dernière session ouverte, donc du joueur censé jouer.
+    """
+    return {CSRF_HEADER_NAME: client.cookies.get(settings.csrf_cookie_name) or ""}
+
 
 PASSWORD = "correct horse battery staple"
 
@@ -124,7 +139,9 @@ async def test_state_ne_revele_ni_graine_ni_main_adverse(api_client, db_session)
 
     # A joue un coup légal (pioche 1) via la route : le serveur fait autorité.
     r_coup = await api_client.post(
-        f"/games/{game.id}/actions", json={"type": "piocher", "numero_attendu": 0}
+        f"/games/{game.id}/actions",
+        json={"type": "piocher", "numero_attendu": 0},
+        headers=_entete_csrf(api_client),
     )
     assert r_coup.status_code == 200, r_coup.text
 
@@ -149,7 +166,9 @@ async def test_state_ne_fuit_pas_la_carte_piochee_a_l_adversaire(api_client, db_
     """La carte qu'A a piochée (dans sa main, cachée) n'apparaît pas dans la vue de B."""
     email_a, a_id, email_b, b_id, game = await _partie_a_vs_b(api_client, db_session)
     await api_client.post(
-        f"/games/{game.id}/actions", json={"type": "piocher", "numero_attendu": 0}
+        f"/games/{game.id}/actions",
+        json={"type": "piocher", "numero_attendu": 0},
+        headers=_entete_csrf(api_client),
     )
     # L'identité de la carte piochée, vue par son propriétaire A.
     r_a = await api_client.get(f"/games/{game.id}/state")
@@ -174,7 +193,9 @@ async def test_acces_croise_state_et_action(api_client, db_session):
     r_state = await api_client.get(f"/games/{game.id}/state")
     assert r_state.status_code == 404, r_state.text
     r_action = await api_client.post(
-        f"/games/{game.id}/actions", json={"type": "piocher", "numero_attendu": 0}
+        f"/games/{game.id}/actions",
+        json={"type": "piocher", "numero_attendu": 0},
+        headers=_entete_csrf(api_client),
     )
     assert r_action.status_code == 404, r_action.text
 
@@ -184,7 +205,9 @@ async def test_action_illegale_refusee_et_etat_inchange(api_client, db_session):
     email_a, a_id, email_b, b_id, game = await _partie_a_vs_b(api_client, db_session)
 
     r = await api_client.post(
-        f"/games/{game.id}/actions", json={"type": "coup_truque", "numero_attendu": 0}
+        f"/games/{game.id}/actions",
+        json={"type": "coup_truque", "numero_attendu": 0},
+        headers=_entete_csrf(api_client),
     )
     assert r.status_code == 422, r.text
     assert "coup_truque" in r.json()["detail"]  # le motif cite le type inconnu (D9)
@@ -193,7 +216,9 @@ async def test_action_illegale_refusee_et_etat_inchange(api_client, db_session):
     detail = (await api_client.get(f"/games/{game.id}")).json()
     assert detail["current_numero"] == 0
     r_legal = await api_client.post(
-        f"/games/{game.id}/actions", json={"type": "piocher", "numero_attendu": 0}
+        f"/games/{game.id}/actions",
+        json={"type": "piocher", "numero_attendu": 0},
+        headers=_entete_csrf(api_client),
     )
     assert r_legal.status_code == 200, r_legal.text
 

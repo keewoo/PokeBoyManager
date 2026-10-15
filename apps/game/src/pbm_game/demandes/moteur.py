@@ -254,8 +254,17 @@ def repondre(
         raise ValueError(
             "Aucune résolution en cours : il n'y a pas de demande à laquelle répondre."
         )
+    # `destinataire` est **public** (les deux joueurs savent de qui la partie attendait une
+    # décision) et c'est lui qui permet au projecteur `_demande_tranchee` de ne rendre le `choix`
+    # qu'à celui qui a tranché : sans ce champ, l'événement ne savait pas à qui il appartenait et
+    # diffusait les identités retenues aux deux joueurs (lot `j-securite-jeu`).
     evt = Evenement(
-        EVT_DEMANDE_REPONDUE, {"demande_id": reponse.demande_id, "choix": list(reponse.choix)}
+        EVT_DEMANDE_REPONDUE,
+        {
+            "demande_id": reponse.demande_id,
+            "destinataire": resolution.demande.destinataire,
+            "choix": list(reponse.choix),
+        },
     )
     return _reprendre(etat, reponse, reg, rng, evenement_reponse=evt)
 
@@ -278,7 +287,13 @@ def expirer(
         raise ValueError("Aucune résolution en cours : rien à faire expirer.")
     defaut = reponse_par_defaut(resolution.demande)
     evt = Evenement(
-        EVT_DEMANDE_EXPIREE, {"demande_id": defaut.demande_id, "choix": list(defaut.choix)}
+        EVT_DEMANDE_EXPIREE,
+        {
+            "demande_id": defaut.demande_id,
+            # cf. `repondre` ci-dessus : c'est ce champ qui permet la projection par joueur.
+            "destinataire": resolution.demande.destinataire,
+            "choix": list(defaut.choix),
+        },
     )
     return _reprendre(etat, defaut, reg, rng, evenement_reponse=evt)
 

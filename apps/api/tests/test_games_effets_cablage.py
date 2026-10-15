@@ -44,6 +44,7 @@ from pbm_api.games.temps_reel import HUB
 from pbm_api.jeu.scripts.depot import enregistrer_script
 from pbm_api.models import Card, Deck, DeckCard, Game, Set, User
 from pbm_api.models.card_scripts import SCRIPT_STATUT_SCRIPTE
+from pbm_api.security.csrf import CSRF_HEADER_NAME, compute_csrf_token
 
 PASSWORD = "correct horse battery staple"
 UID_A = uuid.UUID("aaaaaaaa-0000-4000-8000-0000000000e1")
@@ -342,10 +343,15 @@ async def test_partie_a_effets_par_http_et_ws(api_client, db_session):
     prouves: set[str] = set()
 
     async def _poster(jid: str, type_: str, params: dict, numero: int):
-        _devenir(token_par_jid[jid])
+        jeton_session = token_par_jid[jid]
+        _devenir(jeton_session)
         r = await api_client.post(
             f"/games/{game.id}/actions",
             json={"type": type_, "params": params, "numero_attendu": numero},
+            # Le jeton CSRF est le HMAC du jeton de session (`pbm_api.security.csrf`) : comme ce
+            # test bascule de session à la main (`_devenir`) sans repasser par `/auth/login`, il
+            # le calcule au lieu de relire un cookie qui serait resté celui de l'autre joueur.
+            headers={CSRF_HEADER_NAME: compute_csrf_token(jeton_session)},
         )
         return r
 

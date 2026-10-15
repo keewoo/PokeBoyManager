@@ -195,6 +195,7 @@ async def play_action(
     body: ActionIn,
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_game_access),
+    _csrf: None = Depends(require_csrf),
 ) -> dict:
     """Jouer un coup : le serveur fait autorité — il rejoue et valide, puis renvoie la vue projetée.
 
@@ -251,6 +252,7 @@ async def abandon_game(
     game_id: uuid.UUID,
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_game_access),
+    _csrf: None = Depends(require_csrf),
 ) -> dict:
     """Abandonner explicitement la partie (R-14.3) : forfait du joueur courant, l'adversaire gagne.
 
@@ -290,6 +292,7 @@ async def get_conseil(
     game_id: uuid.UUID,
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_game_access),
+    _csrf: None = Depends(require_csrf),
 ) -> ConseilOut:
     """Un conseil de l'IA du joueur pour SON tour (lot `j-coach-ia`, DJ7) — une **suggestion**.
 

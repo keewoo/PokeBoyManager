@@ -6,6 +6,7 @@ d'un identifiant fourni par le client.
 
 import uuid
 from datetime import UTC, date, datetime, timedelta
+from typing import TYPE_CHECKING
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,6 +31,8 @@ from pbm_api.models import (
     Detection,
     EmailToken,
     EmailTokenKind,
+    Game,
+    GamePlayer,
     Session,
     Upload,
     User,
@@ -44,6 +47,9 @@ from pbm_api.security.compromised import CompromisedPasswordChecker
 from pbm_api.security.passwords import hash_password, is_password_long_enough, verify_password
 from pbm_api.security.tokens import generate_opaque_token, hash_token
 from pbm_api.storage import StorageBackend
+
+if TYPE_CHECKING:  # `Redis` n'est utilisé qu'en annotation : pas d'import à l'exécution.
+    from redis.asyncio import Redis
 
 CHANGE_EMAIL_SUBJECT = "Confirme ta nouvelle adresse PokeBoyManager"
 EMAIL_CHANGED_NOTICE_SUBJECT = "L'adresse e-mail de ton compte PokeBoyManager a changé"
@@ -285,12 +291,57 @@ async def _storage_keys_to_purge(db: AsyncSession, user: User) -> list[str]:
     return keys
 
 
+async def _parties_a_effacer(db: AsyncSession, user_id: uuid.UUID) -> list[uuid.UUID]:
+    """Les identifiants des parties auxquelles l'utilisateur a participé.
+
+    Une ligne `games` **ne porte aucune clé étrangère vers `users`** (seul `vainqueur_user_id` en
+    porte une, en `SET NULL`) : la cascade du `DELETE FROM users` ne la touche donc pas. Il faut
+    passer par `game_players`, qui est le seul lien entre un compte et ses parties — et le lire
+    **avant** de supprimer l'utilisateur, puisque c'est cette table-là qui, elle, cascade.
+    """
+    rows = await db.execute(
+        select(GamePlayer.game_id).where(GamePlayer.user_id == user_id)
+    )
+    return list(rows.scalars().all())
+
+
 async def delete_account(
-    db: AsyncSession, user: User, password: str, storage: StorageBackend
+    db: AsyncSession,
+    user: User,
+    password: str,
+    storage: StorageBackend,
+    redis: "Redis | None" = None,
 ) -> None:
     """Supprime définitivement le compte après vérification du mot de passe : purge d'abord
-    les objets du stockage (avatar, photos, exports), puis la ligne `users` et tout ce qui en
-    dépend par cascade.
+    les objets du stockage (avatar, photos, exports), **puis les parties et leurs journaux**, puis
+    la ligne `users` et tout ce qui en dépend par cascade.
+
+    ⚠️ **Les parties ne partaient PAS avec le compte** (trouvé par la revue de sécurité du jeu, lot
+    ``j-securite-jeu``). La cascade SQL couvrait bien l'authentification, la collection et les
+    exports — mais pas le jeu, parce que `games` n'a aucune clé étrangère vers `users` :
+
+    * `games.etat_initial` (JSONB) porte les identifiants de joueur, qui **sont** les `user_id` ;
+    * `game_events.auteur` est un `str(user_id)` en clair, une ligne par coup joué ;
+    * `game_snapshots.etat` reporte les mêmes identifiants à chaque instantané ;
+    * et une partie `en_cours` n'est jamais ramassée par la purge d'ancienneté (`service.purger`
+      ne prend que `terminee`/`expiree`) : elle serait restée indéfiniment.
+
+    On supprime donc les lignes `games` de l'utilisateur ; `game_events` et `game_snapshots`
+    suivent par leur cascade vers `games`.
+
+    **Ce qui survit, et pourquoi.** La ligne d'en-tête `game_results` reste (statut, raison de fin,
+    nombre de coups, durée) avec son `vainqueur_user_id` mis à `NULL` : elle ne porte alors plus
+    aucune donnée personnelle, et c'est elle qui tient l'historique de l'**adversaire** — dont le
+    `game_result_players` a survécu, puisque le compte supprimé n'est pas le sien
+    (`docs/jeu/FIN-COMPTE.md`). Le prix à payer est nommé : le **replay** de ces parties disparaît
+    pour l'adversaire, parce qu'il n'existe pas de replay sans le journal, et qu'un journal qui
+    nomme un compte effacé n'a pas à survivre à son effacement. Arbitrage détaillé dans
+    `docs/jeu/SECURITE-JEU.md`.
+
+    ``redis`` retire la place du joueur dans la **file d'attente** : sans ça, une entrée de file
+    survivait à son compte, et l'appariement suivant tentait de créer une partie pour un
+    utilisateur inexistant. Optionnel pour que les appels hors requête (scripts) restent possibles ;
+    la route, elle, le fournit toujours.
     """
     if not verify_password(password, user.password_hash):
         raise InvalidCredentialsError
@@ -298,8 +349,20 @@ async def delete_account(
     for key in await _storage_keys_to_purge(db, user):
         await storage.delete(key)
 
+    if redis is not None:
+        from pbm_api.games import matchmaking
+
+        await matchmaking.quitter(redis, user.id)
+
+    for game_id in await _parties_a_effacer(db, user.id):
+        game = await db.get(Game, game_id)
+        if game is not None:
+            # `game_events` et `game_snapshots` cascadent depuis `games` : un `DELETE` par partie
+            # emporte son journal entier.
+            await db.delete(game)
+
     # Sessions, jetons d'e-mail, clés IA, exemplaires de collection, envois et exports suivent
     # par `ondelete="CASCADE"` (voir `pbm_api.models`) — un seul `DELETE` couvre tout le compte
-    # côté base ; le stockage objet, lui, vient d'être purgé explicitement ci-dessus.
+    # côté base ; le stockage objet et les parties, eux, viennent d'être purgés explicitement.
     await db.delete(user)
     await db.commit()

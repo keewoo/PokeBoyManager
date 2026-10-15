@@ -152,7 +152,19 @@ async def ws_game(websocket: WebSocket, game_id: uuid.UUID) -> None:
     pilotage est délégué à `temps_reel.piloter_canal` ; chaque resynchronisation ouvre une session
     courte plutôt que d'immobiliser une connexion de base pour toute la durée du canal.
     """
-    if not origine_autorisee(websocket.headers.get("origin")):
+    # Les trois refus du canal sont **journalisés** (lot `j-securite-jeu`). Ce fichier déclarait un
+    # `logger` depuis l'origine et ne l'utilisait nulle part : une origine tierce rejetée, une
+    # session invalide, une partie étrangère — les trois fermetures les plus intéressantes du jeu —
+    # ne laissaient donc *aucune* ligne. Un canal permanent entre deux comptes, dont celui d'un
+    # mineur, doit au moins dire à qui il a fermé la porte.
+    origine = websocket.headers.get("origin")
+    if not origine_autorisee(origine):
+        logger.warning(
+            "canal refusé — origine %r non autorisée sur la partie %s (anti-CSWSH : un canal "
+            "WebSocket n'est pas protégé par le CORS).",
+            origine,
+            game_id,
+        )
         await websocket.close(code=FERMETURE_ORIGINE)
         return
 
@@ -164,11 +176,20 @@ async def ws_game(websocket: WebSocket, game_id: uuid.UUID) -> None:
             # On ne distingue pas « pas de session » de « sans droit de jeu » côté client :
             # l'absence de cookie renvoie « non authentifié », le reste « introuvable ».
             if not websocket.cookies.get(settings.session_cookie_name):
+                logger.info(
+                    "canal refusé — aucun cookie de session sur la partie %s.", game_id
+                )
                 await websocket.close(code=FERMETURE_NON_AUTHENTIFIE)
             else:
+                logger.warning(
+                    "canal refusé — cookie de session présent mais invalide, expiré ou sans "
+                    "droit de jeu, sur la partie %s.",
+                    game_id,
+                )
                 await websocket.close(code=FERMETURE_INTROUVABLE)
             return
         try:
+            # `_game_pour_participant` journalise lui-même le partage « inconnue » / « étrangère ».
             game = await _game_pour_participant(db, game_id, user.id)
         except PartieIntrouvable:
             await websocket.close(code=FERMETURE_INTROUVABLE)

@@ -61,6 +61,12 @@ EVT_DSL_PRIMITIVE = "dsl_primitive"
 # --- Journalisation ----------------------------------------------------------
 from ..pile import Evenement  # noqa: E402  (après la constante, pour lisibilité)
 
+#: Les zones qu'un « melanger » sait traiter : les zones de cartes **ordonnées** d'un joueur, celles
+#: dont l'ordre est une donnée du jeu. Le Stade, l'Actif et le banc n'en font pas partie (il n'y a
+#: rien à y mélanger), et une zone hors de cette liste est **refusée bruyamment** plutôt que de
+#: faire tomber le moteur sur un attribut absent.
+_ZONES_MELANGEABLES = frozenset({"pioche", "defausse", "recompenses", "zone_perdue"})
+
 
 def _evt(ex: Execution, op: str, **donnees) -> None:
     """Ajoute au journal un :data:`EVT_DSL_PRIMITIVE` nommant la source (« à cause de X »)."""
@@ -373,6 +379,18 @@ def prim_melanger(ex: Execution, instr: Instruction) -> None:
         ex.etat = _remplacer_joueur(ex.etat, replace(joueur, main=(), pioche=tuple(melangee)))
         _evt(ex, OP_MELANGER, joueur=jid, zone="main_dans_pioche", nombre=len(main))
         return
+    # Le schéma du langage autorise **n'importe quelle** zone sur n'importe quelle primitive : un
+    # `melanger` sur « stade », « actif » ou « en_jeu » se charge donc sans broncher, puis tombait
+    # ici en `AttributeError` non rattrapée — un 500 en pleine partie, déclenchable par un script
+    # mal écrit en base. Refus **nommé** à la place (revue de sécurité, lot `j-securite-jeu`, trouvé
+    # par le balayage génératif de `test_securite_scripts_fuite`). Même forme que le refus de
+    # `selection.candidats` : on ne devine pas, on ne replie pas en silence (D9).
+    if zone not in _ZONES_MELANGEABLES:
+        raise ValueError(
+            f"« melanger » ne sait pas mélanger la zone {zone!r} : seules les zones de cartes "
+            f"ordonnées d'un joueur le sont ({sorted(_ZONES_MELANGEABLES)}). Script à corriger — "
+            f"jamais mélangé « au mieux »."
+        )
     cartes = getattr(joueur, zone)
     if not cartes:
         _sans_cible(ex, instr, f"{zone} vide — rien à mélanger")

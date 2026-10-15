@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import uuid
 
+from pbm_game.effets.dsl.audit import raison_de_refus
 from pbm_game.effets.dsl.chargement import ProgrammeInvalide, charger_programme
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -62,10 +63,16 @@ def _raison_refus(effet: EffetCarte, script: CardScript | None) -> str | None:
         return f"statut de script inattendu « {script.statut} » — refus (jamais joué « au mieux »)"
     # Statut « scripté » : dernière garde, on recharge le programme par l'interprète (pur).
     try:
-        charger_programme(script.script)
+        programme = charger_programme(script.script)
     except ProgrammeInvalide as exc:
         return f"script invalide au rechargement ({exc}) — refus avant la partie"
-    return None
+    # Audit de **confidentialité** (lot `j-securite-jeu`) : un script valide peut rester
+    # injouable, non pas parce qu'il est mal formé, mais parce que l'exécuter publierait
+    # l'identité d'une carte cachée. Le moteur ne peut pas projeter cette classe de script
+    # correctement (distinguer « déplacer » de « montrer » est une évolution du langage, pas une
+    # décision de revue) : on refuse donc la carte, avant la partie, en nommant la raison — plutôt
+    # que de la jouer en fuitant. Même porte que les autres refus : D9, jamais d'approximation.
+    return raison_de_refus(programme)
 
 
 async def refus_scripts_cartes(
