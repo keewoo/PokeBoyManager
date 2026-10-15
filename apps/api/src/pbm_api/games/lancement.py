@@ -55,6 +55,7 @@ from pbm_api.games.construction import (  # noqa: F401 (joueur_id_de documenté)
 from pbm_api.games.entry import DeckInjouable, DeckIntrouvable, verifier_deck
 from pbm_api.games.errors import GameError, PlafondPartiesAtteint
 from pbm_api.games.service import creer_partie, demarrer_partie
+from pbm_api.jeu.profil_service import CarteFeticheVue, carte_fetiche_de_camp
 from pbm_api.models import (
     Card,
     CollectionItem,
@@ -136,12 +137,18 @@ class PasLeGagnantDuTirage(GameError):
 
 @dataclass
 class CampLancement:
-    """Un camp du lancement : l'utilisateur, son pseudo, le deck choisi, l'état « prêt »."""
+    """Un camp du lancement : l'utilisateur, son pseudo, le deck choisi, l'état « prêt ».
+
+    ``carte_fetiche`` est la carte que ce camp a choisi de montrer (lot ``j-profil-jeu``), **telle
+    que l'autre camp la voit** : c'est le moment où les deux joueurs se la montrent, et la vue d'un
+    lancement est symétrique par construction. ``None`` quand le joueur n'en a pas choisi.
+    """
 
     user_id: uuid.UUID
     pseudo: str | None
     deck_id: uuid.UUID | None
     pret: bool
+    carte_fetiche: CarteFeticheVue | None = None
 
 
 @dataclass
@@ -543,6 +550,13 @@ async def composer_vue(
 
     La vue est identique pour les deux joueurs (comme le salon d'attente). La ``graine`` n'est
     révélée que lorsque la partie liée est **terminée** (commit-reveal) : avant, elle reste nulle.
+
+    Depuis ``j-profil-jeu``, elle porte aussi la **carte fétiche** de chaque camp, résolue par le
+    juge DJ5 habituel (:func:`pbm_api.jeu.rendu.rendu_carte_fetiche`) pour le regard de
+    l'adversaire. Le choix du regard est expliqué dans
+    :func:`pbm_api.jeu.profil_service.carte_fetiche_de_camp` : il garantit qu'aucune URL de photo ne
+    puisse être émise sous le veto « ne jamais montrer mes photos », puisqu'il n'existe pas de
+    chemin où la vue serait calculée pour le propriétaire.
     """
     inviteur = await db.get(User, invitation.inviter_user_id)
     invite = (
@@ -560,12 +574,22 @@ async def composer_vue(
             pseudo=inviteur.pseudo if inviteur else None,
             deck_id=launch.inviter_deck_id,
             pret=launch.inviter_pret,
+            carte_fetiche=(
+                await carte_fetiche_de_camp(db, proprietaire=inviteur, launch_id=launch.id)
+                if inviteur is not None
+                else None
+            ),
         ),
         invitee=CampLancement(
             user_id=invitation.invitee_user_id,
             pseudo=invite.pseudo if invite else None,
             deck_id=launch.invitee_deck_id,
             pret=launch.invitee_pret,
+            carte_fetiche=(
+                await carte_fetiche_de_camp(db, proprietaire=invite, launch_id=launch.id)
+                if invite is not None
+                else None
+            ),
         ),
         engagement=launch.engagement,
         tirage=launch.tirage,

@@ -10,7 +10,10 @@ Trois choses, et rien d'autre :
 * ``GET /jeu/rendu/parties/{game_id}/photos/{item_id}?v=plateau|zoom`` — une variante de jeu d'une
   photo, servie **dans le cadre d'une partie** aux deux joueurs de cette partie, si son
   propriétaire l'autorise. Elle ne **fabrique** aucune image (lot ``j-assets-pipeline``) : une
-  variante absente rend 404 et l'écran prend l'image officielle.
+  variante absente rend 404 et l'écran prend l'image officielle ;
+* ``GET /jeu/rendu/lancements/{launch_id}/photos/{item_id}`` — la même chose dans le cadre d'un
+  **lancement** (lot ``j-profil-jeu``), pour la carte fétiche que les deux joueurs se montrent avant
+  que la partie n'existe. Le cadre change, la décision DJ5 non.
 
 Comme toute route du jeu, elles sont gardées par
 :func:`~pbm_api.auth.dependencies.require_game_access` (D11). Et comme partout, un refus est un
@@ -233,6 +236,42 @@ async def photo_de_partie(
             db,
             storage,
             game_id=game_id,
+            item_id=item_id,
+            regardant_id=current_user.id,
+            variante=PAR_NOM[v],
+        )
+    except service.PhotoIntrouvable as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, NOT_FOUND_MESSAGE) from exc
+    return reponse_image(donnees, type_mime, if_none_match=if_none_match, privee=True)
+
+
+@router.get("/lancements/{launch_id}/photos/{item_id}")
+async def photo_de_lancement(
+    launch_id: uuid.UUID,
+    item_id: uuid.UUID,
+    current_user: Annotated[User, Depends(require_game_access)],
+    db: AsyncSession = Depends(get_session),
+    storage: StorageBackend = Depends(get_storage),
+    v: str = Query(VARIANTE_ZOOM.nom, pattern="^(plateau|zoom)$"),
+    if_none_match: Annotated[str | None, Header(alias="If-None-Match")] = None,
+) -> Response:
+    """La photo d'une **carte fétiche**, pour un joueur de ce lancement (lot ``j-profil-jeu``).
+
+    Jumelle de :func:`photo_de_partie`, avec l'autre cadre d'autorisation : au lancement, la partie
+    n'existe pas encore, donc aucune URL de photo de partie ne peut exister — et la carte fétiche se
+    montre précisément là.
+
+    Mêmes règles, à la lettre : tous les refus rendent **le même** 404 (ne participe pas au
+    lancement, exemplaire d'un tiers, veto de confidentialité, variante pas encore préparée), et le
+    cache est ``private``. La décision est rejouée côté service
+    (:func:`pbm_api.jeu.rendu_service.servir_photo_lancement`), jamais supposée acquise parce que
+    l'URL a été émise.
+    """
+    try:
+        donnees, type_mime = await service.servir_photo_lancement(
+            db,
+            storage,
+            launch_id=launch_id,
             item_id=item_id,
             regardant_id=current_user.id,
             variante=PAR_NOM[v],

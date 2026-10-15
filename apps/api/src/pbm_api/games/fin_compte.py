@@ -38,10 +38,11 @@ anomalie **détectable par une requête** (c'est exactement celle que le balayag
 cycle de maintenance : une partie purgée n'a plus de journal, donc plus de chiffres à recalculer.
 L'ordre est posé dans :func:`pbm_api.worker.games_maintenance_task`.
 
-**Ce que ce module ne fait pas** : ni badge (`j-profil-jeu` arrête la liste avec JF et Aymeric), ni
-points de classement (`j-classement-prive` implémente la formule retenue en DJ6, « activable par
-JF »). Les deux liront :class:`~pbm_api.models.fin_compte.GameResultPlayer`, qui porte déjà le
-résultat, le deck et l'adversaire de chaque partie.
+**Ce que ce module ne fait pas** : aucun point de classement (`j-classement-prive` recalcule le
+classement **à la lecture**, et n'est donc appelé de nulle part ici). Il appelle en revanche
+l'attribution des **badges** (`j-profil-jeu`) dans sa propre transaction, juste après avoir écrit
+les lignes de joueurs : les badges s'en déduisent, et l'un d'eux (« K.O. en un coup ») se lit dans
+le récapitulatif du journal — qui sera purgé à trente jours, donc ne se rattrape pas plus tard.
 """
 
 from __future__ import annotations
@@ -59,6 +60,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.games.construction import joueur_id_de
 from pbm_api.games.service import _entrees_queue
+from pbm_api.jeu.badges_service import attribuer_pour_partie as attribuer_badges
 from pbm_api.models import (
     GAME_STATUS_EN_COURS,
     GAME_STATUS_TERMINEE,
@@ -362,6 +364,18 @@ async def enregistrer_fin_de_partie(db: AsyncSession, game_id: uuid.UUID) -> boo
     await db.flush()
     for siege in sieges:
         await recalculer_stats_joueur(db, siege.user_id)
+        # Badges (`j-profil-jeu`) : dans la MÊME transaction, et **après** le flush — l'attribution
+        # relit les lignes de joueurs qu'on vient d'écrire (c'est de là que viennent « dix parties »
+        # et « sans rien céder »). ``ko_en_un_coup`` vient du récapitulatif déjà calculé : c'est un
+        # fait du journal, et le journal est purgé à trente jours, donc il ne se rattrape pas plus
+        # tard. L'écriture est idempotente par contrainte d'unicité, comme la clôture elle-même.
+        chiffres_siege = stats_par_jid.get(joueur_id_de(siege.user_id))
+        await attribuer_badges(
+            db,
+            game_id=game.id,
+            user_id=siege.user_id,
+            ko_en_un_coup=bool(chiffres_siege and chiffres_siege.ko_en_un_coup),
+        )
     await db.commit()
 
     logger.info(

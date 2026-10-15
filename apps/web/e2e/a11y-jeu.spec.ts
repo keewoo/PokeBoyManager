@@ -258,6 +258,10 @@ test.describe("Audit d'accessibilité : les écrans de jeu", () => {
       ["/jeu/salon", "salon-lien-confort"],
       ["/jeu/confort", "confort-temps-rallonge"],
       ["/jeu/rendu", "jamais-montrer"],
+      // Lot `j-profil-jeu` : le repère est la page elle-même, rendue pour un compte NEUF (sans
+      // carte fétiche, badges éteints) — un repère qui dépendrait d'un badge obtenu ferait échouer
+      // l'audit avant de l'avoir lancé, le piège exact décrit plus haut.
+      ["/jeu/profil", "profil-jeu"],
     ] as const) {
       await page.goto(chemin);
       await expect(page.getByTestId(repere)).toBeVisible();

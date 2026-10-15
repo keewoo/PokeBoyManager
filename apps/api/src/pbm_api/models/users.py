@@ -69,6 +69,16 @@ class User(Base, TimestampMixin):
     coach_actif: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true"
     )
+    # Carte fétiche (lot `j-profil-jeu`) : la carte que le joueur choisit de montrer à son
+    # adversaire au lancement d'une partie. Une **carte du catalogue**, pas un exemplaire de la
+    # collection : on choisit « Dracaufeu », pas « mon Dracaufeu du 3 mars ». La possession est
+    # contrôlée au moment du choix (`pbm_api.jeu.profil_service`) et non à la lecture — vendre la
+    # carte ne doit pas faire disparaître ce qu'on a déclaré aimer, et le rendu DJ5 retombe alors
+    # tout seul sur l'image officielle, sans cas particulier.
+    # `SET NULL` : une carte retirée du catalogue vide le choix au lieu de bloquer la suppression.
+    carte_fetiche_card_id: Mapped[uuid.UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("cards.id", ondelete="SET NULL"), nullable=True
+    )
 
 
 class Session(Base):

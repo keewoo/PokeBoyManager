@@ -38,8 +38,28 @@ Chiffre                Ce qui le produit dans le journal
 ``cartes_jouees``      nombre d'événements de :data:`EVENEMENTS_CARTE_JOUEE`, par ``joueur``
 ``energies_attachees`` nombre d'``EVT_ENERGIE_ATTACHEE``, par ``joueur``
 ``coups_joues``        nombre d'entrées dont l'``auteur`` est ce joueur
+``ko_en_un_coup``      un ``EVT_KO`` dont les ``compteurs`` égalent les ``degats`` de la
+                       **seule** attaque du coup, par ``par`` (voir ci-dessous)
 ``meilleur_coup``      l'entrée dont l'attaque a infligé le plus de dégâts
 ====================== =================================================================
+
+**``ko_en_un_coup`` : une condition volontairement STRICTE, et pourquoi.** Un « K.O. en un coup »
+est un Pokémon mis K.O. **sans avoir encaissé le moindre dégât avant** — pas un coup de grâce sur
+un Pokémon déjà entamé. Le journal ne porte pas les dégâts *antérieurs* d'un Pokémon, mais
+:data:`~pbm_game.journal.modele.EVT_KO` porte ses ``compteurs`` **au moment du K.O.** : si ce total
+égale les dégâts de l'attaque qui vient de tomber, c'est que le Pokémon était intact. D'où la
+règle, qui exige les trois conditions **dans le même coup** :
+
+1. une **seule** ``EVT_ATTAQUE_DECLAREE``, de dégâts ``D > 0``, par le joueur ``P`` ;
+2. un **seul** ``EVT_KO``, dont le bénéficiaire ``par`` est ce même ``P`` ;
+3. ``compteurs == D``.
+
+Hors de cette forme, on **n'attribue rien**. C'est délibéré : un coup qui met deux Pokémon K.O.
+(R-13.5) ou qui étale ses dégâts sur le banc ne permet plus d'apparier à coup sûr le total du K.O.
+avec le coup qui l'a porté — ``EVT_DEGATS`` nomme sa cible par la carte **active** (qui change à
+chaque évolution) là où ``EVT_KO`` la nomme par sa carte **de base**. Devant ce doute, on préfère
+un K.O. en un coup qui n'est pas compté à un qui serait inventé (D9) : le sens d'un fait rendu par
+ce module est « c'est arrivé », jamais « c'est probablement arrivé ».
 
 Deux précisions qui évitent de mal lire un chiffre :
 
@@ -108,6 +128,11 @@ class StatsJoueur:
     cartes_jouees: int = 0
     energies_attachees: int = 0
     coups_joues: int = 0
+    #: Ce joueur a mis au moins un Pokémon K.O. **intact**, d'une seule attaque (voir l'en-tête du
+    #: module pour la forme exacte exigée). Booléen et non compteur : c'est un **fait de partie**,
+    #: celui que le badge « K.O. en un coup » attend (lot ``j-profil-jeu``) ; compter les K.O. en un
+    #: coup laisserait croire qu'on peut en faire un palmarès, ce que la stricture ne permet pas.
+    ko_en_un_coup: bool = False
 
 
 @dataclass(frozen=True)
@@ -158,6 +183,7 @@ class _Compteurs:
     cartes_jouees: int = 0
     energies_attachees: int = 0
     coups_joues: int = 0
+    ko_en_un_coup: bool = False
 
 
 def _entier(donnees: object, cle: str) -> int:
@@ -247,6 +273,11 @@ def construire_recapitulatif(
         # a été décisif, ce qu'un parcours événement par événement ne saurait pas.
         degats_du_coup: dict[str, int] = {}
         ko_dans_le_coup = False
+        # Les attaques et les K.O. du coup, un à un (pas en somme) : la stricture de
+        # ``ko_en_un_coup`` exige d'en connaître le **nombre**, et une somme de deux attaques
+        # ressemblerait à une attaque unique de leur total.
+        attaques_du_coup: list[tuple[str, int]] = []
+        kos_du_coup: list[tuple[str, int]] = []
 
         for evenement in entree.evenements:
             type_evt = evenement.type
@@ -257,12 +288,15 @@ def construire_recapitulatif(
             if type_evt == EVT_ATTAQUE_DECLAREE:
                 jid = _texte(donnees, "joueur")
                 degats = _entier(donnees, "degats")
+                if jid is not None:
+                    attaques_du_coup.append((jid, degats))
                 if jid in compteurs and degats:
                     compteurs[jid].degats_infliges += degats
                     degats_du_coup[jid] = degats_du_coup.get(jid, 0) + degats
                 continue
             if type_evt == EVT_KO:
                 ko_dans_le_coup = True
+                kos_du_coup.append((_texte(donnees, "par") or "", _entier(donnees, "compteurs")))
                 # ``par`` est l'adversaire du joueur mis K.O. : celui qui prend les récompenses
                 # (R-13.3). C'est lui qu'on crédite, jamais l'auteur de l'entrée — un K.O. au
                 # Checkup est écrit par le système, et son bénéficiaire est nommé dans l'événement.
@@ -280,6 +314,19 @@ def construire_recapitulatif(
                 jid = _texte(donnees, "joueur")
                 if jid in compteurs:
                     compteurs[jid].cartes_jouees += 1
+
+        # K.O. en un coup : la forme stricte, et elle seule (en-tête du module). Une attaque, un
+        # K.O., le même joueur, et des compteurs qui égalent les dégâts — donc une cible intacte.
+        if len(attaques_du_coup) == 1 and len(kos_du_coup) == 1:
+            (attaquant, degats_attaque) = attaques_du_coup[0]
+            (beneficiaire, compteurs_ko) = kos_du_coup[0]
+            if (
+                degats_attaque > 0
+                and beneficiaire == attaquant
+                and compteurs_ko == degats_attaque
+                and attaquant in compteurs
+            ):
+                compteurs[attaquant].ko_en_un_coup = True
 
         for jid, degats in degats_du_coup.items():
             # Strictement supérieur : à égalité, le premier coup reste le meilleur (départage
@@ -304,6 +351,7 @@ def construire_recapitulatif(
                 cartes_jouees=c.cartes_jouees,
                 energies_attachees=c.energies_attachees,
                 coups_joues=c.coups_joues,
+                ko_en_un_coup=c.ko_en_un_coup,
             )
             for jid, c in ((jid, compteurs[jid]) for jid in ordre)
         ),

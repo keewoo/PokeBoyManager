@@ -112,6 +112,7 @@ from pbm_api.models.observabilite import (
     INCIDENT_PARTIE_REFUSEE,
     JeuIncident,
 )
+from pbm_api.models.player_badges import PlayerBadge
 from pbm_api.models.pricing import ExchangeRateDaily
 from pbm_api.models.users import AiCredential, AiProvider, EmailToken, EmailTokenKind, Session, User
 from pbm_api.models.wishlist import WishlistItem
@@ -167,6 +168,7 @@ __all__ = [
     "GameResult",
     "GameResultPlayer",
     "PlayerStats",
+    "PlayerBadge",
     "RESULTAT_VICTOIRE",
     "RESULTAT_DEFAITE",
     "RESULTAT_EGALITE",

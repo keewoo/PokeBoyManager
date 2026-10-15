@@ -30,6 +30,7 @@ from pbm_api.routers.lancement import router as lancement_router
 from pbm_api.routers.matchmaking import router as matchmaking_router
 from pbm_api.routers.notifications import router as notifications_router
 from pbm_api.routers.observabilite import router as observabilite_router
+from pbm_api.routers.profil_jeu import router as profil_jeu_router
 from pbm_api.routers.profile import router as profile_router
 from pbm_api.routers.stats_joueur import router as stats_joueur_router
 from pbm_api.routers.uploads import router as uploads_router
@@ -106,3 +107,8 @@ app.include_router(observabilite_router)
 # chaque appel, comme le classement prive. Il n'y a donc aucun agregat a reparer, et aucune route
 # d'ecriture a garder.
 app.include_router(stats_joueur_router)
+# Profil de joueur : vitrine, carte fetiche, badges (lot `j-profil-jeu`, jalon J4, DJ6). La
+# vitrine des badges est ETEINTE par defaut — JF l'allume par `set-reglage-jeu badges_actifs oui`,
+# sans redeployer. L'attribution, elle, tourne a chaque cloture : un badge qui depend du journal ne
+# se rattrape pas apres la purge.
+app.include_router(profil_jeu_router)
