@@ -91,6 +91,7 @@ from pbm_api.models.invitations import (
 )
 from pbm_api.models.jeu_confort import JeuConfortReglages
 from pbm_api.models.jeu_emotes import JeuEmoteReglages
+from pbm_api.models.jeu_reglages import JeuReglage
 from pbm_api.models.jeu_rendu import JeuRenduReglages
 from pbm_api.models.jobs import DataExport, Job, JobStatus
 from pbm_api.models.notifications import (
@@ -202,6 +203,7 @@ __all__ = [
     "INCIDENT_GENRES",
     "GameNotification",
     "JeuConfortReglages",
+    "JeuReglage",
     "JeuEmoteReglages",
     "JeuRenduReglages",
     "NotificationReglages",
