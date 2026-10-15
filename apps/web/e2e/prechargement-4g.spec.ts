@@ -109,9 +109,14 @@ function pokemon(n: number) {
 /**
  * Une partie en **mise en place** : chaque camp a son actif et son banc, j'ai ma main de sept.
  *
- * Vingt-quatre cartes porteuses d'image, soit exactement le pire cas que borne
- * `budget.CARTES_MISE_EN_PLACE` — le test mesure donc le cas que le budget promet, pas un cas
- * commode.
+ * **Dix-neuf** cartes porteuses d'image — mon actif + cinq de banc + sept en main (13), et en face
+ * l'actif + cinq de banc (6). Sa main et ses récompenses restent des dos, donc zéro octet. C'est la
+ * composition réelle du pire cas de mise en place ; les 24 que déclare
+ * `budget.CARTES_MISE_EN_PLACE` sont ces 19 arrondis avec une marge.
+ *
+ * Le nombre est **rendu** avec la vue plutôt que recopié dans une assertion : une constante écrite
+ * à la main se désynchronise du décor de test à la première carte ajoutée, et c'est exactement ce
+ * qui a fait rougir la CI une fois.
  */
 function vueMiseEnPlace() {
   let n = 0;
@@ -160,6 +165,18 @@ function vueMiseEnPlace() {
     vainqueur: null,
     raison_fin: null,
   };
+}
+
+/** Le nombre de cartes porteuses d'image du décor ci-dessus — **compté**, jamais supposé. */
+function cartesAvecImage(vue: ReturnType<typeof vueMiseEnPlace>): number {
+  const urls = new Set<string>();
+  for (const joueur of vue.joueurs) {
+    for (const p of [joueur.actif, ...(joueur.banc ?? [])]) {
+      p?.cartes.forEach((c) => urls.add(c.rendu.url));
+    }
+    (joueur.main ?? []).forEach((c) => urls.add(c.rendu.url));
+  }
+  return urls.size;
 }
 
 async function login(page: Page, email: string): Promise<void> {
@@ -246,10 +263,12 @@ test.describe("Pré-chargement des images d'une partie en 4G simulée", () => {
       );
     }
 
-    // Le pré-chargement a bien couvert le plateau, et pas une carte symbolique.
+    // Le pré-chargement a couvert **toutes** les cartes visibles du décor, pas une carte
+    // symbolique. Le nombre attendu est compté sur le décor lui-même : aucune constante à
+    // maintenir, donc aucune dérive possible.
     const distinctes = new Set(demandees).size;
-    expect(distinctes, "le pré-chargement doit couvrir les cartes visibles").toBeGreaterThanOrEqual(
-      20,
+    expect(distinctes, "le pré-chargement doit couvrir toutes les cartes visibles").toBe(
+      cartesAvecImage(vue),
     );
 
     // ⚠️ Le compte de requêtes est borné, mais **pas** à une par image, et il faut dire pourquoi :

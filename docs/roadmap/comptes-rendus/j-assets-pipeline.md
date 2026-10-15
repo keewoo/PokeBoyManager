@@ -64,8 +64,10 @@ preuve est un stockage qui **lève à la moindre écriture**
 
 ### 3. « Le pré-chargement se termine avant la fin de la mise en place (4G simulée) » ✅
 
-`apps/web/e2e/prechargement-4g.spec.ts` : 24 cartes porteuses d'image (exactement le pire cas que
-borne `budget.CARTES_MISE_EN_PLACE`), corps d'image au **poids réel** du plafond (18 Kio), lien 4G
+`apps/web/e2e/prechargement-4g.spec.ts` : **19** cartes porteuses d'image — mon actif + cinq de banc
++ sept en main, et en face l'actif + cinq de banc ; sa main et ses récompenses restent des dos, donc
+zéro octet. C'est la composition réelle du pire cas de mise en place, dont les 24 de
+`budget.CARTES_MISE_EN_PLACE` sont l'arrondi avec marge. Corps d'image au **poids réel** du plafond (18 Kio), lien 4G
 **modélisé** comme un tuyau partagé à 200 Ko/s + 150 ms de latence. Le chronomètre part quand le
 plateau est visible et s'arrête quand le bandeau s'efface. Budget du test : 6 s ; le modèle prédit
 ≈ 2,4 s.
@@ -149,9 +151,12 @@ de doublons. Le pré-chargeur (`new Image()`) et la balise `<img>` demandent la 
 même temps, avant que le cache ne soit rempli, et le navigateur ne fusionne pas toujours deux
 requêtes en vol venant de ces deux chemins. La spec le **dit** et borne à 2 × le nombre d'images
 distinctes plutôt que de prétendre à une requête par image — ce qui compte pour le joueur est le
-temps, vérifié séparément. Un troisième passage de CI a été nécessaire parce que ma première
-assertion dédoublonnait sur `?v=plateau` (une seule valeur distincte !) au lieu de l'URL complète :
-l'assertion était fausse, pas le code.
+temps, vérifié séparément. Deux passages de CI supplémentaires ont été nécessaires, et **les deux fois c'était mon assertion
+qui était fausse, pas le code** : d'abord un dédoublonnage sur `?v=plateau` (une seule valeur
+distincte pour 32 requêtes !) au lieu de l'URL complète, puis un seuil de couverture **deviné** à 20
+alors que le décor de test porte 19 cartes. La leçon est écrite dans la spec : le nombre attendu est
+désormais **compté sur le décor lui-même** (`cartesAvecImage`), pas recopié — une constante écrite à
+la main se désynchronise à la première carte ajoutée.
 
 ## Décisions prises dans le lot
 
