@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { FormNotice } from "@/components/auth/form-notice";
 import { useFileAnimations, useFileMoments } from "@/components/game/animation-layer";
+import { BarreSon, useFileSons } from "@/components/game/son-layer";
 import { EmoteBar } from "@/components/game/emote-bar";
 import { BandeauPrechargement } from "@/components/game/bandeau-prechargement";
 import { FenetreDecision } from "@/components/game/fenetre-decision";
@@ -207,14 +208,20 @@ export function PartieView({ gameId }: { gameId: string }) {
   // (la mise K.O. et la prise de récompenses), et un double K.O. doit les jouer tous les quatre
   // sans en perdre un. Voir `useFileMoments` pour pourquoi ce n'est pas la file du socle.
   const moments = useFileMoments({ coups, pour: vue?.pour ?? "", cle: gameId });
-  // Le joueur agit : les DEUX files se jettent. N'en vider qu'une aurait laissé un moment clé
-  // tourner au-dessus d'un plateau qui a déjà changé.
+  // Les SONS (lot `j-son`), sur les MÊMES coups : le plan sonore part du plan d'animation, donc
+  // le son et l'image viennent littéralement de la même entrée. Cette file ne provoque aucun
+  // re-rendu — elle ne peut donc pas coûter une image par seconde.
+  const sons = useFileSons({ coups, pour: vue?.pour ?? "", cle: gameId });
+  // Le joueur agit : les TROIS files se jettent. N'en vider qu'une aurait laissé un moment clé
+  // tourner — ou un K.O. retentir — au-dessus d'un plateau qui a déjà changé.
   const viderAnim = anim.vider;
   const viderMoments = moments.vider;
+  const couperSons = sons.couper;
   const viderAnimations = useCallback(() => {
     viderAnim();
     viderMoments();
-  }, [viderAnim, viderMoments]);
+    couperSons();
+  }, [viderAnim, viderMoments, couperSons]);
   // « Passer » passe ce qui est à l'écran, quelle que soit la file qui l'y a mis.
   const sauterAnim = anim.sauter;
   const sauterMoment = moments.sauter;
@@ -312,6 +319,10 @@ export function PartieView({ gameId }: { gameId: string }) {
             premierePartie={premierePartie}
           />
           <JournalPanel lignes={lignes} onSurvol={setSurligne} />
+          {/* Interrupteur de son (lot `j-son`) : hors flux (`fixed`), au coin haut droit — le seul
+              libre, et surtout HORS de l'arène, dont les deux coins hauts portent les compteurs de
+              récompenses. Couper est à un clic, et le réglage reste sur cet appareil (DJ9). */}
+          <BarreSon />
           {/* Emotes (lot `j-echanges-emotes`, DJ10) : palette fermée, hors flux, désactivable. */}
           <EmoteBar
             onEnvoyer={onEnvoyerEmote}
