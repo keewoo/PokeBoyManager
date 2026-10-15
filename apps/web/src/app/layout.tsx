@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { cookies, headers } from "next/headers";
 import { exo2, jetbrainsMono, pressStart2P, roboto } from "./fonts";
 import { ConfortProvider } from "@/lib/confort-provider";
+import { SonsProvider } from "@/lib/sons-provider";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { AppShell } from "@/components/app-shell";
 import { getSessionCookieName } from "@/lib/config";
@@ -117,7 +118,12 @@ export default async function RootLayout({
       >
         <ThemeProvider>
           <ConfortProvider avecSession={hasSession}>
-            <AppShell hasSession={hasSession}>{children}</AppShell>
+            {/* Son (lot `j-son`) : réglage mémorisé par APPAREIL (DJ9), donc aucun appel réseau
+                et aucune dépendance à la session — contrairement au confort juste au-dessus. Le
+                fournisseur ne crée AUCUN objet audio tant que le joueur n'a pas interagi. */}
+            <SonsProvider>
+              <AppShell hasSession={hasSession}>{children}</AppShell>
+            </SonsProvider>
           </ConfortProvider>
         </ThemeProvider>
       </body>

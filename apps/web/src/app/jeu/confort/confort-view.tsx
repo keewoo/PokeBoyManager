@@ -241,9 +241,22 @@ export function ConfortView() {
         Si ton téléphone ou ton ordinateur demande déjà «&nbsp;moins d&apos;animations&nbsp;» dans
         ses propres réglages, le jeu le respecte, même si tu as choisi de les montrer ici.
       </p>
+      {/* Le son n'est PAS ici, et le dire est le seul moyen d'éviter qu'on le cherche : il se règle
+          par appareil (DJ9), pas par compte, contrairement aux quatre réglages de cette page. */}
+      <p className="mt-2 text-xs text-muted-foreground" data-testid="confort-vers-sons">
+        Le <strong>son</strong> se règle ailleurs&nbsp;:{" "}
+        <Link href="/jeu/sons" className="underline">
+          Les sons du jeu
+        </Link>
+        . Il reste sur l&apos;appareil que tu utilises, alors que les réglages de cette page te
+        suivent partout.
+      </p>
       <p className="mt-4 flex flex-wrap gap-2">
         <Button type="button" variant="outline" asChild>
           <Link href="/jeu/salon">Retour au salon</Link>
+        </Button>
+        <Button type="button" variant="outline" asChild>
+          <Link href="/jeu/sons">Les sons du jeu</Link>
         </Button>
         <Button type="button" variant="outline" asChild>
           <Link href="/jeu/rendu">Mes cartes en jeu</Link>
