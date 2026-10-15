@@ -12,7 +12,8 @@ silence : `python -m pbm_api.admin set-reglage-jeu classement_active oui` (un «
 clé est refusée, avec la liste de celles qui existent. C'est la même règle que partout dans ce
 dépôt : un réglage qui n'a pas d'effet doit le **dire**, pas se taire.
 
-**Les deux clés d'aujourd'hui**, toutes deux posées par ce lot :
+**Les trois clés d'aujourd'hui** — les deux premières posées par `j-classement-prive`, la
+troisième par `j-profil-jeu` :
 
 * ``classement_actif`` — le classement privé est-il calculé et montré ? Défaut **non**, parce que
   DJ6 le veut « en option, activable par JF » : un lot ne s'auto-active pas sur une décision qui
@@ -22,8 +23,14 @@ dépôt : un réglage qui n'a pas d'effet doit le **dire**, pas se taire.
   :data:`pbm_api.jeu.classement.BAREMES`. C'est ce qui rend la formule remplaçable sans toucher au
   code (mission du lot : « la formule n'est pas dans le code de clôture »).
 
-Le lot `j-profil-jeu` ajoutera ``badges_actifs`` ici même, sans migration : c'est l'autre moitié de
-DJ6.
+* ``badges_actifs`` — la **vitrine** des badges est-elle montrée ? Défaut **non**, pour la même
+  raison que le classement : DJ6 dit « en option, activables par JF ». ⚠️ Ce réglage gouverne
+  l'**affichage**, pas l'attribution : les badges continuent d'être écrits à la clôture même quand
+  il est à ``non``, sinon allumer la vitrine six mois plus tard donnerait une vitrine vide et
+  « K.O. en un coup » — qui se lit dans le journal, purgé à trente jours — serait perdu à jamais.
+  Le raisonnement complet est dans :mod:`pbm_api.jeu.badges_service`.
+
+Ajouté par `j-profil-jeu` **sans migration**, comme annoncé : c'est tout l'intérêt du registre.
 """
 
 from __future__ import annotations
@@ -48,6 +55,9 @@ BOOLEENS: tuple[str, ...] = (OUI, NON)
 CLE_CLASSEMENT_ACTIF = "classement_actif"
 #: Clé : quel barème de points le classement applique.
 CLE_CLASSEMENT_BAREME = "classement_bareme"
+#: Clé : la vitrine des badges est-elle montrée ? (DJ6 — « activables par JF »). Gouverne
+#: l'affichage, **pas** l'attribution (voir l'en-tête du module).
+CLE_BADGES_ACTIFS = "badges_actifs"
 
 
 @dataclass(frozen=True)
@@ -87,6 +97,15 @@ REGLAGES: Mapping[str, Reglage] = {
         # toujours par mentir).
         valeurs=tuple(sorted(BAREMES)),
         libelle="Barème de points du classement",
+    ),
+    CLE_BADGES_ACTIFS: Reglage(
+        cle=CLE_BADGES_ACTIFS,
+        # Défaut « non », comme le classement : DJ6 veut les badges « en option ». Les badges sont
+        # néanmoins ATTRIBUÉS pendant ce temps — ce réglage ferme la vitrine, il n'efface pas
+        # l'histoire (voir :mod:`pbm_api.jeu.badges_service`).
+        defaut=NON,
+        valeurs=BOOLEENS,
+        libelle="Badges : la vitrine du profil de joueur les montre-t-elle ?",
     ),
 }
 
@@ -164,6 +183,7 @@ def est_actif(valeur_effective: str) -> bool:
 
 __all__ = [
     "BOOLEENS",
+    "CLE_BADGES_ACTIFS",
     "CLE_CLASSEMENT_ACTIF",
     "CLE_CLASSEMENT_BAREME",
     "NON",

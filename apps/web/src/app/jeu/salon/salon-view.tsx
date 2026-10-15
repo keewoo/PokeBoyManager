@@ -567,6 +567,24 @@ export function SalonView() {
           >
             Effets
           </Link>
+          {/* Même raison une dernière fois (lot `j-profil-jeu`) : la carte fétiche se choisit AVANT
+              d'entrer en partie, puisque c'est au lancement qu'elle se montre. Une vitrine qu'on ne
+              peut pas atteindre n'existe pas — et « Mes parties » n'était jusqu'ici atteignable que
+              depuis la fiche d'un deck. */}
+          <Link
+            href="/jeu/profil"
+            data-testid="salon-lien-profil"
+            className="rounded-full border border-[rgba(157,0,255,0.65)] px-4 py-2 font-heading text-xs font-semibold uppercase tracking-[0.08em] text-violet-clair hover:text-foreground"
+          >
+            Mon profil
+          </Link>
+          <Link
+            href="/jeu/parties"
+            data-testid="salon-lien-parties"
+            className="rounded-full border border-[rgba(157,0,255,0.65)] px-4 py-2 font-heading text-xs font-semibold uppercase tracking-[0.08em] text-violet-clair hover:text-foreground"
+          >
+            Mes parties
+          </Link>
         </div>
       </div>
 

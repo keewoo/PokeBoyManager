@@ -61,6 +61,8 @@ from pbm_api.models import (
     Deck,
     DeckCard,
     Detection,
+    GameInvitation,
+    GameLaunch,
     GamePlayer,
     JeuRenduReglages,
     User,
@@ -605,6 +607,78 @@ async def servir_photo(
     return donnees, TYPE_MIME_JEU
 
 
+# --- Servir une photo pendant un LANCEMENT (carte fétiche, lot `j-profil-jeu`) -----------------
+
+
+async def servir_photo_lancement(
+    db: AsyncSession,
+    storage: StorageBackend,
+    *,
+    launch_id: uuid.UUID,
+    item_id: uuid.UUID,
+    regardant_id: uuid.UUID,
+    variante: Variante = VARIANTE_ZOOM,
+) -> tuple[bytes, str]:
+    """La photo d'une **carte fétiche**, pour un joueur de ce lancement — ou 404.
+
+    Jumelle de :func:`servir_photo`, avec un cadre d'autorisation différent : le **lancement** au
+    lieu de la partie. Il le faut parce qu'au moment où les deux joueurs se montrent leur carte
+    fétiche, la partie n'existe pas encore (elle naît du pile ou face) — et une URL de photo sans
+    cadre n'existe pas dans ce dépôt.
+
+    **Toute la décision est rejouée ici**, comme pour une partie : participation au lancement,
+    appartenance de l'exemplaire à l'un des deux camps, préférence du propriétaire et veto de
+    confidentialité (DJ5). Une URL gardée d'un lancement précédent ne sert donc rien, et
+    l'autorisation ne repose pas sur le fait que l'URL n'ait pas été publiée.
+
+    ⚠️ La préférence lue est celle du **compte** (``preference_deck=None``) : une carte fétiche
+    n'appartient à aucun deck. Un joueur dont le deck est en « images officielles » mais le compte
+    en « photo » montre donc bien sa photo ici — ce sont deux choix différents, et les confondre
+    serait choisir à sa place.
+
+    ⛔ **Aucune image n'est fabriquée ici**, comme sur la route de partie : une variante absente
+    rend 404, et l'écran prend ``url_repli`` (l'image officielle). La préparation se fait au moment
+    du **choix** de la carte fétiche (:func:`pbm_api.jeu.profil_service.choisir_carte_fetiche`),
+    qui est un geste délibéré du joueur, borné à une image, hors de toute partie.
+    """
+    launch = await db.get(GameLaunch, launch_id)
+    if launch is None:
+        raise PhotoIntrouvable("lancement inconnu")
+    invitation = await db.get(GameInvitation, launch.invitation_id)
+    if invitation is None:
+        raise PhotoIntrouvable("invitation du lancement inconnue")
+    camps = {
+        uid
+        for uid in (invitation.inviter_user_id, invitation.invitee_user_id)
+        if uid is not None
+    }
+    if regardant_id not in camps:
+        raise PhotoIntrouvable("le regardant ne participe pas à ce lancement")
+
+    item = await db.get(CollectionItem, item_id)
+    if item is None or item.photo_s3_key is None:
+        raise PhotoIntrouvable("exemplaire inconnu ou sans photo")
+    if item.user_id not in camps:
+        raise PhotoIntrouvable("cet exemplaire n'appartient à aucun camp de ce lancement")
+
+    cest_moi = item.user_id == regardant_id
+    reglages = await charger_reglages(db, item.user_id)
+    if preference_effective(reglages, None) != RENDU_PHOTO:
+        raise PhotoIntrouvable("le propriétaire joue avec les images officielles")
+    if not cest_moi and reglages.jamais_montrer_mes_photos:
+        raise PhotoIntrouvable("le propriétaire ne montre pas ses photos")
+
+    if item.jeu_image_key is None:
+        raise PhotoIntrouvable("photo non exploitable en jeu, ou variante pas encore préparée")
+    if variante.nom not in variantes_pretes(item) and variante is not VARIANTE_ZOOM:
+        raise PhotoIntrouvable(f"variante « {variante.nom} » pas encore préparée")
+
+    donnees = await storage.get(cle_variante(item.user_id, item.id, variante))
+    if donnees is None:
+        raise PhotoIntrouvable("variante de jeu absente du stockage")
+    return donnees, TYPE_MIME_JEU
+
+
 # --- Aperçu pour le constructeur de deck --------------------------------------------------------
 
 
@@ -703,4 +777,5 @@ __all__ = [
     "preparer_variante",
     "rendus_de_partie",
     "servir_photo",
+    "servir_photo_lancement",
 ]

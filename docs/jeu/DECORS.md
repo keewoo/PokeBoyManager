@@ -155,13 +155,14 @@ clé (choisis), `null` explicite (reviens à l'automatique). C'est ce que porte 
 4. **« C'est sombre en plein jour »** — l'ambiance suit l'heure **locale du navigateur**. Après
    20 h, la nuit est normale.
 
-## Ce qui n'est pas fait
+## Le déblocage par les badges : TRANCHÉ, et c'est non (15/10/2026)
 
-**Le déblocage des décors par les badges** (4ᵉ point de la mission, « si DJ6 le retient »). DJ6
-retient bien les badges, mais ils appartiennent à `j-profil-jeu` — **palier 17**, statut `a_faire`,
-lui-même derrière `j-stats-joueur`. Ce lot est au **palier 15** : il n'y a aucun badge à relier.
+**Les six décors sont tous disponibles, et le restent.** Ce lot avait laissé la question ouverte
+(4ᵉ point de sa mission, « si DJ6 le retient ») en notant qu'aucun champ « verrouillé » n'avait été
+posé en prévision : on ne fabrique pas un mécanisme de déblocage qui ne débloque rien (D9).
 
-Les six décors sont donc **tous disponibles**. Aucun champ « verrouillé » n'a été posé en prévision :
-on ne fabrique pas un mécanisme de déblocage qui ne débloque rien (D9). Quand `j-profil-jeu`
-arrivera, il aura à ajouter une condition d'accès à la table des décors et à filtrer l'écran de
-choix — le reste (peinture, contraste, résolution) n'aura pas à bouger.
+`j-profil-jeu` (palier 17) a eu les badges en main et a **choisi de ne rien verrouiller**, pour une
+raison plus forte que la symétrie : **verrouiller aujourd'hui retirerait aux joueurs un choix qu'ils
+ont déjà**. DJ6 dit « sans saison ni perte de points » — reprendre quatre décors sur six pour les
+faire regagner serait exactement une perte. La vitrine du profil (`/jeu/profil`) les montre donc
+pour ce qu'ils sont : disponibles, celui du joueur mis en avant. Détail : `docs/jeu/PROFIL.md`.

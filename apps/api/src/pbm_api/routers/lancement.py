@@ -72,13 +72,39 @@ class ChoisirIn(BaseModel):
     commencer: bool
 
 
+class RenduFeticheOut(BaseModel):
+    """Le rendu de la carte fétiche — la forme déjà connue du plateau et du profil."""
+
+    origine: str
+    url: str
+    url_zoom: str
+    credit: str | None = None
+    raison: str | None = None
+    url_repli: str | None = None
+
+
+class CarteFeticheOut(BaseModel):
+    """La carte fétiche d'un camp, telle que l'autre camp la voit (lot ``j-profil-jeu``)."""
+
+    card_id: uuid.UUID
+    nom: str
+    rendu: RenduFeticheOut
+
+
 class CampOut(BaseModel):
-    """Un camp du lancement : l'utilisateur, son pseudo, le deck choisi, l'état « prêt »."""
+    """Un camp du lancement : l'utilisateur, son pseudo, le deck choisi, l'état « prêt ».
+
+    ``carte_fetiche`` est ce que ce camp a choisi de montrer : elle apparaît **des deux côtés** au
+    lancement, avec le rendu que son propriétaire a réglé (photo ou officielle, DJ5) — c'est le
+    critère d'acceptation de `j-profil-jeu`. ``None`` quand le joueur n'en a pas choisi : on
+    n'affiche alors rien plutôt qu'une carte prise au hasard dans sa collection.
+    """
 
     user_id: uuid.UUID
     pseudo: str | None
     deck_id: uuid.UUID | None
     pret: bool
+    carte_fetiche: CarteFeticheOut | None = None
 
 
 class LancementOut(BaseModel):
@@ -107,8 +133,28 @@ class LancementOut(BaseModel):
         """Construit la sortie HTTP depuis la vue du service."""
 
         def _camp(camp) -> CampOut:
+            fetiche = camp.carte_fetiche
             return CampOut(
-                user_id=camp.user_id, pseudo=camp.pseudo, deck_id=camp.deck_id, pret=camp.pret
+                user_id=camp.user_id,
+                pseudo=camp.pseudo,
+                deck_id=camp.deck_id,
+                pret=camp.pret,
+                carte_fetiche=(
+                    CarteFeticheOut(
+                        card_id=fetiche.card_id,
+                        nom=fetiche.nom,
+                        rendu=RenduFeticheOut(
+                            origine=fetiche.rendu.origine,
+                            url=fetiche.rendu.url,
+                            url_zoom=fetiche.rendu.url_zoom,
+                            credit=fetiche.rendu.credit,
+                            raison=fetiche.rendu.raison,
+                            url_repli=fetiche.rendu.url_repli,
+                        ),
+                    )
+                    if fetiche is not None
+                    else None
+                ),
             )
 
         return cls(

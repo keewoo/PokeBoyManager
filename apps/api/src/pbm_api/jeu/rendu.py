@@ -59,6 +59,11 @@ RENDUS_REGLABLES: frozenset[str] = frozenset({RENDU_PHOTO, RENDU_OFFICIELLE})
 #: patienter un plateau le temps d'une fabrication d'image.
 RAISON_PAS_PRETE = "photo pas encore préparée pour le jeu"
 
+#: Il n'existe aucun cadre (partie ou lancement) qui autoriserait à servir cette photo : c'est le
+#: cas de la **vitrine du profil**, qu'on regarde hors de toute rencontre. L'image officielle est
+#: servie, et la raison le dit — plutôt qu'un cadre inventé « juste pour afficher ».
+RAISON_HORS_CADRE = "hors d'une partie, les photos ne sont pas servies"
+
 
 @dataclass(frozen=True)
 class ReglagesRendu:
@@ -159,6 +164,76 @@ def url_photo(
     demande le plus souvent, et laisser le zoom par défaut ferait du cas coûteux le cas implicite.
     """
     return f"/jeu/rendu/parties/{game_id}/photos/{item_id}?v={variante.nom}"
+
+
+def url_photo_lancement(
+    launch_id: uuid.UUID, item_id: uuid.UUID, variante: Variante = VARIANTE_ZOOM
+) -> str:
+    """L'URL d'une variante de jeu d'une photo, **bornée à un lancement** (lot ``j-profil-jeu``).
+
+    Jumelle de :func:`url_photo`, avec un autre cadre d'autorisation : au moment du lancement, la
+    partie **n'existe pas encore** (elle est créée quand le pile ou face est tranché), donc aucune
+    URL de photo de partie ne peut être émise. Or la carte fétiche se montre précisément là, et
+    « avec le rendu choisi » est un critère d'acceptation du lot : il faut donc un cadre, et le
+    cadre naturel est le lancement — deux joueurs, une invitation acceptée, exactement le même
+    « nous nous sommes trouvés » qu'une partie.
+
+    Le défaut est la variante de **zoom** : une carte fétiche est montrée seule et en grand, jamais
+    cent vingt fois comme les cartes d'un plateau — c'est le cas rare où la lourde est la bonne.
+
+    Comme pour une partie, la route (:mod:`pbm_api.routers.jeu_rendu`) **rejoue** toute la
+    décision : participation au lancement, propriété de l'exemplaire, préférence et veto. L'URL
+    ne donne aucun droit par elle-même.
+    """
+    return f"/jeu/rendu/lancements/{launch_id}/photos/{item_id}?v={variante.nom}"
+
+
+def rendu_carte_fetiche(
+    *,
+    card_id: uuid.UUID,
+    photo: PhotoDeJeu | None,
+    reglages: ReglagesRendu,
+    cest_moi: bool,
+    launch_id: uuid.UUID | None,
+    pseudo_proprietaire: str | None = None,
+) -> RenduResolu:
+    """Le rendu d'une **carte fétiche** pour un regard donné (lot ``j-profil-jeu``).
+
+    Passe par :func:`decider_origine` — le même et unique juge que la vue de partie et le
+    constructeur de deck. C'est ce qui garantit qu'un joueur qui a coché « ne jamais montrer mes
+    photos » ne voit pas sa photo partir par ce nouveau chemin : le veto n'est pas réécrit ici, il
+    est **appelé**.
+
+    ``preference_deck`` est volontairement ``None`` : une carte fétiche n'appartient à aucun deck,
+    donc c'est le réglage **du compte** qui décide. ``launch_id`` à ``None`` (la vitrine du profil,
+    hors de tout lancement) force l'image officielle : il n'y a alors aucun cadre qui autorise une
+    photo, et en l'absence de cadre on montre **moins**, jamais plus.
+
+    Rend toujours un :class:`RenduResolu` : une carte du catalogue a toujours son image officielle.
+    """
+    origine, raison = decider_origine(
+        photo=photo, reglages=reglages, preference_deck=None, cest_moi=cest_moi
+    )
+    if origine == RENDU_PHOTO and launch_id is None:
+        origine, raison = RENDU_OFFICIELLE, RAISON_HORS_CADRE
+    if origine == RENDU_OFFICIELLE:
+        return RenduResolu(
+            origine=RENDU_OFFICIELLE,
+            url=url_officielle(card_id, taille="low"),
+            url_zoom=url_officielle(card_id, taille="high"),
+            raison=raison,
+        )
+
+    assert photo is not None  # garanti par decider_origine
+    assert launch_id is not None  # garanti par le repli ci-dessus
+    url = url_photo_lancement(launch_id, photo.item_id, VARIANTE_ZOOM)
+    return RenduResolu(
+        origine=RENDU_PHOTO,
+        url=url,
+        url_zoom=url,
+        credit=None if cest_moi else _credit(pseudo_proprietaire),
+        url_repli=url_officielle(card_id, taille="low"),
+    )
 
 
 def preference_effective(reglages: ReglagesRendu, preference_deck: str | None) -> str:
@@ -276,6 +351,7 @@ def _credit(pseudo: str | None) -> str:
 
 
 __all__ = [
+    "RAISON_HORS_CADRE",
     "RAISON_PAS_PRETE",
     "RENDUS_REGLABLES",
     "RENDU_DOS",
@@ -287,6 +363,8 @@ __all__ = [
     "choisir_rendu",
     "decider_origine",
     "preference_effective",
+    "rendu_carte_fetiche",
     "url_officielle",
     "url_photo",
+    "url_photo_lancement",
 ]
