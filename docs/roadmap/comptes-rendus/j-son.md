@@ -139,7 +139,16 @@ binaires appelés directement).
 | `next build` | ✅ réussi, `/jeu/sons` à **2,71 kB** |
 | Non-régression animations | ✅ `animation-layer.test.tsx` (11), `game-board-animations.test.tsx` (4) verts sans modification |
 
-**La CI GitHub Actions fait foi** — SHA de la branche et du commit de fusion plus bas.
+**La CI GitHub Actions fait foi**, et elle est verte des deux cotes :
+
+| Passage | SHA | Verdict |
+|---|---|---|
+| Branche `roadmap/j-son` (evenement `push` — celui qui fait foi) | `4f192a1` | ✅ `success` |
+| Branche, evenement `pull_request` | `4f192a1` | `action_required` — l'approbation exigee par le depot, **pas un echec** |
+| `main` apres fusion | `002097d` | ✅ `success` |
+
+`main` avait avance a `db16790` entre le push et la fusion (un autre lot) : la fusion `--no-ff` l'a
+integree sans conflit.
 
 ## Grille
 
