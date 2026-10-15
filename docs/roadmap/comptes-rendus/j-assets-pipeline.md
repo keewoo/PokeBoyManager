@@ -86,7 +86,7 @@ aurait donné un test vert qui ne mesure rien. Le modèle explicite est sériali
 | tests purs du lot seuls | **17 passed** |
 | `vitest run` (toute la suite front, sur devAI) | **842 passed / 94 fichiers** |
 | `tsc --noEmit` (apps/web) | **0 erreur** |
-| CI GitHub Actions | 1er passage (`b90af65`) : `api` ✅ `web` ✅ `game` ✅, `e2e` ❌ → défaut réel corrigé (voir plus bas) ; 2e passage : voir fin de compte rendu |
+| CI GitHub Actions | **verte** sur `0113b47` (4 jobs : `web`, `api`, `game`, `e2e`) — voir l'historique des quatre passages ci-dessous |
 
 ### Poids mesurés sur une **vraie** carte
 
@@ -117,6 +117,23 @@ photos synthétiques variées :
 ⚠️ Ces 3,3 / 23,7 Kio sont ceux de **photos synthétiques**, qui compressent mieux qu'une photo
 d'appareil : les chiffres à retenir sont ceux de la carte réelle ci-dessus (12,2 / 45,2 Ko). Les deux
 sont très en dessous des plafonds.
+
+### Les quatre passages de CI
+
+C'est la CI qui fait foi, et il a fallu quatre passages. Le détail, parce qu'il n'est pas flatteur
+mais qu'il est instructif :
+
+| Commit | `web` | `api` | `game` | `e2e` | Ce qui n'allait pas |
+|---|---|---|---|---|---|
+| `b90af65` | ✅ | ✅ | ✅ | ❌ | **défaut réel du code** : la barre de pré-chargement se figeait quand la vue changeait (voir ci-dessous) |
+| `ed3431b` | ✅ | ✅ | ✅ | ❌ | mon assertion : dédoublonnage sur `?v=plateau`, une seule valeur distincte pour 32 requêtes |
+| `0970f18` | ✅ | ✅ | ✅ | ❌ | mon assertion : seuil de couverture **deviné** à 20 pour un décor de 19 cartes |
+| **`0113b47`** | ✅ | ✅ | ✅ | ✅ | — |
+
+Le chronomètre du critère « avant la fin de la mise en place » est passé au vert dès le deuxième
+passage et n'a plus bougé : les deux derniers échecs étaient des tests mal écrits, pas un défaut du
+produit. Les trois autres jobs (`web` lint/types/tests/build, `api`, `game`) ont été verts **dès le
+premier passage**.
 
 ## Un défaut réel trouvé par la CI, et corrigé dans la foulée
 
