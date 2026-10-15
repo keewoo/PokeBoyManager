@@ -164,8 +164,9 @@ export function ProfilJeuView() {
           Mon identité
         </h2>
         {profil?.a_un_avatar ? (
-          // eslint-disable-next-line @next/next/no-img-element -- avatar servi par l'API avec le
-          // cookie de session (`crossOrigin`), hors du domaine d'optimisation de next/image.
+          // Avatar servi par l'API avec le cookie de session (`crossOrigin`), hors du domaine
+          // d'optimisation de next/image — même chemin que `components/profile/avatar-picker`.
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={avatarUrl()}
             alt="Ma photo de profil"
@@ -198,8 +199,8 @@ export function ProfilJeuView() {
           Ma carte fétiche
         </h2>
         <p className="mt-1 text-xs text-muted-foreground">
-          C'est la carte que ton adversaire verra au moment de lancer la partie. Choisis-la parmi
-          les cartes de ta collection.
+          C&apos;est la carte que ton adversaire verra au moment de lancer la partie.
+          Choisis-la parmi les cartes de ta collection.
         </p>
 
         {profil?.carte_fetiche ? (
@@ -218,7 +219,8 @@ export function ProfilJeuView() {
               <p className="text-sm font-semibold">{profil.carte_fetiche.nom}</p>
               {profil.carte_fetiche.rendu.raison && (
                 <p data-testid="raison-rendu" className="mt-1 text-xs text-muted-foreground">
-                  Ton adversaire verra l'image officielle : {profil.carte_fetiche.rendu.raison}.
+                  Ton adversaire verra l&apos;image officielle :{" "}
+                  {profil.carte_fetiche.rendu.raison}.
                 </p>
               )}
               <Button
@@ -235,7 +237,7 @@ export function ProfilJeuView() {
           </div>
         ) : (
           <p data-testid="sans-fetiche" className="mt-3 text-sm text-muted-foreground">
-            Tu n'as pas encore choisi de carte fétiche.
+            Tu n&apos;as pas encore choisi de carte fétiche.
           </p>
         )}
 
@@ -299,14 +301,15 @@ export function ProfilJeuView() {
         </h2>
         {profil && !profil.badges_actifs ? (
           <p data-testid="badges-eteints" className="mt-2 text-sm text-muted-foreground">
-            Les badges ne sont pas activés pour l'instant. Rien n'est perdu : ce que tu gagnes est
+            Les badges ne sont pas activés pour l&apos;instant. Rien n&apos;est perdu : ce que tu
+            gagnes est
             enregistré, et ils apparaîtront ici le jour où ils seront allumés.
           </p>
         ) : (
           <>
             <p className="mt-1 text-xs text-muted-foreground">
               Des badges gratuits, qui récompensent ce que tu fais en jeu — jamais le temps que tu y
-              passes. Aucun ne s'achète, aucun ne se tire au sort.
+              passes. Aucun ne s&apos;achète, aucun ne se tire au sort.
             </p>
             <ul className="mt-3 space-y-2">
               {(profil?.badges ?? []).map((badge) => (
@@ -325,7 +328,8 @@ export function ProfilJeuView() {
           Mes décors
         </h2>
         <p className="mt-1 text-xs text-muted-foreground">
-          Les six décors sont à toi dès maintenant : il n'y en a aucun à débloquer. Tu choisis celui
+          Les six décors sont à toi dès maintenant : il n&apos;y en a aucun à débloquer. Tu
+          choisis celui
           de ton arène dans « Confort de jeu ».
         </p>
         <ul className="mt-3 flex flex-wrap gap-2" data-testid="decors">
