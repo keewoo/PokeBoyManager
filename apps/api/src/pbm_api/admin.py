@@ -22,6 +22,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.auth.service import normalize_email
 from pbm_api.db import async_session_factory
+from pbm_api.jeu.reglages import REGLAGES, ReglageInconnu, ValeurInvalide, declaration
+from pbm_api.jeu.reglages_service import ecrire as ecrire_reglage
+from pbm_api.jeu.reglages_service import etat_complet as etat_reglages
 from pbm_api.legal import CURRENT_TERMS_VERSION
 from pbm_api.models import User
 from pbm_api.security.passwords import hash_password, is_password_long_enough
@@ -137,6 +140,47 @@ async def set_game_access(db: AsyncSession, *, email: str, enabled: bool) -> str
     return normalized_email
 
 
+async def _set_reglage_jeu_cli(*, cle: str, valeur: str) -> str:
+    async with async_session_factory() as db:
+        return await ecrire_reglage(db, cle, valeur)
+
+
+def _run_set_reglage_jeu(args: argparse.Namespace) -> int:
+    """Pose un réglage **global** du jeu (DJ6 : « activables par JF »).
+
+    C'est le geste qui remplace un déploiement : le serveur continue de tourner, la valeur est lue
+    à la requête suivante, et une partie en cours n'est pas interrompue. Une clé inconnue ou une
+    valeur hors vocabulaire **échouent** en nommant ce qui est accepté — jamais un succès sur un
+    réglage que personne ne lira.
+    """
+    try:
+        valeur = asyncio.run(_set_reglage_jeu_cli(cle=args.cle, valeur=args.valeur))
+    except (ReglageInconnu, ValeurInvalide) as exc:
+        print(f"Erreur : {exc}", file=sys.stderr)
+        return 1
+    print(f"Réglage posé : {args.cle} = {valeur}  ({declaration(args.cle).libelle})")
+    return 0
+
+
+async def _lire_reglages_jeu_cli() -> list[tuple[str, str | None, str]]:
+    async with async_session_factory() as db:
+        return await etat_reglages(db)
+
+
+def _run_lire_reglages_jeu(_args: argparse.Namespace) -> int:
+    """Montre, pour chaque réglage déclaré, la valeur **stockée** et la valeur **effective**.
+
+    Les deux, et pas seulement la seconde : c'est ce qui rend visible une valeur devenue illisible
+    (un barème retiré du code), pour laquelle la lecture rend le défaut. Sans cette colonne, l'écart
+    serait un repli silencieux.
+    """
+    etat = asyncio.run(_lire_reglages_jeu_cli())
+    for cle, stockee, effective in etat:
+        pose = "défaut" if stockee is None else f"posé : {stockee}"
+        print(f"{cle:24} = {effective:10} ({pose})  {REGLAGES[cle].libelle}")
+    return 0
+
+
 async def _set_game_access_cli(*, email: str, enabled: bool) -> str:
     async with async_session_factory() as db:
         return await set_game_access(db, email=email, enabled=enabled)
@@ -184,6 +228,17 @@ def _build_parser() -> argparse.ArgumentParser:
     ga.add_argument("email")
     ga.add_argument("state", choices=["on", "off"], help="on = accorde, off = retire")
 
+    reglage = subparsers.add_parser(
+        "set-reglage-jeu",
+        help="Pose un réglage global du jeu (DJ6) — sans redéployer ni redémarrer.",
+    )
+    reglage.add_argument("cle", help=f"L'une de : {', '.join(sorted(REGLAGES))}")
+    reglage.add_argument("valeur")
+
+    subparsers.add_parser(
+        "lire-reglages-jeu", help="Affiche les réglages globaux du jeu (posés et effectifs)."
+    )
+
     return parser
 
 
@@ -196,6 +251,12 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "set-game-access":
         return _run_set_game_access(args)
+
+    if args.command == "set-reglage-jeu":
+        return _run_set_reglage_jeu(args)
+
+    if args.command == "lire-reglages-jeu":
+        return _run_lire_reglages_jeu(args)
 
     if args.command != "create-user":
         return 1
