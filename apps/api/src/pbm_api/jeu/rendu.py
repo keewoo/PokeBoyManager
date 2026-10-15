@@ -33,6 +33,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 
+from pbm_api.jeu.rendu_image import VARIANTE_PLATEAU, VARIANTE_ZOOM, Variante
 from pbm_api.jeu.rendu_qualite import (
     RAISON_CONFIDENTIALITE,
     RAISON_PREFERENCE,
@@ -133,15 +134,22 @@ def url_officielle(card_id: uuid.UUID, *, taille: str = "low") -> str:
     return f"/img/cards/{card_id}?size={taille}"
 
 
-def url_photo(game_id: uuid.UUID, item_id: uuid.UUID) -> str:
-    """L'URL de la variante de jeu d'une photo, **bornée à une partie**.
+def url_photo(
+    game_id: uuid.UUID, item_id: uuid.UUID, variante: Variante = VARIANTE_PLATEAU
+) -> str:
+    """L'URL d'une variante de jeu d'une photo, **bornée à une partie**.
 
     La partie est dans le chemin, et ce n'est pas décoratif : c'est elle qui donne le droit de
     regarder. Hors d'une partie partagée, l'adversaire n'a aucune raison de voir mes photos — la
     route (:mod:`pbm_api.routers.jeu_rendu`) revérifie la participation **et** le veto, pour que la
     confidentialité ne repose pas seulement sur le fait que l'URL n'a pas été publiée.
+
+    ``?v=`` nomme la variante voulue (lot ``j-assets-pipeline``) : le plateau en charge jusqu'à 120,
+    le zoom une seule à la fois, et c'est cet écart de poids qui fait tenir le budget d'une partie
+    (:mod:`pbm_api.jeu.budget`). Le défaut est la variante **plateau** : c'est celle que l'écran
+    demande le plus souvent, et laisser le zoom par défaut ferait du cas coûteux le cas implicite.
     """
-    return f"/jeu/rendu/parties/{game_id}/photos/{item_id}"
+    return f"/jeu/rendu/parties/{game_id}/photos/{item_id}?v={variante.nom}"
 
 
 def preference_effective(reglages: ReglagesRendu, preference_deck: str | None) -> str:
@@ -216,11 +224,13 @@ def choisir_rendu(
         )
 
     assert photo is not None  # garanti par decider_origine : « photo » implique une photo prête
-    lien = url_photo(game_id, photo.item_id)
+    # Deux variantes distinctes depuis `j-assets-pipeline` : le plateau charge la légère (12 Ko)
+    # jusqu'à 120 fois, le zoom la lourde (45 Ko) une carte à la fois. Servir la même aux deux —
+    # ce que faisait `j-rendu-carte` — coûtait 5,2 Mo par partie, et le jeu mourait là.
     return RenduResolu(
         origine=RENDU_PHOTO,
-        url=lien,
-        url_zoom=lien,
+        url=url_photo(game_id, photo.item_id, VARIANTE_PLATEAU),
+        url_zoom=url_photo(game_id, photo.item_id, VARIANTE_ZOOM),
         credit=None if cest_moi else _credit(pseudo_proprietaire),
         url_repli=url_officielle(card_id, taille="low"),
     )

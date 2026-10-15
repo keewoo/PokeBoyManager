@@ -8,12 +8,14 @@ sur `Upload.user_id` (`pbm_api.validation.service`), jamais par un `upload_id` f
 import uuid
 from typing import Annotated
 
+from arq.connections import ArqRedis
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.auth.dependencies import get_current_user, require_csrf
 from pbm_api.db import get_session
 from pbm_api.models import User
+from pbm_api.queue import get_arq_pool
 from pbm_api.validation import service
 from pbm_api.validation.errors import (
     CardNotFoundError,
@@ -35,11 +37,16 @@ async def confirm_detection(
     payload: ConfirmDetectionRequest,
     db: Annotated[AsyncSession, Depends(get_session)],
     current_user: Annotated[User, Depends(get_current_user)],
+    arq_pool: Annotated[ArqRedis, Depends(get_arq_pool)],
     _csrf: Annotated[None, Depends(require_csrf)],
 ) -> ConfirmDetectionResponse:
     """Valide une détection et crée l'exemplaire correspondant en collection ; appartenance
     vérifiée par jointure sur `Upload.user_id`. Lève 404 si la détection ou la carte au
-    catalogue est introuvable, 409 si déjà traitée."""
+    catalogue est introuvable, 409 si déjà traitée.
+
+    Enfile ensuite la préparation des **variantes de jeu** du compte (lot `j-assets-pipeline`) :
+    c'est le moment « à l'ajout en collection », et il est hors de la requête du joueur — décoder
+    la photo et encoder deux WebP ici l'aurait fait attendre sans raison."""
     try:
         detection, items = await service.confirm_detection(db, current_user, detection_id, payload)
     except DetectionNotFoundError:
@@ -51,6 +58,8 @@ async def confirm_detection(
     except CardNotFoundError:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "carte introuvable au catalogue") from None
 
+    # Le nom doit correspondre à la fonction enregistrée dans `pbm_api.worker.WorkerSettings`.
+    await arq_pool.enqueue_job("preparer_variantes_jeu_task", str(current_user.id))
     return ConfirmDetectionResponse(
         detection_id=detection.id,
         status=detection.status,

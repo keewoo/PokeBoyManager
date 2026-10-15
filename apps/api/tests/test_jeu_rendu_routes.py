@@ -28,9 +28,11 @@ import pytest
 
 from pbm_api.config import settings
 from pbm_api.games.service import creer_partie
-from pbm_api.jeu.rendu_image import TYPE_MIME_JEU
+from pbm_api.jeu import rendu_service
+from pbm_api.jeu.rendu_image import TYPE_MIME_JEU, VARIANTE_PLATEAU, VARIANTE_ZOOM
 from pbm_api.main import app
 from pbm_api.models import Card, CollectionItem, Deck, DeckCard, Set, User
+from pbm_api.routers.images import get_storage as images_storage
 from pbm_api.routers.jeu_rendu import get_storage
 from pbm_api.security.csrf import CSRF_HEADER_NAME
 from pbm_api.storage.local import LocalObjectStorage
@@ -226,6 +228,9 @@ async def _partie_avec_photo(api_client, db_session, storage):
     deck_a = await _deck_de(db_session, a_id, card)
     deck_b = await _deck_de(db_session, b_id, card)
     item = await _exemplaire_photographie(db_session, storage, a_id, card)
+    # Les variantes sont préparées AVANT la partie (lot `j-assets-pipeline`) : à l'ajout en
+    # collection dans le produit, explicitement ici. La route de partie n'en fabrique plus aucune.
+    await rendu_service.preparer_variante(db_session, storage, item)
     game = await creer_partie(db_session, joueur_a=(a_id, deck_a), joueur_b=(b_id, deck_b))
     await _login(api_client, email_a)
     return {
@@ -237,9 +242,10 @@ async def _partie_avec_photo(api_client, db_session, storage):
 async def test_le_proprietaire_recoit_sa_photo_en_variante_de_jeu(
     api_client, db_session, storage
 ):
-    """La variante est produite à la première demande, et c'est elle qu'on sert.
+    """La variante **déjà préparée** est celle qu'on sert, jamais l'originale pleine résolution.
 
-    Jamais l'originale pleine résolution : c'est le risque nommé par la fiche du lot.
+    C'était le risque nommé par la fiche de ``j-rendu-carte``. Depuis ``j-assets-pipeline``, la
+    variante n'est plus produite ici : la route la lit, elle ne la fabrique pas.
     """
     ctx = await _partie_avec_photo(api_client, db_session, storage)
     url = f"/jeu/rendu/parties/{ctx['game'].id}/photos/{ctx['item'].id}"
@@ -328,11 +334,15 @@ async def test_une_photo_inexploitable_n_est_pas_servie_et_ne_fait_pas_attendre(
     api_client, db_session, storage
 ):
     """Une photo trop sombre ne devient pas une carte illisible sur le plateau : 404 ici, et la
-    vue de partie sert l'officielle (cf. ``test_jeu_rendu_projection``)."""
+    vue de partie sert l'officielle (cf. ``test_jeu_rendu_projection``).
+
+    La **raison** est écrite à la préparation (hors partie) et non plus par cette route, qui ne
+    fabrique plus rien depuis ``j-assets-pipeline``."""
     ctx = await _partie_avec_photo(api_client, db_session, storage)
     sombre = await _exemplaire_photographie(
         db_session, storage, ctx["a_id"], ctx["card"], photo=_photo_nette(luminosite=15)
     )
+    await rendu_service.preparer_variante(db_session, storage, sombre)
     url = f"/jeu/rendu/parties/{ctx['game'].id}/photos/{sombre.id}"
     assert (await api_client.get(url)).status_code == 404
     # La raison est **écrite** : c'est elle que le constructeur de deck montrera.
@@ -409,3 +419,228 @@ async def test_le_rendu_du_deck_se_regle_et_revient_au_reglage_du_compte(api_cli
         f"/me/decks/{deck_id}", json={"rendu_cartes": "dos"}, headers=_csrf(csrf)
     )
     assert r3.status_code == 422, r3.text
+
+
+# --- Lot `j-assets-pipeline` : variantes servies, et RIEN de fabriqué en partie ------------------
+
+
+class _StockageQuiRefuseDEcrire:
+    """Un stockage qui **lève** à la moindre écriture, pour prouver qu'aucune image n'est fabriquée.
+
+    C'est la seule forme de preuve qui tienne : compter les appels laisserait passer une écriture
+    conditionnelle, et relire le source laisserait passer un appel indirect. Ici, toute fabrication
+    pendant une partie fait échouer le test — bruyamment.
+    """
+
+    def __init__(self, reel):
+        self._reel = reel
+        self.ecritures = []
+
+    async def get(self, cle):
+        return await self._reel.get(cle)
+
+    async def head(self, cle):
+        return await self._reel.head(cle)
+
+    async def put(self, cle, donnees, type_mime):
+        self.ecritures.append(cle)
+        raise AssertionError(
+            f"écriture interdite pendant une partie : {cle} — une image a été fabriquée "
+            "sur le chemin qui sert le plateau (critère du lot `j-assets-pipeline`)"
+        )
+
+    async def delete(self, cle):
+        return await self._reel.delete(cle)
+
+    async def ensure_bucket(self):
+        return await self._reel.ensure_bucket()
+
+
+async def test_servir_une_photo_ne_fabrique_jamais_d_image(api_client, db_session, storage):
+    """⛔ **Critère du lot** : aucune génération d'image pendant une partie.
+
+    Avant ``j-assets-pipeline``, ``servir_photo`` rattrapait ici la variante manquante : une partie
+    à deux joueurs pouvait donc lancer jusqu'à 120 décodages OpenCV sur la machine qui sert. Ce
+    test échoue sur ce code-là.
+    """
+    ctx = await _partie_avec_photo(api_client, db_session, storage)
+    refus = _StockageQuiRefuseDEcrire(storage)
+    app.dependency_overrides[get_storage] = lambda: refus
+    try:
+        for variante in (VARIANTE_PLATEAU, VARIANTE_ZOOM):
+            url = (
+                f"/jeu/rendu/parties/{ctx['game'].id}/photos/{ctx['item'].id}"
+                f"?v={variante.nom}"
+            )
+            reponse = await api_client.get(url)
+            assert reponse.status_code == 200, reponse.text
+    finally:
+        app.dependency_overrides[get_storage] = lambda: storage
+    assert refus.ecritures == []
+
+
+async def test_une_variante_non_preparee_rend_404_au_lieu_de_la_fabriquer(
+    api_client, db_session, storage
+):
+    """Un exemplaire photographié mais jamais préparé : 404, et l'écran prend l'officielle.
+
+    C'est le repli honnête (``url_repli``) plutôt qu'une attente ou une fabrication en pleine
+    partie. Le 404 est le même que tous les autres refus de cette route.
+    """
+    ctx = await _partie_avec_photo(api_client, db_session, storage)
+    jamais_prepare = await _exemplaire_photographie(
+        db_session, storage, ctx["a_id"], ctx["card"]
+    )
+    refus = _StockageQuiRefuseDEcrire(storage)
+    app.dependency_overrides[get_storage] = lambda: refus
+    try:
+        url = f"/jeu/rendu/parties/{ctx['game'].id}/photos/{jamais_prepare.id}?v=plateau"
+        assert (await api_client.get(url)).status_code == 404
+    finally:
+        app.dependency_overrides[get_storage] = lambda: storage
+    assert refus.ecritures == []
+
+
+async def test_la_variante_de_plateau_servie_est_bien_plus_legere_que_le_zoom(
+    api_client, db_session, storage
+):
+    """Le gain du lot, mesuré **à travers la route** : c'est ce que le navigateur télécharge."""
+    ctx = await _partie_avec_photo(api_client, db_session, storage)
+    base = f"/jeu/rendu/parties/{ctx['game'].id}/photos/{ctx['item'].id}"
+
+    plateau = await api_client.get(f"{base}?v=plateau")
+    zoom = await api_client.get(f"{base}?v=zoom")
+    assert plateau.status_code == 200 and zoom.status_code == 200
+    assert plateau.headers["content-type"] == TYPE_MIME_JEU
+    assert len(plateau.content) * 2 < len(zoom.content), (
+        f"plateau {len(plateau.content)} o contre zoom {len(zoom.content)} o"
+    )
+    assert len(plateau.content) <= VARIANTE_PLATEAU.plafond_octets
+
+
+async def test_sans_parametre_de_variante_c_est_le_zoom_comme_avant_le_lot(
+    api_client, db_session, storage
+):
+    """Compatibilité : une URL gardée par un onglet ouvert doit rendre ce qu'elle rendait."""
+    ctx = await _partie_avec_photo(api_client, db_session, storage)
+    base = f"/jeu/rendu/parties/{ctx['game'].id}/photos/{ctx['item'].id}"
+    nu = await api_client.get(base)
+    zoom = await api_client.get(f"{base}?v=zoom")
+    assert nu.status_code == 200
+    assert nu.content == zoom.content
+
+
+async def test_une_variante_inconnue_est_refusee_sans_rien_servir(
+    api_client, db_session, storage
+):
+    """Un ``?v=`` hors vocabulaire est une erreur de validation, pas un repli silencieux."""
+    ctx = await _partie_avec_photo(api_client, db_session, storage)
+    url = f"/jeu/rendu/parties/{ctx['game'].id}/photos/{ctx['item'].id}?v=enorme"
+    assert (await api_client.get(url)).status_code == 422
+
+
+async def test_une_photo_deja_connue_du_navigateur_ne_repasse_pas_sur_le_reseau(
+    api_client, db_session, storage
+):
+    """L'empreinte rend un rechargement de plateau gratuit — sinon le budget serait payé
+    à chaque F5."""
+    ctx = await _partie_avec_photo(api_client, db_session, storage)
+    url = f"/jeu/rendu/parties/{ctx['game'].id}/photos/{ctx['item'].id}?v=plateau"
+
+    premiere = await api_client.get(url)
+    assert premiere.status_code == 200
+    etag = premiere.headers["etag"]
+    assert "private" in premiere.headers["cache-control"]
+
+    seconde = await api_client.get(url, headers={"If-None-Match": etag})
+    assert seconde.status_code == 304
+    assert seconde.content == b""
+
+
+async def test_l_image_officielle_est_promise_immuable_et_revalidable(
+    api_client, db_session, storage
+):
+    """``/img/cards/{id}`` ne posait AUCUN en-tête avant ce lot : chaque F5 repayait tout."""
+    ctx = await _partie_avec_photo(api_client, db_session, storage)
+    # La route lit `Card.image_url` pour savoir qu'une image officielle existe, puis sert le cache
+    # du stockage objet : sans l'une des deux, c'est un 404 légitime.
+    ctx["card"].image_url = "https://assets.example/en/base/base1/4"
+    await db_session.flush()
+    cle = f"cards/{ctx['card'].id}/low.webp"
+    await storage.put(cle, b"image officielle de test", "image/webp")
+    app.dependency_overrides[images_storage] = lambda: storage
+    try:
+        reponse = await api_client.get(f"/img/cards/{ctx['card'].id}?size=low")
+        assert reponse.status_code == 200, reponse.text
+        assert "immutable" in reponse.headers["cache-control"]
+        assert "public" in reponse.headers["cache-control"]
+        etag = reponse.headers["etag"]
+        rejoue = await api_client.get(
+            f"/img/cards/{ctx['card'].id}?size=low", headers={"If-None-Match": etag}
+        )
+        assert rejoue.status_code == 304
+    finally:
+        app.dependency_overrides.pop(images_storage, None)
+
+
+async def test_reprendre_une_photo_efface_ses_variantes_et_sa_note(
+    api_client, db_session, storage
+):
+    """Régénération : les variantes sont nommées d'après l'EXEMPLAIRE, pas d'après la photo.
+
+    Sans effacement, une photo reprise resterait invisible — la clé de la variante ne changerait
+    pas, et l'ancienne image serait servie indéfiniment.
+    """
+    ctx = await _partie_avec_photo(api_client, db_session, storage)
+    item = ctx["item"]
+    cles = [
+        f"jeu/rendu/{item.user_id}/{item.id}.webp",
+        f"jeu/rendu/{item.user_id}/{item.id}.plateau.webp",
+    ]
+    for cle in cles:
+        assert await storage.get(cle) is not None
+
+    await rendu_service.invalider_variantes(db_session, storage, item)
+
+    for cle in cles:
+        assert await storage.get(cle) is None, f"{cle} est resté dans le stockage"
+    assert item.jeu_image_key is None
+    assert item.jeu_qualite is None
+    # Et la préparation la refait : l'invalidation n'est pas une suppression définitive.
+    note = await rendu_service.preparer_variante(db_session, storage, item)
+    assert note is not None and note.exploitable
+    for cle in cles:
+        assert await storage.get(cle) is not None
+
+
+async def test_un_exemplaire_prepare_avant_le_lot_gagne_sa_variante_de_plateau(
+    api_client, db_session, storage
+):
+    """Rattrapage du parc : ``j-rendu-carte`` ne produisait que le zoom.
+
+    Sans ce rattrapage, un joueur dont la collection date d'avant ce lot n'aurait jamais de
+    variante de plateau — donc jouerait avec les images officielles sans que rien ne le dise.
+    """
+    ctx = await _partie_avec_photo(api_client, db_session, storage)
+    item = ctx["item"]
+    # On remet l'exemplaire dans l'état exact que laissait `j-rendu-carte` : le zoom seul, et une
+    # note sans liste de variantes.
+    await storage.delete(f"jeu/rendu/{item.user_id}/{item.id}.plateau.webp")
+    item.jeu_qualite = {k: v for k, v in item.jeu_qualite.items() if k != "variantes"}
+    await db_session.flush()
+    assert rendu_service.variantes_pretes(item) == frozenset()
+
+    note = await rendu_service.preparer_variante(db_session, storage, item)
+
+    assert note is not None and note.exploitable
+    assert "plateau" in rendu_service.variantes_pretes(item)
+    assert await storage.get(f"jeu/rendu/{item.user_id}/{item.id}.plateau.webp") is not None
+
+
+async def test_une_seconde_preparation_ne_refait_rien(api_client, db_session, storage):
+    """Elle est appelée depuis un écran : la deuxième fois doit coûter zéro écriture."""
+    ctx = await _partie_avec_photo(api_client, db_session, storage)
+    refus = _StockageQuiRefuseDEcrire(storage)
+    note = await rendu_service.preparer_variante(db_session, refus, ctx["item"])
+    assert note is not None and note.exploitable
+    assert refus.ecritures == []
