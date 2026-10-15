@@ -40,6 +40,7 @@ import { categoryLabel, scriptBlockedCardIds } from "@/lib/game/legality";
 import { DeckRenduPanel } from "./deck-rendu-panel";
 
 import { DeckAiAssistant } from "./deck-ai-assistant";
+import { DeckPartiesPanel } from "./deck-parties-panel";
 import { DeckStatsPanel } from "./deck-stats-panel";
 
 const DECK_SIZE = 60;
@@ -978,6 +979,7 @@ export function DeckBuilderView({ deckId }: { deckId: string }) {
       </div>
 
       <DeckStatsPanel deckId={deckId} refreshKey={deck.updated_at} />
+      <DeckPartiesPanel deckId={deckId} />
       <DeckHistory deckId={deckId} refreshKey={deck.updated_at} />
     </div>
   );

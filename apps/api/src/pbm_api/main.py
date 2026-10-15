@@ -31,6 +31,7 @@ from pbm_api.routers.matchmaking import router as matchmaking_router
 from pbm_api.routers.notifications import router as notifications_router
 from pbm_api.routers.observabilite import router as observabilite_router
 from pbm_api.routers.profile import router as profile_router
+from pbm_api.routers.stats_joueur import router as stats_joueur_router
 from pbm_api.routers.uploads import router as uploads_router
 from pbm_api.routers.wishlist import router as wishlist_router
 from pbm_api.security.headers import SecurityHeadersMiddleware
@@ -100,3 +101,8 @@ app.include_router(classement_router)
 # Supervision du jeu (lot `j-observabilite-jeu`) : les metriques lisibles sans SSH, reservees
 # aux comptes ayant l'acces au jeu (D11) — agregees, jamais ventilees par compte.
 app.include_router(observabilite_router)
+# Mes parties : historique et statistiques du joueur (lot `j-stats-joueur`, jalon J4). Deux routes
+# en LECTURE seulement — rien n'est stocke, tout est recalcule depuis `game_result_players` a
+# chaque appel, comme le classement prive. Il n'y a donc aucun agregat a reparer, et aucune route
+# d'ecriture a garder.
+app.include_router(stats_joueur_router)
