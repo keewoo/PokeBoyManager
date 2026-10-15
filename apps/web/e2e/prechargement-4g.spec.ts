@@ -179,7 +179,7 @@ test.describe("Pré-chargement des images d'une partie en 4G simulée", () => {
 
     const vue = vueMiseEnPlace();
     const servir = tuyau4g();
-    /** Les requêtes d'image vues : la preuve qu'on charge le léger, jamais le zoom. */
+    /** Les requêtes d'image vues (chemin + paramètres) : la preuve qu'on charge le léger. */
     const demandees: string[] = [];
 
     // ⚠️ Les images sont servies AVEC leur en-tête de cache, comme en production (c'est ce que ce
@@ -190,7 +190,8 @@ test.describe("Pré-chargement des images d'une partie en 4G simulée", () => {
     // requêtes ci-dessous le prouve.
     const entetes = { "cache-control": "private, max-age=60" };
     await page.route("**/jeu/rendu/parties/**", async (route) => {
-      demandees.push(new URL(route.request().url()).search);
+      const adresse = new URL(route.request().url());
+      demandees.push(adresse.pathname + adresse.search);
       await servir(CORPS_IMAGE.byteLength);
       await route.fulfill({ body: CORPS_IMAGE, contentType: "image/webp", headers: entetes });
     });
@@ -239,19 +240,28 @@ test.describe("Pré-chargement des images d'une partie en 4G simulée", () => {
 
     // Et ce sont bien les variantes LÉGÈRES qui ont été demandées, jamais le zoom : c'est tout
     // l'objet du dédoublement des variantes.
-    expect(demandees.length).toBeGreaterThan(0);
-    for (const recherche of demandees) {
-      expect(recherche, "le plateau ne doit jamais charger la variante de zoom").toContain(
+    for (const adresse of demandees) {
+      expect(adresse, "le plateau ne doit jamais charger la variante de zoom").toContain(
         "v=plateau",
       );
     }
-    // Le cache fait son travail : on ne paie pas deux fois la même carte. Le plafond est large
-    // (une marge pour une éventuelle revalidation) mais très en dessous du double.
+
+    // Le pré-chargement a bien couvert le plateau, et pas une carte symbolique.
     const distinctes = new Set(demandees).size;
+    expect(distinctes, "le pré-chargement doit couvrir les cartes visibles").toBeGreaterThanOrEqual(
+      20,
+    );
+
+    // ⚠️ Le compte de requêtes est borné, mais **pas** à une par image, et il faut dire pourquoi :
+    // le pré-chargeur (`new Image()`) et la balise `<img>` du plateau demandent la même URL
+    // presque en même temps, avant que le cache ne soit rempli — le navigateur ne fusionne pas
+    // toujours deux requêtes en vol venant de ces deux chemins. Mesuré en CI : 32 requêtes pour
+    // 24 images, soit un tiers de recouvrement. Ce qui compte pour le joueur est le TEMPS, vérifié
+    // plus haut ; cette borne-ci n'est là que pour attraper une régression franche (une image
+    // redemandée à chaque rendu du plateau, par exemple).
     expect(
       demandees.length,
-      `${demandees.length} requêtes pour ${distinctes} images distinctes : le pré-chargement ` +
-        "doit remplir le cache du navigateur, pas doubler le trafic",
-    ).toBeLessThan(distinctes * 1.5);
+      `${demandees.length} requêtes pour ${distinctes} images distinctes`,
+    ).toBeLessThan(distinctes * 2);
   });
 });

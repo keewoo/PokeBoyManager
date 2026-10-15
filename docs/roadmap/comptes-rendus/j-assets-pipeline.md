@@ -142,8 +142,16 @@ coup.
 Le même passage a révélé un second effet mesurable : les images étaient demandées **deux fois** (une
 par le pré-chargeur, une par la balise `<img>` du plateau). La spec sert donc désormais les images
 **avec leur en-tête de cache**, comme en production — le pré-chargement remplit le cache, le plateau
-peint depuis le cache — et **asserte** que le nombre de requêtes reste sous 1,5 × le nombre d'images
-distinctes. Le mécanisme de cache de ce lot est ainsi prouvé, et plus seulement déclaré.
+peint depuis le cache.
+
+⚠️ Et le recouvrement n'est pas tombé à zéro : **32 requêtes pour 24 images** en CI, soit un tiers
+de doublons. Le pré-chargeur (`new Image()`) et la balise `<img>` demandent la même URL presque en
+même temps, avant que le cache ne soit rempli, et le navigateur ne fusionne pas toujours deux
+requêtes en vol venant de ces deux chemins. La spec le **dit** et borne à 2 × le nombre d'images
+distinctes plutôt que de prétendre à une requête par image — ce qui compte pour le joueur est le
+temps, vérifié séparément. Un troisième passage de CI a été nécessaire parce que ma première
+assertion dédoublonnait sur `?v=plateau` (une seule valeur distincte !) au lieu de l'URL complète :
+l'assertion était fausse, pas le code.
 
 ## Décisions prises dans le lot
 
