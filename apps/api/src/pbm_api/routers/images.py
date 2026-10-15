@@ -7,13 +7,14 @@ import uuid
 from typing import Annotated
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from fastapi.responses import Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.catalog.tcgdex_client import TcgdexClient
 from pbm_api.db import get_session
+from pbm_api.http_images import reponse_image
 from pbm_api.models import Card
 from pbm_api.storage import StorageBackend, build_storage
 
@@ -45,10 +46,18 @@ async def get_card_image(
     storage: Annotated[StorageBackend, Depends(get_storage)],
     tcgdex: Annotated[TcgdexClient, Depends(get_tcgdex_client)],
     size: str = Query("high", pattern="^(high|low)$"),
+    if_none_match: Annotated[str | None, Header(alias="If-None-Match")] = None,
 ) -> Response:
     """Sert l'image officielle d'une carte (route publique), mise en cache dans le stockage
     objet au premier accès. Lève 404 si la carte est inconnue ou sans image, 502 si la source
-    officielle est injoignable — jamais un succès vide."""
+    officielle est injoignable — jamais un succès vide.
+
+    **Cache immuable** (lot ``j-assets-pipeline``) : pour un couple (carte, taille), le contenu ne
+    change jamais — l'image officielle d'une carte éditée est un fait, pas un réglage. On promet
+    donc ``immutable`` et un an de validité, et le navigateur ne redemande rien. Avant ce lot cette
+    route ne posait **aucun** en-tête : chaque rechargement de page repayait tout le poids d'images
+    du plateau, ce qui annulait le budget de poids d'une partie (:mod:`pbm_api.jeu.budget`).
+    """
     result = await session.execute(select(Card.image_url).where(Card.id == card_id))
     image_base_url = result.scalar_one_or_none()
     if image_base_url is None:
@@ -57,7 +66,9 @@ async def get_card_image(
     object_key = f"cards/{card_id}/{size}.webp"
     cached = await storage.get(object_key)
     if cached is not None:
-        return Response(content=cached, media_type="image/webp")
+        return reponse_image(
+            cached, "image/webp", if_none_match=if_none_match, immuable=True
+        )
 
     try:
         image_bytes = await tcgdex.fetch_image_bytes(image_base_url, size)
@@ -67,4 +78,4 @@ async def get_card_image(
         ) from exc
 
     await storage.put(object_key, image_bytes, "image/webp")
-    return Response(content=image_bytes, media_type="image/webp")
+    return reponse_image(image_bytes, "image/webp", if_none_match=if_none_match, immuable=True)

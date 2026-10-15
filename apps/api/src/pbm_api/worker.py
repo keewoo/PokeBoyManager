@@ -17,7 +17,7 @@ from datetime import UTC, datetime, timedelta
 import httpx
 from arq.connections import RedisSettings
 from arq.cron import cron
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 
 from pbm_api.ai.errors import AIProviderError
 from pbm_api.ai.service import get_default_credential
@@ -41,7 +41,17 @@ from pbm_api.imports.errors import (
 from pbm_api.imports.service import run_import_for_upload
 from pbm_api.ingame.tournaments import LimitlessTcgClient
 from pbm_api.ingame.tournaments_job import refresh_tournament_presence
-from pbm_api.models import DataExport, Detection, DetectionStatus, Job, JobStatus, Upload, User
+from pbm_api.jeu.rendu_service import CLE_VARIANTES, preparer_variante
+from pbm_api.models import (
+    CollectionItem,
+    DataExport,
+    Detection,
+    DetectionStatus,
+    Job,
+    JobStatus,
+    Upload,
+    User,
+)
 from pbm_api.pricing.exchange_rates import EcbClient, store_daily_rates
 from pbm_api.pricing.service import collect_daily_prices
 from pbm_api.ranking.service import refresh_card_value_rank
@@ -588,6 +598,54 @@ async def weekly_tournament_presence_task(ctx: dict) -> dict:
     return await _run_weekly_tournament_presence()
 
 
+async def preparer_variantes_jeu_task(ctx: dict, user_id: str) -> dict:
+    """Produit les **variantes de jeu** des exemplaires d'un compte qui n'en ont pas encore.
+
+    Enfilé à l'ajout en collection (lot ``j-assets-pipeline``) : c'est le moment que nomme la fiche
+    du lot — « au moment de l'ajout à la collection et non pendant la partie ». Le job existe parce
+    que le faire dans la requête HTTP de validation ferait attendre le joueur pour rien (décodage
+    OpenCV + deux encodages WebP par carte, et « Tout ajouter » peut en porter cent quarante-trois).
+
+    Traitement **léger et borné** : les exemplaires d'un seul compte, quelques dizaines au plus. Il
+    n'est donc pas dans ``HEAVY_JOB_TYPES`` et tourne partout, y compris sur la machine qui sert —
+    contrairement au balayage de **tout** le parc, qui est un script de flotte
+    (``apps/api/scripts/preparer_rendus_jeu.py``).
+
+    Le compte est journalisé : un passage qui n'a rien préparé le **dit**, il ne se tait pas.
+    """
+    identifiant = uuid.UUID(user_id)
+    storage = build_storage()
+    prepares, replis = 0, 0
+    async with async_session_factory() as session:
+        items = (
+            (
+                await session.execute(
+                    select(CollectionItem).where(
+                        CollectionItem.user_id == identifiant,
+                        CollectionItem.photo_s3_key.isnot(None),
+                        or_(
+                            CollectionItem.jeu_qualite.is_(None),
+                            ~CollectionItem.jeu_qualite.op("?")(CLE_VARIANTES),
+                        ),
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        for item in items:
+            note = await preparer_variante(session, storage, item)
+            if note is None or not note.exploitable:
+                replis += 1
+            else:
+                prepares += 1
+        if items:
+            await session.commit()
+    rapport = {"user_id": user_id, "examines": len(items), "prepares": prepares, "replis": replis}
+    logger.info("variantes de jeu : %s", rapport)
+    return rapport
+
+
 async def games_maintenance_task(ctx: dict) -> dict:
     """Balayage périodique des parties (lot `j-deconnexion-abandon`) : clôture des fantômes + purge.
 
@@ -671,6 +729,7 @@ class WorkerSettings:
         export_user_data_task,
         weekly_tournament_presence_task,
         games_maintenance_task,
+        preparer_variantes_jeu_task,
     ]
     # Les crons légers (balayage des parties) tournent partout ; les lourds (relevés catalogue) ne
     # sont posés que sur un nœud qui a le droit de les exécuter (vide en PROD).

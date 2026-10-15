@@ -6,16 +6,21 @@ La **décision** (quel rendu, pour quel regard) est pure et vit dans :mod:`pbm_a
 et alimente les trois autres en données. Le moteur (``pbm_game``) n'apparaît nulle part ici — il ne
 connaît ni image ni URL, et ce lot ne lui en apprend aucune.
 
-**Où la variante de jeu est produite**, et pourquoi là :
+**Où les variantes sont produites**, et pourquoi là — revu par ``j-assets-pipeline`` :
 
-* au **constructeur de deck** (:func:`apercu_deck`) : c'est le moment « à l'avance » du lot — le
-  joueur regarde son deck avant de jouer, la fabrication est bornée à ses cartes, et c'est aussi là
-  qu'on lui **dit** ce qui se repliera sur l'officielle ;
-* à la **première demande** d'une photo (:func:`servir_photo`) : une seule image, pour l'exemplaire
-  demandé ;
-* jamais dans la **projection d'une partie** : un plateau se lit plusieurs fois par seconde, on n'y
-  fabrique pas d'image. Une photo pas encore préparée s'y replie sur l'officielle **en le disant**
-  (``RAISON_PAS_PRETE``) — le critère du lot est « sans trou ni attente », pas « coûte que coûte ».
+* à l'**ajout en collection**, dans le worker (``preparer_variantes_jeu_task``) : le moment que
+  nomme la fiche du lot, et le seul qui ne fasse attendre personne — la route de validation enfile
+  le job et répond, le décodage se joue ailleurs ;
+* au **constructeur de deck** (:func:`apercu_deck`) : filet pour ce que le worker n'a pas encore
+  traité, borné aux cartes du deck, et c'est là qu'on **dit** au joueur ce qui se repliera sur
+  l'officielle ;
+* par **lots sur la flotte** (``scripts/preparer_rendus_jeu.py``) : pour tout le parc déjà
+  photographié, et pour un changement de recette (une variante ajoutée, une largeur revue) ;
+* **jamais** pendant une partie — ni dans la projection, ni dans :func:`servir_photo`, qui
+  fabriquait encore au premier accès avant ce lot. Un plateau se lit plusieurs fois par seconde et
+  demande jusqu'à 120 images ; y décoder des photos met à genoux la machine qui sert. Une photo
+  pas encore préparée se replie sur l'officielle **en le disant** (``RAISON_PAS_PRETE`` dans la
+  vue, 404 sur la route) — le critère du lot est « sans trou ni attente », pas « coûte que coûte ».
 """
 
 from __future__ import annotations
@@ -24,7 +29,7 @@ import uuid
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.jeu.rendu import (
@@ -38,8 +43,13 @@ from pbm_api.jeu.rendu import (
 )
 from pbm_api.jeu.rendu_image import (
     TYPE_MIME_JEU,
+    VARIANTE_ZOOM,
+    VARIANTES,
     PhotoIndecodable,
+    Variante,
+    VarianteTropLourde,
     cle_image_jeu,
+    cle_variante,
     decoder,
     fabriquer_image_jeu,
 )
@@ -55,6 +65,15 @@ from pbm_api.models import (
     User,
 )
 from pbm_api.storage import StorageBackend
+
+#: Clé, dans ``collection_items.jeu_qualite``, où est inscrite la liste des variantes produites.
+#:
+#: Rangée **avec la note** plutôt que dans une colonne neuve : les deux sont écrites par le même
+#: appel, dans le même flush, et séparer deux informations qui ne peuvent pas diverger aurait
+#: coûté une migration — donc une tête Alembic de plus, à fusionner avec celle du lot voisin.
+#: L'absence de cette clé sur une ligne ancienne signifie « préparée avant le dédoublement des
+#: variantes », ce qui est exactement l'information dont le rattrapage a besoin.
+CLE_VARIANTES = "variantes"
 
 
 class PhotoIntrouvable(Exception):
@@ -148,12 +167,12 @@ async def _crop_quality(db: AsyncSession, item: CollectionItem) -> Mapping | Non
 async def preparer_variante(
     db: AsyncSession, storage: StorageBackend, item: CollectionItem
 ) -> NotePhoto | None:
-    """Note la photo de ``item`` et produit sa variante de jeu. **Idempotent**.
+    """Note la photo de ``item`` et produit **toutes** ses variantes de jeu. **Idempotent**.
 
     Rend la note obtenue, ou ``None`` si l'exemplaire n'a pas de photo. Trois cas, tous écrits en
     base pour ne pas être recalculés à chaque partie :
 
-    * photo exploitable → variante produite, ``jeu_image_key`` posée ;
+    * photo exploitable → variantes produites, ``jeu_image_key`` posée ;
     * photo inexploitable → ``jeu_image_key`` laissée vide et la **raison** stockée : c'est elle que
       le joueur lira dans son constructeur de deck ;
     * photo illisible (:class:`PhotoIndecodable`) → la panne est notée comme une raison de repli,
@@ -161,11 +180,19 @@ async def preparer_variante(
 
     Un second appel sur un exemplaire déjà préparé ne refait rien (ni décodage, ni écriture) : la
     préparation est appelée depuis un écran, elle doit coûter zéro la deuxième fois.
+
+    **Le jeu de variantes produites est inscrit en base** (:data:`CLE_VARIANTES` dans
+    ``jeu_qualite``), et c'est ce qui rend l'idempotence vraie *après un changement de recette* :
+    un exemplaire préparé par ``j-rendu-carte``, qui n'avait que le zoom, est reconnu comme
+    incomplet et gagne sa variante de plateau au prochain passage — sans qu'on ait à relire le
+    stockage objet pour chaque carte d'un deck.
     """
     if item.photo_s3_key is None:
         return None
     if item.jeu_image_key is not None and item.jeu_qualite is not None:
-        return NotePhoto.depuis_json(item.jeu_qualite)
+        if not _variantes_manquantes(item):
+            return NotePhoto.depuis_json(item.jeu_qualite)
+        return await _completer_variantes(db, storage, item)
 
     photo = await storage.get(item.photo_s3_key)
     if photo is None:
@@ -198,11 +225,108 @@ async def preparer_variante(
 
     item.jeu_qualite = note.en_json()
     if note.exploitable:
-        cle = cle_image_jeu(item.user_id, item.id)
-        await storage.put(cle, fabriquer_image_jeu(photo), TYPE_MIME_JEU)
-        item.jeu_image_key = cle
+        produites, refus = await _produire(storage, item, photo, VARIANTES)
+        if refus is not None:
+            # Une variante hors budget n'est pas servie en silence (D9) : la photo devient
+            # inexploitable et se replie sur l'officielle, avec la raison écrite en base.
+            item.jeu_qualite = {**note.en_json(), "exploitable": False, "raison": refus}
+            await db.flush()
+            return NotePhoto.depuis_json(item.jeu_qualite)
+        item.jeu_qualite = {**note.en_json(), CLE_VARIANTES: produites}
+        item.jeu_image_key = cle_image_jeu(item.user_id, item.id)
     await db.flush()
     return note
+
+
+async def _produire(
+    storage: StorageBackend,
+    item: CollectionItem,
+    photo: bytes,
+    variantes: Iterable[Variante],
+) -> tuple[list[str], str | None]:
+    """Fabrique et range ``variantes`` pour ``item``. Rend les noms produits, et le refus éventuel.
+
+    Le refus est une **phrase** (la raison de repli lue par le joueur), pas une exception qui
+    remonterait : une photo trop bruitée pour tenir sous son plafond est un cas prévu du produit,
+    pas une panne du serveur — mais elle est nommée, jamais avalée.
+    """
+    produites: list[str] = []
+    for variante in variantes:
+        try:
+            donnees = fabriquer_image_jeu(photo, variante)
+        except VarianteTropLourde as exc:
+            return produites, f"photo trop lourde pour le jeu ({exc})"
+        await storage.put(cle_variante(item.user_id, item.id, variante), donnees, TYPE_MIME_JEU)
+        produites.append(variante.nom)
+    return produites, None
+
+
+def _variantes_manquantes(item: CollectionItem) -> tuple[Variante, ...]:
+    """Les variantes que ``item`` n'a pas encore, d'après ce que la base a inscrit.
+
+    Un exemplaire préparé avant le dédoublement des variantes n'a pas de liste inscrite : toutes
+    sont donc déclarées manquantes, et un passage de préparation les produit. C'est le chemin de
+    rattrapage du lot, et il est **hors partie** par construction (voir :func:`servir_photo`).
+    """
+    inscrites = variantes_pretes(item)
+    return tuple(v for v in VARIANTES if v.nom not in inscrites)
+
+
+def variantes_pretes(item: CollectionItem) -> frozenset[str]:
+    """Les noms des variantes effectivement produites pour ``item``, d'après la base.
+
+    Lu par le script de fabrication par lots (``scripts/preparer_rendus_jeu.py``) autant que
+    par la préparation : une seule source pour « qu'est-ce qui existe déjà ».
+    """
+    if not item.jeu_qualite:
+        return frozenset()
+    noms = item.jeu_qualite.get(CLE_VARIANTES)
+    return frozenset(noms) if isinstance(noms, list) else frozenset()
+
+
+async def _completer_variantes(
+    db: AsyncSession, storage: StorageBackend, item: CollectionItem
+) -> NotePhoto | None:
+    """Produit les variantes manquantes d'un exemplaire **déjà noté**, sans le renoter.
+
+    La note de qualité ne dépend que de la photo d'origine, qui n'a pas changé : la refaire
+    coûterait un décodage OpenCV pour un résultat identique.
+    """
+    photo = await storage.get(item.photo_s3_key) if item.photo_s3_key else None
+    if photo is None:
+        return NotePhoto.depuis_json(item.jeu_qualite)
+    produites, refus = await _produire(storage, item, photo, _variantes_manquantes(item))
+    if refus is not None:
+        item.jeu_qualite = {**item.jeu_qualite, "exploitable": False, "raison": refus}
+        item.jeu_image_key = None
+        await db.flush()
+        return NotePhoto.depuis_json(item.jeu_qualite)
+    deja = sorted(variantes_pretes(item) | set(produites))
+    item.jeu_qualite = {**item.jeu_qualite, CLE_VARIANTES: deja}
+    await db.flush()
+    return NotePhoto.depuis_json(item.jeu_qualite)
+
+
+async def invalider_variantes(
+    db: AsyncSession, storage: StorageBackend, item: CollectionItem
+) -> None:
+    """Efface les variantes de ``item`` et sa note : la photo d'origine a changé.
+
+    À appeler **chaque fois** que ``photo_s3_key`` est réaffecté. Au 15/10/2026 aucune route du
+    produit ne remplace la photo d'un exemplaire existant (une nouvelle détection crée un nouvel
+    exemplaire), donc ce chemin n'a pas encore d'appelant en production — il est là parce que le
+    jour où un écran « reprendre la photo » existera, l'oublier afficherait l'ancienne photo
+    indéfiniment : les variantes sont nommées d'après l'exemplaire, pas d'après la photo, et rien
+    dans leur clé ne changerait. Un test le garde (``test_jeu_assets_pipeline.py``).
+
+    Les objets sont **supprimés** et pas seulement déréférencés : laisser l'ancienne variante dans
+    le stockage, c'est garder une photo que son propriétaire croit avoir remplacée.
+    """
+    for variante in VARIANTES:
+        await storage.delete(cle_variante(item.user_id, item.id, variante))
+    item.jeu_image_key = None
+    item.jeu_qualite = None
+    await db.flush()
 
 
 def _photo_de(item: CollectionItem) -> PhotoDeJeu:
@@ -391,13 +515,27 @@ async def servir_photo(
     game_id: uuid.UUID,
     item_id: uuid.UUID,
     regardant_id: uuid.UUID,
+    variante: Variante = VARIANTE_ZOOM,
 ) -> tuple[bytes, str]:
-    """La variante de jeu d'une photo, pour un joueur de cette partie — ou 404.
+    """La variante demandée d'une photo, pour un joueur de cette partie — ou 404.
 
     **Toute la décision est rejouée ici**, elle n'est pas supposée acquise parce que l'URL a été
     émise : participation du regardant, appartenance de l'exemplaire à un joueur de la partie,
     préférence du propriétaire et veto de confidentialité. Une URL devinée ou gardée d'une partie
     précédente ne sert donc rien.
+
+    ⛔ **Aucune image n'est fabriquée ici** — c'est un critère du lot ``j-assets-pipeline``, et ça
+    n'a pas toujours été vrai : ``j-rendu-carte`` rattrapait ici la variante manquante, au premier
+    accès. Une route d'image de partie est appelée jusqu'à 120 fois en quelques secondes, par deux
+    joueurs à la fois ; y décoder et réencoder des photos met à genoux la machine qui sert (le VPS
+    a deux cœurs, et c'est le risque nommé par la fiche du lot). Une variante absente rend donc
+    **404**, l'écran retombe sur ``url_repli`` (l'image officielle), et la préparation se fait là
+    où elle ne gêne personne : à l'ajout en collection (job ``preparer_variantes_jeu``), au
+    constructeur de deck (:func:`apercu_deck`) ou par lots sur la flotte
+    (``scripts/preparer_rendus_jeu.py``).
+
+    Le défaut reste la variante de **zoom** : c'est la seule qu'ait connue ``j-rendu-carte``, donc
+    celle que désignent les URL sans ``?v=`` émises avant ce lot.
     """
     joueurs = await _joueurs_de_partie(db, game_id)
     par_user = {j.user_id: j for j in joueurs}
@@ -417,15 +555,15 @@ async def servir_photo(
     if not cest_moi and proprietaire.reglages.jamais_montrer_mes_photos:
         raise PhotoIntrouvable("le propriétaire ne montre pas ses photos")
 
-    # Une seule image à fabriquer, et seulement si elle manque : c'est le chemin de rattrapage des
-    # exemplaires photographiés avant ce lot.
     if item.jeu_image_key is None:
-        note = await preparer_variante(db, storage, item)
-        await db.commit()
-        if note is None or not note.exploitable or item.jeu_image_key is None:
-            raise PhotoIntrouvable("photo non exploitable en jeu")
+        raise PhotoIntrouvable("photo non exploitable en jeu, ou variante pas encore préparée")
+    if variante.nom not in variantes_pretes(item) and variante is not VARIANTE_ZOOM:
+        # Exemplaire préparé avant le dédoublement des variantes : le zoom existe, le plateau non.
+        # On le dit par un 404 (l'écran prend l'officielle) plutôt que de servir le zoom à sa
+        # place — 45 Ko au lieu de 12, cent vingt fois, c'est exactement le budget qu'on borne.
+        raise PhotoIntrouvable(f"variante « {variante.nom} » pas encore préparée")
 
-    donnees = await storage.get(item.jeu_image_key)
+    donnees = await storage.get(cle_variante(item.user_id, item.id, variante))
     if donnees is None:
         raise PhotoIntrouvable("variante de jeu absente du stockage")
     return donnees, TYPE_MIME_JEU
@@ -473,6 +611,11 @@ async def apercu_deck(
         return []
 
     # Prépare les variantes manquantes des exemplaires concernés, une fois, avant de conclure.
+    # Le filtre retient deux cas, et le second a été ajouté par `j-assets-pipeline` : l'exemplaire
+    # jamais noté (`jeu_qualite IS NULL`), et l'exemplaire noté AVANT le dédoublement des variantes
+    # (`jeu_qualite` sans clé `variantes`), qui n'a que son zoom. Sans ce second cas, un joueur dont
+    # la collection date d'avant ce lot n'aurait jamais de variante de plateau — donc jouerait
+    # indéfiniment avec les images officielles, sans que rien ne le signale.
     items = (
         (
             await db.execute(
@@ -480,7 +623,10 @@ async def apercu_deck(
                     CollectionItem.user_id == user_id,
                     CollectionItem.card_id.in_([c.id for c in cartes]),
                     CollectionItem.photo_s3_key.isnot(None),
-                    CollectionItem.jeu_qualite.is_(None),
+                    or_(
+                        CollectionItem.jeu_qualite.is_(None),
+                        ~CollectionItem.jeu_qualite.op("?")(CLE_VARIANTES),
+                    ),
                 )
             )
         )
@@ -508,6 +654,7 @@ async def apercu_deck(
 
 
 __all__ = [
+    "CLE_VARIANTES",
     "ApercuCarte",
     "PhotoIntrouvable",
     "RendusPartie",
@@ -515,6 +662,7 @@ __all__ = [
     "apercu_deck",
     "charger_reglages",
     "enregistrer_reglages",
+    "invalider_variantes",
     "photos_par_carte",
     "preparer_variante",
     "rendus_de_partie",

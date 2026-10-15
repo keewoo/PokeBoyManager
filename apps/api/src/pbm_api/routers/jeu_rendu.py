@@ -7,8 +7,10 @@ Trois choses, et rien d'autre :
 * ``GET /jeu/rendu/decks/{deck_id}`` — ce que **chaque carte de mon deck** montrera en jeu, et la
   raison quand ce sera l'image officielle. C'est ce que le constructeur de deck affiche au joueur,
   et c'est aussi le moment où les variantes de jeu manquantes sont produites (« à l'avance ») ;
-* ``GET /jeu/rendu/parties/{game_id}/photos/{item_id}`` — la variante de jeu d'une photo, servie
-  **dans le cadre d'une partie** aux deux joueurs de cette partie, si son propriétaire l'autorise.
+* ``GET /jeu/rendu/parties/{game_id}/photos/{item_id}?v=plateau|zoom`` — une variante de jeu d'une
+  photo, servie **dans le cadre d'une partie** aux deux joueurs de cette partie, si son
+  propriétaire l'autorise. Elle ne **fabrique** aucune image (lot ``j-assets-pipeline``) : une
+  variante absente rend 404 et l'écran prend l'image officielle.
 
 Comme toute route du jeu, elles sont gardées par
 :func:`~pbm_api.auth.dependencies.require_game_access` (D11). Et comme partout, un refus est un
@@ -24,13 +26,14 @@ from __future__ import annotations
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response, status
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pbm_api.auth.dependencies import require_csrf, require_game_access
 from pbm_api.db import get_session
+from pbm_api.http_images import reponse_image
 from pbm_api.jeu import rendu_service as service
 from pbm_api.jeu.rendu import (
     RENDU_PHOTO,
@@ -38,7 +41,7 @@ from pbm_api.jeu.rendu import (
     ReglagesRendu,
     preference_effective,
 )
-from pbm_api.jeu.rendu_image import HAUTEUR_JEU, LARGEUR_JEU
+from pbm_api.jeu.rendu_image import HAUTEUR_JEU, LARGEUR_JEU, PAR_NOM, VARIANTE_ZOOM
 from pbm_api.models import Deck, User
 from pbm_api.storage import StorageBackend, build_storage
 
@@ -206,22 +209,34 @@ async def photo_de_partie(
     current_user: Annotated[User, Depends(require_game_access)],
     db: AsyncSession = Depends(get_session),
     storage: StorageBackend = Depends(get_storage),
+    v: str = Query(VARIANTE_ZOOM.nom, pattern="^(plateau|zoom)$"),
+    if_none_match: Annotated[str | None, Header(alias="If-None-Match")] = None,
 ) -> Response:
-    """La variante de jeu d'une photo, pour un joueur de cette partie — 404 partout ailleurs.
+    """La variante demandée d'une photo, pour un joueur de cette partie — 404 partout ailleurs.
 
     Les refus (ne participe pas, exemplaire d'un tiers, veto de confidentialité, photo
-    inexploitable) rendent **le même** 404 : un code distinct dirait à l'adversaire ce qu'il n'a pas
-    à savoir. ``private`` dans ``Cache-Control`` : la photo d'un joueur n'a rien à faire dans un
-    cache partagé.
+    inexploitable, variante pas encore préparée) rendent **le même** 404 : un code distinct dirait
+    à l'adversaire ce qu'il n'a pas à savoir. ``private`` dans ``Cache-Control`` : la photo d'un
+    joueur n'a rien à faire dans un cache partagé.
+
+    ``?v=`` choisit la variante (lot ``j-assets-pipeline``) : ``plateau`` (12 Ko, ce que l'arène
+    charge jusqu'à 120 fois) ou ``zoom`` (45 Ko, une carte à la fois). Le défaut est ``zoom`` —
+    c'est la variante que désignent les URL émises avant ce lot, et une URL gardée par un onglet
+    ouvert doit continuer de rendre ce qu'elle rendait.
+
+    **Révocable, pas immuable** : la variante change si son propriétaire reprend sa photo. L'ETag
+    permet au navigateur de la garder *et* de la revalider pour rien (304) — promettre ``immutable``
+    ici afficherait l'ancienne photo pendant un an.
     """
     try:
         donnees, type_mime = await service.servir_photo(
-            db, storage, game_id=game_id, item_id=item_id, regardant_id=current_user.id
+            db,
+            storage,
+            game_id=game_id,
+            item_id=item_id,
+            regardant_id=current_user.id,
+            variante=PAR_NOM[v],
         )
     except service.PhotoIntrouvable as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, NOT_FOUND_MESSAGE) from exc
-    return Response(
-        content=donnees,
-        media_type=type_mime,
-        headers={"Cache-Control": "private, max-age=3600"},
-    )
+    return reponse_image(donnees, type_mime, if_none_match=if_none_match, privee=True)

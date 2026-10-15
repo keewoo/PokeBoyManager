@@ -78,7 +78,10 @@ def test_par_defaut_on_joue_avec_ses_photos_et_l_adversaire_les_voit():
     rendu = _choisir()
     assert rendu is not None
     assert rendu.origine == RENDU_PHOTO
-    assert rendu.url == f"/jeu/rendu/parties/{GAME}/photos/{ITEM}"
+    # `?v=` nomme la variante (lot `j-assets-pipeline`) : le plateau pour la carte posée, le zoom
+    # pour la carte agrandie. Servir la même aux deux coûtait 5,2 Mo par partie.
+    assert rendu.url == f"/jeu/rendu/parties/{GAME}/photos/{ITEM}?v=plateau"
+    assert rendu.url_zoom == f"/jeu/rendu/parties/{GAME}/photos/{ITEM}?v=zoom"
     assert rendu.raison is None
 
 
