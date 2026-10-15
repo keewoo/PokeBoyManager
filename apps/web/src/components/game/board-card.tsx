@@ -2,8 +2,10 @@
 
 import { type CSSProperties, useRef, useState } from "react";
 
+import { ApparitionPokemon } from "@/components/game/apparition-pokemon";
 import { EffetTypeAttaque } from "@/components/game/effet-type";
 import { cn } from "@/lib/utils";
+import type { Apparition as ApparitionPokemonVue } from "@/lib/game/anim-apparition";
 import type { EffetAttaque } from "@/lib/game/anim-types";
 import { nombreCompteurs, styleElement, visuelEtat } from "@/lib/game/indicateurs";
 import type { VueCarte, VuePokemon } from "@/lib/game/plateau";
@@ -68,6 +70,12 @@ export type BoardCardProps = {
    * redémarre pas une animation déjà terminée sur un nœud réutilisé).
    */
   effetCle?: string;
+  /**
+   * L'apparition du Pokémon au-dessus de cette carte (lot `j-anim-pokemon-apparition`, DJ3), ou
+   * `null` — ce qui est le cas **courant** : onze cartes du catalogue ont une découpe publiée.
+   * Comme l'effet typé, elle est calculée par le plateau ; la carte ne fait que la dessiner.
+   */
+  apparition?: ApparitionPokemonVue | null;
 };
 
 /**
@@ -327,6 +335,7 @@ export function BoardCard({
   onActiver,
   effet = null,
   effetCle = "",
+  apparition = null,
 }: BoardCardProps) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // L'étape de chargement de l'image vit ici (et non dans `ImageCarte`) parce que c'est elle qui
@@ -480,6 +489,9 @@ export function BoardCard({
           nommé par le lot (« l'une d'elles finira par cacher un compteur de dégâts au moment
           décisif ») n'existe tout simplement plus. `board-card.test.tsx` garde cet ordre. */}
       <EffetTypeAttaque effet={effet} cle={effetCle} />
+      {/* L'apparition passe elle aussi AVANT les indicateurs, et pour la même raison : un Pokémon
+          qui jaillit ne doit jamais cacher le compteur de dégâts de la carte qu'il surplombe. */}
+      <ApparitionPokemon apparition={apparition ?? null} />
       {pokemon && <Indicateurs pokemon={pokemon} zoom={zoom} />}
     </div>
   );

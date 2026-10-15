@@ -32,6 +32,7 @@ from dataclasses import dataclass
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from pbm_api.jeu import vedettes
 from pbm_api.jeu.rendu import (
     RENDU_PHOTO,
     RENDUS_REGLABLES,
@@ -466,6 +467,39 @@ async def _joueurs_de_partie(db: AsyncSession, game_id: uuid.UUID) -> list[_Joue
     return joueurs
 
 
+async def _vedettes_visibles(
+    db: AsyncSession, card_ids: Iterable[uuid.UUID]
+) -> dict[uuid.UUID, str]:
+    """``card_id → tcgdex_id`` pour les seules cartes visibles qui sont des **vedettes publiées**.
+
+    Une requête, une fois par vue de partie, et son résultat est borné **des deux côtés** : par les
+    cartes réellement visibles et par la liste des vedettes (dix-sept au 15/10/2026). Elle ne rend
+    donc jamais plus de lignes qu'il n'y a d'apparitions publiées, quelle que soit la taille du
+    plateau.
+
+    ⛔ **On ne demande jamais au stockage objet « cette découpe existe-t-elle ? ».** Une vue de
+    partie résout jusqu'à 120 cartes, pour deux regards : une vérification d'existence par carte,
+    ce sont jusqu'à 120 allers-retours réseau sur chaque rafraîchissement d'écran, et un plateau
+    se relit plusieurs fois par seconde. C'est la raison d'être du registre versionné
+    (:mod:`pbm_api.jeu.vedettes`) : l'appartenance se lit dans un ``frozenset`` en mémoire, et ce
+    que le registre annonce est ce que la chaîne de découpe a réellement déposé. Si l'objet
+    manquait quand même, la route rend 404 et l'écran se passe d'apparition — jamais d'attente.
+
+    Le registre vide (aucune vedette publiée) ne déclenche **aucune** requête : le cas nominal d'un
+    environnement sans découpes déployées ne doit rien coûter.
+    """
+    publiees = vedettes.publiees()
+    ids = list(set(card_ids))
+    if not publiees or not ids:
+        return {}
+    lignes = await db.execute(
+        select(Card.id, Card.tcgdex_id).where(
+            Card.id.in_(ids), Card.tcgdex_id.in_(publiees)
+        )
+    )
+    return {card_id: tcgdex_id for card_id, tcgdex_id in lignes.all()}
+
+
 async def rendus_de_partie(
     db: AsyncSession,
     game_id: uuid.UUID,
@@ -486,6 +520,7 @@ async def rendus_de_partie(
     photos: dict[str, dict[uuid.UUID, PhotoDeJeu]] = {
         j.joueur_id: await photos_par_carte(db, j.user_id, ids_par_ref.values()) for j in joueurs
     }
+    vedettes_vues = await _vedettes_visibles(db, ids_par_ref.values())
 
     par_regard: dict[tuple[str, str, str], dict] = {}
     for regard in joueurs:
@@ -499,6 +534,7 @@ async def rendus_de_partie(
                     pseudo_proprietaire=proprietaire.pseudo,
                     cest_moi=regard.joueur_id == proprietaire.joueur_id,
                     game_id=game_id,
+                    tcgdex_id=vedettes_vues.get(card_id),
                 )
                 if rendu is not None:
                     par_regard[(regard.joueur_id, proprietaire.joueur_id, ref)] = rendu.en_json()

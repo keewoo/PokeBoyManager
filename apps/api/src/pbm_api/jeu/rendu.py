@@ -33,6 +33,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 
+from pbm_api.jeu import vedettes
 from pbm_api.jeu.rendu_image import VARIANTE_PLATEAU, VARIANTE_ZOOM, Variante
 from pbm_api.jeu.rendu_qualite import (
     RAISON_CONFIDENTIALITE,
@@ -104,6 +105,12 @@ class RenduResolu:
     réseau coupé en pleine partie). Elle ne révèle rien — l'officielle est publique, servie par le
     même proxy pour tout le monde — et c'est ce qui tient le critère « sans trou ni attente »
     jusque dans le cas dégradé.
+
+    ``apparition`` (lot ``j-anim-pokemon-apparition``) est l'URL de la **découpe du Pokémon**, celle
+    que l'animation fait surgir au-dessus de la carte. ``None`` sur l'immense majorité des cartes :
+    seules les vedettes du registre (:mod:`pbm_api.jeu.vedettes`) en ont une, et une carte sans
+    découpe joue l'effet de type générique (D9) — l'écran n'a aucune image à deviner, il lit ce
+    champ ou il s'en passe.
     """
 
     origine: str
@@ -112,6 +119,7 @@ class RenduResolu:
     credit: str | None = None
     raison: str | None = None
     url_repli: str | None = None
+    apparition: str | None = None
 
     def en_json(self) -> dict:
         """Forme portée par la vue de partie, lue telle quelle par l'écran."""
@@ -122,6 +130,7 @@ class RenduResolu:
             "credit": self.credit,
             "raison": self.raison,
             "url_repli": self.url_repli,
+            "apparition": self.apparition,
         }
 
 
@@ -203,14 +212,32 @@ def choisir_rendu(
     pseudo_proprietaire: str | None,
     cest_moi: bool,
     game_id: uuid.UUID,
+    tcgdex_id: str | None = None,
 ) -> RenduResolu | None:
     """Le rendu d'une carte pour un regard donné, ou ``None`` si aucune image n'existe.
 
     Rend ``None`` quand la carte est inconnue du catalogue (``card_id is None``) : il n'y a alors
     pas même d'image officielle, et on n'invente rien (D9) — l'écran retombe sur son repère texte.
+
+    ``tcgdex_id`` est **facultatif** : les appelants qui ne résolvent pas le catalogue (constructeur
+    de deck, tests purs) n'ont pas à le fournir, et la carte n'a alors simplement pas d'apparition.
     """
     if card_id is None:
         return None
+
+    # L'apparition ne dépend PAS de l'origine de l'image, et c'est volontaire : la découpe est
+    # faite à partir de l'**illustration officielle** de la carte, jamais de la photo du joueur.
+    # Elle est donc la même qu'on joue avec ses propres photos ou avec les images du catalogue —
+    # deux joueurs qui s'affrontent voient surgir le même Dracaufeu. Faire autrement aurait
+    # demandé de détourer la photo de chacun, en direct, pendant la partie : le coût CPU est
+    # rédhibitoire, et une photo de travers détourée mal donnerait une apparition difforme.
+    # Un corollaire discret mais utile : l'apparition ne révèle rien sous veto de confidentialité,
+    # puisqu'elle ne contient rien de personnel.
+    apparition = (
+        vedettes.url_apparition(tcgdex_id)
+        if tcgdex_id and tcgdex_id in vedettes.publiees()
+        else None
+    )
 
     origine, raison = decider_origine(
         photo=photo, reglages=reglages, preference_deck=preference_deck, cest_moi=cest_moi
@@ -221,6 +248,7 @@ def choisir_rendu(
             url=url_officielle(card_id, taille="low"),
             url_zoom=url_officielle(card_id, taille="high"),
             raison=raison,
+            apparition=apparition,
         )
 
     assert photo is not None  # garanti par decider_origine : « photo » implique une photo prête
@@ -233,6 +261,7 @@ def choisir_rendu(
         url_zoom=url_photo(game_id, photo.item_id, VARIANTE_ZOOM),
         credit=None if cest_moi else _credit(pseudo_proprietaire),
         url_repli=url_officielle(card_id, taille="low"),
+        apparition=apparition,
     )
 
 

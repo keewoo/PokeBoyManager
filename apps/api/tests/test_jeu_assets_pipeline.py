@@ -150,10 +150,18 @@ def test_le_budget_d_une_partie_tient_sous_son_plafond():
 
 
 def test_le_budget_est_une_consequence_des_plafonds_pas_un_chiffre_recopie():
-    """Le total doit **suivre** les plafonds de variantes, sinon il vieillirait en silence."""
+    """Le total doit **suivre** les plafonds de variantes, sinon il vieillirait en silence.
+
+    Le poste d'apparition est arrivé avec ``j-anim-pokemon-apparition`` : une découpe à la fois,
+    comme le zoom (il n'y a qu'un Pokémon actif par camp). Il est nommé ici plutôt que toléré par
+    une inégalité, pour qu'un poste ajouté sans y penser fasse rougir ce test.
+    """
+    from pbm_api.jeu.decoupe import VARIANTE_APPARITION
+
     attendu = (
         budget.CARTES_PAR_PARTIE * VARIANTE_PLATEAU.plafond_octets
         + VARIANTE_ZOOM.plafond_octets
+        + VARIANTE_APPARITION.plafond_octets
     )
     assert budget.poids_pire_cas_partie() == attendu
     assert budget.CARTES_PAR_PARTIE == 120  # « jusqu'à 120 cartes », fiche du lot

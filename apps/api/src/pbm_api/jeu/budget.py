@@ -18,7 +18,11 @@ largeur, une qualité ou un plafond change le total, et la CI refuse le dépasse
   défilent toutes (pioche, défausse, zone perdue, consultations) au cours de la partie ;
 * **une** variante de zoom : le joueur zoome une carte à la fois, et le navigateur ne garde pas
   les précédentes en mémoire vive mais dans son cache HTTP (d'où l'empreinte posée par
-  :mod:`pbm_api.http_images` : un zoom déjà vu ne repasse pas sur le réseau).
+  :mod:`pbm_api.http_images` : un zoom déjà vu ne repasse pas sur le réseau) ;
+* **une** découpe d'apparition (lot ``j-anim-pokemon-apparition``) : exactement comme le zoom, une
+  apparition se joue sur **une** carte à la fois — elle accompagne l'attaque du Pokémon actif, et
+  il n'y a qu'un Pokémon actif par camp à la fois. Les suivantes sont déjà dans le cache du
+  navigateur (route immuable, un an de validité).
 
 Les dos de cartes (pioche, récompenses, main adverse) ne comptent pas : ils sont **dessinés** par
 l'écran (``CardBack``), zéro octet réseau — et les décors d'arène non plus, peints en dégradés CSS
@@ -32,6 +36,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from pbm_api.jeu.decoupe import VARIANTE_APPARITION
 from pbm_api.jeu.rendu_image import VARIANTE_PLATEAU, VARIANTE_ZOOM
 
 #: Cartes d'un deck construit (``docs/jeu/REGLES.md`` R-1.2 : un deck fait exactement 60 cartes).
@@ -73,6 +78,9 @@ def postes_partie() -> tuple[Poste, ...]:
     return (
         Poste("cartes en variante plateau", CARTES_PAR_PARTIE, VARIANTE_PLATEAU.plafond_octets),
         Poste("zoom ouvert (une carte à la fois)", 1, VARIANTE_ZOOM.plafond_octets),
+        Poste(
+            "apparition du Pokémon (une à la fois)", 1, VARIANTE_APPARITION.plafond_octets
+        ),
     )
 
 
@@ -84,7 +92,12 @@ def poids_pire_cas_partie() -> int:
 def poids_pire_cas_mise_en_place() -> int:
     """Le poids d'images à charger **avant la fin de la mise en place** — le jeu de pré-chargement.
 
-    Toutes en variante plateau : la mise en place n'ouvre aucun zoom.
+    Toutes en variante plateau : la mise en place n'ouvre aucun zoom, et **aucune apparition**
+    non plus. C'est un fait du jeu, pas une approximation prudente : pendant la mise en place on
+    pose des Pokémon, on n'attaque pas et rien n'évolue — les deux seuls moments qui déclenchent
+    une apparition. Y ajouter les 40 Kio de la découpe « au cas où » aurait allongé la première
+    impression de 0,2 s en 4G pour une image que personne ne regarde à cet instant, et c'est
+    précisément ce que ce poste existe pour protéger.
     """
     return CARTES_MISE_EN_PLACE * VARIANTE_PLATEAU.plafond_octets
 

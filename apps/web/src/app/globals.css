@@ -1085,3 +1085,173 @@ html[data-texte="tres_grande"]:not([data-ecran="plateau"]) {
     transform: rotate3d(0, 1, 0, 180deg) scale3d(1, 1, 1);
   }
 }
+
+/* ===========================================================================================
+   L'apparition du Pokémon au-dessus de sa carte — lot `j-anim-pokemon-apparition` (DJ3).
+
+   Quatre calques partagent la MÊME image (la découpe détourée, servie par
+   `/img/apparitions/{tcgdex_id}`) et se déplacent d'amplitudes différentes : c'est toute la
+   parallaxe, et elle ne coûte que des `transform` composés.
+
+   ⚠️ Seules `transform` et `opacity` sont animées — `src/__tests__/anim-css-garde.test.ts` refuse
+   le reste dans une image-clé `pbm-anim*`. Le détourage (`mask-image`), la teinte et les opacités
+   de base sont posés ici en STATIQUE, hors image-clé : ils ne bougent pas, donc ils ne coûtent rien
+   par image. Animer un `filter` reviendrait à redonner au fil principal le travail que ce lot a
+   justement sorti de là.
+   =========================================================================================== */
+
+.pbm-a {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.pbm-a-calque {
+  position: absolute;
+  left: 50%;
+  bottom: 42%;
+  width: 118%;
+  height: 118%;
+  margin-left: -59%;
+  background-image: var(--pbm-a-image);
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  background-size: contain;
+  transform-origin: 50% 100%;
+  will-change: transform, opacity;
+  animation: pbm-anim-fx-a-sujet var(--pbm-a-duree) ease-out var(--pbm-a-retard) both;
+}
+
+/* `sujet` : la découpe nette, celle qu'on regarde. */
+.pbm-a-calque[data-calque="sujet"] {
+  opacity: 1;
+}
+
+/* `echo` : la même découpe, en retrait et plus pâle. C'est elle qui donne l'épaisseur — l'œil lit
+   deux plans là où il n'y a qu'une image. */
+.pbm-a-calque[data-calque="echo"] {
+  opacity: 0.38;
+  animation-name: pbm-anim-fx-a-echo;
+}
+
+/* `halo` : la silhouette remplie d'une lueur, posée en MASQUE de la découpe (et non en image) pour
+   qu'elle épouse exactement le Pokémon au lieu de faire un rond derrière lui. */
+.pbm-a-calque[data-calque="halo"] {
+  background-image: none;
+  background-color: color-mix(in srgb, var(--pbm-fx-teinte, #9ad7ff) 70%, white);
+  mask-image: var(--pbm-a-image);
+  mask-repeat: no-repeat;
+  mask-position: center bottom;
+  mask-size: contain;
+  -webkit-mask-image: var(--pbm-a-image);
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center bottom;
+  -webkit-mask-size: contain;
+  opacity: 0.5;
+  animation-name: pbm-anim-fx-a-halo;
+}
+
+/* `particules` : ce calque-ci ne porte pas l'image — il sert d'ancre aux points, qui sont des
+   éléments à part. Le garder dans la liste maintient la parité calque ↔ image-clé. */
+.pbm-a-calque[data-calque="particules"] {
+  background-image: none;
+  animation-name: pbm-anim-fx-a-particules;
+}
+
+.pbm-a-particule {
+  position: absolute;
+  left: 50%;
+  bottom: 52%;
+  width: 0.4em;
+  height: 0.4em;
+  border-radius: 50%;
+  background: var(--pbm-fx-teinte, #ffd980);
+  rotate: var(--pbm-a-angle);
+  will-change: transform, opacity;
+  animation: pbm-anim-fx-a-particules var(--pbm-a-duree) ease-out var(--pbm-a-retard) both;
+}
+
+/* Le sujet : il jaillit de la carte, dérive, puis s'y replie. Les trois temps sont voulus — sans le
+   repli, le Pokémon disparaîtrait d'un coup et on ne comprendrait pas d'où il était sorti. */
+@keyframes pbm-anim-fx-a-sujet {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale3d(0.62, 0.62, 1);
+  }
+  28% {
+    opacity: 1;
+    transform: translate3d(
+        calc(var(--pbm-a-amplitude) * 0.3),
+        calc(var(--pbm-a-elevation) * 0.75),
+        0
+      )
+      scale3d(1.03, 1.03, 1);
+  }
+  72% {
+    opacity: 1;
+    transform: translate3d(calc(var(--pbm-a-amplitude) * -0.45), var(--pbm-a-elevation), 0)
+      scale3d(1, 1, 1);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale3d(0.78, 0.78, 1);
+  }
+}
+
+/* L'écho suit le sujet avec moins d'amplitude et retombe plus tôt : le décalage est ce qui fait le
+   relief, pas une différence de forme. */
+@keyframes pbm-anim-fx-a-echo {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale3d(0.7, 0.7, 1);
+  }
+  34% {
+    opacity: 0.38;
+    transform: translate3d(
+        calc(var(--pbm-a-amplitude) * -0.25),
+        calc(var(--pbm-a-elevation) * 0.8),
+        0
+      )
+      scale3d(1.08, 1.08, 1);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(calc(var(--pbm-a-amplitude) * 0.2), 0, 0) scale3d(0.9, 0.9, 1);
+  }
+}
+
+/* Le halo enfle et s'éteint derrière le sujet — il part en premier (retard le plus court) et
+   annonce l'arrivée. */
+@keyframes pbm-anim-fx-a-halo {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale3d(0.5, 0.5, 1);
+  }
+  40% {
+    opacity: 0.5;
+    transform: translate3d(0, calc(var(--pbm-a-elevation) * 0.6), 0) scale3d(1.16, 1.16, 1);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, calc(var(--pbm-a-elevation) * 0.3), 0) scale3d(1.3, 1.3, 1);
+  }
+}
+
+/* Les particules montent avec le Pokémon. Leur direction vient de `rotate` (posé en statique sur
+   l'élément), leur trajet de ce seul `translate3d` : une image-clé pour toutes. */
+@keyframes pbm-anim-fx-a-particules {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale3d(0.4, 0.4, 1);
+  }
+  25% {
+    opacity: 1;
+    transform: translate3d(0, -140%, 0) scale3d(1, 1, 1);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, -340%, 0) scale3d(0.5, 0.5, 1);
+  }
+}

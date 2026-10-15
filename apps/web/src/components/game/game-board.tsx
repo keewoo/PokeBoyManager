@@ -22,6 +22,12 @@ import {
   ciblesIlluminees,
   reduire,
 } from "@/lib/game/interactions";
+import {
+  type Apparition,
+  type SignalApparition,
+  apparitionDe,
+  signalApparition,
+} from "@/lib/game/anim-apparition";
 import type { Animation } from "@/lib/game/animations";
 import { DECOR_DEFAUT, type MomentJour } from "@/lib/game/decors";
 import type { EtatConnexion } from "@/lib/game/realtime";
@@ -155,6 +161,24 @@ type Interaction = {
  * à une seule des deux ferait rater l'effet sur tout Pokémon évolué — c'est-à-dire exactement sur
  * les cartes dont l'attaque est la plus spectaculaire.
  */
+/**
+ * L'apparition qui concerne **ce** Pokémon, ou `null` (lot `j-anim-pokemon-apparition`, DJ3).
+ *
+ * La découpe lue est celle de la carte **réellement visée** par l'événement, pas celle de la base :
+ * sur une évolution, c'est le Pokémon évolué qui doit surgir, et c'est lui que le serveur désigne.
+ * `null` est le cas courant — onze cartes du catalogue ont une découpe publiée — et il ne laisse
+ * aucun trou : l'effet de type générique joue comme avant.
+ */
+function apparitionDuPokemon(
+  pokemon: VuePokemon,
+  signal: SignalApparition | null,
+): Apparition | null {
+  if (!signal) return null;
+  const carte = pokemon.cartes.find((c) => c.instance_id === signal.cible);
+  if (!carte) return null;
+  return apparitionDe(signal, carte.instance_id, carte.rendu?.apparition);
+}
+
 function effetDuPokemon(
   pokemon: VuePokemon,
   effetTypee?: EffetTypeeEnCours | null,
@@ -270,6 +294,7 @@ function caseActif(
   surligne?: string | null,
   inter?: Interaction,
   effetTypee?: EffetTypeeEnCours | null,
+  signal?: SignalApparition | null,
 ): React.ReactNode {
   const dessus = joueur.actif ? carteDessus(joueur.actif) : null;
   if (!joueur.actif || !dessus) {
@@ -277,6 +302,7 @@ function caseActif(
   }
   const refCible = refCiblePokemon(joueur.actif, inter);
   const fx = effetDuPokemon(joueur.actif, effetTypee);
+  const apparition = apparitionDuPokemon(joueur.actif, signal ?? null);
   return (
     <span className={largeur}>
       <BoardCard
@@ -289,6 +315,7 @@ function caseActif(
         onPeek={(c) => onZoom(c, joueur.actif ?? undefined)}
         effet={fx?.effet ?? null}
         effetCle={fx?.cle ?? ""}
+        apparition={apparition}
       />
     </span>
   );
@@ -318,6 +345,7 @@ function banc(
   surligne?: string | null,
   inter?: Interaction,
   effetTypee?: EffetTypeeEnCours | null,
+  signal?: SignalApparition | null,
 ): React.ReactNode {
   return (
     <div className="flex justify-center gap-[0.5em]">
@@ -328,6 +356,7 @@ function banc(
         }
         const refCible = refCiblePokemon(p, inter);
         const fx = effetDuPokemon(p, effetTypee);
+        const apparition = apparitionDuPokemon(p, signal ?? null);
         return (
           <span key={i} className={largeur}>
             <BoardCard
@@ -340,6 +369,7 @@ function banc(
               onPeek={(c) => onZoom(c, p)}
               effet={fx?.effet ?? null}
               effetCle={fx?.cle ?? ""}
+              apparition={apparition}
             />
           </span>
         );
@@ -373,6 +403,11 @@ export function GameBoard({
 }: GameBoardProps) {
   const { moi, adversaire } = separerCamps(vue);
   const monTour = estMonTour(vue);
+  // Le signal d'apparition est dérivé UNE fois de l'animation en cours, puis distribué aux zones :
+  // le recalculer par carte referait le même travail jusqu'à sept fois par rendu, pour rien.
+  // En animations réduites, `animation` vaut déjà `null` (le socle le garantit) : aucune
+  // apparition ne peut donc se jouer, et c'est voulu.
+  const signal = signalApparition(animation ?? null);
   const [zoom, setZoom] = useState<Agrandie | null>(null);
   const onZoom = useCallback<ZoomFn>(
     (carte, pokemon) => setZoom(carte ? { carte, pokemon } : null),
@@ -494,9 +529,9 @@ export function GameBoard({
           {/* Rang adverse */}
           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-[1em]">
             <span className="justify-self-start">
-              <Holder lab="banc adverse">{banc(adversaire, "banc adverse", "w-[4.6875em]", onZoom, agisseur, surligne, inter, effetTypee)}</Holder>
+              <Holder lab="banc adverse">{banc(adversaire, "banc adverse", "w-[4.6875em]", onZoom, agisseur, surligne, inter, effetTypee, signal)}</Holder>
             </span>
-            {caseActif(adversaire, "Actif adverse", "w-[6.875em]", onZoom, agisseur, surligne, inter, effetTypee)}
+            {caseActif(adversaire, "Actif adverse", "w-[6.875em]", onZoom, agisseur, surligne, inter, effetTypee, signal)}
             <span className="flex justify-self-end gap-[0.6em]">
               <Holder lab="pioche">
                 <ZoneCachee titre="pioche" nombre={adversaire.pioche_nombre} />
@@ -537,7 +572,7 @@ export function GameBoard({
                 <Recompenses restantes={moi.recompenses_nombre} pour="Toi" />
               </Holder>
             </span>
-            {caseActif(moi, "Mon actif", "w-[9.0625em]", onZoom, agisseur, surligne, inter, effetTypee)}
+            {caseActif(moi, "Mon actif", "w-[9.0625em]", onZoom, agisseur, surligne, inter, effetTypee, signal)}
             <span className="flex justify-self-end gap-[0.6em]">
               <Holder lab="pioche">
                 <ZoneCachee titre="pioche" nombre={moi.pioche_nombre} />
@@ -549,7 +584,7 @@ export function GameBoard({
           </div>
 
           {/* Mon banc */}
-          {banc(moi, "Mon banc", "w-[6.5625em]", onZoom, agisseur, surligne, inter, effetTypee)}
+          {banc(moi, "Mon banc", "w-[6.5625em]", onZoom, agisseur, surligne, inter, effetTypee, signal)}
           </div>
         </div>
       </div>
