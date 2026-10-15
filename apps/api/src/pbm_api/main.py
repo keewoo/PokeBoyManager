@@ -9,6 +9,7 @@ from pbm_api.routers.auth import router as auth_router
 from pbm_api.routers.card_insights import router as card_insights_router
 from pbm_api.routers.cards import router as cards_router
 from pbm_api.routers.catalog import router as catalog_router
+from pbm_api.routers.classement import router as classement_router
 from pbm_api.routers.collection import router as collection_router
 from pbm_api.routers.dashboard import router as dashboard_router
 from pbm_api.routers.decks import router as decks_router
@@ -92,6 +93,10 @@ app.include_router(jeu_confort_router)
 # Emotes en jeu (lot `j-echanges-emotes`, DJ10) : le catalogue ferme et l'interrupteur « j'echange
 # des emotes ». L'envoi, lui, n'a aucune route : il passe par le canal temps reel.
 app.include_router(jeu_emotes_router)
+# Classement prive entre comptes invites (lot `j-classement-prive`, DJ6) : une seule route, en
+# lecture. L'interrupteur et le bareme sont des REGLAGES poses par JF en ligne de commande
+# (`python -m pbm_api.admin set-reglage-jeu`) — eteint par defaut, et aucune route ne les ecrit.
+app.include_router(classement_router)
 # Supervision du jeu (lot `j-observabilite-jeu`) : les metriques lisibles sans SSH, reservees
 # aux comptes ayant l'acces au jeu (D11) — agregees, jamais ventilees par compte.
 app.include_router(observabilite_router)
