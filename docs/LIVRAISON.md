@@ -63,11 +63,21 @@ pas d'UAT.
 6. `systemctl restart pokeboy-prod-{api,worker,web}`.
 7. **Preuve** (voir ci-dessous), puis vérification des sites voisins.
 
-> **Point ouvert.** Ces étapes sont celles du rapport `pbm-serveur` et de la mise en PROD du 20/09.
-> Le script qui les enchaîne n'est **pas encore dans le dépôt** (`infra/` ne contient à ce jour que
-> les SQL de la chaîne flotte). Tant qu'il n'y est pas, la livraison se fait depuis devAI à la main
-> et **chaque livraison doit reporter ici ce qu'elle a réellement exécuté**. Le jour où le script
-> existe, son chemin remplace ce paragraphe.
+> **Les scripts sont dans le dépôt depuis le 19/10/2026** — `infra/livraison/prep-lol.sh`
+> (préparation : empreintes, déballage, `uv sync`, migrations, `RELEASE_INFO`) et
+> `infra/livraison/deploy-switch.sh` (bascule du lien, redémarrage des trois unités, **retour
+> arrière automatique** si la santé ne revient pas en 60 s).
+>
+> ⛔ **Pourquoi ils y sont : leurs prédécesseurs vivaient dans `/tmp` du serveur et ont été
+> PURGÉS.** Découvert le 19/10 en livrant le jeu — au moment précis où il fallait s'en servir, il
+> n'en restait aucune copie, ni sur le serveur, ni sur chimera, ni sur devAI. Il a fallu les
+> réécrire depuis leur comportement décrit plus bas dans cette fiche. Seul `pbm-build-lol.sh` avait
+> survécu, parce qu'il vit dans `~/dev` de chimera. **Un outil de livraison qui ne survit pas à un
+> nettoyage de `/tmp` n'est pas un outil, c'est un souvenir.** On les copie désormais dans la
+> release qu'ils préparent (`releases/<TS>/.livraison/`), jamais dans `/tmp`.
+>
+> La livraison reste conduite **à la main depuis devAI**, et **chaque livraison doit reporter ici ce
+> qu'elle a réellement exécuté** : c'est ce report qui a permis de les reconstruire.
 
 ### Rétro-remplissage du catalogue (colonnes de jouabilité) — une seule fois
 
