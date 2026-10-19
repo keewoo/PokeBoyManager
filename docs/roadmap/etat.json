@@ -10972,60 +10972,156 @@
       }
     },
     "j-mise-en-ligne-jeu": {
-      "statut": "a_faire",
-      "machine": null,
-      "branche": null,
-      "debut_reel": null,
-      "fin_reelle": null,
+      "statut": "livre",
+      "machine": "devAI",
+      "branche": "main",
+      "debut_reel": "2026-10-20",
+      "fin_reelle": "2026-10-20",
       "taches": {
         "dev": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "Chaine de livraison versionnee : infra/livraison/prep-lol.sh et deploy-switch.sh (reecrits, les predecesseurs ayant ete purges avec /tmp), plus apps/api/scripts/prouver_partie_prod.py et purger_preuve_partie.py",
+          "maj": "2026-10-20T00:50+0200"
         },
         "tests": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "Preuve par une partie reelle en PROD : partie 7643a94b, 14 coups, deux comptes, vainqueur par plus_de_pokemon (R-14.1), declarer_attaque x2. CI 'CI' verte sur f46dc76 avant livraison",
+          "maj": "2026-10-20T00:50+0200"
         },
         "securite": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "Audit D11 apres livraison : 2 acces jeu ouverts (JF, Aymeric) sur 6 comptes, personne d autre. Donnees de preuve supprimees et recomptees : 0 compte de preuve, 0 extension e2epartie. Aucun secret affiche ni commite",
+          "maj": "2026-10-20T00:50+0200"
         },
         "maquette": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "na",
+          "preuve": "sans objet : mise en ligne, aucun ecran",
+          "maj": "2026-10-20T00:50+0200"
         },
         "doc_tech": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "docs/LIVRAISON.md : section du 19/10 avec ce qui a ete reellement execute, et le paragraphe 'Point ouvert' remplace par les chemins des scripts. Compte rendu docs/roadmap/comptes-rendus/j-mise-en-ligne-jeu.md",
+          "maj": "2026-10-20T00:50+0200"
         },
         "release_uat": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "na",
+          "preuve": "aucun UAT sur ce projet (D2, JF 19/09) : la recette se fait en local sur chimera, on deploie directement en PROD",
+          "maj": "2026-10-20T00:50+0200"
         },
         "release_prod": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "Release 20261019-133755 (commit f46dc76) en service : app/ -> releases/20261019-133755, RELEASE_INFO lot=j-mise-en-ligne-jeu, 3 unites active, pokeboy.lol 200 et /api/health 200, tete Alembic LIVE d7f2a9c3e1b6, voisins inchanges 200 200 308 200 307",
+          "maj": "2026-10-20T00:49+0200"
         },
         "backlog": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "suivi.py build : BACKLOG.md, ROADMAP.html et le backlog du jeu regeneres",
+          "maj": "2026-10-20T00:50+0200"
         },
         "compte_rendu": {
-          "etat": "a_faire",
-          "preuve": "",
-          "maj": null
+          "etat": "fait",
+          "preuve": "docs/roadmap/comptes-rendus/j-mise-en-ligne-jeu.md (135 lignes) et section du 19/10 dans docs/LIVRAISON.md",
+          "maj": "2026-10-20T00:50+0200"
         }
       },
-      "journal": [],
-      "compte_rendu": {}
+      "journal": [
+        {
+          "quand": "2026-10-20T00:49+0200",
+          "machine": "devAI",
+          "evenement": "démarrage",
+          "detail": "main"
+        },
+        {
+          "quand": "2026-10-20T00:49+0200",
+          "machine": "devAI",
+          "evenement": "tâche release_prod → fait",
+          "detail": "Release 20261019-133755 (commit f46dc76) en service : app/ -> releases/20261019-133755, RELEASE_INFO lot=j-mise-en-ligne-jeu, 3 unites active, pokeboy.lol 200 et /api/health 200, tete Alembic LIVE d7f2a9c3e1b6, voisins inchanges 200 200 308 200 307"
+        },
+        {
+          "quand": "2026-10-20T00:50+0200",
+          "machine": "devAI",
+          "evenement": "tâche dev → fait",
+          "detail": "Chaine de livraison versionnee : infra/livraison/prep-lol.sh et deploy-switch.sh (reecrits, les predecesseurs ayant ete purges avec /tmp), plus apps/api/scripts/prouver_partie_prod.py et purger_preuve_partie.py"
+        },
+        {
+          "quand": "2026-10-20T00:50+0200",
+          "machine": "devAI",
+          "evenement": "tâche tests → fait",
+          "detail": "Preuve par une partie reelle en PROD : partie 7643a94b, 14 coups, deux comptes, vainqueur par plus_de_pokemon (R-14.1), declarer_attaque x2. CI 'CI' verte sur f46dc76 avant livraison"
+        },
+        {
+          "quand": "2026-10-20T00:50+0200",
+          "machine": "devAI",
+          "evenement": "tâche securite → fait",
+          "detail": "Audit D11 apres livraison : 2 acces jeu ouverts (JF, Aymeric) sur 6 comptes, personne d autre. Donnees de preuve supprimees et recomptees : 0 compte de preuve, 0 extension e2epartie. Aucun secret affiche ni commite"
+        },
+        {
+          "quand": "2026-10-20T00:50+0200",
+          "machine": "devAI",
+          "evenement": "tâche doc_tech → fait",
+          "detail": "docs/LIVRAISON.md : section du 19/10 avec ce qui a ete reellement execute, et le paragraphe 'Point ouvert' remplace par les chemins des scripts. Compte rendu docs/roadmap/comptes-rendus/j-mise-en-ligne-jeu.md"
+        },
+        {
+          "quand": "2026-10-20T00:50+0200",
+          "machine": "devAI",
+          "evenement": "tâche maquette → na",
+          "detail": "sans objet : mise en ligne, aucun ecran"
+        },
+        {
+          "quand": "2026-10-20T00:50+0200",
+          "machine": "devAI",
+          "evenement": "tâche release_uat → na",
+          "detail": "aucun UAT sur ce projet (D2, JF 19/09) : la recette se fait en local sur chimera, on deploie directement en PROD"
+        },
+        {
+          "quand": "2026-10-20T00:50+0200",
+          "machine": "devAI",
+          "evenement": "compte rendu publié",
+          "detail": ""
+        },
+        {
+          "quand": "2026-10-20T00:50+0200",
+          "machine": "devAI",
+          "evenement": "tâche backlog → fait",
+          "detail": "suivi.py build : BACKLOG.md, ROADMAP.html et le backlog du jeu regeneres"
+        },
+        {
+          "quand": "2026-10-20T00:50+0200",
+          "machine": "devAI",
+          "evenement": "tâche compte_rendu → fait",
+          "detail": "docs/roadmap/comptes-rendus/j-mise-en-ligne-jeu.md (135 lignes) et section du 19/10 dans docs/LIVRAISON.md"
+        },
+        {
+          "quand": "2026-10-20T00:50+0200",
+          "machine": "devAI",
+          "evenement": "statut → livre",
+          "detail": ""
+        }
+      ],
+      "compte_rendu": {
+        "resume": "Le jeu est en ligne sur pokeboy.lol : les 22 lots fusionnes depuis le 05/10 (71/71 au backlog du jeu) livres en release 20261019-133755 (f46dc76). 12 migrations sur une seule tete, aucune variable ni unite nouvelle, voisins inchanges. Une partie de 14 coups jouee et GAGNEE en PROD par deux comptes (plus_de_pokemon, R-14.1), puis toutes ses donnees supprimees et recomptees.",
+        "livrables": [
+          "Release 20261019-133755 en service (3 unites active, tete LIVE d7f2a9c3e1b6)",
+          "Chaine de livraison enfin versionnee : infra/livraison/prep-lol.sh et deploy-switch.sh (retour arriere automatique)",
+          "apps/api/scripts/prouver_partie_prod.py et purger_preuve_partie.py : la preuve et son nettoyage, repetables"
+        ],
+        "preuves": [
+          "Partie 7643a94b : 14 coups, file d attente, vainqueur A raison plus_de_pokemon, declarer_attaque x2, par le chemin public https://pokeboy.lol/api",
+          "SHA-256 identiques aux trois etapes du transfert ; sauvegarde fraiche pokeboy_prod-20261019-222026.dump (85 Mo, 34 tables)",
+          "Nouveau code present dans la release en service (pbm_api/observabilite, pbm_api/notifications), pas seulement un 200",
+          "Audit D11 : 2 acces jeu (JF, Aymeric) ; purge recomptee a 0 compte de preuve et 0 extension e2epartie"
+        ],
+        "ecarts": [
+          "Le retour arriere n a PAS ete execute pour de vrai : la sante est revenue seule au 2e essai, et l eprouver demandait de couper volontairement la PROD. Il reste a eprouver, comme la restauration de sauvegarde (point ouvert depuis v5-prod)",
+          "Les deux scripts de livraison avaient ete purges avec /tmp du serveur : reecrits depuis ce que docs/LIVRAISON.md consignait, puis versionnes"
+        ],
+        "reste": [
+          "Eprouver le retour arriere et une restauration de sauvegarde, sur une fenetre choisie",
+          "La preuve joue en HTTP : le WebSocket (diffusion temps reel) n est pas exerce par elle",
+          "Le bilan de fin de partie exige une cle IA au compte (422 sans elle) : non exerce par la preuve"
+        ]
+      },
+      "attente": null
     },
     "j-coups-joueur": {
       "statut": "integre",

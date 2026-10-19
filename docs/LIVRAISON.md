@@ -1157,6 +1157,72 @@ lui-même. Il est en place, il **tourne**, et il bute sur un réglage du dépôt
 Tant qu'aucune n'est faite, `pr-auto` **reste rouge exprès** — un lot sans PR n'a pas de CI, ça doit
 se voir — mais son message dit que le code n'est pas en cause et donne le lien d'ouverture manuelle.
 
+## Livraison du jeu — 2026-10-19 — **RÉUSSIE** (une partie se joue et se gagne en PROD)
+
+Les **22 lots du jeu** fusionnés depuis le 05/10, de `j-anim-socle` à `j-profil-jeu` : le backlog du
+jeu passe à **71/71**. Diff `ab77675..f46dc76` : 392 fichiers, 65 452 insertions. Release
+`20261019-133755`, précédente `20261005-134110`. Livrée **à la main depuis devAI**. Jeu privé (D11).
+
+Détail complet, pièges et écarts : `docs/roadmap/comptes-rendus/j-mise-en-ligne-jeu.md`.
+
+### Besoins relevés AVANT de toucher au serveur
+
+**12 migrations** mais **une seule tête** (`d7f2a9c3e1b6` — les lots parallèles avaient fusionné les
+leurs). **Aucune** variable d'environnement obligatoire (`SUPERVISION_EMAIL` et
+`JEU_PARTIES_SIMULTANEES_MAX` ont un défaut) : `.env` **non modifié**. **Aucun** processus nouveau,
+**aucun** changement Caddy. `onnxruntime` est en `optional-dependencies` : hors image de production.
+
+### ⛔ Les deux scripts de livraison avaient été purgés avec `/tmp`
+
+Découvert au moment de s'en servir. Aucune copie nulle part. Ils ont été **réécrits depuis ce que
+cette fiche consignait** — et c'est l'argument pour continuer à y reporter chaque livraison. Ils
+vivent maintenant dans `infra/livraison/`, copiés dans `releases/<TS>/.livraison/`, **jamais `/tmp`**.
+
+⚠️ La santé interne se mesure sur **`/health`** : l'API est montée à la racine, Caddy retire le
+préfixe `/api` (`handle_path`). Un contrôle sur `/api/health` rend 404 — il aurait déclenché un
+retour arrière à chaque bascule.
+
+### Ce qui a réellement été exécuté
+
+```bash
+# 0. Portes : CI verte sur f46dc76 ; voisins AVANT 200 200 308 200 307 ; serveur sain (charge 0,14,
+#    2 369 Mo) ; PROD de départ 20261005-134110, tête c9d4e7a1b3f8.
+# 1. chimera construit : worktree de build checkout --detach f46dc76, HEAD VÉRIFIÉ, build en setsid.
+#    → TS=20261019-133755 ; web 4 .woff2 / 0 googleapis / 18 fichiers pokeboy.lol / 0 acx-connect.
+# 2. chimera → /mnt/c/tmp/pbm → devAI (/Volumes/Data/DevAI/pokeboy/tmp/) → kailo-srv
+#    SHA-256 identiques aux TROIS étapes : web 45a268b3… · api 22e69ceb… · game c5819a83…
+# 3. ssh kailo-srv 'sudo -n -u pokeboy bash /srv/pokeboy/prod/backups/backup.sh'
+#    → pokeboy_prod-20261019-222026.dump (85 Mo, 34 tables), photos 1 139
+# 4. ssh kailo-srv 'sudo -n -u pokeboy bash …/.livraison/prep-lol.sh 20261019-133755 f46dc76… j-mise-en-ligne-jeu'
+#    → PREPARATION_OK, tête c9d4e7a1b3f8 → d7f2a9c3e1b6
+# 5. ssh kailo-srv 'bash …/.livraison/deploy-switch.sh 20261019-133755'
+#    → BASCULE_OK (santé revenue au 2e essai)
+```
+
+⚠️ **Entre 4 et 5, le schéma est en avance sur le code qui tourne.** Mesuré à cet instant :
+`pokeboy.lol` 200, `/api/health` 200, trois unités actives — les migrations sont **additives**,
+vérifié et non supposé. C'était le vrai risque de cette livraison.
+
+### Preuve — une partie jouée ET gagnée dans les règles
+
+Partie `7643a94b…`, créée par la **file d'attente**, **14 coups**, deux comptes, par le chemin public
+(`https://pokeboy.lol/api`). **Vainqueur A, raison `plus_de_pokemon`** : K.O. et banc vide, deuxième
+voie de **R-14.1**. `declarer_attaque` ×2. Pilote versionné : `apps/api/scripts/prouver_partie_prod.py`.
+
+Deux pièges qui rendaient la preuve creuse, et qu'il faut connaître avant de la rejouer :
+**l'abandon est toujours légal** (un pilote naïf abandonne au 1er tour et croit avoir fini), et le
+coup s'appelle **`declarer_attaque`**, pas `attaquer` (`attaquer` est le nom de la *famille*) — une
+tentative a fait **82 coups sans une seule attaque**, finie par `pioche_impossible`. Enfin **R-6.1** :
+le joueur qui commence ne peut pas attaquer à son premier tour.
+
+Nettoyage **prouvé par recompte** (`scripts/purger_preuve_partie.py`, bornes dures + `--a-blanc`) :
+0 compte de preuve, 0 extension `e2epartie`. Audit D11 après : **2 accès au jeu** (JF, Aymeric).
+Voisins inchangés ; serveur après : charge 0,11 · 2 531 Mo · disque 64 %.
+
+⚠️ **Écart assumé : le retour arrière n'a pas été exécuté pour de vrai** (la santé est revenue
+seule ; l'éprouver demandait de couper volontairement la PROD). Il reste **à éprouver**, comme la
+restauration de sauvegarde — même point ouvert que `v5-prod`.
+
 ## Retour arrière
 
 Les versions précédentes restent dans `/srv/pokeboy/prod/releases/` : revenir en arrière, c'est
