@@ -1223,6 +1223,72 @@ Voisins inchangés ; serveur après : charge 0,11 · 2 531 Mo · disque 64 %.
 seule ; l'éprouver demandait de couper volontairement la PROD). Il reste **à éprouver**, comme la
 restauration de sauvegarde — même point ouvert que `v5-prod`.
 
+## Correctif de connexion — 2026-11-11 — **RÉUSSIE** (fin de la redirection vers `localhost:3100`)
+
+Un visiteur déconnecté qui ouvrait une page privée (`/jeu`, `/collection`…) était renvoyé vers
+**`https://localhost:3100/connexion`** : page morte. Cause : le middleware composait l'adresse de
+redirection depuis `request.url`, qui porte l'adresse d'écoute de Next derrière Caddy, pas celle du
+visiteur. Il lit désormais l'hôte public (`X-Forwarded-Host`, puis `Host`, forme contrôlée) —
+détail dans `docs/infra/DOMAINE-POKEBOY-LOL.md`. PR #108, fusion **`f04a3fe`**. Release
+`20261111-191111`, précédente `20261019-133755`. Livrée **à la main depuis devAI**.
+
+La même livraison emporte **Pillow 13.0.0** (12.3.0 en PROD : 40 vulnérabilités connues, sur le
+service qui reçoit les photos des joueurs), `certifi` et `dnspython` — l'audit des dépendances était
+masqué depuis le 19/10 par un lint rouge (`docs/SECURITE.md` § 4).
+
+### Besoins relevés AVANT de toucher au serveur (`git diff f46dc76..f04a3fe`)
+
+Changent à l'exécution : `apps/web/src/middleware.ts` et `apps/api/uv.lock`, rien d'autre.
+**Aucune** migration, **aucune** variable d'environnement, **aucun** changement Caddy ni processus.
+
+### Ce que la CI n'a pas pu prouver, et où c'est prouvé
+
+`web`, `api` et `game` verts sur GitHub. **`e2e` rouge sur GitHub pour une raison d'infrastructure** :
+le runner ne résout plus `security.ubuntu.com`, `playwright install --with-deps` échoue avant le
+premier test (six passages, relance comprise). Les **49 tests e2e** ont donc tourné **sur chimera**,
+sur `0b9b09f` (tête de la branche, même arbre que la fusion côté code), base PostgreSQL neuve
+effacée ensuite : **49/49 en 5,2 min**.
+
+⚠️ Pour cela il a fallu poser dans la WSL de chimera (root, `apt-get`) les **37 paquets système**
+que `playwright install-deps --dry-run chromium` déclarait manquants : le navigateur de test n'y
+avait jamais démarré (`libnspr4.so` absent — 49 échecs en 2 ms chacun, qui ressemblent à une
+régression et n'en sont pas une). C'est l'équivalent du `--with-deps` de la CI ; c'est fait une fois.
+
+### Ce qui a réellement été exécuté
+
+```bash
+# 0. Portes : web/api/game verts en CI, e2e 49/49 sur chimera ; voisins AVANT 200 200 308 200 307 ;
+#    défaut reproduit (curl -sI https://pokeboy.lol/jeu → location: https://localhost:3100/…) ;
+#    serveur sain (charge 0,13 · 2 624 Mo dispo · disque 68 %). PROD de départ 20261019-133755.
+# 1. chimera construit : ~/dev/wt-pbm-deploy checkout --detach f04a3fe, HEAD VÉRIFIÉ, pbm-build-lol.sh.
+#    → TS=20261111-191111 · web 25,1 Mo · api 1,17 Mo · game 503 Ko
+#    Artefact web : 4 .woff2, 0 googleapis/gstatic hors node_modules, 18 fichiers pokeboy.lol,
+#    0 acx-connect ; middleware compilé : lit x-forwarded-host, 0 « localhost:3100 ». uv.lock : pillow 13.0.0.
+# 2. chimera → /mnt/c/tmp/pbm → devAI (/Volumes/Data/DevAI/pokeboy/tmp/) → kailo-srv (releases/<TS>/.artefacts)
+#    SHA-256 IDENTIQUES aux TROIS étapes : web 380be476… · api b0e2b89c… · game abe75bc5…
+#    Scripts tirés de f04a3fe (infra/livraison) vers releases/<TS>/.livraison.
+# 3. ssh kailo-srv 'sudo -n -u pokeboy bash /srv/pokeboy/prod/backups/backup.sh'
+#    → pokeboy_prod-20261111-181432.dump (133 768 658 octets, 46 tables), photos 1 142 entrées
+# 4. ssh kailo-srv 'sudo -n -u pokeboy bash …/.livraison/prep-lol.sh 20261111-191111 f04a3fe… correctif-connexion'
+#    → PREPARATION_OK · tête d7f2a9c3e1b6 → d7f2a9c3e1b6 (rien à migrer, dit par le script)
+# 5. ssh kailo-srv 'bash …/.livraison/deploy-switch.sh 20261111-191111'
+#    → BASCULE_OK, santé revenue au 3e essai, 3 unités actives
+```
+
+### Preuve, depuis l'extérieur
+
+```
+/jeu         307  location: https://pokeboy.lol/connexion?next=%2Fjeu
+/collection  307  location: https://pokeboy.lol/connexion?next=%2Fcollection
+/jeu/profil  307  location: https://pokeboy.lol/connexion?next=%2Fjeu%2Fprofil
+X-Forwarded-Host: evil.example forgé → toujours https://pokeboy.lol/… (Caddy réécrit l'en-tête)
+site 200 · /connexion 200 · /api/health {"status":"ok"} · voisins 200 200 308 200 307
+```
+
+Pillow `13.0.0` dans l'environnement de la release ; 0 erreur au journal des trois unités depuis la
+bascule. Serveur après : charge 0,45 · 2 845 Mo · disque 70 %. Retour arrière **non éprouvé** (la
+santé est revenue seule) — même point ouvert qu'au 19/10.
+
 ## Retour arrière
 
 Les versions précédentes restent dans `/srv/pokeboy/prod/releases/` : revenir en arrière, c'est
