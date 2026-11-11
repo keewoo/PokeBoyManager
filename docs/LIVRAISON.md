@@ -1289,6 +1289,68 @@ Pillow `13.0.0` dans l'environnement de la release ; 0 erreur au journal des tro
 bascule. Serveur après : charge 0,45 · 2 845 Mo · disque 70 %. Retour arrière **non éprouvé** (la
 santé est revenue seule) — même point ouvert qu'au 19/10.
 
+## Durcissement de la redirection — 2026-11-11 (soir) — **RÉUSSIE**
+
+Suite de la revue du correctif ci-dessus, deux remarques sans effet en production ce jour-là (Next
+n'écoute que sur `127.0.0.1`, Caddy n'accepte que `pokeboy.lol`), corrigées quand même :
+
+- **L'origine de la redirection est fixée en PROD** : `NEXT_PUBLIC_SITE_URL=https://pokeboy.lol`,
+  posée par `~/dev/pbm-build-lol.sh` (chimera, ligne ajoutée ce soir, version précédente gardée en
+  `pbm-build-lol.sh.avant-20261111`) et **inlinée par `next build`** dans le middleware. Aucun
+  en-tête de la requête ne choisit plus l'hôte. Dev, CI et e2e ne la posent pas : inchangés.
+- **Un hôte que l'analyseur d'URL refuse** (`1.2.3.999`, port `99999`, `[1.2.3.4]`) est écarté au
+  lieu de faire lever `new URL` (erreur 500).
+
+PR #109, fusion **`4a62e78`**. Release `20261111-223655`, précédente `20261111-191111`.
+
+### Besoins relevés AVANT de toucher au serveur (`git diff f04a3fe..4a62e78`)
+
+Change à l'exécution : `apps/web/src/middleware.ts` seul (plus tests et docs). **Aucune** migration,
+dépendance, variable de service, changement Caddy ni processus. La variable nouvelle est une
+variable de **construction**, pas du service.
+
+### Preuves avant la bascule
+
+CI **entièrement verte, e2e compris** : les runners GitHub résolvent de nouveau
+`security.ubuntu.com` (le job e2e en échec d'infrastructure de l'après-midi est donc revenu au
+vert). e2e rejoué aussi sur chimera, sur `7d6dae5` (même arbre que la fusion) : **49/49 en 6,3 min**,
+base neuve effacée ensuite.
+
+### Ce qui a réellement été exécuté
+
+```bash
+# 0. voisins AVANT 200 200 308 200 307 ; serveur sain (charge 0,16 · 2 723 Mo dispo · disque 70 %) ;
+#    PROD de départ 20261111-191111.
+# 1. chimera : ~/dev/pbm-build-lol.sh complété (export NEXT_PUBLIC_SITE_URL="https://pokeboy.lol"),
+#    puis checkout --detach 4a62e78, HEAD VÉRIFIÉ, build → TS=20261111-223655.
+#    Artefact web : src/middleware.js contient le littéral "https://pokeboy.lol" (1), plus aucune
+#    référence à NEXT_PUBLIC_SITE_URL (inlinée), 0 « localhost:3100 » ; 4 .woff2 ; 0 googleapis/gstatic.
+#    api et game : empreintes IDENTIQUES à la release précédente (b0e2b89c…, abe75bc5…).
+# 2. chimera → /mnt/c/tmp/pbm → devAI → kailo-srv (releases/<TS>/.artefacts, scripts de 4a62e78 dans
+#    .livraison) : SHA-256 identiques aux TROIS étapes (web 01d05d52…).
+# 3. backup.sh → pokeboy_prod-20261111-213909.dump (133 768 658 octets, 46 tables), photos 1 142 entrées
+# 4. prep-lol.sh 20261111-223655 4a62e78… correctif-connexion-durcissement
+#    → PREPARATION_OK · tête d7f2a9c3e1b6 inchangée (rien à migrer)
+# 5. deploy-switch.sh 20261111-223655 → BASCULE_OK, santé revenue au 3e essai, 3 unités actives
+```
+
+### Preuve, depuis l'extérieur et sur le serveur
+
+```
+/jeu, /collection, /jeu/profil  307  location: https://pokeboy.lol/connexion?next=…
+X-Forwarded-Host: evil.example forgé         → https://pokeboy.lol/connexion?next=%2Fcollection
+sur le serveur, en direct sur 127.0.0.1:3100 (Caddy contourné) :
+  Host: evil.example        307 → https://pokeboy.lol/connexion?next=%2Fcollection   (origine fixée)
+  Host: 1.2.3.999           307 → idem (plus d'erreur 500)
+  Host: pokeboy.lol:99999   307 → idem
+site 200 · /connexion 200 · /api/health {"status":"ok"} · voisins APRÈS 200 200 308 200 307
+```
+
+Journal des trois unités depuis la bascule, par `sudo -n journalctl` (sans `sudo`, le compte
+`kailo` ne voit pas le journal système et compte « 0 » à tort) : aucune entrée de niveau
+`warning` ou plus, 0 ligne `error|traceback|exception`. Serveur après :
+charge 0,81 · 2 711 Mo · disque 72 %. Retour arrière toujours **non éprouvé**.
+
 ## Retour arrière
 
 Les versions précédentes restent dans `/srv/pokeboy/prod/releases/` : revenir en arrière, c'est
