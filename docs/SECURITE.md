@@ -163,6 +163,14 @@ No known vulnerabilities found
 Aucune vulnérabilité connue au 20/09/2026. **Ajouté à la CI** (`.github/workflows/ci.yml`, job
 `api`), bloquant : une régression future doit empêcher le merge.
 
+**11/11/2026 — l'audit ne tournait plus depuis le 19/10.** L'étape `ruff` du même job échouait
+avant lui (7 lignes trop longues dans `scripts/prouver_partie_prod.py`), si bien que trois paquets
+vulnérables sont restés invisibles : **Pillow 12.3.0** (40 avis, corrigés en 13.0.0 — c'est lui qui
+décode les photos envoyées par les utilisateurs, § 6), certifi 2026.7.22 et dnspython 2.8.0.
+Montés à Pillow 13.0.0, certifi 2026.10.23, dnspython 2.9.2 (`uv lock --upgrade-package`), audit
+revenu propre. Leçon : un job rouge sur `main` cache tout ce qui le suit dans le même job — on le
+répare le jour même, on ne s'y habitue pas.
+
 ### `apps/web` (JS)
 
 ```
