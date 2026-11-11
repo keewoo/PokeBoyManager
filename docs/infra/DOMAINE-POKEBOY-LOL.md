@@ -43,6 +43,13 @@ les pages seraient servies depuis `pokeboy.lol` pendant que leur JavaScript appe
 | `NEXT_PUBLIC_API_URL` | **figée à la construction** : `pbm-build.sh` / `pbm-build-lol.sh` (chimera), `build-pbm.sh` (devAI) | `https://pokeboy.lol/api` |
 | `metadataBase` | `apps/web/src/app/layout.tsx` | `https://pokeboy.lol`, surchargeable par `NEXT_PUBLIC_SITE_URL` |
 
+> ⚠️ **Une redirection du serveur web ne se calcule jamais depuis `request.url`.** Derrière Caddy,
+> le serveur Next autonome y met son propre nom d'écoute (`https://localhost:3100/…`) : jusqu'au
+> 11/11/2026, un visiteur sans session sur `/jeu` ou `/collection` était renvoyé vers
+> `https://localhost:3100/connexion`. Le middleware (`apps/web/src/middleware.ts`, `publicOrigin`)
+> prend l'hôte dans `X-Forwarded-Host` (réécrit par Caddy), sinon `Host`. Aucun nom de domaine
+> n'est écrit pour cela : la même construction sert le dev, la CI et la production.
+
 > ⚠️ **Les trois scripts de construction portent l'URL en dur.** Ils ont tous été corrigés le
 > 22/09. Si un jour le domaine rebouge, les corriger **ensemble** : un seul script oublié et le
 > déploiement suivant réinstalle silencieusement l'ancien domaine dans le navigateur, sans que

@@ -9,15 +9,16 @@ ne survit pas à la livraison oblige à le refaire. Celui-ci reste.
 Il emprunte le chemin réel d'un joueur — ``https://pokeboy.lol/api``, donc Caddy puis l'uvicorn
 qui sert vraiment — et peut donc tourner depuis n'importe quel poste de la flotte. Viser
 ``127.0.0.1:8100`` ne marche pas : le cookie de session est ``Secure``, il n'est pas renvoyé sur du
-HTTP en clair. ``PBM_BASE`` permet de pointer un autre environnement. Rien n'est rejoué côté client :
-le serveur fait autorité, on lit ``actions.legales`` de ``GET /games/{id}/state`` et on joue ce
-qu'il déclare jouable. Si le moteur change ses étiquettes, ce script suit.
+HTTP en clair. ``PBM_BASE`` permet de pointer un autre environnement. Rien n'est rejoué côté
+client : le serveur fait autorité, on lit ``actions.legales`` de ``GET /games/{id}/state`` et on
+joue ce qu'il déclare jouable. Si le moteur change ses étiquettes, ce script suit.
 
 Prérequis : ``scripts/seed_partie_e2e.py`` a semé les deux comptes et leurs decks (A attaque à 60,
 B a un seul Pokémon à 110 PV sans attaque : deux attaques et son banc vide donnent la deuxième voie
 de victoire de **R-14.1**, une vraie fin de partie, pas un abandon).
 
-    .venv/bin/python scripts/prouver_partie_prod.py <email_a> <email_b> <mot_de_passe> <deck_a> <deck_b>
+    .venv/bin/python scripts/prouver_partie_prod.py \
+        <email_a> <email_b> <mot_de_passe> <deck_a> <deck_b>
 
 Codes de sortie : ``0`` partie jouée et gagnée dans les règles, ``1`` la preuve a échoué (et dit
 pourquoi). Aucun secret affiché.
@@ -95,7 +96,10 @@ class Joueur:
 
 
 def autoritaire(reponse: dict) -> dict:
-    """La vue autoritaire du joueur. Le serveur l'imbrique sous ``vue`` ; une autre forme est une panne."""
+    """La vue autoritaire du joueur.
+
+    Le serveur l'imbrique sous ``vue`` ; une autre forme est une panne.
+    """
     vue = reponse.get("vue")
     if not isinstance(vue, dict):
         raise RuntimeError("la réponse ne porte pas « vue » — clés : " + ", ".join(sorted(reponse)))
@@ -103,7 +107,10 @@ def autoritaire(reponse: dict) -> dict:
 
 
 def legales(reponse: dict) -> list[dict]:
-    """Les coups que le SERVEUR déclare jouables. Une forme inattendue est une panne, pas un vide."""
+    """Les coups que le SERVEUR déclare jouables.
+
+    Une forme inattendue est une panne, pas un vide.
+    """
     vue = autoritaire(reponse)
     if "actions_legales" not in vue:
         raise RuntimeError(
@@ -113,7 +120,10 @@ def legales(reponse: dict) -> list[dict]:
 
 
 def terminee(reponse: dict) -> tuple[bool, str]:
-    """La partie est-elle finie, et comment ? ``terminee``, ``vainqueur`` et ``raison_fin`` du serveur."""
+    """La partie est-elle finie, et comment ?
+
+    ``terminee``, ``vainqueur`` et ``raison_fin`` du serveur.
+    """
     vue = autoritaire(reponse)
     if not vue.get("terminee"):
         return False, ""
@@ -156,7 +166,7 @@ def choisir(jouables: list[dict]) -> dict | None:
     return utiles[0]
 
 
-def _partie_en_cours(j: "Joueur") -> str | None:
+def _partie_en_cours(j: Joueur) -> str | None:
     """L'identifiant d'une partie active de ce joueur, s'il en a une (sinon ``None``)."""
     code, rep = j.get("/games")
     if code != 200 or not isinstance(rep, list):
@@ -229,7 +239,11 @@ def main() -> int:
                 continue
             code, rep = j.post(
                 f"/games/{game_id}/actions",
-                {"type": coup["type"], "params": coup["params"], "numero_attendu": vue.get("numero")},
+                {
+                    "type": coup["type"],
+                    "params": coup["params"],
+                    "numero_attendu": vue.get("numero"),
+                },
             )
             if code == 200:
                 coups += 1
