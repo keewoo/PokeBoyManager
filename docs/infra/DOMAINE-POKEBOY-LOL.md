@@ -47,10 +47,20 @@ les pages seraient servies depuis `pokeboy.lol` pendant que leur JavaScript appe
 > le serveur Next autonome y met son propre nom d'écoute (`https://localhost:3100/…`) : jusqu'au
 > 11/11/2026, un visiteur sans session sur `/jeu` ou `/collection` était renvoyé vers
 > `https://localhost:3100/connexion`. Le middleware (`apps/web/src/middleware.ts`, `publicOrigin`)
-> prend l'hôte dans `X-Forwarded-Host` (réécrit par Caddy), sinon `Host`. Aucun nom de domaine
-> n'est écrit pour cela : la même construction sert le dev, la CI et la production.
+> prend l'origine dans `NEXT_PUBLIC_SITE_URL` quand la construction la pose — **le build de PROD
+> pose `https://pokeboy.lol`** (`~/dev/pbm-build-lol.sh` sur chimera, depuis le 11/11/2026) : aucun
+> en-tête de la requête ne choisit alors l'hôte de la redirection. Sans elle (dev, CI, e2e), il
+> prend l'hôte dans `X-Forwarded-Host` (réécrit par Caddy), sinon `Host`, en écartant tout candidat
+> que l'analyseur d'URL refuse (avant la revue du 11/11, un `Host: 1.2.3.999` envoyé directement à
+> Next donnait une erreur 500).
+>
+> Pourquoi fixer l'origine en PROD alors que Caddy réécrit déjà `X-Forwarded-Host` : c'est vrai
+> **aujourd'hui**. Un cache partagé, un CDN ou un `trusted_proxies` posé un jour devant Next ferait
+> de l'en-tête une valeur du client, et la redirection vers `/connexion` une redirection ouverte.
+> Next et l'API n'écoutent que sur `127.0.0.1` (3100, 8100) : c'est l'autre moitié de la garde.
 
-> ⚠️ **Les trois scripts de construction portent l'URL en dur.** Ils ont tous été corrigés le
+> ⚠️ **Les trois scripts de construction portent l'URL en dur** (`NEXT_PUBLIC_API_URL` ; le build
+> de PROD aussi `NEXT_PUBLIC_SITE_URL` depuis le 11/11/2026). Ils ont tous été corrigés le
 > 22/09. Si un jour le domaine rebouge, les corriger **ensemble** : un seul script oublié et le
 > déploiement suivant réinstalle silencieusement l'ancien domaine dans le navigateur, sans que
 > rien n'échoue — le site répond, l'API est simplement injoignable depuis les pages.

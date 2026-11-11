@@ -56,6 +56,60 @@ describe("middleware", () => {
 
       expect(new URL(response.headers.get("location")!).host).toBe("localhost:3100");
     });
+
+    // Revue du 11/11/2026 : ces hôtes passent le motif mais `new URL` les refuse ; la requête
+    // finissait en erreur 500 au lieu de passer au candidat suivant.
+    it.each(["pokeboy.lol:99999", "1.2.3.999", "[1.2.3.4]", "[:::]"])(
+      "écarte %s, que l'analyseur d'URL refuse, et passe à Host",
+      (forwarded) => {
+        const response = middleware(behindProxy("/jeu", { "x-forwarded-host": forwarded, host: "pokeboy.lol" }));
+
+        expect(response.status).toBe(307);
+        expect(response.headers.get("location")).toBe("https://pokeboy.lol/connexion?next=%2Fjeu");
+      }
+    );
+
+    it("retombe sur l'origine de la requête quand aucun candidat n'est utilisable", () => {
+      const response = middleware(behindProxy("/jeu", { "x-forwarded-host": "1.2.3.999", host: "pokeboy.lol:99999" }));
+
+      expect(response.status).toBe(307);
+      expect(new URL(response.headers.get("location")!).host).toBe("localhost:3100");
+    });
+
+    it("garde un hôte IPv6 entre crochets et son port", () => {
+      const response = middleware(behindProxy("/jeu", { host: "[::1]:3100" }));
+
+      expect(new URL(response.headers.get("location")!).host).toBe("[::1]:3100");
+    });
+
+    describe("origine fixée par NEXT_PUBLIC_SITE_URL (build de PROD)", () => {
+      const ORIGINAL = process.env.NEXT_PUBLIC_SITE_URL;
+
+      afterEach(() => {
+        if (ORIGINAL === undefined) delete process.env.NEXT_PUBLIC_SITE_URL;
+        else process.env.NEXT_PUBLIC_SITE_URL = ORIGINAL;
+      });
+
+      it("redirige vers l'origine configurée, quels que soient X-Forwarded-Host et Host", () => {
+        process.env.NEXT_PUBLIC_SITE_URL = "https://pokeboy.lol";
+
+        const response = middleware(
+          behindProxy("/collection", { "x-forwarded-host": "evil.example", host: "autre.example" })
+        );
+
+        expect(response.headers.get("location")).toBe("https://pokeboy.lol/connexion?next=%2Fcollection");
+      });
+
+      it("ignore une valeur illisible ou hors http(s) et revient aux en-têtes", () => {
+        for (const value of ["pas une url", "ftp://pokeboy.lol"]) {
+          process.env.NEXT_PUBLIC_SITE_URL = value;
+
+          const response = middleware(behindProxy("/jeu", { "x-forwarded-host": "pokeboy.lol" }));
+
+          expect(response.headers.get("location")).toBe("https://pokeboy.lol/connexion?next=%2Fjeu");
+        }
+      });
+    });
   });
 
   it("laisse passer une page privée quand le cookie de session est présent", () => {
