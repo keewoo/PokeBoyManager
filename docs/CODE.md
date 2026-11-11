@@ -13,7 +13,7 @@
 | Python | **3.12** (`UV_PYTHON=3.12`) | c'est ce que la PROD exécute et ce que teste la CI ; cinq versions ont déjà cohabité ailleurs et la garde de livraison validait un interpréteur que personne n'exécutait |
 | Node | **24** | épinglé par `packageManager` dans `package.json` |
 | pnpm | **12.4.2** | idem |
-| Images Docker | tag majeur fixe (`postgres:16-alpine`, `redis:7-alpine`) | une image flottante rend un build non reproductible |
+| Images Docker | tag majeur fixe (`postgres:16-alpine` en local, `postgres:18-alpine` en CI comme la PROD, `redis:7-alpine`) | une image flottante rend un build non reproductible ; la CI suit la version de la PROD, et le `pg_dump` 18 du runner refuse une base 16 |
 
 **La CI GitHub Actions fait foi.** Un test vert en local ne vaut pas livraison : l'environnement
 local agrège des dépendances que la CI isole. Un échec local qui n'apparaît pas en CI se compare
@@ -131,8 +131,8 @@ docker-compose.yml   Postgres 16, Redis 7, SeaweedFS (S3), Mailpit — ports par
 ```
 
 Versions épinglées : Node 24, pnpm 12.4.2 (`packageManager` dans `package.json`), Python 3.12,
-uv (voir `uv.lock` dans `apps/api`) ; images Docker à tag majeur fixe (`postgres:16-alpine`,
-`redis:7-alpine`).
+uv (voir `uv.lock` dans `apps/api`) ; images Docker à tag majeur fixe (`postgres:16-alpine` en local,
+`postgres:18-alpine` en CI comme la PROD, `redis:7-alpine`).
 
 ```bash
 # Infra locale (Postgres, Redis, SeaweedFS pour le S3, Mailpit)

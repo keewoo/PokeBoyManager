@@ -172,7 +172,9 @@ async def test_invitation_genre_coupe_nenregistre_rien_et_nenvoie_rien(db_sessio
 
     assert await _notifications_de(db_session, bob.id) == []
     assert emetteur.sent == []
-    recues = await invitations.recues(db_session, user_id=bob.id)
+    # Relue au même instant que l'envoi : à l'horloge réelle, l'invitation de `EN_PLEIN_JOUR` est
+    # expirée sept jours plus tard, et le test échouait sans que le produit soit en cause.
+    recues = await invitations.recues(db_session, user_id=bob.id, maintenant=EN_PLEIN_JOUR)
     assert [i.id for i in recues] == [invitation.id], "l'invitation elle-même n'a pas disparu"
 
 
