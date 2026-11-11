@@ -25,10 +25,10 @@ En service : **https://pokeboy.lol** — domaine propre depuis le 22/09/2026. Mi
   `python3 docs/roadmap/suivi.py build` et `python3 docs/roadmap/jeu/build-jeu.py`.
 - Chaque lot démarre par `suivi.py verifier <id>` : code 2 = ordre non tenu → on s'arrête et on
   demande à JF.
-- **ClickUp reflète le plan, il ne le décide pas** : `python3 docs/roadmap/clickup.py` porte les
-  155 lots dans l'espace *Pokeboy* (dossiers « Roadmap — plan daté » et « Roadmap — jeu », une liste
-  par vague et par jalon). Idempotent, et il se **réapparie** sur les noms si son état local est
-  perdu — sans ça un second passage créerait 155 doublons. `--a-blanc` d'abord, toujours.
+- **Un seul backlog ClickUp, celui de SynACX** (depuis le 11/11/2026) : projet `pokeboy` de l'instance
+  d'ACX (https://acx.synacx.acx-connect.com/projets/13), espace *PokeBoy* de l'espace de travail ACX,
+  tenu par SynACX. L'ancien espace de travail *Pokeboy* est fermé et `clickup.py` est retiré : ne pas
+  le recréer. SynACX a repris le plan le 11/11 et ne relit pas `etat.json` de lui-même.
 - Page publiée (roadmap, backlog du jeu, maquettes) : https://claude.ai/artifact/2w2cvcLhUGZdorHNVvTahy
 
 ## Les règles qui ne se discutent pas

@@ -40,7 +40,7 @@ Vérifié dans le dépôt et dans la configuration de ce poste le 22/09/2026 :
 
 | Candidat | Pour quoi faire | État réel | Ce qu'il manque |
 |---|---|---|---|
-| **ClickUp** | suivi des lots hors du dépôt | **non branché côté produit.** Un connecteur ClickUp existe côté Claude (outils `clickup_*`) mais rien dans PokeBoyManager ne l'appelle, et le plan ne s'y synchronise pas — la source du suivi reste `docs/roadmap/roadmap.json` + `etat.json` | savoir ce que JF veut y voir : les lots ? les décisions ? et dans quel sens (miroir, ou source) |
+| **ClickUp** | suivi des lots hors du dépôt | **non branché côté produit** : rien dans PokeBoyManager ne l'appelle. Depuis le 11/11/2026, le backlog ClickUp des lots est celui que tient **SynACX** (projet `pokeboy` de l'instance d'ACX, espace *PokeBoy* de l'espace de travail ACX) ; l'ancien espace de travail *Pokeboy* et son script `docs/roadmap/clickup.py` sont retirés. La source du plan reste `docs/roadmap/roadmap.json` + `etat.json` | brancher le suivi du dépôt sur SynACX (jeton de suivi), sans quoi SynACX garde l'état repris le 11/11 |
 
 ### Outillage de développement — Graphify (installé le 22/09/2026)
 
