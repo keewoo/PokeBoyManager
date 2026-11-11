@@ -96,17 +96,47 @@ const HOST_PATTERN = /^(?:[A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])(?::\d{1,5})?$/;
  * (constaté en PROD le 11/11/2026, sur `/jeu` et `/collection`). Une redirection relative n'est pas
  * possible non plus : l'adaptateur du middleware relit `Location` par `new NextURL(…)` sans base.
  *
- * L'hôte vient donc de la requête elle-même : `X-Forwarded-Host` (que Caddy réécrit avec l'hôte
- * reçu, sans croire celui d'un client), sinon `Host` (Caddy le transmet tel quel ; en dev, il vaut
- * `localhost:3100`, ce qui est juste). Un hôte mal formé retombe sur celui de `request.url`. Le
- * protocole reste celui de `request.nextUrl`, que Next tire déjà de `X-Forwarded-Proto`.
+ * 1. **`NEXT_PUBLIC_SITE_URL`, quand la construction la pose** (le build de PROD :
+ *    `https://pokeboy.lol`) : l'origine est alors fixée, et aucun en-tête de la requête ne la
+ *    choisit. Rien ne dépend ainsi de la configuration du proxy : un cache partagé, un CDN ou un
+ *    `trusted_proxies` posé un jour devant Next ne pourrait pas faire rediriger vers un autre hôte.
+ * 2. Sinon (dev, CI, e2e), l'hôte vient de la requête : `X-Forwarded-Host` (que Caddy réécrit avec
+ *    l'hôte reçu, sans croire celui d'un client), puis `Host` (en dev, `localhost:3100`, ce qui est
+ *    juste). Un candidat est écarté s'il n'a pas la forme d'un hôte **ou** si l'analyseur d'URL le
+ *    refuse (`1.2.3.999`, port `99999`, `[1.2.3.4]`) : sans ce second contrôle, `new URL` levait et
+ *    la requête finissait en erreur 500 au lieu de passer au candidat suivant. En dernier recours,
+ *    l'origine de `request.url`. Le protocole reste celui de `request.nextUrl`, que Next tire déjà
+ *    de `X-Forwarded-Proto`.
+ *
+ * Une valeur de `NEXT_PUBLIC_SITE_URL` illisible ou hors http(s) est ignorée (cas 2) : la
+ * redirection reste celle, sûre, du dev. C'est la même variable que `metadataBase` (`layout.tsx`).
  */
 function publicOrigin(request: NextRequest): string {
+  const configured = configuredSiteOrigin();
+  if (configured) return configured;
   const candidates = [request.headers.get("x-forwarded-host"), request.headers.get("host")];
-  const host = candidates
-    .map((value) => value?.split(",")[0]?.trim() ?? "")
-    .find((value) => HOST_PATTERN.test(value));
-  return `${request.nextUrl.protocol}//${host ?? request.nextUrl.host}`;
+  for (const value of candidates) {
+    const host = value?.split(",")[0]?.trim() ?? "";
+    if (!HOST_PATTERN.test(host)) continue;
+    try {
+      return new URL(`${request.nextUrl.protocol}//${host}`).origin;
+    } catch {
+      // Forme d'hôte admise par le motif mais refusée par l'analyseur d'URL : candidat suivant.
+    }
+  }
+  return request.nextUrl.origin;
+}
+
+/** Origine de `NEXT_PUBLIC_SITE_URL` (lue à chaque appel : inlinée par `next build`), ou `null`. */
+function configuredSiteOrigin(): string | null {
+  const raw = process.env.NEXT_PUBLIC_SITE_URL;
+  if (!raw) return null;
+  try {
+    const url = new URL(raw);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.origin : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
