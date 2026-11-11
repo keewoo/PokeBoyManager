@@ -134,13 +134,18 @@ async def test_invitation_par_pseudo_acceptee(db_session):
     )
     assert inv.statut == "envoyee"
     assert inv.invitee_user_id == b.id
-    # Notification dans l'application : B la voit dans ses invitations reçues.
-    assert [i.id for i in await service.recues(db_session, user_id=b.id)] == [inv.id]
+    # Notification dans l'application : B la voit dans ses invitations reçues. Relue au MÊME
+    # instant que l'envoi : relue à l'horloge réelle, elle est expirée depuis le 20/10/2026 (TTL
+    # de 7 jours) et le test échouait, alors que le produit était juste (constaté le 11/11/2026).
+    instant = datetime(2026, 10, 13, 12, 0, tzinfo=UTC)
+    assert [i.id for i in await service.recues(db_session, user_id=b.id, maintenant=instant)] == [
+        inv.id
+    ]
     # Relais e-mail parti vers l'adresse de B (rappel).
     assert email.sent and email.sent[-1]["to"] == b.email
 
     accepte = await service.accepter(
-        db_session, invitation_id=inv.id, invitee_id=b.id, deck_id=deck_b
+        db_session, invitation_id=inv.id, invitee_id=b.id, deck_id=deck_b, maintenant=instant
     )
     assert accepte.statut == INVITATION_STATUT_ACCEPTEE
     assert accepte.invitee_deck_id == deck_b

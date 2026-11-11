@@ -72,7 +72,10 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16-alpine
+        # 18, comme la PROD (PostgreSQL 18 de kailo-srv). En 16, le `pg_dump` du runner (18 depuis
+        # ubuntu-latest = 26.04) écrit `SET transaction_timeout`, que la base 16 refuse : les deux
+        # tests de `catalogue_seed` échouaient sans que le code soit en cause (11/11/2026).
+        image: postgres:18-alpine
         env:
           POSTGRES_USER: pbm
           POSTGRES_PASSWORD: pbm
@@ -191,7 +194,10 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16-alpine
+        # 18, comme la PROD (PostgreSQL 18 de kailo-srv). En 16, le `pg_dump` du runner (18 depuis
+        # ubuntu-latest = 26.04) écrit `SET transaction_timeout`, que la base 16 refuse : les deux
+        # tests de `catalogue_seed` échouaient sans que le code soit en cause (11/11/2026).
+        image: postgres:18-alpine
         env:
           POSTGRES_USER: pbm
           POSTGRES_PASSWORD: pbm
