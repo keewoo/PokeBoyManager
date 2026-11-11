@@ -82,6 +82,33 @@ function withSecurityHeaders(response: NextResponse, nonce: string): NextRespons
   return response;
 }
 
+// Un hôte tel qu'un navigateur l'écrit : nom (ou IPv4) et port facultatif, ou IPv6 entre crochets.
+// Tout le reste (virgule d'une liste `X-Forwarded-Host`, espace, barre oblique, `@`) est refusé.
+const HOST_PATTERN = /^(?:[A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])(?::\d{1,5})?$/;
+
+/**
+ * Origine publique de la requête — celle que le visiteur a tapée — pour construire une redirection.
+ *
+ * `request.url` ne la donne pas derrière Caddy : le serveur Next autonome compose l'URL de la
+ * requête avec **son propre nom d'écoute** (`initURL` de `next-server.js` :
+ * `${protocole}://${hostname}:${port}${chemin}`), si bien qu'une redirection calculée depuis
+ * `request.url` envoyait le visiteur de `pokeboy.lol` vers `https://localhost:3100/connexion`
+ * (constaté en PROD le 11/11/2026, sur `/jeu` et `/collection`). Une redirection relative n'est pas
+ * possible non plus : l'adaptateur du middleware relit `Location` par `new NextURL(…)` sans base.
+ *
+ * L'hôte vient donc de la requête elle-même : `X-Forwarded-Host` (que Caddy réécrit avec l'hôte
+ * reçu, sans croire celui d'un client), sinon `Host` (Caddy le transmet tel quel ; en dev, il vaut
+ * `localhost:3100`, ce qui est juste). Un hôte mal formé retombe sur celui de `request.url`. Le
+ * protocole reste celui de `request.nextUrl`, que Next tire déjà de `X-Forwarded-Proto`.
+ */
+function publicOrigin(request: NextRequest): string {
+  const candidates = [request.headers.get("x-forwarded-host"), request.headers.get("host")];
+  const host = candidates
+    .map((value) => value?.split(",")[0]?.trim() ?? "")
+    .find((value) => HOST_PATTERN.test(value));
+  return `${request.nextUrl.protocol}//${host ?? request.nextUrl.host}`;
+}
+
 /**
  * Middleware Next exécuté à chaque requête : pose les en-têtes de sécurité (CSP à nonce par requête,
  * HSTS, anti-framing, nosniff…) sur toute réponse, et redirige vers `/connexion?next=…` l'accès à une
@@ -98,7 +125,7 @@ export function middleware(request: NextRequest) {
     // Présence du cookie seulement : une session expirée ou révoquée est encore rejetée par
     // l'API (401), qui reste la seule source de vérité. Cette garde évite juste d'afficher
     // une page privée vide à un visiteur qui n'a manifestement pas de session.
-    const loginUrl = new URL("/connexion", request.url);
+    const loginUrl = new URL("/connexion", publicOrigin(request));
     loginUrl.searchParams.set("next", `${request.nextUrl.pathname}${request.nextUrl.search}`);
     return withSecurityHeaders(NextResponse.redirect(loginUrl), nonce);
   }

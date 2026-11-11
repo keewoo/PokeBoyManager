@@ -25,6 +25,39 @@ describe("middleware", () => {
     expect(location.searchParams.get("next")).toBe("/carte/dracaufeu-ex-xy121?onglet=histoire");
   });
 
+  // Défaut constaté en PROD le 11/11/2026 : derrière Caddy, `request.url` porte le nom d'écoute du
+  // serveur Next (`https://localhost:3100/jeu`), et la redirection partait vers localhost.
+  describe("redirection derrière le proxy : l'origine publique, jamais celle du serveur Next", () => {
+    function behindProxy(path: string, headers: Record<string, string>): NextRequest {
+      return new NextRequest(new URL(path, "https://localhost:3100"), { headers });
+    }
+
+    it("prend l'hôte de X-Forwarded-Host (posé par Caddy)", () => {
+      const response = middleware(behindProxy("/jeu", { "x-forwarded-host": "pokeboy.lol" }));
+
+      expect(response.status).toBe(307);
+      expect(response.headers.get("location")).toBe("https://pokeboy.lol/connexion?next=%2Fjeu");
+    });
+
+    it("prend l'hôte de Host quand X-Forwarded-Host manque", () => {
+      const response = middleware(behindProxy("/collection", { host: "pokeboy.lol" }));
+
+      expect(response.headers.get("location")).toBe("https://pokeboy.lol/connexion?next=%2Fcollection");
+    });
+
+    it("ne garde que le premier hôte d'une liste X-Forwarded-Host", () => {
+      const response = middleware(behindProxy("/jeu", { "x-forwarded-host": "pokeboy.lol, autre.example" }));
+
+      expect(new URL(response.headers.get("location")!).host).toBe("pokeboy.lol");
+    });
+
+    it("ignore un hôte mal formé et retombe sur celui de la requête", () => {
+      const response = middleware(behindProxy("/jeu", { "x-forwarded-host": "evil.example/@x" }));
+
+      expect(new URL(response.headers.get("location")!).host).toBe("localhost:3100");
+    });
+  });
+
   it("laisse passer une page privée quand le cookie de session est présent", () => {
     const response = middleware(requestFor("/profil", "pbm_session=abc123"));
 
